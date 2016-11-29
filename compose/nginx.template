@@ -1,0 +1,17 @@
+## Dockstore Staging Server
+
+
+server {
+        listen 80;
+        server_name dockstore;
+
+        root /home/root/dockstore-ui/dist;
+        index index.html index.htm;
+
+        location / {
+                try_files $uri $uri/ /index.html =404;
+        }
+
+        error_page 404 /index.html;
+}
+

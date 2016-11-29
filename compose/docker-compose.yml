@@ -1,0 +1,46 @@
+version: '2'
+
+
+services:
+  postgres:
+    image: postgres:9.5
+
+  webservice: 
+    build:
+      context: .
+      dockerfile: Dockerfile_webservice
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    links:
+      - postgres
+    volumes:
+      - log_volume:/dockstore_logs
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile_ui
+    ports:
+      - "80:80"
+    links:
+      - webservice
+    volumes:
+      - log_volume:/dockstore_logs
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile_client
+    links:
+      - webservice 
+    volumes:
+      - log_volume:/dockstore_logs
+    environment:
+      - PGHOST=postgres
+      - PGUSER=postgres
+      - PGPASSWORD=postgres
+      - PGDATABASE=postgres
+    
+volumes:
+  log_volume: 
