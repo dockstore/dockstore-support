@@ -37,8 +37,8 @@ RUN wget --no-verbose https://github.com/jwilder/dockerize/releases/download/$DO
 RUN mkdir -p /home/ubuntu/.dockstore /home/ubuntu/.dockstore/self-installs /home/ubuntu/.ssh /home/ubuntu/bin \
     && chown -R ubuntu /home/ubuntu/
 
-COPY config /home/ubuntu/.dockstore/config
-COPY init_client.sh /home/ubuntu/init_client.sh
+COPY client/config /home/ubuntu/.dockstore/config
+COPY client/init_client.sh /home/ubuntu/init_client.sh
 
 #RUN chmod 600 /home/ubuntu/.ssh/key.pem 
 RUN chmod a+wrx /home/ubuntu/init_client.sh
@@ -48,7 +48,7 @@ RUN echo "postgres:5432:*:*:postgres" > /home/ubuntu/.pgpass && chmod 600 /home/
 
 
 # install Dockstore CLI services
-ENV dockstore_version=1.1
+ARG dockstore_version=1.1
 
 # for dockstore command line on the main box 
 RUN wget --no-verbose https://seqwaremaven.oicr.on.ca/artifactory/collab-release/io/dockstore/dockstore-client/${dockstore_version}/dockstore-client-${dockstore_version}.jar \

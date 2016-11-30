@@ -4,11 +4,17 @@ version: '2'
 services:
   postgres:
     image: postgres:9.5
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql
 
   webservice: 
     build:
       context: .
-      dockerfile: Dockerfile_webservice
+      dockerfile: webservice/Dockerfile
+      args:
+        dockstore_version: 1.1
+    restart: always
     ports:
       - "8080:8080"
       - "8081:8081"
@@ -20,7 +26,10 @@ services:
   ui:
     build:
       context: .
-      dockerfile: Dockerfile_ui
+      dockerfile: ui/Dockerfile
+      args:
+        dockstore_version: 1.1.1
+    restart: always
     ports:
       - "80:80"
     links:
@@ -31,7 +40,9 @@ services:
   client:
     build:
       context: .
-      dockerfile: Dockerfile_client
+      dockerfile: client/Dockerfile
+      args:
+        dockstore_version: 1.1
     links:
       - webservice 
     volumes:
@@ -44,3 +55,4 @@ services:
     
 volumes:
   log_volume: 
+  db_data:
