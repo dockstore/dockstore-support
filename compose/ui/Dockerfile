@@ -14,7 +14,7 @@ RUN apt-get update \
     ruby ruby-dev make \
     && apt-get clean
 
-ADD ui/init_ui.sh .
+ADD init_ui.sh .
 
 RUN chmod u+x init_ui.sh \
     && apt-get install -y npm 
@@ -30,7 +30,7 @@ RUN git clone https://github.com/ga4gh/dockstore-ui.git
 WORKDIR /home/root/dockstore-ui
 RUN git checkout $dockstore_version
 
-COPY ui/webservice.js.template /home/root/dockstore-ui/app/scripts/services/webservice.js
+COPY webservice.js.template /home/root/dockstore-ui/app/scripts/services/webservice.js
 
 # Install nvm with node and npm
 RUN curl https://raw.githubusercontent.com/creationix/nvm/v0.32.0/install.sh | bash \
@@ -61,8 +61,8 @@ ENV DOCKERIZE_VERSION v0.2.0
 RUN wget --no-verbose https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \                                                                   
     && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz              
 
-COPY ui/nginx.template /etc/nginx/sites-available/nginx
-COPY ui/nginx.template /etc/nginx/sites-enabled/nginx
+COPY nginx.template /etc/nginx/sites-available/nginx
+COPY nginx.template /etc/nginx/sites-enabled/nginx
 
 RUN rm /etc/nginx/sites-enabled/default && rm /etc/nginx/sites-available/default
 

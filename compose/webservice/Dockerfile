@@ -28,8 +28,8 @@ RUN wget --no-verbose https://github.com/jwilder/dockerize/releases/download/$DO
     && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
 # the config file for the webservice 
-COPY webservice/web.yml .
-ADD webservice/init_webservice.sh .
+COPY web.yml .
+ADD init_webservice.sh .
 
 RUN chmod u+x init_webservice.sh
 RUN mkdir /dockstore_logs && chmod a+rx /dockstore_logs
