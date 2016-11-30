@@ -37,8 +37,8 @@ RUN wget --no-verbose https://github.com/jwilder/dockerize/releases/download/$DO
 RUN mkdir -p /home/ubuntu/.dockstore /home/ubuntu/.dockstore/self-installs /home/ubuntu/.ssh /home/ubuntu/bin \
     && chown -R ubuntu /home/ubuntu/
 
-COPY client/config /home/ubuntu/.dockstore/config
-COPY client/init_client.sh /home/ubuntu/init_client.sh
+COPY config /home/ubuntu/.dockstore/config
+COPY init_client.sh /home/ubuntu/init_client.sh
 
 #RUN chmod 600 /home/ubuntu/.ssh/key.pem 
 RUN chmod a+wrx /home/ubuntu/init_client.sh

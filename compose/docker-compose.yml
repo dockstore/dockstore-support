@@ -10,8 +10,8 @@ services:
 
   webservice: 
     build:
-      context: .
-      dockerfile: webservice/Dockerfile
+      context: webservice
+      dockerfile: Dockerfile
       args:
         dockstore_version: 1.1
     restart: always
@@ -25,8 +25,8 @@ services:
 
   ui:
     build:
-      context: .
-      dockerfile: ui/Dockerfile
+      context: ui 
+      dockerfile: Dockerfile
       args:
         dockstore_version: 1.1.1
     restart: always
@@ -39,8 +39,8 @@ services:
 
   client:
     build:
-      context: .
-      dockerfile: client/Dockerfile
+      context: client 
+      dockerfile: Dockerfile
       args:
         dockstore_version: 1.1
     links:
