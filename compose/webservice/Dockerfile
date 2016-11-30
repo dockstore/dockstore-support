@@ -16,25 +16,22 @@ RUN add-apt-repository -y ppa:webupd8team/java \
     && echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections \
     && apt-get install -y oracle-java8-installer
 
-# install Consonance services
-ENV dockstore_version=1.1
+# install Dockstore services
+ARG dockstore_version=1.1
 
 RUN wget --no-verbose https://seqwaremaven.oicr.on.ca/artifactory/collab-release/io/dockstore/dockstore-webservice/${dockstore_version}/dockstore-webservice-${dockstore_version}.jar
 
 # install dockerize 
-ENV DOCKERIZE_VERSION v0.2.0
+ENV DOCKERIZE_VERSION=v0.2.0
 
 RUN wget --no-verbose https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
     && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
-# the web and Consonance config
-COPY config .
-COPY web.yml .
-ADD init_webservice.sh .
+# the config file for the webservice 
+COPY webservice/web.yml .
+ADD webservice/init_webservice.sh .
 
 RUN chmod u+x init_webservice.sh
-# TODO: make sure you create these from the .template files and customize them
-COPY config /root/.dockstore/config
 RUN mkdir /dockstore_logs && chmod a+rx /dockstore_logs
 
 # Waiting for postgres
