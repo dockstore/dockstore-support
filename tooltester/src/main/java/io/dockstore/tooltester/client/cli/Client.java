@@ -15,6 +15,18 @@
  */
 package io.dockstore.tooltester.client.cli;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.offbytwo.jenkins.JenkinsServer;
+import com.offbytwo.jenkins.helper.JenkinsVersion;
+import com.offbytwo.jenkins.model.Job;
+import com.offbytwo.jenkins.model.JobWithDetails;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
@@ -28,10 +40,6 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Prototype for testing service
@@ -97,6 +105,20 @@ public class Client {
         client.run();
 
         client.finalizeResults();
+
+        JenkinsServer jenkins = null;
+        try {
+            jenkins = new JenkinsServer(new URI("http://142.1.177.103:8080"), "admin", "<insert your token here>");
+            Map<String, Job> jobs = jenkins.getJobs();
+            JenkinsVersion version = jenkins.getVersion();
+            JobWithDetails test = jobs.get("test").details();
+            jenkins.createJob("test2", "test");
+            System.out.println();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     protected void setupClientEnvironment() {
