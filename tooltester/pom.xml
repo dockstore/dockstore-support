@@ -39,6 +39,7 @@
         <junit-version>4.12</junit-version>
         <slf4j.version>1.7.20</slf4j.version>
         <cwlavro.version>1.0.6</cwlavro.version>
+        <jackson.version>2.7.6</jackson.version>
     </properties>
 
     <organization>
@@ -180,6 +181,24 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.offbytwo.jenkins</groupId>
+            <artifactId>jenkins-client</artifactId>
+            <version>0.3.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
     </dependencies>
 
@@ -413,10 +432,6 @@
                             <failOnWarning>true</failOnWarning>
                             <outputXML>true</outputXML>
                             <ignoreNonCompile>true</ignoreNonCompile>
-                            <ignoredDependencies>
-                                <dependency>ch.qos.logback:logback-classic</dependency>
-                                <dependency>org.slf4j:slf4j-simple</dependency>
-                            </ignoredDependencies>
                         </configuration>
                     </execution>
                 </executions>
