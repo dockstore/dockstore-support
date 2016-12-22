@@ -89,11 +89,10 @@ public class Client {
         System.exit(exitCode);
     }
 
-    /*
- * Main Method
- * --------------------------------------------------------------------------------------------------------------------------
- * --------------
- */
+    /**
+     * Main method
+     * @param argv
+     */
     public static void main(String[] argv) {
         OptionParser parser = new OptionParser();
         parser.accepts("dockstore-url", "dockstore install that we wish to test tools from").withRequiredArg().defaultsTo("");
@@ -106,18 +105,21 @@ public class Client {
 
         client.finalizeResults();
 
-        JenkinsServer jenkins = null;
-        try {
-            jenkins = new JenkinsServer(new URI("http://142.1.177.103:8080"), "admin", "<insert your token here>");
-            Map<String, Job> jobs = jenkins.getJobs();
-            JenkinsVersion version = jenkins.getVersion();
-            JobWithDetails test = jobs.get("test").details();
-            jenkins.createJob("test2", "test");
-            System.out.println();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        boolean jenkinsExperiment = true;
+        if (jenkinsExperiment) {
+            JenkinsServer jenkins = null;
+            try {
+                jenkins = new JenkinsServer(new URI("http://142.1.177.103:8080"), "admin", "admin@admin.com");
+                Map<String, Job> jobs = jenkins.getJobs();
+                JenkinsVersion version = jenkins.getVersion();
+                JobWithDetails test = jobs.get("test").details();
+                jenkins.createJob("test2", "test");
+                System.out.println();
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -170,8 +172,7 @@ public class Client {
         /** use swagger-generated classes to talk to dockstore */
         try {
             final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
-            toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testTool)
-                    .reduce(true, Boolean::logicalAnd);
+            toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testTool).reduce(true, Boolean::logicalAnd);
         } catch (ApiException e) {
             exceptionMessage(e, "", API_ERROR);
         }
@@ -185,7 +186,7 @@ public class Client {
      * 1) Running available parameter files
      * 2) Rebuilding docker images
      * 3) Storing results for each tool as it finishes
-     *
+     * <p>
      * in the early phases of the project, we can try to run these locally sequentially
      * however, due to system requirements, it will quickly become necessary to hook this up to
      * either a fixed network of slaves or Consonance on-demand hosts
