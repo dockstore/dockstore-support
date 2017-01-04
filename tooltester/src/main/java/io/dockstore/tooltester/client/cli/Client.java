@@ -22,6 +22,7 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.LongStream;
 
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.helper.JenkinsVersion;
@@ -34,6 +35,7 @@ import io.swagger.client.api.ContainersApi;
 import io.swagger.client.api.GAGHApi;
 import io.swagger.client.api.UsersApi;
 import io.swagger.client.model.Tool;
+import io.swagger.client.model.ToolVersion;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.apache.commons.configuration.ConfigurationException;
@@ -109,12 +111,12 @@ public class Client {
         if (jenkinsExperiment) {
             JenkinsServer jenkins = null;
             try {
-                jenkins = new JenkinsServer(new URI("http://142.1.177.103:8080"), "admin", "admin@admin.com");
+                jenkins = new JenkinsServer(new URI("http://142.1.177.103:8080"), "admin", "dummy password");
                 Map<String, Job> jobs = jenkins.getJobs();
                 JenkinsVersion version = jenkins.getVersion();
                 JobWithDetails test = jobs.get("test").details();
-                jenkins.createJob("test2", "test");
-                System.out.println();
+                //jenkins.createJob("test2", "test");
+                System.out.println("Jenkins is version " + version.getLiteralVersion() + " and has " + jobs.size() + " jobs");
             } catch (URISyntaxException e) {
                 e.printStackTrace();
             } catch (IOException e) {
@@ -172,7 +174,12 @@ public class Client {
         /** use swagger-generated classes to talk to dockstore */
         try {
             final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
+            System.out.println("Number of tools on Dockstore: " + tools.size());
+            LongStream longStream = tools.parallelStream().filter(Tool::getVerified)
+                    .mapToLong(tool -> tool.getVersions().parallelStream().filter(ToolVersion::getVerified).count());
+            System.out.println("Number of versions of tools to test on Dockstore (currently): " + longStream.sum());
             toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testTool).reduce(true, Boolean::logicalAnd);
+            System.out.println("Successful \"testing\" of tools found on Dockstore: " + toolTestResult);
         } catch (ApiException e) {
             exceptionMessage(e, "", API_ERROR);
         }
