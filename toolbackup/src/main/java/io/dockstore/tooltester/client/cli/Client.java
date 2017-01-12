@@ -191,12 +191,12 @@ public class Client {
             double totalSizeInBytes = 0, fileSizeInBytes;
 
             /** removed final modifier for testing purposes only */
-            List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
+            final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
 
             /** only look at 2 elements for testing purposes only */
-            final int fromIndex = 2;
-            final int toIndex = 4;
-            tools = tools.subList(fromIndex, toIndex);
+//            final int fromIndex = 2;
+//            final int toIndex = 4;
+//            tools = tools.subList(fromIndex, toIndex);
 
             String toolName, dirPath, img, versionId, versionTag, date;
 
