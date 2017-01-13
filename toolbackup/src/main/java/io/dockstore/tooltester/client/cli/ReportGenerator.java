@@ -1,5 +1,9 @@
 package io.dockstore.tooltester.client.cli;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,35 +41,12 @@ class ReportGenerator {
         return STYLE + "<body><table>" + generated + "</table></body></html>";
     }
 
-    static String generateJSONMap(Map<String, List<VersionDetail>> toolNameToList) {
-        String jsonMap = "[\n";
-        int toolCount = 0;
-        for (Map.Entry<String, List<VersionDetail>> entry : toolNameToList.entrySet()) {
-            jsonMap += "{\n'toolname': '" + entry.getKey() + "',\n" + "'versions': [\n";
-
-            int versionCount = 0;
-            List<VersionDetail> listOfVersions = entry.getValue();
-            for(VersionDetail row: listOfVersions) {
-                jsonMap += "{\n'version': '" + row.getVersion() + "',\n"
-                        + "'date': '" + row.getDate() + "',\n"
-                        + "'size': '" + row.getSize() + "',\n"
-                        + "'creation-time': '" + row.getCreationTime();
-                versionCount++;
-                if(versionCount == listOfVersions.size()) {
-                    jsonMap += "'\n}\n";
-                } else {
-                    jsonMap += "'\n},\n";
-                }
-            }
-            toolCount++;
-            if(toolCount == toolNameToList.size()) {
-                jsonMap += "]\n}\n";
-            } else {
-                jsonMap += "]\n},\n";
-            }
-
+    static void generateJSONMap(Map<String, List<VersionDetail>> toolNameToList, String basePath) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            objectMapper.writeValue(new File(basePath + "jsonMap.txt"), toolNameToList);
+        } catch (IOException e) {
+            throw new RuntimeException("IOException occured while trying to create JSON map");
         }
-        jsonMap += "]";
-        return jsonMap;
     }
 }

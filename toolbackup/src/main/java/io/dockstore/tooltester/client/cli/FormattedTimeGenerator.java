@@ -17,7 +17,7 @@ class FormattedTimeGenerator {
             BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
             fileTime = attributes.creationTime();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e.getMessage());
         }
         return new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(fileTime.toMillis());
     }

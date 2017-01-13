@@ -15,7 +15,7 @@ class DirectoryGenerator {
             try {
                 Files.createDirectories(newDirPath);
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new RuntimeException("IOException occurred while trying to create new directories");
             }
         }
     }
