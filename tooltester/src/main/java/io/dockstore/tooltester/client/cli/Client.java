@@ -17,13 +17,22 @@ package io.dockstore.tooltester.client.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.command.SaveImageCmd;
+import com.github.dockerjava.api.exception.DockerException;
+import com.github.dockerjava.core.DefaultDockerClientConfig;
+import com.github.dockerjava.core.DockerClientBuilder;
+import com.github.dockerjava.core.DockerClientConfig;
+import com.github.dockerjava.core.command.PullImageResultCallback;
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.helper.JenkinsVersion;
 import com.offbytwo.jenkins.model.Job;
@@ -34,12 +43,16 @@ import io.swagger.client.Configuration;
 import io.swagger.client.api.ContainersApi;
 import io.swagger.client.api.GAGHApi;
 import io.swagger.client.api.UsersApi;
+import io.swagger.client.model.DockstoreTool;
+import io.swagger.client.model.SourceFile;
 import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +60,6 @@ import org.slf4j.LoggerFactory;
  * Prototype for testing service
  */
 public class Client {
-
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
     private final OptionSet options;
     private ContainersApi containersApi;
@@ -93,6 +105,7 @@ public class Client {
 
     /**
      * Main method
+     *
      * @param argv
      */
     public static void main(String[] argv) {
@@ -170,6 +183,10 @@ public class Client {
     private void run() {
         setupClientEnvironment();
 
+        List<Tool> latestVerifiedTools;
+        List<ToolVersion> previouslyVerifiedTools;
+        String samplePath1;
+        String samplePath2;
         boolean toolTestResult = false;
         /** use swagger-generated classes to talk to dockstore */
         try {
@@ -180,12 +197,150 @@ public class Client {
             System.out.println("Number of versions of tools to test on Dockstore (currently): " + longStream.sum());
             toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testTool).reduce(true, Boolean::logicalAnd);
             System.out.println("Successful \"testing\" of tools found on Dockstore: " + toolTestResult);
+            latestVerifiedTools = getlatestVerifiedTools();
+            previouslyVerifiedTools = getPreviouslyVerifiedTools();
+            samplePath1 = latestVerifiedTools.get(0).getId();
+            samplePath2 = previouslyVerifiedTools.get(1).getId();
+            DockstoreTool tool = containersApi.getPublishedContainerByToolPath(samplePath1);
+            SourceFile file = getDockerFile(tool, tool.getDefaultVersion());
+            System.out.println(file.toString());
+            file = getDescriptors(tool, tool.getDefaultVersion(), "CWL");
+            System.out.println(file.toString());
+            file = getDescriptors(tool, tool.getDefaultVersion(), "WDL");
+            System.out.println(file.toString());
+            SourceFile.TypeEnum type = file.getType();
+            List<SourceFile> files = getTestParameterFiles(tool, tool.getDefaultVersion(), "CWL");
+            files.forEach((source) -> {
+                System.out.println(source.toString());
+            });
+
         } catch (ApiException e) {
             exceptionMessage(e, "", API_ERROR);
         }
 
         finalizeResults();
 
+    }
+
+    /**
+     * This function gets the dockerfile of the tool
+     *
+     * @param tool
+     */
+    private SourceFile getDockerFile(DockstoreTool tool, String tag) {
+        SourceFile file = null;
+        try {
+            file = containersApi.dockerfile(tool.getId(), tag);
+            file.getType();
+        } catch (ApiException e) {
+            exceptionMessage(e, "", API_ERROR);
+        }
+        return file;
+    }
+
+    /**
+     * This function gets the descriptors of the tool
+     *
+     * @param tool
+     * @param tag
+     * @return
+     */
+    private SourceFile getDescriptors(DockstoreTool tool, String tag, String type) {
+        SourceFile file = null;
+        try {
+            switch (type) {
+            case ("CWL"):
+                file = containersApi.cwl(tool.getId(), tag);
+                break;
+            case ("WDL"):
+                file = containersApi.wdl(tool.getId(), tag);
+                break;
+            default:
+                break;
+            }
+        } catch (ApiException e) {
+            exceptionMessage(e, "", API_ERROR);
+        }
+        return file;
+    }
+
+    /**
+     * This function gets the test parameters files of the tool
+     *
+     * @param tool
+     * @param tag
+     * @param type
+     * @return
+     */
+    private List<SourceFile> getTestParameterFiles(DockstoreTool tool, String tag, String type) {
+        List<SourceFile> files = null;
+        try {
+            files = containersApi.getTestParameterFiles(tool.getId(), tag, type);
+        } catch (ApiException e) {
+            exceptionMessage(e, "", API_ERROR);
+        }
+        return files;
+    }
+
+    /**
+     * This function saves the docker image
+     *
+     * @param path
+     * @throws Exception
+     */
+    public void saveImage(String path) {
+        try {
+
+            DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder().withRegistryUrl("https://quay.io").build();
+            DockerClient dockerClient = DockerClientBuilder.getInstance(config).build();
+            dockerClient.inspectImageCmd(path);
+            dockerClient.pullImageCmd(path).exec(new PullImageResultCallback()).awaitSuccess();
+            SaveImageCmd imageCmd = dockerClient.saveImageCmd(path);
+            InputStream inputStream = imageToInputStream(dockerClient, path);
+            InputStream image = IOUtils.toBufferedInputStream(inputStream);
+            File targetFile = new File("tooltester/src/main/resources/targetFile.tar");
+            FileUtils.copyInputStreamToFile(image, targetFile);
+        } catch (IOException e) {
+            exceptionMessage(e, "IO ERROR", IO_ERROR);
+        } catch (Exception e) {
+            exceptionMessage(e, "Something went wrong", CLIENT_ERROR);
+        }
+    }
+
+    private InputStream imageToInputStream(DockerClient dockerClient, String img) {
+        InputStream inputStream = null;
+        try {
+            inputStream = dockerClient.saveImageCmd(img).exec();
+        } catch (DockerException e) {
+            throw new RuntimeException("Could not save Docker image to an input stream");
+        }
+        return inputStream;
+    }
+
+    public List<Tool> getlatestVerifiedTools() {
+        List<Tool> latestVerifiedTools = null;
+        try {
+            final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
+            latestVerifiedTools = tools.parallelStream().filter(p -> p.getVerified()).collect(Collectors.toList());
+        } catch (ApiException e) {
+            exceptionMessage(e, "", API_ERROR);
+        }
+        return latestVerifiedTools;
+    }
+
+    public List<ToolVersion> getPreviouslyVerifiedTools() {
+        List<List<ToolVersion>> previousToolVersions = null;
+        List<ToolVersion> previousToolVersions2 = null;
+        List<ToolVersion> previouslyVerifiedTools = null;
+        try {
+            final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
+            previousToolVersions = tools.parallelStream().map(p -> p.getVersions()).collect(Collectors.toList());
+            previousToolVersions2 = previousToolVersions.stream().flatMap(List::stream).collect(Collectors.toList());
+            previouslyVerifiedTools = previousToolVersions2.parallelStream().filter(p -> p.getVerified()).collect(Collectors.toList());
+        } catch (ApiException e) {
+            exceptionMessage(e, "", API_ERROR);
+        }
+        return previouslyVerifiedTools;
     }
 
     /**
