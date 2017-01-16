@@ -14,5 +14,4 @@ public class ClientTest {
         client.setupClientEnvironment();
         Assert.assertTrue("client API could not start", client.getContainersApi() != null);
     }
-
 }
