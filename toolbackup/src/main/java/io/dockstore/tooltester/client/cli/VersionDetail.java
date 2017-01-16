@@ -5,23 +5,27 @@ package io.dockstore.tooltester.client.cli;
  */
 class VersionDetail {
     private final String version;
-    private final String date;
+    private final String metaVersion;
     private final double size;
     private final String creationTime;
+    private final boolean valid;
+    private final String scriptTime;
 
-    VersionDetail(String _version, String _date, double _size, String _creationDate) {
-        this.version = _version;
-        this.date = _date;
-        this.size = _size;
-        this.creationTime = _creationDate;
+    VersionDetail(String version, String metaVersion, double size, String creationDate, boolean valid) {
+        this.version = version;
+        this.metaVersion = metaVersion;
+        this.size = size;
+        this.creationTime = creationDate;
+        this.valid = valid;
+        scriptTime = FormattedTimeGenerator.getFormattedTimeNow();
     }
 
     public String getVersion() {
         return version;
     }
 
-    public String getDate() {
-        return date;
+    public String getMetaVersion() {
+        return metaVersion;
     }
 
     public double getSize() {
@@ -30,5 +34,13 @@ class VersionDetail {
 
     public String getCreationTime() {
         return creationTime;
+    }
+
+    public boolean isValid() {
+        return valid;
+    }
+
+    public String getScriptTime() {
+        return scriptTime;
     }
 }

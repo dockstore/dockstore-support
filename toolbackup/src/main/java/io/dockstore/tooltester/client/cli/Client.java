@@ -40,12 +40,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static java.lang.System.err;
 import static java.lang.System.out;
-
 
 public class Client {
 
@@ -134,37 +133,36 @@ public class Client {
     }
 
     private void report(Map<String, List<VersionDetail>> toolNameToList, String basePath) {
-        for (Map.Entry<String, List<VersionDetail>> entry : toolNameToList.entrySet()) {
-            /** Generates html page listing all the versions of the current tool */
-            final String toolPagePath = basePath+entry.getKey()+".html";
-            try {
+        try {
+            for (Map.Entry<String, List<VersionDetail>> entry : toolNameToList.entrySet()) {
+                /** Generates html page listing all the versions of the current tool */
+                final String toolPagePath = basePath+entry.getKey()+".html";
                 FileUtils.writeStringToFile(new File(toolPagePath), ReportGenerator.generateFilesReport(entry.getValue()), "UTF-8");
                 out.println("Finished generating " + toolPagePath);
-            } catch (IOException e) {
-                throw new RuntimeException("IOException when trying to generate " + toolPagePath + ".html for report");
             }
+            /** Generates main menu */
+            FileUtils.writeStringToFile(new File(basePath + "index.html"), ReportGenerator.generateMenu(toolNameToList.keySet(), getTotalSizeInB(toolNameToList)), "UTF-8");
+
+            /** Generates JSON map */
+            ReportGenerator.generateJSONMap(toolNameToList, basePath);
+        } catch(IOException e) {
+            throw new RuntimeException("Could not generate complete report");
         }
-        /** Generates main menu */
-        try {
-            FileUtils.writeStringToFile(new File(basePath+"index.html"), ReportGenerator.generateMenu(toolNameToList.keySet(), getTotalSizeInB(toolNameToList)), "UTF-8");
-        } catch (IOException e) {
-            throw new RuntimeException("IOException when trying to generate index.html for report");
-        }
-        /** Generates JSON map */
-        ReportGenerator.generateJSONMap(toolNameToList, basePath);
     }
 
-    private void pullDockerImage(DockerClient docker, String img) {
-        if(img != "null") {
-            try {
-                docker.pull(img);
-            } catch (DockerException e) {
-                throw new RuntimeException("DockerException while pulling " + img);
-            } catch (InterruptedException e) {
-                throw new RuntimeException("InterruptedException while pulling " + img);
-            }
+    private boolean pullDockerImage(DockerClient docker, String img) {
+        boolean pulled = true;
+        try {
+            docker.pull(img);
             out.println("Pulled image: " + img);
+        } catch (DockerException e) {
+            // not able to pull image
+            pulled = false;
+            err.println("Unable to pull " + img);
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Interrupted while pulling " + img);
         }
+        return pulled;
     }
 
     private InputStream saveDockerImage(DockerClient docker, String img) {
@@ -186,7 +184,8 @@ public class Client {
         setupClientEnvironment();
 
         InputStream inputStream;
-        Map<String, List<VersionDetail>> toolNameToList = new HashMap<>();
+
+        Map<String, List<VersionDetail>> toolNameToList = ReportGenerator.loadJSONMap(basePath);
 
         try {
             final DockerClient docker = DefaultDockerClient.fromEnv().build();
@@ -194,40 +193,53 @@ public class Client {
             /** removed final modifier for testing purposes only */
             final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
 
-            /** only look at 2 elements for testing purposes only */
-            //final int fromIndex = 0;
-            //final int toIndex = 2;
-            //tools = tools.subList(fromIndex, toIndex);
+            /** only look at 2 elements for testing purposes only
+            final int fromIndex = 40;
+            final int toIndex = tools.size();
+            tools = tools.subList(fromIndex, toIndex); */
 
             String toolName, dirPath, img, versionId, versionTag, date, filePath;
-
-            final int indexAfterDate = 10;
 
             for(Tool tool : tools)  {
                 toolName = tool.getToolname();
                 dirPath = basePath + tool.getId();
-                List<ToolVersion> versions = tool.getVersions();
-                List<VersionDetail> listOfVersions = new ArrayList<VersionDetail>();
-
                 DirectoryGenerator.createDirectory(dirPath);
+
+                if(toolName == null) {
+                    continue;
+                }
+
+                List<ToolVersion> versions = tool.getVersions();
+                List<VersionDetail> listOfVersions;
+
+                if(toolNameToList.containsKey(toolName)) {
+                    listOfVersions = toolNameToList.get(toolName);
+                } else {
+                    listOfVersions = new ArrayList<VersionDetail>();
+                }
 
                 for(ToolVersion version : versions) {
                     img = version.getImage();
 
-                    if(img != null) {
-                        pullDockerImage(docker, img);
+                    if(img == null) {
+                        continue;
+                    }
 
+                    versionId = version.getId();
+                    versionTag = versionId.substring(versionId.lastIndexOf(":") + 1);
+                    date = version.getMetaVersion();
+                    filePath = dirPath + "/" + versionTag + ".tar";
+
+                    if(pullDockerImage(docker, img)) {
                         /** Save docker image to a .tar file and have the filename match its tag */
                         inputStream = saveDockerImage(docker, img);
 
-                        versionId = version.getId();
-                        versionTag = versionId.substring(versionId.lastIndexOf(":") + 1);
-                        date = version.getMetaVersion().substring(0, indexAfterDate);
-                        filePath = dirPath + "/" + versionTag + ".tar";
                         File newFile = new File(filePath);
                         FileUtils.copyInputStreamToFile(inputStream, newFile);
                         out.println("Created new file: " + filePath);
-                        listOfVersions.add(new VersionDetail(versionTag, date, newFile.length(), FormattedTimeGenerator.getFormattedCreationTime(newFile)));
+                        listOfVersions.add(new VersionDetail(versionTag, date, newFile.length(), FormattedTimeGenerator.getFormattedCreationTime(newFile), true));
+                    } else {
+                        listOfVersions.add(new VersionDetail(versionTag, date, 0, null, false));
                     }
                 }
                 toolNameToList.put(toolName, listOfVersions);
@@ -237,7 +249,7 @@ public class Client {
         } catch (ApiException e) {
             ErrorExit.exceptionMessage(e, "", API_ERROR);
         } catch (IOException e) {
-            ErrorExit.exceptionMessage(e, "IOException occurred while trying to copy docker image to file", 1);
+            ErrorExit.exceptionMessage(e, "Could not copy Docker image to file", 1);
         } catch (DockerCertificateException e) {
             ErrorExit.exceptionMessage(e, "DockerCertificateException occurred while trying to set up DockerClient", 1);
         }
