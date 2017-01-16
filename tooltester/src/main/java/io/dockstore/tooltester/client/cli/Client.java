@@ -17,22 +17,14 @@ package io.dockstore.tooltester.client.cli;
 
 import java.io.File;
 import java.io.IOException;
-//import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-//import com.github.dockerjava.api.DockerClient;
-//import com.github.dockerjava.api.command.SaveImageCmd;
-//import com.github.dockerjava.api.exception.DockerException;
-//import com.github.dockerjava.core.DefaultDockerClientConfig;
-//import com.github.dockerjava.core.DockerClientBuilder;
-//import com.github.dockerjava.core.DockerClientConfig;
-//import com.github.dockerjava.core.command.PullImageResultCallback;
+
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.helper.JenkinsVersion;
 import com.offbytwo.jenkins.model.Job;
@@ -51,10 +43,19 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
-//import org.apache.commons.io.FileUtils;
-//import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+//import java.io.InputStream;
+//import com.github.dockerjava.api.DockerClient;
+//import com.github.dockerjava.api.command.SaveImageCmd;
+//import com.github.dockerjava.api.exception.DockerException;
+//import com.github.dockerjava.core.DefaultDockerClientConfig;
+//import com.github.dockerjava.core.DockerClientBuilder;
+//import com.github.dockerjava.core.DockerClientConfig;
+//import com.github.dockerjava.core.command.PullImageResultCallback;
+//import org.apache.commons.io.FileUtils;
+//import org.apache.commons.io.IOUtils;
 
 /**
  * Prototype for testing service
@@ -66,6 +67,15 @@ public class Client {
     private UsersApi usersApi;
     private GAGHApi ga4ghApi;
     private boolean isAdmin = false;
+
+    public void setCount(int count) {
+        this.count = count;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
     private int count = 0;
     public static final int GENERIC_ERROR = 1; // General error, not yet described by an error type
     public static final int CONNECTION_ERROR = 150; // Connection exception
@@ -182,8 +192,6 @@ public class Client {
      */
     private void run() {
         setupClientEnvironment();
-
-        List<Tool> verifiedTools;
         boolean toolTestResult = false;
         /** use swagger-generated classes to talk to dockstore */
         try {
@@ -194,20 +202,6 @@ public class Client {
             System.out.println("Number of versions of tools to test on Dockstore (currently): " + longStream.sum());
             toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testTool).reduce(true, Boolean::logicalAnd);
             System.out.println("Successful \"testing\" of tools found on Dockstore: " + toolTestResult);
-            List<String> verifiedSources = Arrays.asList("Docktesters group", "Another Group");
-            verifiedTools = getVerifiedTools();
-            for (Tool verifiedTool : verifiedTools) {
-                printAllFilesFromTool(verifiedTool);
-            }
-            System.out.println("Number of combinations to test: " + count);
-            count = 0;
-            verifiedTools = getVerifiedTools(verifiedSources);
-            for (Tool verifiedTool : verifiedTools) {
-                printAllFilesFromTool(verifiedTool);
-            }
-            System.out.println("Number of combinations to test: " + count);
-
-
         } catch (ApiException e) {
             exceptionMessage(e, "", API_ERROR);
         }
@@ -220,7 +214,7 @@ public class Client {
      * This function prints all the files from the verified tool
      * @param verifiedTool  The verified tool
      */
-    private void printAllFilesFromTool(Tool verifiedTool) throws ApiException {
+    public void printAllFilesFromTool(Tool verifiedTool) throws ApiException {
         SourceFile dockerfile;
         SourceFile descriptor;
         SourceFile testParameter;
@@ -267,7 +261,7 @@ public class Client {
      * @param testParameter The test parameter f
      */
     private void sendToJenkins(SourceFile dockerFile, SourceFile descriptor, SourceFile testParameter, Tool tool){
-        count += 1;
+        this.count += 1;
     }
 
 //    /**
@@ -320,7 +314,7 @@ public class Client {
      * Gets the list of verified tools
      * @return  The list of verified tools
      */
-    private List<Tool> getVerifiedTools() {
+    public List<Tool> getVerifiedTools() {
         List<Tool> verifiedTools = null;
         try {
             final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
@@ -339,7 +333,7 @@ public class Client {
      * @param verifiedSources   Filter parameter to filter the verified sources
      * @return                  The list of verified tools
      */
-    private List<Tool> getVerifiedTools(List<String> verifiedSources) {
+    public List<Tool> getVerifiedTools(List<String> verifiedSources) {
         List<Tool> verifiedTools = getVerifiedTools();
         for (Tool tool : verifiedTools){
             filterSource(tool, verifiedSources);
@@ -350,7 +344,6 @@ public class Client {
     /**
      * Removes all the non-verified versions from the tool
      * @param tool  The verified tool
-     * @return      The verified tool with non-verified versions removed
      */
     private void getVerifiedToolVersions(Tool tool) {
         tool.setVersions(tool.getVersions().parallelStream().filter(ToolVersion::getVerified).collect(Collectors.toList()));
@@ -360,7 +353,6 @@ public class Client {
      * Removes all the versions that do not match the sources filter
      * @param tool              The verified tool
      * @param verifiedSources   The verified sources filter
-     * @return
      */
     private void filterSource(Tool tool, List<String> verifiedSources) {
         tool.setVersions(tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource())).collect(Collectors.toList()));
