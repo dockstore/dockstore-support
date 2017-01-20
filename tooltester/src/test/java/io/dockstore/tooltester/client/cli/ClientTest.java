@@ -1,25 +1,19 @@
 package io.dockstore.tooltester.client.cli;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.offbytwo.jenkins.JenkinsServer;
-import com.offbytwo.jenkins.model.JobWithDetails;
-import io.swagger.client.ApiException;
-import io.swagger.client.model.DockstoreTool;
-import io.swagger.client.model.SourceFile;
 import io.swagger.client.model.Tool;
-import io.swagger.client.model.ToolVersion;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class ClientTest {
-    private boolean development = true;
+    private boolean development = false;
 
     @Test
     public void setupEnvironment() throws Exception {
@@ -30,6 +24,9 @@ public class ClientTest {
         Assert.assertTrue("client API could not start", client.getContainersApi() != null);
     }
 
+    /**
+     * Tests if Jenkins server is set up
+     */
     @Test
     public void setupJenkins(){
         if (development) {
@@ -44,6 +41,9 @@ public class ClientTest {
         }
     }
 
+    /**
+     * This tests all the tool's dockerfiles
+     */
     @Test
     public void testDockerfile() {
         if (development) {
@@ -55,12 +55,47 @@ public class ClientTest {
             client.setupJenkins();
             JenkinsServer jenkins = client.getJenkins();
             Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
-            Map<String, String> map = new HashMap();
             List<Tool> tools = client.getVerifiedTools();
+            client.testAllDockerfiles(tools);
+        }
+    }
 
-            for (Tool tool : tools) {
-                client.testDockerfile(tool);
-            }
+    /**
+     * Tests if results can be retrieved
+     */
+    @Test
+    public void retrieveResults(){
+        if (development) {
+            OptionParser parser = new OptionParser();
+            final OptionSet parsed = parser.parse("");
+            Client client = new Client(parsed);
+            client.setupClientEnvironment();
+            Assert.assertTrue("client API could not start", client.getContainersApi() != null);
+            client.setupJenkins();
+            JenkinsServer jenkins = client.getJenkins();
+            Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
+            List<Tool> tools = client.getVerifiedTools();
+            client.getAllDockerfileTestResults(tools);
+        }
+    }
+
+
+    /**
+     * This test deletes all Dockerfile related jobs
+     */
+    @Test
+    public void deleteTestDockerfile() {
+        if (development) {
+            OptionParser parser = new OptionParser();
+            final OptionSet parsed = parser.parse("");
+            Client client = new Client(parsed);
+            client.setupClientEnvironment();
+            Assert.assertTrue("client API could not start", client.getContainersApi() != null);
+            client.setupJenkins();
+            JenkinsServer jenkins = client.getJenkins();
+            Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
+            Map<String, String> map = new HashMap();
+            client.deleteJobs("DockerfileTest");
         }
     }
 

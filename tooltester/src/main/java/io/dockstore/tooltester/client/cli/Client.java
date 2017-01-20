@@ -29,6 +29,7 @@ import java.util.stream.LongStream;
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.helper.JenkinsVersion;
 import com.offbytwo.jenkins.model.Build;
+import com.offbytwo.jenkins.model.BuildResult;
 import com.offbytwo.jenkins.model.BuildWithDetails;
 import com.offbytwo.jenkins.model.Job;
 import com.offbytwo.jenkins.model.JobWithDetails;
@@ -48,17 +49,6 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-//import java.io.InputStream;
-//import com.github.dockerjava.api.DockerClient;
-//import com.github.dockerjava.api.command.SaveImageCmd;
-//import com.github.dockerjava.api.exception.DockerException;
-//import com.github.dockerjava.core.DefaultDockerClientConfig;
-//import com.github.dockerjava.core.DockerClientBuilder;
-//import com.github.dockerjava.core.DockerClientConfig;
-//import com.github.dockerjava.core.command.PullImageResultCallback;
-//import org.apache.commons.io.FileUtils;
-//import org.apache.commons.io.IOUtils;
 
 /**
  * Prototype for testing service
@@ -167,34 +157,6 @@ public class Client {
         }
     }
 
-    /**
-     * This function gets the jenkins crumb in the event that the java jenkins api does not work
-     *
-     * @return The crumb string
-     */
-    //    private String getJenkinsCrumb(){
-    //        String crumb = "";
-    //        try {
-    //            String urlString = config.getString("jenkins-server-url") + "crumbIssuer/api/json";
-    //            URL url = new URL(urlString);
-    //
-    //            HttpURLConnection con = (HttpURLConnection) url.openConnection();
-    //            String userPassword = config.getString("jenkins-username") + ":" + config.getString("jenkins-password");
-    //            String encoding = new sun.misc.BASE64Encoder().encode(userPassword.getBytes());
-    //            con.setRequestProperty("Authorization", "Basic " + encoding);
-    //            int responseCode = con.getResponseCode();
-    //            System.out.println("Sending get request : "+ url);
-    //            System.out.println("Response code : "+ responseCode);
-    //            Reader reader = new InputStreamReader(con.getInputStream(), "UTF-8");
-    //            Gson gson = new GsonBuilder().create();
-    //            CrumbJsonResult result = gson.fromJson(reader, CrumbJsonResult.class);
-    //            crumb = result.crumb;
-    //
-    //        } catch (IOException e) {
-    //            e.printStackTrace();
-    //        }
-    //        return crumb;
-    //    }
     protected void setupClientEnvironment() {
         String userHome = System.getProperty("user.home");
         try {
@@ -307,7 +269,7 @@ public class Client {
      * This function is supposed to send the 3 source files to jenkins and run them
      *
      * @param dockerFile    The dockerfile
-     * @param descriptor    The descript
+     * @param descriptor    The descriptor
      * @param testParameter The test parameter f
      */
     private void sendToJenkins(SourceFile dockerFile, SourceFile descriptor, SourceFile testParameter, Tool tool) {
@@ -334,28 +296,110 @@ public class Client {
         }
     }
 
-    private void getDockerfileTestResults(String name) {
-        JobWithDetails job = null;
+    /**
+     * Retrieves all the test results
+     *
+     * @param tools The list of tools to retrieve their results
+     */
+    public void getAllDockerfileTestResults(List<Tool> tools) {
+        for (Tool tool : tools) {
+            getDockerfileTestResults(tool);
+        }
+    }
+
+    /**
+     * Retrieves a single tool's test results
+     *
+     * @param tool The tool to get its results
+     */
+    private String getDockerfileTestResults(Tool tool) {
+        DockstoreTool dockstoreTool = null;
+        String status = null;
+        try {
+            dockstoreTool = containersApi.getPublishedContainerByToolPath(tool.getId());
+        } catch (ApiException e) {
+            e.printStackTrace();
+        }
+        JobWithDetails job;
+        String name;
+        Long id = dockstoreTool.getId();
+        name = "DockerfileTest" + String.valueOf(id);
         try {
             job = jenkins.getJob(name);
-            job.build();
+
             Build build = job.getLastBuild();
+
             BuildWithDetails details = build.details();
-            System.out.println(details.getDescription());
+            BuildResult result = details.getResult();
+            if (details.isBuilding()) {
+                status = "In-progress";
+            } else {
+                status = result.toString();
+                if (result != BuildResult.SUCCESS) {
+                    System.out.println(details.getConsoleOutputText());
+                }
+            }
+
+            System.out.println(details.getResult());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return status;
+    }
+
+    /**
+     * Tests all the tools' dockerfiles in Jenkins
+     *
+     * @param tools The list of tools to test
+     */
+    protected void testAllDockerfiles(List<Tool> tools) {
+        for (Tool tool : tools) {
+            testDockerfile(tool);
+        }
+    }
+
+    /**
+     * Creates a pipeline on Jenkins to test the tool
+     *
+     * @param name
+     */
+    private void createDockerfileTest(String name) {
+        try {
+            String jobxml = jenkins.getJobXml("DockerfileTest");
+            JobWithDetails job;
+            job = jenkins.getJob(name);
+            if (job == null) {
+                jenkins.createJob(name, jobxml, true);
+            } else {
+                jenkins.updateJob(name, jobxml, true);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void restartJenkins() {
-
+    /**
+     * Run the already-made DockerfileTest pipeline on Jenkins
+     *
+     * @param name
+     * @param parameter
+     */
+    private void runDockerfileTest(String name, Map<String, String> parameter) {
+        JobWithDetails job = null;
+        try {
+            job = jenkins.getJob(name);
+            job.build(parameter, true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
-     * Tests the dockerfile in Jenkins
-     * @param tool  The tool to test
+     * Tests a single tool's dockerfile in Jenkins
+     *
+     * @param tool The tool to test
      */
-    protected void testDockerfile(Tool tool) {
+    private void testDockerfile(Tool tool) {
         DockstoreTool dockstoreTool = null;
         try {
             dockstoreTool = getContainersApi().getPublishedContainerByToolPath(tool.getId());
@@ -365,41 +409,31 @@ public class Client {
         Map<String, String> parameter = new HashMap();
         List<ToolVersion> asdf = tool.getVersions();
         ToolVersion toolversion = asdf.get(0);
-        String tag = toolversion.getName();
         String id = String.valueOf(dockstoreTool.getId());
+        String name = "DockerfileTest" + id;
+        createDockerfileTest(name);
+
+        String tag = toolversion.getName();
         String url = dockstoreTool.getGitUrl();
+        url = url.replace("git@github.com:", "https://github.com/");
         String dockerfilePath = dockstoreTool.getDefaultDockerfilePath().replaceFirst("^/", "");
 
-        url = url.replace("git@github.com:", "https://github.com/");
-        String name = "DockerfileTest" + id;
-        parameter.put("ID", id);
         parameter.put("Tag", tag);
         parameter.put("URL", url);
         parameter.put("DockerfilePath", dockerfilePath);
-        try {
-            String jobxml = jenkins.getJobXml("DockerfileTest");
-            JobWithDetails job;
-            job = jenkins.getJob(name);
-            if (job == null) {
-                jenkins.createJob(name, jobxml, true);
-            }
-            job = jenkins.getJob(name);
-            job.build(parameter, true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        runDockerfileTest(name, parameter);
     }
 
     /**
      * This function deletes all jobs on jenkins matching "Test.*"
      */
-    private void deleteAllJobs() {
+    protected void deleteJobs(String pattern) {
         try {
             Map<String, Job> jobs = jenkins.getJobs();
             for (Map.Entry<String, Job> entry : jobs.entrySet()) {
                 String name = entry.getKey();
-                if (name.matches("Test.*")) {
-                    jenkins.deleteJob(entry.getKey());
+                if (name.matches(pattern + ".+")) {
+                    jenkins.deleteJob(entry.getKey(), true);
                 }
             }
         } catch (IOException e) {
@@ -407,41 +441,6 @@ public class Client {
         }
         System.out.println("Deleted all jobs");
     }
-
-    //    /**
-    //     * This function saves the docker image
-    //     *
-    //     * @param path
-    //     * @throws Exception
-    //     */
-    //    public void saveImage(String path) {
-    //        try {
-    //
-    //            DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder().withRegistryUrl("https://quay.io").build();
-    //            DockerClient dockerClient = DockerClientBuilder.getInstance(config).build();
-    //            dockerClient.inspectImageCmd(path);
-    //            dockerClient.pullImageCmd(path).exec(new PullImageResultCallback()).awaitSuccess();
-    //            SaveImageCmd imageCmd = dockerClient.saveImageCmd(path);
-    //            InputStream inputStream = imageToInputStream(dockerClient, path);
-    //            InputStream image = IOUtils.toBufferedInputStream(inputStream);
-    //            File targetFile = new File("tooltester/src/main/resources/targetFile.tar");
-    //            FileUtils.copyInputStreamToFile(image, targetFile);
-    //        } catch (IOException e) {
-    //            exceptionMessage(e, "IO ERROR", IO_ERROR);
-    //        } catch (Exception e) {
-    //            exceptionMessage(e, "Something went wrong", CLIENT_ERROR);
-    //        }
-    //    }
-    //
-    //    private InputStream imageToInputStream(DockerClient dockerClient, String img) {
-    //        InputStream inputStream = null;
-    //        try {
-    //            inputStream = dockerClient.saveImageCmd(img).exec();
-    //        } catch (DockerException e) {
-    //            throw new RuntimeException("Could not save Docker image to an input stream");
-    //        }
-    //        return inputStream;
-    //    }
 
     /**
      * This function checks if the any of the tool's verified source matches the filter
@@ -522,6 +521,8 @@ public class Client {
      * @return
      */
     private boolean testTool(Tool tool) {
+        testDockerfile(tool);
+        getDockerfileTestResults(tool);
         return true;
     }
 
