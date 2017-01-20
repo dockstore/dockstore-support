@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +28,8 @@ import java.util.stream.LongStream;
 
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.helper.JenkinsVersion;
+import com.offbytwo.jenkins.model.Build;
+import com.offbytwo.jenkins.model.BuildWithDetails;
 import com.offbytwo.jenkins.model.Job;
 import com.offbytwo.jenkins.model.JobWithDetails;
 import io.swagger.client.ApiClient;
@@ -67,6 +70,17 @@ public class Client {
     private UsersApi usersApi;
     private GAGHApi ga4ghApi;
     private boolean isAdmin = false;
+    private boolean development;
+
+    public JenkinsServer getJenkins() {
+        return jenkins;
+    }
+
+    private void setJenkins(JenkinsServer jenkins) {
+        this.jenkins = jenkins;
+    }
+
+    private JenkinsServer jenkins;
 
     public void setCount(int count) {
         this.count = count;
@@ -116,7 +130,7 @@ public class Client {
     /**
      * Main method
      *
-     * @param argv  Command line argumetns
+     * @param argv Command line argumetns
      */
     public static void main(String[] argv) {
         OptionParser parser = new OptionParser();
@@ -127,18 +141,23 @@ public class Client {
 
         Client client = new Client(options);
         client.run();
-
+        client.setupJenkins();
         client.finalizeResults();
+    }
 
+    protected void setupJenkins() {
         boolean jenkinsExperiment = true;
         if (jenkinsExperiment) {
-            JenkinsServer jenkins = null;
             try {
-                jenkins = new JenkinsServer(new URI("http://142.1.177.103:8080"), "admin", "dummy password");
+                String serverUrl;
+                String username;
+                String password;
+                serverUrl = config.getString("jenkins-server-url");
+                username = config.getString("jenkins-username");
+                password = config.getString("jenkins-password");
+                setJenkins(new JenkinsServer(new URI(serverUrl), username, password));
                 Map<String, Job> jobs = jenkins.getJobs();
                 JenkinsVersion version = jenkins.getVersion();
-                JobWithDetails test = jobs.get("test").details();
-                //jenkins.createJob("test2", "test");
                 System.out.println("Jenkins is version " + version.getLiteralVersion() + " and has " + jobs.size() + " jobs");
             } catch (URISyntaxException e) {
                 e.printStackTrace();
@@ -148,6 +167,34 @@ public class Client {
         }
     }
 
+    /**
+     * This function gets the jenkins crumb in the event that the java jenkins api does not work
+     *
+     * @return The crumb string
+     */
+    //    private String getJenkinsCrumb(){
+    //        String crumb = "";
+    //        try {
+    //            String urlString = config.getString("jenkins-server-url") + "crumbIssuer/api/json";
+    //            URL url = new URL(urlString);
+    //
+    //            HttpURLConnection con = (HttpURLConnection) url.openConnection();
+    //            String userPassword = config.getString("jenkins-username") + ":" + config.getString("jenkins-password");
+    //            String encoding = new sun.misc.BASE64Encoder().encode(userPassword.getBytes());
+    //            con.setRequestProperty("Authorization", "Basic " + encoding);
+    //            int responseCode = con.getResponseCode();
+    //            System.out.println("Sending get request : "+ url);
+    //            System.out.println("Response code : "+ responseCode);
+    //            Reader reader = new InputStreamReader(con.getInputStream(), "UTF-8");
+    //            Gson gson = new GsonBuilder().create();
+    //            CrumbJsonResult result = gson.fromJson(reader, CrumbJsonResult.class);
+    //            crumb = result.crumb;
+    //
+    //        } catch (IOException e) {
+    //            e.printStackTrace();
+    //        }
+    //        return crumb;
+    //    }
     protected void setupClientEnvironment() {
         String userHome = System.getProperty("user.home");
         try {
@@ -160,6 +207,7 @@ public class Client {
         // pull out the variables from the config
         String token = config.getString("token", "");
         String serverUrl = config.getString("server-url", "https://www.dockstore.org:8443");
+        this.development = config.getBoolean("development", false);
 
         ApiClient defaultApiClient;
         defaultApiClient = Configuration.getDefaultApiClient();
@@ -212,7 +260,8 @@ public class Client {
 
     /**
      * This function prints all the files from the verified tool
-     * @param verifiedTool  The verified tool
+     *
+     * @param verifiedTool The verified tool
      */
     public void printAllFilesFromTool(Tool verifiedTool) throws ApiException {
         SourceFile dockerfile;
@@ -223,11 +272,11 @@ public class Client {
         Long containerId;
         dockstoreTool = containersApi.getPublishedContainerByToolPath(verifiedTool.getId());
         containerId = dockstoreTool.getId();
-        for (ToolVersion version : verifiedTool.getVersions()){
+        for (ToolVersion version : verifiedTool.getVersions()) {
             String tag = version.getName();
             dockerfile = containersApi.dockerfile(containerId, tag);
-            for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()){
-                switch(descriptorType.toString()) {
+            for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
+                switch (descriptorType.toString()) {
                 case "CWL":
                     descriptor = containersApi.cwl(containerId, tag);
                     testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
@@ -256,70 +305,167 @@ public class Client {
 
     /**
      * This function is supposed to send the 3 source files to jenkins and run them
+     *
      * @param dockerFile    The dockerfile
      * @param descriptor    The descript
      * @param testParameter The test parameter f
      */
-    private void sendToJenkins(SourceFile dockerFile, SourceFile descriptor, SourceFile testParameter, Tool tool){
+    private void sendToJenkins(SourceFile dockerFile, SourceFile descriptor, SourceFile testParameter, Tool tool) {
         this.count += 1;
+        if (development) {
+            if (jenkins == null) {
+                setupJenkins();
+            }
+
+            try {
+                Map<String, Job> jobs = jenkins.getJobs();
+                String jobxml = getJenkins().getJobXml("JenkinsTest");
+                String name = "Test " + String.valueOf(this.count);
+                if (jobs.containsKey(name)) {
+                    this.jenkins.updateJob(name, jobxml, true);
+                } else {
+                    this.jenkins.createJob(name, jobxml, true);
+
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
-//    /**
-//     * This function saves the docker image
-//     *
-//     * @param path
-//     * @throws Exception
-//     */
-//    public void saveImage(String path) {
-//        try {
-//
-//            DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder().withRegistryUrl("https://quay.io").build();
-//            DockerClient dockerClient = DockerClientBuilder.getInstance(config).build();
-//            dockerClient.inspectImageCmd(path);
-//            dockerClient.pullImageCmd(path).exec(new PullImageResultCallback()).awaitSuccess();
-//            SaveImageCmd imageCmd = dockerClient.saveImageCmd(path);
-//            InputStream inputStream = imageToInputStream(dockerClient, path);
-//            InputStream image = IOUtils.toBufferedInputStream(inputStream);
-//            File targetFile = new File("tooltester/src/main/resources/targetFile.tar");
-//            FileUtils.copyInputStreamToFile(image, targetFile);
-//        } catch (IOException e) {
-//            exceptionMessage(e, "IO ERROR", IO_ERROR);
-//        } catch (Exception e) {
-//            exceptionMessage(e, "Something went wrong", CLIENT_ERROR);
-//        }
-//    }
-//
-//    private InputStream imageToInputStream(DockerClient dockerClient, String img) {
-//        InputStream inputStream = null;
-//        try {
-//            inputStream = dockerClient.saveImageCmd(img).exec();
-//        } catch (DockerException e) {
-//            throw new RuntimeException("Could not save Docker image to an input stream");
-//        }
-//        return inputStream;
-//    }
+    private void getDockerfileTestResults(String name) {
+        JobWithDetails job = null;
+        try {
+            job = jenkins.getJob(name);
+            job.build();
+            Build build = job.getLastBuild();
+            BuildWithDetails details = build.details();
+            System.out.println(details.getDescription());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void restartJenkins() {
+
+    }
+
+    /**
+     * Tests the dockerfile in Jenkins
+     * @param tool  The tool to test
+     */
+    protected void testDockerfile(Tool tool) {
+        DockstoreTool dockstoreTool = null;
+        try {
+            dockstoreTool = getContainersApi().getPublishedContainerByToolPath(tool.getId());
+        } catch (ApiException e) {
+            e.printStackTrace();
+        }
+        Map<String, String> parameter = new HashMap();
+        List<ToolVersion> asdf = tool.getVersions();
+        ToolVersion toolversion = asdf.get(0);
+        String tag = toolversion.getName();
+        String id = String.valueOf(dockstoreTool.getId());
+        String url = dockstoreTool.getGitUrl();
+        String dockerfilePath = dockstoreTool.getDefaultDockerfilePath().replaceFirst("^/", "");
+
+        url = url.replace("git@github.com:", "https://github.com/");
+        String name = "DockerfileTest" + id;
+        parameter.put("ID", id);
+        parameter.put("Tag", tag);
+        parameter.put("URL", url);
+        parameter.put("DockerfilePath", dockerfilePath);
+        try {
+            String jobxml = jenkins.getJobXml("DockerfileTest");
+            JobWithDetails job;
+            job = jenkins.getJob(name);
+            if (job == null) {
+                jenkins.createJob(name, jobxml, true);
+            }
+            job = jenkins.getJob(name);
+            job.build(parameter, true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * This function deletes all jobs on jenkins matching "Test.*"
+     */
+    private void deleteAllJobs() {
+        try {
+            Map<String, Job> jobs = jenkins.getJobs();
+            for (Map.Entry<String, Job> entry : jobs.entrySet()) {
+                String name = entry.getKey();
+                if (name.matches("Test.*")) {
+                    jenkins.deleteJob(entry.getKey());
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("Deleted all jobs");
+    }
+
+    //    /**
+    //     * This function saves the docker image
+    //     *
+    //     * @param path
+    //     * @throws Exception
+    //     */
+    //    public void saveImage(String path) {
+    //        try {
+    //
+    //            DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder().withRegistryUrl("https://quay.io").build();
+    //            DockerClient dockerClient = DockerClientBuilder.getInstance(config).build();
+    //            dockerClient.inspectImageCmd(path);
+    //            dockerClient.pullImageCmd(path).exec(new PullImageResultCallback()).awaitSuccess();
+    //            SaveImageCmd imageCmd = dockerClient.saveImageCmd(path);
+    //            InputStream inputStream = imageToInputStream(dockerClient, path);
+    //            InputStream image = IOUtils.toBufferedInputStream(inputStream);
+    //            File targetFile = new File("tooltester/src/main/resources/targetFile.tar");
+    //            FileUtils.copyInputStreamToFile(image, targetFile);
+    //        } catch (IOException e) {
+    //            exceptionMessage(e, "IO ERROR", IO_ERROR);
+    //        } catch (Exception e) {
+    //            exceptionMessage(e, "Something went wrong", CLIENT_ERROR);
+    //        }
+    //    }
+    //
+    //    private InputStream imageToInputStream(DockerClient dockerClient, String img) {
+    //        InputStream inputStream = null;
+    //        try {
+    //            inputStream = dockerClient.saveImageCmd(img).exec();
+    //        } catch (DockerException e) {
+    //            throw new RuntimeException("Could not save Docker image to an input stream");
+    //        }
+    //        return inputStream;
+    //    }
 
     /**
      * This function checks if the any of the tool's verified source matches the filter
-     * @param filter            The list of verified sources that we're interested in
-     * @param verifiedSources    The tool version's verified sources
-     * @return                  True if the one of the verified sources matches the filter
+     *
+     * @param filter          The list of verified sources that we're interested in
+     * @param verifiedSources The tool version's verified sources
+     * @return True if the one of the verified sources matches the filter
      */
-    private boolean matchVerifiedSource(List<String> filter, String verifiedSources){
+    private boolean matchVerifiedSource(List<String> filter, String verifiedSources) {
         return filter.stream().anyMatch(str -> str.trim().equals(verifiedSources));
-        
+
     }
 
     /**
      * Gets the list of verified tools
-     * @return  The list of verified tools
+     *
+     * @return The list of verified tools
      */
     public List<Tool> getVerifiedTools() {
         List<Tool> verifiedTools = null;
         try {
             final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
             verifiedTools = tools.parallelStream().filter(Tool::getVerified).collect(Collectors.toList());
-            for (Tool tool : verifiedTools){
+            for (Tool tool : verifiedTools) {
                 getVerifiedToolVersions(tool);
             }
         } catch (ApiException e) {
@@ -330,12 +476,13 @@ public class Client {
 
     /**
      * Gets the list of verified tools and applies filter to it
-     * @param verifiedSources   Filter parameter to filter the verified sources
-     * @return                  The list of verified tools
+     *
+     * @param verifiedSources Filter parameter to filter the verified sources
+     * @return The list of verified tools
      */
     public List<Tool> getVerifiedTools(List<String> verifiedSources) {
         List<Tool> verifiedTools = getVerifiedTools();
-        for (Tool tool : verifiedTools){
+        for (Tool tool : verifiedTools) {
             filterSource(tool, verifiedSources);
         }
         return verifiedTools;
@@ -343,7 +490,8 @@ public class Client {
 
     /**
      * Removes all the non-verified versions from the tool
-     * @param tool  The verified tool
+     *
+     * @param tool The verified tool
      */
     private void getVerifiedToolVersions(Tool tool) {
         tool.setVersions(tool.getVersions().parallelStream().filter(ToolVersion::getVerified).collect(Collectors.toList()));
@@ -351,11 +499,13 @@ public class Client {
 
     /**
      * Removes all the versions that do not match the sources filter
-     * @param tool              The verified tool
-     * @param verifiedSources   The verified sources filter
+     *
+     * @param tool            The verified tool
+     * @param verifiedSources The verified sources filter
      */
     private void filterSource(Tool tool, List<String> verifiedSources) {
-        tool.setVersions(tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource())).collect(Collectors.toList()));
+        tool.setVersions(tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource()))
+                .collect(Collectors.toList()));
     }
 
     /**
@@ -387,3 +537,4 @@ public class Client {
         this.ga4ghApi = ga4ghApi;
     }
 }
+
