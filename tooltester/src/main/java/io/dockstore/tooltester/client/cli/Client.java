@@ -298,9 +298,10 @@ public class Client {
 
     /**
      * Retrieves all the test results
-     * @param tools  The list of tools to retrieve their results
+     *
+     * @param tools The list of tools to retrieve their results
      */
-    public void getAllDockerfileTestResults(List<Tool> tools){
+    public void getAllDockerfileTestResults(List<Tool> tools) {
         for (Tool tool : tools) {
             getDockerfileTestResults(tool);
         }
@@ -308,7 +309,8 @@ public class Client {
 
     /**
      * Retrieves a single tool's test results
-     * @param tool  The tool to get its results
+     *
+     * @param tool The tool to get its results
      */
     private String getDockerfileTestResults(Tool tool) {
         DockstoreTool dockstoreTool = null;
@@ -329,13 +331,13 @@ public class Client {
 
             BuildWithDetails details = build.details();
             BuildResult result = details.getResult();
-            if (details.isBuilding()){
+            if (details.isBuilding()) {
                 status = "In-progress";
-            }
-            else {
+            } else {
                 status = result.toString();
-                if (result != BuildResult.SUCCESS)
+                if (result != BuildResult.SUCCESS) {
                     System.out.println(details.getConsoleOutputText());
+                }
             }
 
             System.out.println(details.getResult());
@@ -347,9 +349,10 @@ public class Client {
 
     /**
      * Tests all the tools' dockerfiles in Jenkins
-     * @param tools  The list of tools to test
+     *
+     * @param tools The list of tools to test
      */
-    protected void testAllDockerfiles(List<Tool> tools){
+    protected void testAllDockerfiles(List<Tool> tools) {
         for (Tool tool : tools) {
             testDockerfile(tool);
         }
@@ -357,9 +360,10 @@ public class Client {
 
     /**
      * Creates a pipeline on Jenkins to test the tool
+     *
      * @param name
      */
-    private void createDockerfileTest(String name){
+    private void createDockerfileTest(String name) {
         try {
             String jobxml = jenkins.getJobXml("DockerfileTest");
             JobWithDetails job;
@@ -376,10 +380,11 @@ public class Client {
 
     /**
      * Run the already-made DockerfileTest pipeline on Jenkins
+     *
      * @param name
      * @param parameter
      */
-    private void runDockerfileTest(String name, Map<String, String> parameter){
+    private void runDockerfileTest(String name, Map<String, String> parameter) {
         JobWithDetails job = null;
         try {
             job = jenkins.getJob(name);
@@ -391,7 +396,8 @@ public class Client {
 
     /**
      * Tests a single tool's dockerfile in Jenkins
-     * @param tool  The tool to test
+     *
+     * @param tool The tool to test
      */
     private void testDockerfile(Tool tool) {
         DockstoreTool dockstoreTool = null;
