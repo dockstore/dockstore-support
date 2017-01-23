@@ -28,11 +28,7 @@ import java.util.stream.LongStream;
 
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.helper.JenkinsVersion;
-import com.offbytwo.jenkins.model.Build;
-import com.offbytwo.jenkins.model.BuildResult;
-import com.offbytwo.jenkins.model.BuildWithDetails;
 import com.offbytwo.jenkins.model.Job;
-import com.offbytwo.jenkins.model.JobWithDetails;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
@@ -60,8 +56,9 @@ public class Client {
     private UsersApi usersApi;
     private GAGHApi ga4ghApi;
     private boolean isAdmin = false;
-    private boolean development;
-
+    private boolean development = false;
+    private DockerfileTester dockerfileTester;
+    private ParameterFileTester parameterFileTester;
     public JenkinsServer getJenkins() {
         return jenkins;
     }
@@ -133,6 +130,11 @@ public class Client {
         client.run();
         client.setupJenkins();
         client.finalizeResults();
+    }
+
+    protected void setupTesters(){
+        dockerfileTester = new DockerfileTester(getJenkins());
+        parameterFileTester = new ParameterFileTester(getJenkins());
     }
 
     protected void setupJenkins() {
@@ -215,7 +217,6 @@ public class Client {
         } catch (ApiException e) {
             exceptionMessage(e, "", API_ERROR);
         }
-
         finalizeResults();
 
     }
@@ -242,10 +243,8 @@ public class Client {
                 case "CWL":
                     descriptor = containersApi.cwl(containerId, tag);
                     testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
-
                     for (SourceFile testParameterFile : testParameterFiles) {
                         testParameter = testParameterFile;
-                        sendToJenkins(dockerfile, descriptor, testParameter, verifiedTool);
                     }
                     break;
                 case "WDL":
@@ -253,175 +252,55 @@ public class Client {
                     testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
                     for (SourceFile testParameterFile : testParameterFiles) {
                         testParameter = testParameterFile;
-                        sendToJenkins(dockerfile, descriptor, testParameter, verifiedTool);
                     }
                     break;
                 default:
                     break;
                 }
             }
-
-        }
-
-    }
-
-    /**
-     * This function is supposed to send the 3 source files to jenkins and run them
-     *
-     * @param dockerFile    The dockerfile
-     * @param descriptor    The descriptor
-     * @param testParameter The test parameter f
-     */
-    private void sendToJenkins(SourceFile dockerFile, SourceFile descriptor, SourceFile testParameter, Tool tool) {
-        this.count += 1;
-        if (development) {
-            if (jenkins == null) {
-                setupJenkins();
-            }
-
-            try {
-                Map<String, Job> jobs = jenkins.getJobs();
-                String jobxml = getJenkins().getJobXml("JenkinsTest");
-                String name = "Test " + String.valueOf(this.count);
-                if (jobs.containsKey(name)) {
-                    this.jenkins.updateJob(name, jobxml, true);
-                } else {
-                    this.jenkins.createJob(name, jobxml, true);
-
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
     /**
-     * Retrieves all the test results
-     *
-     * @param tools The list of tools to retrieve their results
+     * Creates the pipeline(s) on Jenkins to test a tool
+     * @param tool
      */
-    public void getAllDockerfileTestResults(List<Tool> tools) {
-        for (Tool tool : tools) {
-            getDockerfileTestResults(tool);
-        }
-    }
-
-    /**
-     * Retrieves a single tool's test results
-     *
-     * @param tool The tool to get its results
-     */
-    private String getDockerfileTestResults(Tool tool) {
-        DockstoreTool dockstoreTool = null;
-        String status = null;
-        try {
-            dockstoreTool = containersApi.getPublishedContainerByToolPath(tool.getId());
-        } catch (ApiException e) {
-            e.printStackTrace();
-        }
-        JobWithDetails job;
-        String name;
-        Long id = dockstoreTool.getId();
-        name = "DockerfileTest" + String.valueOf(id);
-        try {
-            job = jenkins.getJob(name);
-
-            Build build = job.getLastBuild();
-
-            BuildWithDetails details = build.details();
-            BuildResult result = details.getResult();
-            if (details.isBuilding()) {
-                status = "In-progress";
-            } else {
-                status = result.toString();
-                if (result != BuildResult.SUCCESS) {
-                    System.out.println(details.getConsoleOutputText());
-                }
-            }
-
-            System.out.println(details.getResult());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return status;
-    }
-
-    /**
-     * Tests all the tools' dockerfiles in Jenkins
-     *
-     * @param tools The list of tools to test
-     */
-    protected void testAllDockerfiles(List<Tool> tools) {
-        for (Tool tool : tools) {
-            testDockerfile(tool);
-        }
-    }
-
-    /**
-     * Creates a pipeline on Jenkins to test the tool
-     *
-     * @param name
-     */
-    private void createDockerfileTest(String name) {
-        try {
-            String jobxml = jenkins.getJobXml("DockerfileTest");
-            JobWithDetails job;
-            job = jenkins.getJob(name);
-            if (job == null) {
-                jenkins.createJob(name, jobxml, true);
-            } else {
-                jenkins.updateJob(name, jobxml, true);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Run the already-made DockerfileTest pipeline on Jenkins
-     *
-     * @param name
-     * @param parameter
-     */
-    private void runDockerfileTest(String name, Map<String, String> parameter) {
-        JobWithDetails job = null;
-        try {
-            job = jenkins.getJob(name);
-            job.build(parameter, true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Tests a single tool's dockerfile in Jenkins
-     *
-     * @param tool The tool to test
-     */
-    private void testDockerfile(Tool tool) {
+    protected void createToolTests(Tool tool){
         DockstoreTool dockstoreTool = null;
         try {
             dockstoreTool = getContainersApi().getPublishedContainerByToolPath(tool.getId());
         } catch (ApiException e) {
             e.printStackTrace();
         }
-        Map<String, String> parameter = new HashMap();
-        List<ToolVersion> asdf = tool.getVersions();
-        ToolVersion toolversion = asdf.get(0);
-        String id = String.valueOf(dockstoreTool.getId());
-        String name = "DockerfileTest" + id;
-        createDockerfileTest(name);
+        List<ToolVersion> toolVersions = tool.getVersions();
+        for (ToolVersion toolversion : toolVersions){
+            String id = String.valueOf(dockstoreTool.getId());
+            String tag = toolversion.getName();
+            String name = id + "v" + tag;
+            dockerfileTester.createTest(name);
+            //parameterFileTester.createTest(name);
+        }
+    }
 
-        String tag = toolversion.getName();
-        String url = dockstoreTool.getGitUrl();
-        url = url.replace("git@github.com:", "https://github.com/");
-        String dockerfilePath = dockstoreTool.getDefaultDockerfilePath().replaceFirst("^/", "");
-
-        parameter.put("Tag", tag);
-        parameter.put("URL", url);
-        parameter.put("DockerfilePath", dockerfilePath);
-        runDockerfileTest(name, parameter);
+    /**
+     * Creates the pipeline(s) on Jenkins to test a tool
+     * @param tool
+     */
+    protected void getToolTestResults(Tool tool){
+        DockstoreTool dockstoreTool = null;
+        try {
+            dockstoreTool = getContainersApi().getPublishedContainerByToolPath(tool.getId());
+        } catch (ApiException e) {
+            e.printStackTrace();
+        }
+        List<ToolVersion> toolVersions = tool.getVersions();
+        for (ToolVersion toolversion : toolVersions){
+            String id = String.valueOf(dockstoreTool.getId());
+            String tag = toolversion.getName();
+            String name = id + "v" + tag;
+            dockerfileTester.getTestResults(name);
+            //parameterFileTester.createTest(name);
+        }
     }
 
     /**
@@ -520,9 +399,34 @@ public class Client {
      * @param tool
      * @return
      */
-    private boolean testTool(Tool tool) {
-        testDockerfile(tool);
-        getDockerfileTestResults(tool);
+    protected boolean testTool(Tool tool) {
+        DockstoreTool dockstoreTool = null;
+        try {
+            dockstoreTool = getContainersApi().getPublishedContainerByToolPath(tool.getId());
+        } catch (ApiException e) {
+            e.printStackTrace();
+        }
+        Map<String, String> parameter = new HashMap();
+        List<ToolVersion> toolVersions = tool.getVersions();
+        for (ToolVersion toolversion : toolVersions){
+            String url = dockstoreTool.getGitUrl();
+            url = url.replace("git@github.com:", "https://github.com/");
+            String dockerfilePath = null;
+            String id = String.valueOf(dockstoreTool.getId());
+            String tag = toolversion.getName();
+            try {
+                SourceFile dockerfile = containersApi.dockerfile(dockstoreTool.getId(),tag);
+                dockerfilePath = dockerfile.getPath().replaceFirst("^/", "");
+            } catch (ApiException e) {
+                e.printStackTrace();
+            }
+            String name = id + "v" + tag;
+            parameter.put("Tag", tag);
+            parameter.put("URL", url);
+            parameter.put("DockerfilePath", dockerfilePath);
+            dockerfileTester.runTest(name, parameter);
+            //testParameterFiles(name, parameter);
+        }
         return true;
     }
 
