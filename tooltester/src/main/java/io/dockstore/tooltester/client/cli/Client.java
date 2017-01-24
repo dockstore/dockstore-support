@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +59,19 @@ public class Client {
     private GAGHApi ga4ghApi;
     private boolean isAdmin = false;
     private boolean development = false;
+    private Report report;
+
+    public DockerfileTester getDockerfileTester() {
+        return dockerfileTester;
+    }
+
+    public ParameterFileTester getParameterFileTester() {
+        return parameterFileTester;
+    }
+
     private DockerfileTester dockerfileTester;
     private ParameterFileTester parameterFileTester;
+
     public JenkinsServer getJenkins() {
         return jenkins;
     }
@@ -132,7 +145,7 @@ public class Client {
         client.finalizeResults();
     }
 
-    protected void setupTesters(){
+    protected void setupTesters() {
         dockerfileTester = new DockerfileTester(getJenkins());
         parameterFileTester = new ParameterFileTester(getJenkins());
     }
@@ -159,7 +172,7 @@ public class Client {
         }
     }
 
-    protected void setupClientEnvironment() {
+    void setupClientEnvironment() {
         String userHome = System.getProperty("user.home");
         try {
             File configFile = new File(userHome + File.separator + ".tooltester" + File.separator + "config");
@@ -191,12 +204,14 @@ public class Client {
         }
 
         defaultApiClient.setDebugging(DEBUG.get());
+        this.report = new Report("Report.csv");
     }
 
     /**
      * Finalize the results of testing
      */
-    private void finalizeResults() {
+    public void finalizeResults() {
+        report.closeReport();
     }
 
     /**
@@ -242,20 +257,17 @@ public class Client {
                 switch (descriptorType.toString()) {
                 case "CWL":
                     descriptor = containersApi.cwl(containerId, tag);
-                    testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
-                    for (SourceFile testParameterFile : testParameterFiles) {
-                        testParameter = testParameterFile;
-                    }
                     break;
                 case "WDL":
                     descriptor = containersApi.wdl(containerId, tag);
-                    testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
-                    for (SourceFile testParameterFile : testParameterFiles) {
-                        testParameter = testParameterFile;
-                    }
                     break;
                 default:
                     break;
+                }
+                testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
+                for (SourceFile testParameterFile : testParameterFiles) {
+                    testParameter = testParameterFile;
+                    count++;
                 }
             }
         }
@@ -263,9 +275,10 @@ public class Client {
 
     /**
      * Creates the pipeline(s) on Jenkins to test a tool
-     * @param tool
+     *
+     * @param tool The tool to create tests for
      */
-    protected void createToolTests(Tool tool){
+    void createToolTests(Tool tool) {
         DockstoreTool dockstoreTool = null;
         try {
             dockstoreTool = getContainersApi().getPublishedContainerByToolPath(tool.getId());
@@ -273,20 +286,37 @@ public class Client {
             e.printStackTrace();
         }
         List<ToolVersion> toolVersions = tool.getVersions();
-        for (ToolVersion toolversion : toolVersions){
-            String id = String.valueOf(dockstoreTool.getId());
+        for (ToolVersion toolversion : toolVersions) {
+            Long containerId = dockstoreTool.getId();
+            String id = toolversion.getId();
             String tag = toolversion.getName();
-            String name = id + "v" + tag;
+            String name = id;
+            name = name.replace("/","-");
+            name = name.replace(":","-");
             dockerfileTester.createTest(name);
-            //parameterFileTester.createTest(name);
+            try {
+                List<SourceFile> testParameterFiles;
+                for (ToolVersion.DescriptorTypeEnum descriptorType : toolversion.getDescriptorType()) {
+                        testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
+                        for (SourceFile testParameterFile : testParameterFiles) {
+                            String path = testParameterFile.getPath();
+                            path = path.replaceFirst("^/", "");
+                            path = path.replace("/", "-");
+                            parameterFileTester.createTest(name + "-" + path);
+                        }
+                }
+            } catch (ApiException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     /**
      * Creates the pipeline(s) on Jenkins to test a tool
-     * @param tool
+     *
+     * @param tool  The tool to get the test results for
      */
-    protected void getToolTestResults(Tool tool){
+    void getToolTestResults(Tool tool) {
         DockstoreTool dockstoreTool = null;
         try {
             dockstoreTool = getContainersApi().getPublishedContainerByToolPath(tool.getId());
@@ -294,19 +324,47 @@ public class Client {
             e.printStackTrace();
         }
         List<ToolVersion> toolVersions = tool.getVersions();
-        for (ToolVersion toolversion : toolVersions){
-            String id = String.valueOf(dockstoreTool.getId());
+        for (ToolVersion toolversion : toolVersions) {
+            Long containerId = dockstoreTool.getId();
+            String id = toolversion.getId();
             String tag = toolversion.getName();
-            String name = id + "v" + tag;
-            dockerfileTester.getTestResults(name);
-            //parameterFileTester.createTest(name);
+            String name = id;
+            name = name.replace("/","-");
+            name = name.replace(":","-");
+            Date date = new Date();
+            String dockerfileStatus = dockerfileTester.getTestResults(name);
+            if (!dockerfileStatus.equals("SUCCESS")) {
+                dockerfileStatus = dockerfileStatus + " See " + dockerfileTester.createConsoleOutputFile(name);
+            }
+                try {
+                    List<SourceFile> testParameterFiles;
+                    for (ToolVersion.DescriptorTypeEnum descriptorType : toolversion.getDescriptorType()) {
+                            testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
+                            for (SourceFile testParameterFile : testParameterFiles) {
+                                count++;
+                                String path = testParameterFile.getPath();
+                                path = path.replaceFirst("^/", "");
+                                path = path.replace("/", "-");
+                                String status = parameterFileTester.getTestResults(name + path);
+                                if (!status.equals("SUCCESS")) {
+                                    status = status + " See " + parameterFileTester.createConsoleOutputFile(name + path);
+                                }
+                                List<String> record = Arrays
+                                        .asList(String.valueOf(count), date.toString(), toolversion.getId(), tag, "Local", testParameterFile.getPath(), null, status, dockerfileStatus);
+                                report.writeLine(record);
+                            }
+                    }
+                } catch (ApiException e) {
+                    e.printStackTrace();
+                }
+
         }
     }
 
     /**
      * This function deletes all jobs on jenkins matching "Test.*"
      */
-    protected void deleteJobs(String pattern) {
+    void deleteJobs(String pattern) {
         try {
             Map<String, Job> jobs = jenkins.getJobs();
             for (Map.Entry<String, Job> entry : jobs.entrySet()) {
@@ -318,7 +376,6 @@ public class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("Deleted all jobs");
     }
 
     /**
@@ -338,7 +395,7 @@ public class Client {
      *
      * @return The list of verified tools
      */
-    public List<Tool> getVerifiedTools() {
+    List<Tool> getVerifiedTools() {
         List<Tool> verifiedTools = null;
         try {
             final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
@@ -358,7 +415,7 @@ public class Client {
      * @param verifiedSources Filter parameter to filter the verified sources
      * @return The list of verified tools
      */
-    public List<Tool> getVerifiedTools(List<String> verifiedSources) {
+    List<Tool> getVerifiedTools(List<String> verifiedSources) {
         List<Tool> verifiedTools = getVerifiedTools();
         for (Tool tool : verifiedTools) {
             filterSource(tool, verifiedSources);
@@ -396,10 +453,10 @@ public class Client {
      * however, due to system requirements, it will quickly become necessary to hook this up to
      * either a fixed network of slaves or Consonance on-demand hosts
      *
-     * @param tool
-     * @return
+     * @param tool  The tool to test
+     * @return boolean  Returns true
      */
-    protected boolean testTool(Tool tool) {
+    boolean testTool(Tool tool) {
         DockstoreTool dockstoreTool = null;
         try {
             dockstoreTool = getContainersApi().getPublishedContainerByToolPath(tool.getId());
@@ -408,24 +465,56 @@ public class Client {
         }
         Map<String, String> parameter = new HashMap();
         List<ToolVersion> toolVersions = tool.getVersions();
-        for (ToolVersion toolversion : toolVersions){
+        for (ToolVersion toolversion : toolVersions) {
             String url = dockstoreTool.getGitUrl();
             url = url.replace("git@github.com:", "https://github.com/");
             String dockerfilePath = null;
-            String id = String.valueOf(dockstoreTool.getId());
+            Long containerId = dockstoreTool.getId();
+            String id = toolversion.getId();
             String tag = toolversion.getName();
             try {
-                SourceFile dockerfile = containersApi.dockerfile(dockstoreTool.getId(),tag);
+                SourceFile dockerfile = containersApi.dockerfile(containerId, tag);
                 dockerfilePath = dockerfile.getPath().replaceFirst("^/", "");
             } catch (ApiException e) {
                 e.printStackTrace();
             }
-            String name = id + "v" + tag;
+
+            String name = id;
+            name = name.replace("/","-");
+            name = name.replace(":","-");
             parameter.put("Tag", tag);
             parameter.put("URL", url);
             parameter.put("DockerfilePath", dockerfilePath);
+
             dockerfileTester.runTest(name, parameter);
-            //testParameterFiles(name, parameter);
+            try {
+                List<SourceFile> testParameterFiles;
+                SourceFile descriptor;
+                for (ToolVersion.DescriptorTypeEnum descriptorType : toolversion.getDescriptorType()) {
+                    switch (descriptorType.toString()) {
+                    case "CWL":
+                        descriptor = containersApi.cwl(containerId, tag);
+                        break;
+                    case "WDL":
+                        descriptor = containersApi.wdl(containerId, tag);
+                        break;
+                    default:
+                        descriptor = null;
+                        break;
+                    }
+                    testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
+                    for (SourceFile testParameterFile : testParameterFiles) {
+                        String path = testParameterFile.getPath();
+                        path = path.replaceFirst("^/", "");
+                        parameter.put("ParameterPath", path);
+                        path = path.replace("/", "-");
+                        parameter.put("DescriptorPath", descriptor.getPath().replaceFirst("^/", ""));
+                        parameterFileTester.runTest(name + "-" + path, parameter);
+                    }
+                }
+            } catch (ApiException e) {
+                e.printStackTrace();
+            }
         }
         return true;
     }
