@@ -4,6 +4,8 @@ import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 
+import java.nio.file.Paths;
+
 /**
  * Created by kcao on 20/01/17.
  */
@@ -23,7 +25,8 @@ public class Downloader {
 
         final OptionSet options = parser.parse(argv);
 
-        String dirPath = options.valueOf(localDir) + "/";
+        String local = options.valueOf(localDir);
+        String dirPath = Paths.get(local).toAbsolutePath().toString();
         DirectoryGenerator.validatePath(dirPath);
 
         Downloader downloader = new Downloader(options);

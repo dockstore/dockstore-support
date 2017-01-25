@@ -28,15 +28,14 @@ class ReportGenerator {
     private static final double DOUBLE_SPECIAL_NUM = 100.0;
     private static final String STYLE;
     static {
-        StringBuilder htmlBase = new StringBuilder("<!DOCTYPE html PUBLIC ==\"-//W3C//DTD HTML 4.01 Transitional//EN\"\"http://www.w3.org/TR/html4/loose.dtd\">");
-        htmlBase.append("<head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">");
-        htmlBase.append("<title></title>");
-        htmlBase.append("<style>");
-        htmlBase.append(".err { color: #ff0000; }");
-        htmlBase.append("table { font-family: arial, sans-serif; border-collapse: collapse; width: 100%; }");
-        htmlBase.append("td, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }");
-        htmlBase.append("</style></head>");
-        htmlBase.append("<table>");
+        StringBuilder htmlBase = new StringBuilder("<!DOCTYPE html><html>");
+        htmlBase.append("<head>");
+        htmlBase.append("<style type=\"text/css\">\n");
+        htmlBase.append("\t\t.err { color: #ff0000; }\n");
+        htmlBase.append("\t\ttable { font-family: arial, sans-serif; border-collapse: collapse; width: 100%; }\n");
+        htmlBase.append("\t\ttd, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }\n");
+        htmlBase.append("\t</style><title></title></head>");
+        htmlBase.append("<body><table>");
 
         STYLE = htmlBase.toString();
     }
@@ -148,7 +147,7 @@ class ReportGenerator {
         }
         fileReportBuilder.append("</table></body></html>");
 
-        Document toolReport = Jsoup.parseBodyFragment(fileReportBuilder.toString());
+        Document toolReport = Jsoup.parse(fileReportBuilder.toString());
         return toolReport.toString();
     }
 
@@ -172,7 +171,7 @@ class ReportGenerator {
         }
         menuBuilder.append("</table></body></html>");
 
-        Document mainMenu = Jsoup.parseBodyFragment(menuBuilder.toString());
+        Document mainMenu = Jsoup.parse(menuBuilder.toString());
         return mainMenu.toString();
     }
 }

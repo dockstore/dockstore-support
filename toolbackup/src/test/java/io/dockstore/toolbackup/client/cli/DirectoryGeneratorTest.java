@@ -1,45 +1,50 @@
 package io.dockstore.toolbackup.client.cli;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
+import java.security.Permission;
 
-import static io.dockstore.toolbackup.client.cli.Client.API_ERROR;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Created by kcao on 25/01/17.
  */
-public class DirectoryGeneratorTest {
-    private static HierarchicalINIConfiguration config;
-    protected static String NOT_YET;
-    protected static String EXISTING_FILE;
+public class DirectoryGeneratorTest extends Base {
+    private static final SecurityManager SM = System.getSecurityManager();
 
     @BeforeClass
-    public static void loadConfig() {
-        String userHome = System.getProperty("user.home");
-        try {
-            File configFile = new File(userHome + File.separator + ".toolbackup" + File.separator + "config.ini");
-            config = new HierarchicalINIConfiguration(configFile);
-            NOT_YET = config.getString("dirgeneration.notyet");
-            EXISTING_FILE = config.getString("dirgeneration.existingfile");
-        } catch (ConfigurationException e) {
-            ErrorExit.exceptionMessage(e, "", API_ERROR);
-        }
+    public static void setUp() {
+        System.setSecurityManager(new SecurityManager() {
+            @Override
+            public void checkExit(int status) {
+                super.checkExit(status);
+                throw new SecurityException("Overriding shutdown...");
+            }
+
+            @Override
+            public void checkPermission(final Permission perm) {}
+        });
     }
 
-    @Test
-    public void validatePath_notYetDir() throws Exception {
-        DirectoryGenerator.validatePath(NOT_YET);
-    }
-
-    @Test
+    @Test(expected = SecurityException.class)
     public void validatePath_existingFile() throws Exception {
+        File file = new File(DIR + File.separator + "Same");
+        assumeTrue(file.isFile() || !file.exists());
+        file.createNewFile();
+        DirectoryGenerator.validatePath(file.getAbsolutePath());
     }
 
     @Test
     public void validatePath_existingDir() throws Exception {
+        DirectoryGenerator.validatePath(DIR);
+    }
+
+
+    @AfterClass
+    public static void shutDown() {
+        System.setSecurityManager(SM);
     }
 }

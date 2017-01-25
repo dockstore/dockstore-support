@@ -61,7 +61,7 @@ class DockerCommunicator {
         } catch (IOException e) {
             ErrorExit.exceptionMessage(e, "Could not save: " + img, IO_ERROR);
         } catch (DockerRequestException e) {
-            pullDockerImage(img);
+            throw new RuntimeException("Make sure you have pulled " + img);
         } catch (DockerException e) {
             ErrorExit.exceptionMessage(e, "Could not save: " + img + " because of Docker client", GENERIC_ERROR);
         } catch (InterruptedException e) {

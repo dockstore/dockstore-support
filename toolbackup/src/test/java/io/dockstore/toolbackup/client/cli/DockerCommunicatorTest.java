@@ -11,8 +11,9 @@ import static org.junit.Assert.assertTrue;
  * Created by kcao on 25/01/17.
  */
 public class DockerCommunicatorTest extends Base {
+
     private final DockerCommunicator dockerCommunicator = new DockerCommunicator();
-    ByteArrayOutputStream errContent = new ByteArrayOutputStream();
+    private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
 
     @Test
     public void pullDockerImage() throws Exception {
@@ -31,10 +32,9 @@ public class DockerCommunicatorTest extends Base {
         dockerCommunicator.saveDockerImage(IMG);
     }
 
-    @Test
+    @Test (expected = RuntimeException.class)
     public void saveDockerImage_nonexistent() throws Exception {
-        System.setErr(new PrintStream(errContent));
         dockerCommunicator.saveDockerImage(NONEXISTING_IMG);
-        assertTrue(errContent.toString().contains("Unable to pull"));
     }
+
 }
