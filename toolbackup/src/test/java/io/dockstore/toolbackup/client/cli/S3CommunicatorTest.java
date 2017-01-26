@@ -1,6 +1,7 @@
 package io.dockstore.toolbackup.client.cli;
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import org.junit.AfterClass;
 import org.junit.Test;
 
 /**
@@ -22,5 +23,10 @@ public class S3CommunicatorTest extends Base {
     @Test (expected = AmazonS3Exception.class)
     public void downloadDirectory_noBucket() throws Exception {
         s3Communicator.downloadDirectory(NONEXISTING_BUCKET, "", DIR);
+    }
+
+    @AfterClass
+    public void shutDownS3() {
+        s3Communicator.shutDown();
     }
 }

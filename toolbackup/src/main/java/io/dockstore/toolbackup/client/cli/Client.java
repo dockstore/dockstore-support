@@ -59,7 +59,7 @@ public class Client {
 
     // dockerstor_tutorial [42, 43)
     private static final int FROM_INDEX = 42;
-    private static final int TO_INDEX = 43;
+    private static final int TO_INDEX = 44;
 
     private final S3Communicator s3Communicator= new S3Communicator();
     private final DockerCommunicator dockerCommunicator = new DockerCommunicator();

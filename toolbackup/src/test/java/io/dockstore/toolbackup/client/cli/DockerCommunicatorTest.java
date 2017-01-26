@@ -1,5 +1,6 @@
 package io.dockstore.toolbackup.client.cli;
 
+import org.junit.AfterClass;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -37,4 +38,8 @@ public class DockerCommunicatorTest extends Base {
         dockerCommunicator.saveDockerImage(NONEXISTING_IMG);
     }
 
+    @AfterClass
+    public void closeDocker() {
+        dockerCommunicator.closeDocker();
+    }
 }

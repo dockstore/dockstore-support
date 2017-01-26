@@ -408,7 +408,7 @@
                                 <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                                 <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                                 <addClasspath>true</addClasspath>
-                                <mainClass>io.dockstore.tooltester.client.cli.Client</mainClass>
+                               <!--  <mainClass>io.dockstore.tooltester.client.cli.Client</mainClass> -->
                             </manifest>
                         </archive>
                     </configuration>
@@ -556,10 +556,38 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>client</id>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Main-Class>io.dockstore.toolbackup.client.cli.Client</Main-Class>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+                            <finalName>client</finalName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>downloader</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Main-Class>io.dockstore.toolbackup.client.cli.Downloader</Main-Class>
+                                    </manifestEntries>
+                                </transformer>
+                            </transformers>
+                            <finalName>downloader</finalName>
+                        </configuration>
                     </execution>
                 </executions>
                 <configuration>
