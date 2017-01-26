@@ -42,7 +42,6 @@ public class DirectoryGeneratorTest extends Base {
         DirectoryGenerator.validatePath(DIR);
     }
 
-
     @AfterClass
     public static void shutDown() {
         System.setSecurityManager(SM);

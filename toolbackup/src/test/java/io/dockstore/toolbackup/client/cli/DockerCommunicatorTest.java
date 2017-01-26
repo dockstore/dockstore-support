@@ -13,33 +13,33 @@ import static org.junit.Assert.assertTrue;
  */
 public class DockerCommunicatorTest extends Base {
 
-    private final DockerCommunicator dockerCommunicator = new DockerCommunicator();
+    private static final DockerCommunicator DOCKER_COMMUNICATOR = new DockerCommunicator();
     private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
 
     @Test
     public void pullDockerImage() throws Exception {
-        dockerCommunicator.pullDockerImage(IMG);
+        DOCKER_COMMUNICATOR.pullDockerImage(IMG);
     }
 
     @Test
     public void pullDockerImage_nonexistent() throws Exception {
         System.setErr(new PrintStream(errContent));
-        dockerCommunicator.pullDockerImage(NONEXISTING_IMG);
+        DOCKER_COMMUNICATOR.pullDockerImage(NONEXISTING_IMG);
         assertTrue(errContent.toString().contains("Unable to pull"));
     }
 
     @Test
     public void saveDockerImage() throws Exception {
-        dockerCommunicator.saveDockerImage(IMG);
+        DOCKER_COMMUNICATOR.saveDockerImage(IMG);
     }
 
     @Test (expected = RuntimeException.class)
     public void saveDockerImage_nonexistent() throws Exception {
-        dockerCommunicator.saveDockerImage(NONEXISTING_IMG);
+        DOCKER_COMMUNICATOR.saveDockerImage(NONEXISTING_IMG);
     }
 
     @AfterClass
-    public void closeDocker() {
-        dockerCommunicator.closeDocker();
+    public static void closeDocker() {
+        DOCKER_COMMUNICATOR.closeDocker();
     }
 }
