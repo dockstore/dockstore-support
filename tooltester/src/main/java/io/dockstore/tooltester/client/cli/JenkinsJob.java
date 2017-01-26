@@ -13,18 +13,21 @@ import com.offbytwo.jenkins.model.BuildResult;
 import com.offbytwo.jenkins.model.BuildWithDetails;
 import com.offbytwo.jenkins.model.JobWithDetails;
 
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
+
 /**
  * @author gluu
  * @since 24/01/17
  */
 public abstract class JenkinsJob {
-    public abstract String getPREFIX();
-
     private JenkinsServer jenkins;
 
     JenkinsJob(JenkinsServer jenkins) {
         this.jenkins = jenkins;
     }
+
+    public abstract String getPREFIX();
 
     /**
      * Creates a pipeline on Jenkins to test the parameter file
@@ -36,18 +39,29 @@ public abstract class JenkinsJob {
 
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;
+        JobWithDetails job = null;
+        String jobxml = null;
         try {
-            String jobxml = jenkins.getJobXml(prefix);
-            JobWithDetails job;
+            jobxml = jenkins.getJobXml(prefix);
             job = jenkins.getJob(name);
-            if (job == null) {
-                jenkins.createJob(name, jobxml, true);
-            } else {
-                jenkins.updateJob(name, jobxml, true);
-            }
         } catch (IOException e) {
-            e.printStackTrace();
+            exceptionMessage(e, "Could not get Jenkins job", IO_ERROR);
         }
+
+        if (job == null) {
+            try {
+                jenkins.createJob(name, jobxml, true);
+            } catch (IOException e) {
+                exceptionMessage(e, "Could not create Jenkins job", IO_ERROR);
+            }
+        } else {
+            try {
+                jenkins.updateJob(name, jobxml, true);
+            } catch (IOException e) {
+                exceptionMessage(e, "Could not update existing Jenkins job", IO_ERROR);
+            }
+        }
+
     }
 
     /**
@@ -64,8 +78,9 @@ public abstract class JenkinsJob {
             job = jenkins.getJob(name);
             job.build(parameter, true);
         } catch (IOException e) {
-            e.printStackTrace();
+            exceptionMessage(e, "Cannot get Jenkins job", IO_ERROR);
         }
+
     }
 
     /**
@@ -79,10 +94,13 @@ public abstract class JenkinsJob {
         JobWithDetails job;
         String name;
         name = prefix + "-" + suffix;
+
         try {
             job = jenkins.getJob(name);
+
             Build build = job.getLastBuild();
             BuildWithDetails details = build.details();
+
             BuildResult result = details.getResult();
             details.getDuration();
             if (details.isBuilding()) {
@@ -91,7 +109,7 @@ public abstract class JenkinsJob {
                 status = result.toString();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            exceptionMessage(e, "Could not get Jenkins job results", IO_ERROR);
         }
         return status;
     }
@@ -109,14 +127,18 @@ public abstract class JenkinsJob {
         JobWithDetails job;
         try {
             job = jenkins.getJob(name);
+
             Build build = job.getLastBuild();
             BuildWithDetails details = build.details();
+
             String consoleOutputText = details.getConsoleOutputText();
+
             path = Paths.get("./target/" + name + ".txt");
             Files.write(path, consoleOutputText.getBytes(Charset.forName("UTF-8")));
         } catch (IOException e) {
-            e.printStackTrace();
+            exceptionMessage(e, "Could not get Jenkins job", IO_ERROR);
         }
+
         return path != null ? path.toString() : null;
     }
 }

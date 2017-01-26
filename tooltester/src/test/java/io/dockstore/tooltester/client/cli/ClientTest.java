@@ -3,23 +3,31 @@ package io.dockstore.tooltester.client.cli;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 import com.offbytwo.jenkins.JenkinsServer;
 import io.swagger.client.ApiException;
 import io.swagger.client.model.Tool;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ClientTest {
-    private boolean development = false;
+    private boolean development;
+    private Client client;
+
+    @Before
+    public void initialize() {
+        client = new Client(null);
+        client.setupClientEnvironment();
+        development = client.development;
+        Assert.assertTrue("client API could not start", client.getContainersApi() != null);
+    }
 
     @Test
     public void setupEnvironment() throws Exception {
-        OptionParser parser = new OptionParser();
-        final OptionSet parsed = parser.parse("");
-        Client client = new Client(parsed);
+        client = new Client(null);
         client.setupClientEnvironment();
+        development = client.development;
         Assert.assertTrue("client API could not start", client.getContainersApi() != null);
     }
 
@@ -27,13 +35,8 @@ public class ClientTest {
      * Tests if Jenkins server is set up
      */
     @Test
-    public void setupJenkins(){
+    public void setupJenkins() {
         if (development) {
-            OptionParser parser = new OptionParser();
-            final OptionSet parsed = parser.parse("");
-            Client client = new Client(parsed);
-            client.setupClientEnvironment();
-            Assert.assertTrue("client API could not start", client.getContainersApi() != null);
             client.setupJenkins();
             Assert.assertTrue("Jenkins server can not be reached", client.getJenkins() != null);
         }
@@ -45,11 +48,6 @@ public class ClientTest {
     @Test
     public void deleteJenkinsTests() {
         if (development) {
-            OptionParser parser = new OptionParser();
-            final OptionSet parsed = parser.parse("");
-            Client client = new Client(parsed);
-            client.setupClientEnvironment();
-            Assert.assertTrue("client API could not start", client.getContainersApi() != null);
             client.setupJenkins();
             JenkinsServer jenkins = client.getJenkins();
             Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
@@ -62,13 +60,8 @@ public class ClientTest {
      * Creates the pipelines on Jenkins to test dockerfiles and parameter files
      */
     @Test
-    public void createTests(){
+    public void createJenkinsTests() {
         if (development) {
-            OptionParser parser = new OptionParser();
-            final OptionSet parsed = parser.parse("");
-            Client client = new Client(parsed);
-            client.setupClientEnvironment();
-            Assert.assertTrue("client API could not start", client.getContainersApi() != null);
             client.setupJenkins();
             client.setupTesters();
             JenkinsServer jenkins = client.getJenkins();
@@ -84,13 +77,8 @@ public class ClientTest {
      * This runs all the tool's dockerfiles
      */
     @Test
-    public void runTests() {
+    public void runJenkinsTests() {
         if (development) {
-            OptionParser parser = new OptionParser();
-            final OptionSet parsed = parser.parse("");
-            Client client = new Client(parsed);
-            client.setupClientEnvironment();
-            Assert.assertTrue("client API could not start", client.getContainersApi() != null);
             client.setupJenkins();
             client.setupTesters();
             JenkinsServer jenkins = client.getJenkins();
@@ -106,13 +94,8 @@ public class ClientTest {
      * This runs all the tool's dockerfiles
      */
     @Test
-    public void getTestResults() {
+    public void getJenkinsTests() {
         if (development) {
-            OptionParser parser = new OptionParser();
-            final OptionSet parsed = parser.parse("");
-            Client client = new Client(parsed);
-            client.setupClientEnvironment();
-            Assert.assertTrue("client API could not start", client.getContainersApi() != null);
             client.setupJenkins();
             client.setupTesters();
             JenkinsServer jenkins = client.getJenkins();
@@ -130,16 +113,11 @@ public class ClientTest {
      */
     @Test
     public void getVerifiedToolsTest() {
-        OptionParser parser = new OptionParser();
-        final OptionSet parsed = parser.parse("");
-        Client client = new Client(parsed);
-        client.setupClientEnvironment();
         int count;
-        Assert.assertTrue("client API could not start", client.getContainersApi() != null);
         List<Tool> verifiedTools = client.getVerifiedTools();
         for (Tool verifiedTool : verifiedTools) {
             try {
-                client.printAllFilesFromTool(verifiedTool);
+                client.countNumberOfTests(verifiedTool);
             } catch (ApiException e) {
                 e.printStackTrace();
             }
@@ -153,48 +131,42 @@ public class ClientTest {
      */
     @Test
     public void getVerifiedToolsWithFilterTest() {
-        OptionParser parser = new OptionParser();
-        final OptionSet parsed = parser.parse("");
-        Client client = new Client(parsed);
-        client.setupClientEnvironment();
         int count;
-        Assert.assertTrue("client API could not start", client.getContainersApi() != null);
         List<String> verifiedSources = Collections.singletonList("Docktesters group");
         List<Tool> verifiedTools = client.getVerifiedTools(verifiedSources);
         for (Tool verifiedTool : verifiedTools) {
             try {
-                client.printAllFilesFromTool(verifiedTool);
+                client.countNumberOfTests(verifiedTool);
             } catch (ApiException e) {
                 e.printStackTrace();
             }
         }
         count = client.getCount();
-        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got "+ count, count == 5);
+        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count == 5);
         client.setCount(0);
         verifiedSources = Arrays.asList("Docktesters group", "Another Group");
         verifiedTools = client.getVerifiedTools(verifiedSources);
         for (Tool verifiedTool : verifiedTools) {
             try {
-                client.printAllFilesFromTool(verifiedTool);
+                client.countNumberOfTests(verifiedTool);
             } catch (ApiException e) {
                 e.printStackTrace();
             }
         }
         count = client.getCount();
-        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got "+ count, count == 5);
+        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count == 5);
         client.setCount(0);
         verifiedSources = Collections.singletonList("Another Group");
         verifiedTools = client.getVerifiedTools(verifiedSources);
         for (Tool verifiedTool : verifiedTools) {
             try {
-                client.printAllFilesFromTool(verifiedTool);
+                client.countNumberOfTests(verifiedTool);
             } catch (ApiException e) {
                 e.printStackTrace();
             }
         }
         count = client.getCount();
-        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got "+ count, count == 0);
+        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count == 0);
     }
-
 
 }

@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
@@ -48,83 +47,32 @@ import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.API_ERROR;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.CLIENT_ERROR;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.DEBUG;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
+
 /**
  * Prototype for testing service
  */
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
     private final OptionSet options;
+    public boolean development = false;
     private ContainersApi containersApi;
     private UsersApi usersApi;
     private GAGHApi ga4ghApi;
     private boolean isAdmin = false;
-    private boolean development = false;
     private Report report;
-
-    public DockerfileTester getDockerfileTester() {
-        return dockerfileTester;
-    }
-
-    public ParameterFileTester getParameterFileTester() {
-        return parameterFileTester;
-    }
-
+    private int count = 0;
+    private HierarchicalINIConfiguration config;
     private DockerfileTester dockerfileTester;
     private ParameterFileTester parameterFileTester;
-
-    public JenkinsServer getJenkins() {
-        return jenkins;
-    }
-
-    private void setJenkins(JenkinsServer jenkins) {
-        this.jenkins = jenkins;
-    }
-
     private JenkinsServer jenkins;
-
-    public void setCount(int count) {
-        this.count = count;
-    }
-
-    public int getCount() {
-        return count;
-    }
-
-    private int count = 0;
-    public static final int GENERIC_ERROR = 1; // General error, not yet described by an error type
-    public static final int CONNECTION_ERROR = 150; // Connection exception
-    public static final int IO_ERROR = 3; // IO throws an exception
-    public static final int API_ERROR = 6; // API throws an exception
-    public static final int CLIENT_ERROR = 4; // Client does something wrong (ex. input validation)
-    public static final int COMMAND_ERROR = 10; // Command is not successful, but not due to errors
-
-    private static final AtomicBoolean DEBUG = new AtomicBoolean(false);
-    private HierarchicalINIConfiguration config;
-
-    private static void errorMessage(String message, int exitCode) {
-        err(message);
-        System.exit(exitCode);
-    }
-
-    private static void err(String format, Object... args) {
-        System.err.println(String.format(format, args));
-    }
 
     public Client(OptionSet options) {
         this.options = options;
-    }
-
-    private static void exceptionMessage(Exception exception, String message, int exitCode) {
-        if (!message.equals("")) {
-            err(message);
-        }
-        if (Client.DEBUG.get()) {
-            exception.printStackTrace();
-        } else {
-            err(exception.toString());
-        }
-
-        System.exit(exitCode);
     }
 
     /**
@@ -145,14 +93,37 @@ public class Client {
         client.finalizeResults();
     }
 
+    public DockerfileTester getDockerfileTester() {
+        return dockerfileTester;
+    }
+
+    public ParameterFileTester getParameterFileTester() {
+        return parameterFileTester;
+    }
+
+    public JenkinsServer getJenkins() {
+        return jenkins;
+    }
+
+    private void setJenkins(JenkinsServer jenkins) {
+        this.jenkins = jenkins;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public void setCount(int count) {
+        this.count = count;
+    }
+
     protected void setupTesters() {
         dockerfileTester = new DockerfileTester(getJenkins());
         parameterFileTester = new ParameterFileTester(getJenkins());
     }
 
     protected void setupJenkins() {
-        boolean jenkinsExperiment = true;
-        if (jenkinsExperiment) {
+        if (development) {
             try {
                 String serverUrl;
                 String username;
@@ -165,9 +136,9 @@ public class Client {
                 JenkinsVersion version = jenkins.getVersion();
                 System.out.println("Jenkins is version " + version.getLiteralVersion() + " and has " + jobs.size() + " jobs");
             } catch (URISyntaxException e) {
-                e.printStackTrace();
+                exceptionMessage(e, "Jenkins server URI is not valid", CLIENT_ERROR);
             } catch (IOException e) {
-                e.printStackTrace();
+                exceptionMessage(e, "Could not connect to Jenkins server", IO_ERROR);
             }
         }
     }
@@ -199,10 +170,11 @@ public class Client {
             if (this.usersApi.getApiClient() != null) {
                 this.isAdmin = this.usersApi.getUser().getIsAdmin();
             }
-        } catch (ApiException ex) {
+        } catch (ApiException e) {
+            //exceptionMessage(e, "Could not use user API", API_ERROR);
+            System.out.println("Could not use user API.  Admin is false by default");
             this.isAdmin = false;
         }
-
         defaultApiClient.setDebugging(DEBUG.get());
         this.report = new Report("Report.csv");
     }
@@ -211,7 +183,7 @@ public class Client {
      * Finalize the results of testing
      */
     public void finalizeResults() {
-        report.closeReport();
+        report.close();
     }
 
     /**
@@ -237,11 +209,11 @@ public class Client {
     }
 
     /**
-     * This function prints all the files from the verified tool
+     * This function counts the number of tests that need to be created
      *
      * @param verifiedTool The verified tool
      */
-    public void printAllFilesFromTool(Tool verifiedTool) throws ApiException {
+    public void countNumberOfTests(Tool verifiedTool) throws ApiException {
         SourceFile dockerfile;
         SourceFile descriptor;
         SourceFile testParameter;
@@ -283,7 +255,7 @@ public class Client {
         try {
             dockstoreTool = getContainersApi().getPublishedContainerByToolPath(tool.getId());
         } catch (ApiException e) {
-            e.printStackTrace();
+            exceptionMessage(e, "Could not get published containers using the container api", API_ERROR);
         }
         List<ToolVersion> toolVersions = tool.getVersions();
         for (ToolVersion toolversion : toolVersions) {
@@ -291,22 +263,25 @@ public class Client {
             String id = toolversion.getId();
             String tag = toolversion.getName();
             String name = id;
-            name = name.replace("/","-");
-            name = name.replace(":","-");
+            name = name.replace("/", "-");
+            name = name.replace(":", "-");
             dockerfileTester.createTest(name);
+
             try {
                 List<SourceFile> testParameterFiles;
                 for (ToolVersion.DescriptorTypeEnum descriptorType : toolversion.getDescriptorType()) {
-                        testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
-                        for (SourceFile testParameterFile : testParameterFiles) {
-                            String path = testParameterFile.getPath();
-                            path = path.replaceFirst("^/", "");
-                            path = path.replace("/", "-");
-                            parameterFileTester.createTest(name + "-" + path);
-                        }
+                    testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
+                    for (SourceFile testParameterFile : testParameterFiles) {
+                        String path = testParameterFile.getPath();
+                        path = path.replaceFirst("^/", "");
+                        path = path.replace("/", "-");
+
+                        parameterFileTester.createTest(name + "-" + path);
+
+                    }
                 }
             } catch (ApiException e) {
-                e.printStackTrace();
+                exceptionMessage(e, "Could not get test parameter files using the container api", API_ERROR);
             }
         }
     }
@@ -314,14 +289,14 @@ public class Client {
     /**
      * Creates the pipeline(s) on Jenkins to test a tool
      *
-     * @param tool  The tool to get the test results for
+     * @param tool The tool to get the test results for
      */
     void getToolTestResults(Tool tool) {
         DockstoreTool dockstoreTool = null;
         try {
-            dockstoreTool = getContainersApi().getPublishedContainerByToolPath(tool.getId());
+            dockstoreTool = containersApi.getPublishedContainerByToolPath(tool.getId());
         } catch (ApiException e) {
-            e.printStackTrace();
+            exceptionMessage(e, "Could not get published containers using the container api", API_ERROR);
         }
         List<ToolVersion> toolVersions = tool.getVersions();
         for (ToolVersion toolversion : toolVersions) {
@@ -329,35 +304,40 @@ public class Client {
             String id = toolversion.getId();
             String tag = toolversion.getName();
             String name = id;
-            name = name.replace("/","-");
-            name = name.replace(":","-");
+            name = name.replace("/", "-");
+            name = name.replace(":", "-");
             Date date = new Date();
-            String dockerfileStatus = dockerfileTester.getTestResults(name);
-            if (!dockerfileStatus.equals("SUCCESS")) {
-                dockerfileStatus = dockerfileStatus + " See " + dockerfileTester.createConsoleOutputFile(name);
-            }
-                try {
-                    List<SourceFile> testParameterFiles;
-                    for (ToolVersion.DescriptorTypeEnum descriptorType : toolversion.getDescriptorType()) {
-                            testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
-                            for (SourceFile testParameterFile : testParameterFiles) {
-                                count++;
-                                String path = testParameterFile.getPath();
-                                path = path.replaceFirst("^/", "");
-                                path = path.replace("/", "-");
-                                String status = parameterFileTester.getTestResults(name + path);
-                                if (!status.equals("SUCCESS")) {
-                                    status = status + " See " + parameterFileTester.createConsoleOutputFile(name + path);
-                                }
-                                List<String> record = Arrays
-                                        .asList(String.valueOf(count), date.toString(), toolversion.getId(), tag, "Local", testParameterFile.getPath(), null, status, dockerfileStatus);
-                                report.writeLine(record);
-                            }
-                    }
-                } catch (ApiException e) {
-                    e.printStackTrace();
-                }
+            String dockerfileStatus = null;
+            dockerfileStatus = dockerfileTester.getTestResults(name);
 
+            if (!dockerfileStatus.equals("SUCCESS")) {
+
+                dockerfileStatus = dockerfileStatus + " See " + dockerfileTester.createConsoleOutputFile(name);
+
+            }
+            try {
+                List<SourceFile> testParameterFiles;
+                for (ToolVersion.DescriptorTypeEnum descriptorType : toolversion.getDescriptorType()) {
+                    testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
+                    for (SourceFile testParameterFile : testParameterFiles) {
+                        count++;
+                        String path = testParameterFile.getPath();
+                        path = path.replaceFirst("^/", "");
+                        path = path.replace("/", "-");
+                        String status = null;
+                        status = parameterFileTester.getTestResults(name + "-" + path);
+                        if (!status.equals("SUCCESS")) {
+                            status = status + " See " + parameterFileTester.createConsoleOutputFile(name + "-" + path);
+                        }
+                        List<String> record = Arrays
+                                .asList(toolversion.getId(), date.toString(), tag, "Local", testParameterFile.getPath(), null, status,
+                                        dockerfileStatus);
+                        report.writeLine(record);
+                    }
+                }
+            } catch (ApiException e) {
+                exceptionMessage(e, "Could not get test parameter files using the container API", API_ERROR);
+            }
         }
     }
 
@@ -367,14 +347,16 @@ public class Client {
     void deleteJobs(String pattern) {
         try {
             Map<String, Job> jobs = jenkins.getJobs();
-            for (Map.Entry<String, Job> entry : jobs.entrySet()) {
-                String name = entry.getKey();
-                if (name.matches(pattern + ".+")) {
-                    jenkins.deleteJob(entry.getKey(), true);
+            jobs.entrySet().stream().filter(map -> map.getKey().matches(pattern + ".+")).forEach(map -> {
+                try {
+                    System.out.println(map.getKey());
+                    jenkins.deleteJob(map.getKey(), true);
+                } catch (IOException e) {
+                    exceptionMessage(e, "Could not delete Jenkins job", IO_ERROR);
                 }
-            }
+            });
         } catch (IOException e) {
-            e.printStackTrace();
+            exceptionMessage(e, "Could not find and delete Jenkins job", IO_ERROR);
         }
     }
 
@@ -401,7 +383,7 @@ public class Client {
             final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
             verifiedTools = tools.parallelStream().filter(Tool::getVerified).collect(Collectors.toList());
             for (Tool tool : verifiedTools) {
-                getVerifiedToolVersions(tool);
+                tool.setVersions(tool.getVersions().parallelStream().filter(ToolVersion::getVerified).collect(Collectors.toList()));
             }
         } catch (ApiException e) {
             exceptionMessage(e, "", API_ERROR);
@@ -418,29 +400,10 @@ public class Client {
     List<Tool> getVerifiedTools(List<String> verifiedSources) {
         List<Tool> verifiedTools = getVerifiedTools();
         for (Tool tool : verifiedTools) {
-            filterSource(tool, verifiedSources);
+            tool.setVersions(tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource()))
+                    .collect(Collectors.toList()));
         }
         return verifiedTools;
-    }
-
-    /**
-     * Removes all the non-verified versions from the tool
-     *
-     * @param tool The verified tool
-     */
-    private void getVerifiedToolVersions(Tool tool) {
-        tool.setVersions(tool.getVersions().parallelStream().filter(ToolVersion::getVerified).collect(Collectors.toList()));
-    }
-
-    /**
-     * Removes all the versions that do not match the sources filter
-     *
-     * @param tool            The verified tool
-     * @param verifiedSources The verified sources filter
-     */
-    private void filterSource(Tool tool, List<String> verifiedSources) {
-        tool.setVersions(tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource()))
-                .collect(Collectors.toList()));
     }
 
     /**
@@ -453,15 +416,15 @@ public class Client {
      * however, due to system requirements, it will quickly become necessary to hook this up to
      * either a fixed network of slaves or Consonance on-demand hosts
      *
-     * @param tool  The tool to test
+     * @param tool The tool to test
      * @return boolean  Returns true
      */
     boolean testTool(Tool tool) {
         DockstoreTool dockstoreTool = null;
         try {
-            dockstoreTool = getContainersApi().getPublishedContainerByToolPath(tool.getId());
+            dockstoreTool = containersApi.getPublishedContainerByToolPath(tool.getId());
         } catch (ApiException e) {
-            e.printStackTrace();
+            exceptionMessage(e, "Could not get published containers using the container API", API_ERROR);
         }
         Map<String, String> parameter = new HashMap();
         List<ToolVersion> toolVersions = tool.getVersions();
@@ -476,17 +439,18 @@ public class Client {
                 SourceFile dockerfile = containersApi.dockerfile(containerId, tag);
                 dockerfilePath = dockerfile.getPath().replaceFirst("^/", "");
             } catch (ApiException e) {
-                e.printStackTrace();
+                exceptionMessage(e, "Could not get dockerfile using the container API", API_ERROR);
             }
 
             String name = id;
-            name = name.replace("/","-");
-            name = name.replace(":","-");
+            name = name.replace("/", "-");
+            name = name.replace(":", "-");
             parameter.put("Tag", tag);
             parameter.put("URL", url);
             parameter.put("DockerfilePath", dockerfilePath);
 
             dockerfileTester.runTest(name, parameter);
+
             try {
                 List<SourceFile> testParameterFiles;
                 SourceFile descriptor;
@@ -513,7 +477,7 @@ public class Client {
                     }
                 }
             } catch (ApiException e) {
-                e.printStackTrace();
+                exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the container API", API_ERROR);
             }
         }
         return true;

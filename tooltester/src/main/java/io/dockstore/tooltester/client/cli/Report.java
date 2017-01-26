@@ -1,5 +1,7 @@
 package io.dockstore.tooltester.client.cli;
 
+import java.io.Closeable;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -8,53 +10,53 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
+
 /**
  * @author gluu
  * @since 23/01/17
  */
-class Report {
+class Report implements Closeable {
     private static final char COMMA_SEPARATOR = ',';
     //private static final char TAB_SEPERATOR = '\t';
-    private static final List<String> HEADER = Arrays.asList("ID", "DATE", "Tool/Workflow ID", "Version", "Location of testing", "Parameter file", "Runtime", "Status of Test Files", "Status of Dockerfiles");
-
+    private static final List<String> HEADER = Arrays
+            .asList("Tool/Workflow ID", "DATE", "Version", "Location of testing", "Parameter file", "Runtime", "Status of Test Files",
+                    "Status of Dockerfiles");
     private Writer writer;
 
     Report(String name) {
-
         try {
             this.writer = new OutputStreamWriter(new FileOutputStream(name), StandardCharsets.UTF_8);
-            writeLine(HEADER);
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (FileNotFoundException e) {
+            exceptionMessage(e, "Cannot create new file", IO_ERROR);
         }
+        writeLine(HEADER);
     }
 
-    void writeLine(List<String> values){
-
+    void writeLine(List<String> values) {
         boolean first = true;
-        StringBuilder sb = new StringBuilder();
-        for (String value: values) {
-            if (!first) {
-                sb.append(COMMA_SEPARATOR);
-            }
-            sb.append(value);
-            first = false;
-        }
         try {
-            sb.append("\n");
-            this.writer.append(sb.toString());
-
+            for (String value : values) {
+                if (!first) {
+                    this.writer.append(COMMA_SEPARATOR);
+                }
+                this.writer.append(value);
+                first = false;
+            }
+            this.writer.append("\n");
         } catch (IOException e) {
-            e.printStackTrace();
+            exceptionMessage(e, "Cannot write to file", IO_ERROR);
         }
     }
 
-    void closeReport(){
+    @Override
+    public void close() {
         try {
-            writer.flush();
             writer.close();
+            writer.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            exceptionMessage(e, "Could not close file", IO_ERROR);
         }
     }
 }
