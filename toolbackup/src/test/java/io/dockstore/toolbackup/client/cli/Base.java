@@ -22,6 +22,7 @@ public class Base {
     protected static String NONEXISTING_IMG;
 
     protected static String REPORT;
+    protected static String DIR_SAME;
 
     static {
         String userHome = System.getProperty("user.home");
@@ -38,6 +39,7 @@ public class Base {
             NONEXISTING_IMG = config.getString("nonexisting.img", "gibberish0981");
 
             REPORT = config.getString("report.path", null);
+            DIR_SAME = config.getString("checksize.dir", null);
         } catch (ConfigurationException e) {
             ErrorExit.exceptionMessage(e, "", API_ERROR);
         }

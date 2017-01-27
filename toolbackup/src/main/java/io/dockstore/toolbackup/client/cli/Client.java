@@ -60,6 +60,7 @@ public class Client {
     // dockerstor_tutorial [42, 43)
     private static final int FROM_INDEX = 42;
     private static final int TO_INDEX = 44;
+    private static final String TIME_NOW = FormattedTimeGenerator.getFormattedTimeNow();
 
     private final S3Communicator s3Communicator= new S3Communicator();
     private final DockerCommunicator dockerCommunicator = new DockerCommunicator();
@@ -71,6 +72,8 @@ public class Client {
     }
 
     public static void main(String[] argv) {
+        out.println("Back-up script started: " + TIME_NOW);
+
         final OptionParser parser = new OptionParser();
         final ArgumentAcceptingOptionSpec<String> bucketName = parser.accepts("bucket-name", "bucket to which files will be backed-up").withRequiredArg().defaultsTo("");
         final ArgumentAcceptingOptionSpec<String> keyPrefix = parser.accepts("key-prefix", "key prefix of bucket (ex. client)").withRequiredArg().defaultsTo("");
@@ -139,20 +142,20 @@ public class Client {
             tools = tools.subList(FROM_INDEX, TO_INDEX);
         }
 
+        // 1. save Docker images to local
         saveToLocal(baseDir, tools);
         // just the Docker images
         List<File> forUpload = getFilesForUpload(bucketName, keyPrefix, baseDir);
-
         long addedTotalInB = getAddedSizeInB(forUpload);
+
+        // 2. report
         long cloudTotalInB = s3Communicator.getCloudTotalInB(bucketName, keyPrefix);
-
         String reportDir = baseDir + "/report";
-
         report(reportDir, addedTotalInB, cloudTotalInB);
 
-        // Docker images + report
+        // 3. upload to cloud
         // NOTE: cannot invoke getFilesForUpload again as sometimes the report size may be exactly the same but the contents will be different
-        forUpload.addAll((List<File>) FileUtils.listFiles(new File(reportDir), new String[] { "html", "JSON" }, false));
+        forUpload.addAll(FileUtils.listFiles(new File(reportDir), new String[] { "html", "JSON" }, false));
         s3Communicator.uploadDirectory(bucketName, keyPrefix, baseDir, forUpload);
 
         s3Communicator.shutDown();
@@ -160,7 +163,7 @@ public class Client {
 
 
     //-----------------------Report-----------------------
-    private long getAddedSizeInB(List<File> forUpload) {
+    public long getAddedSizeInB(List<File> forUpload) {
         long totalSize = 0;
         for (File file : forUpload) {
             totalSize += file.length();
@@ -220,7 +223,6 @@ public class Client {
         String versionId = version.getId();
         String versionTag = versionId.substring(versionId.lastIndexOf(":") + 1);
         String metaVersion = version.getMetaVersion();
-        String timeOfExecution = FormattedTimeGenerator.getFormattedTimeNow();
         VersionDetail before;
 
         if(dockerCommunicator.pullDockerImage(img)) {
@@ -232,7 +234,7 @@ public class Client {
             before = findLocalVD(versionsDetails, versionTag);
             if(before != null && before.getDockerSize() == dockerCommunicator.getImageSize(img)) {
                 out.println(img + " did not change");
-                before.addTime(timeOfExecution);
+                before.addTime(TIME_NOW);
 
                 long fileSize = imgFile.length();
                 if(!imgFile.isFile() || fileSize != before.getFileSize()) {
@@ -247,21 +249,21 @@ public class Client {
                     before.setPath("");
                 }
 
-                versionsDetails.add(new VersionDetail(versionTag, metaVersion, dockerSize, imgFile.length(), timeOfExecution, true, imgFile.getAbsolutePath()));
+                versionsDetails.add(new VersionDetail(versionTag, metaVersion, dockerSize, imgFile.length(), TIME_NOW, true, imgFile.getAbsolutePath()));
             }
 
         } else {
             // docker image does not exist on quay.io
             before = findInvalidVD(versionsDetails, versionTag);
             if(before != null) {
-                before.addTime(timeOfExecution);
+                before.addTime(TIME_NOW);
             } else {
-                versionsDetails.add(new VersionDetail(versionTag, metaVersion, 0, 0, timeOfExecution, false, ""));
+                versionsDetails.add(new VersionDetail(versionTag, metaVersion, 0, 0, TIME_NOW, false, ""));
             }
         }
     }
 
-    public void saveToLocal(String baseDir, final List<Tool> tools) {
+    private void saveToLocal(String baseDir, final List<Tool> tools) {
         toolsToVersions = ReportGenerator.loadJSONMap(baseDir + "/report");
 
         for(Tool tool : tools)  {
