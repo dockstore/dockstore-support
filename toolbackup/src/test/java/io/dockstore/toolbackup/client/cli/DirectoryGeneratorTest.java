@@ -31,7 +31,7 @@ public class DirectoryGeneratorTest extends Base {
 
     @Test(expected = SecurityException.class)
     public void validatePath_existingFile() throws Exception {
-        File file = new File(DIR + File.separator + "Same");
+        File file = new File(DIR + File.separator  + "sameName");
         assumeTrue(file.isFile() || !file.exists());
         file.createNewFile();
         DirectoryGenerator.validatePath(file.getAbsolutePath());

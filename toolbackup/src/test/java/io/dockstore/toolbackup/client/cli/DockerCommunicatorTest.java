@@ -14,7 +14,6 @@ import static org.junit.Assume.assumeTrue;
  * Created by kcao on 25/01/17.
  */
 public class DockerCommunicatorTest extends Base {
-
     private static final DockerCommunicator DOCKER_COMMUNICATOR = new DockerCommunicator();
     private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
 

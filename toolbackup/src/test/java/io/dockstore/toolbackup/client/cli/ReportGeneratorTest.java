@@ -17,7 +17,6 @@ import java.util.List;
 
 import static java.lang.System.out;
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Created by kcao on 25/01/17.
@@ -28,7 +27,7 @@ public class ReportGeneratorTest extends Base {
 
     @BeforeClass
     public static void setUpFiles() {
-        assumeTrue(REPORT != null);
+        Client.main(new String[]{"--bucket-name", BUCKET, "--local-dir", DIR, "--test-mode-activate", "true", "--key-prefix", PREFIX});
         htmlFiles = ((List<File>) FileUtils.listFiles(new File(REPORT), new String[] { "html" }, false));
         jsonFiles = ((List<File>) FileUtils.listFiles(new File(REPORT), new String[] { "JSON" }, false));
     }

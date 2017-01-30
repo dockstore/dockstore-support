@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -73,6 +74,8 @@ public class Client {
 
     public static void main(String[] argv) {
         out.println("Back-up script started: " + TIME_NOW);
+
+        out.println(Arrays.toString(argv));
 
         final OptionParser parser = new OptionParser();
         final ArgumentAcceptingOptionSpec<String> bucketName = parser.accepts("bucket-name", "bucket to which files will be backed-up").withRequiredArg().defaultsTo("");
@@ -299,7 +302,7 @@ public class Client {
     protected void setupClientEnvironment() {
         String userHome = System.getProperty("user.home");
         try {
-            File configFile = new File(userHome + File.separator + ".tooltester" + File.separator + "config");
+            File configFile = new File(userHome + File.separator + ".toolbackup" + File.separator + "config.ini");
             this.config = new HierarchicalINIConfiguration(configFile);
         } catch (ConfigurationException e) {
             ErrorExit.exceptionMessage(e, "", API_ERROR);
