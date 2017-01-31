@@ -1,10 +1,10 @@
 package io.dockstore.tooltester.client.cli;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.offbytwo.jenkins.JenkinsServer;
@@ -88,11 +88,12 @@ public abstract class JenkinsJob {
      *
      * @param suffix The suffix of the test name
      */
-    String getTestResults(String suffix) {
+    Map<String, String> getTestResults(String suffix) {
         String prefix = getPREFIX();
         String status = null;
         JobWithDetails job;
         String name;
+        Map<String, String> map = new HashMap();
         name = prefix + "-" + suffix;
 
         try {
@@ -102,16 +103,23 @@ public abstract class JenkinsJob {
             BuildWithDetails details = build.details();
 
             BuildResult result = details.getResult();
-            details.getDuration();
-            if (details.isBuilding()) {
-                status = "In-progress";
-            } else {
+
+            if (!details.isBuilding()) {
                 status = result.toString();
+                map.put("status", status);
+            } else {
+                map.put("status", "Building");
             }
+
+            LocalDateTime date = LocalDateTime.ofInstant(Instant.ofEpochMilli(details.getTimestamp()), ZoneId.systemDefault());
+
+            map.put("duration", String.valueOf(details.getDuration()));
+            map.put("date", date.toString());
+
         } catch (IOException e) {
             exceptionMessage(e, "Could not get Jenkins job results", IO_ERROR);
         }
-        return status;
+        return map;
     }
 
     /**
@@ -123,22 +131,12 @@ public abstract class JenkinsJob {
     String createConsoleOutputFile(String suffix) {
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;
-        Path path = null;
+        String path = null;
         JobWithDetails job;
-        try {
-            job = jenkins.getJob(name);
-
-            Build build = job.getLastBuild();
-            BuildWithDetails details = build.details();
-
-            String consoleOutputText = details.getConsoleOutputText();
-
-            path = Paths.get("./target/" + name + ".txt");
-            Files.write(path, consoleOutputText.getBytes(Charset.forName("UTF-8")));
-        } catch (IOException e) {
-            exceptionMessage(e, "Could not get Jenkins job", IO_ERROR);
-        }
-
-        return path != null ? path.toString() : null;
+        String buildId = "1";
+        String url = "142.1.177.103:8080";
+        path = url + "/job/" + name + "/" + buildId + "/console";
+        //Files.write(path, consoleOutputText.getBytes(Charset.forName("UTF-8")));
+        return path;
     }
 }

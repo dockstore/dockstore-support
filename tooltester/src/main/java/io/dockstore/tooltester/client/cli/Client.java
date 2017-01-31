@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -27,6 +29,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.helper.JenkinsVersion;
 import com.offbytwo.jenkins.model.Job;
@@ -40,8 +45,6 @@ import io.swagger.client.model.DockstoreTool;
 import io.swagger.client.model.SourceFile;
 import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.slf4j.Logger;
@@ -58,8 +61,10 @@ import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessa
  */
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
-    private final OptionSet options;
     public boolean development = false;
+    private String execution = null;
+    private String source = null;
+    private String api = null;
     private ContainersApi containersApi;
     private UsersApi usersApi;
     private GAGHApi ga4ghApi;
@@ -70,9 +75,10 @@ public class Client {
     private DockerfileTester dockerfileTester;
     private ParameterFileTester parameterFileTester;
     private JenkinsServer jenkins;
+    private String command = null;
 
-    public Client(OptionSet options) {
-        this.options = options;
+    public Client() {
+
     }
 
     /**
@@ -81,16 +87,57 @@ public class Client {
      * @param argv Command line argumetns
      */
     public static void main(String[] argv) {
-        OptionParser parser = new OptionParser();
-        parser.accepts("dockstore-url", "dockstore install that we wish to test tools from").withRequiredArg().defaultsTo("");
-        parser.accepts("runtime-environment", "determines where to test tools").withRequiredArg().defaultsTo("local");
+        Client client = new Client();
+        CommandMain cm = new CommandMain();
+        JCommander jc = new JCommander(cm);
+        CommandReport commandReport = new CommandReport();
+        jc.addCommand("report", commandReport);
+        jc.parse(argv);
+        if (jc.getParsedCommand() != null) {
+            switch (jc.getParsedCommand()) {
+            case "report":
+                client.handleReport(commandReport.tools);
+                break;
+            default:
+                client.createToolTests(cm.api, cm.source, cm.execution);
+            }
+        } else {
+            client.createToolTests(cm.api, cm.source, cm.execution);
+        }
 
-        final OptionSet options = parser.parse(argv);
+    }
 
-        Client client = new Client(options);
-        client.run();
-        client.setupJenkins();
-        client.finalizeResults();
+    /**
+     * This function handles the report command
+     *
+     * @param toolNames The tools passed in as arguments from the commmand line
+     */
+    private void handleReport(List<String> toolNames) {
+
+        setupClientEnvironment();
+        setupJenkins();
+        setupTesters();
+        List<Tool> tools = getVerifiedTools();
+        openResults();
+        if (!toolNames.isEmpty()) {
+            tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
+        }
+        for (Tool tool : tools) {
+            getToolTestResults(tool);
+        }
+        finalizeResults();
+    }
+
+    private void createToolTests(String api, String source, String execution) {
+        setupClientEnvironment();
+        setupJenkins();
+        setupTesters();
+        deleteJobs("DockerfileTest");
+        deleteJobs("ParameterFileTest");
+        List<Tool> tools = getVerifiedTools();
+        for (Tool tool : tools) {
+            createToolTests(tool);
+        }
     }
 
     public DockerfileTester getDockerfileTester() {
@@ -176,7 +223,6 @@ public class Client {
             this.isAdmin = false;
         }
         defaultApiClient.setDebugging(DEBUG.get());
-        this.report = new Report("Report.csv");
     }
 
     /**
@@ -186,11 +232,16 @@ public class Client {
         report.close();
     }
 
+    public void openResults() {
+        report = new Report("Report.csv");
+    }
+
     /**
      * do the actual work here
      */
     private void run() {
         setupClientEnvironment();
+        setupJenkins();
         boolean toolTestResult = false;
         /** use swagger-generated classes to talk to dockstore */
         try {
@@ -199,13 +250,11 @@ public class Client {
             LongStream longStream = tools.parallelStream().filter(Tool::getVerified)
                     .mapToLong(tool -> tool.getVersions().parallelStream().filter(ToolVersion::getVerified).count());
             System.out.println("Number of versions of tools to test on Dockstore (currently): " + longStream.sum());
-            toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testTool).reduce(true, Boolean::logicalAnd);
-            System.out.println("Successful \"testing\" of tools found on Dockstore: " + toolTestResult);
+            //            toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testTool).reduce(true, Boolean::logicalAnd);
+            //            System.out.println("Successful \"testing\" of tools found on Dockstore: " + toolTestResult);
         } catch (ApiException e) {
             exceptionMessage(e, "", API_ERROR);
         }
-        finalizeResults();
-
     }
 
     /**
@@ -259,6 +308,7 @@ public class Client {
         }
         List<ToolVersion> toolVersions = tool.getVersions();
         for (ToolVersion toolversion : toolVersions) {
+            assert dockstoreTool != null;
             Long containerId = dockstoreTool.getId();
             String id = toolversion.getId();
             String tag = toolversion.getName();
@@ -307,10 +357,10 @@ public class Client {
             name = name.replace("/", "-");
             name = name.replace(":", "-");
             Date date = new Date();
-            String dockerfileStatus = null;
-            dockerfileStatus = dockerfileTester.getTestResults(name);
-
-            if (!dockerfileStatus.equals("SUCCESS")) {
+            String dockerfileStatus;
+            Map<String, String> map = dockerfileTester.getTestResults(name);
+            dockerfileStatus = map.get("status");
+            if (!dockerfileStatus.equals("SUCCESS") && !dockerfileStatus.equals("NOT_BUILT")) {
 
                 dockerfileStatus = dockerfileStatus + " See " + dockerfileTester.createConsoleOutputFile(name);
 
@@ -324,14 +374,17 @@ public class Client {
                         String path = testParameterFile.getPath();
                         path = path.replaceFirst("^/", "");
                         path = path.replace("/", "-");
-                        String status = null;
-                        status = parameterFileTester.getTestResults(name + "-" + path);
-                        if (!status.equals("SUCCESS")) {
+                        String status;
+                        Map<String, String> map2 = parameterFileTester.getTestResults(name + "-" + path);
+                        status = map2.get("status");
+                        if (!status.equals("SUCCESS") && !status.equals("NOT_BUILT")) {
                             status = status + " See " + parameterFileTester.createConsoleOutputFile(name + "-" + path);
                         }
+                        Long duration = Long.valueOf(map.get("duration"));
+                        String durationString = Duration.ofMillis(duration).toString();
                         List<String> record = Arrays
-                                .asList(toolversion.getId(), date.toString(), tag, "Local", testParameterFile.getPath(), null, status,
-                                        dockerfileStatus);
+                                .asList(toolversion.getId(), map.get("date"), tag, "Local", testParameterFile.getPath(), durationString,
+                                        status, dockerfileStatus);
                         report.writeLine(record);
                     }
                 }
@@ -349,7 +402,6 @@ public class Client {
             Map<String, Job> jobs = jenkins.getJobs();
             jobs.entrySet().stream().filter(map -> map.getKey().matches(pattern + ".+")).forEach(map -> {
                 try {
-                    System.out.println(map.getKey());
                     jenkins.deleteJob(map.getKey(), true);
                 } catch (IOException e) {
                     exceptionMessage(e, "Could not delete Jenkins job", IO_ERROR);
@@ -493,6 +545,25 @@ public class Client {
 
     public void setGa4ghApi(GAGHApi ga4ghApi) {
         this.ga4ghApi = ga4ghApi;
+    }
+
+    @Parameters(separators = "=", commandDescription = "Report status of tools tested")
+    private static class CommandReport {
+        @Parameter(names = "--all", description = "Whether to report all tools or not")
+        private Boolean all = false;
+        @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
+        private List<String> tools = new ArrayList<>();
+    }
+
+    private static class CommandMain {
+        @Parameter(names = { "--execution", "--runtime-environment" }, description = "Location of Testing")
+        private String execution = "local";
+        @Parameter(names = { "--source" }, description = "Tester Group")
+        private String source = null;
+        @Parameter(names = { "--api", "--dockstore-url" }, description = "dockstore install that we wish to test tools from")
+        private String api = "";
+        @Parameter(names = "--help", help = true)
+        private boolean help = false;
     }
 }
 

@@ -33,7 +33,6 @@ public class ExceptionHandler {
         } else {
             err(exception.toString());
         }
-
         System.exit(exitCode);
     }
 }

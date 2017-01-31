@@ -17,7 +17,7 @@ public class ClientTest {
 
     @Before
     public void initialize() {
-        client = new Client(null);
+        client = new Client();
         client.setupClientEnvironment();
         development = client.development;
         Assert.assertTrue("client API could not start", client.getContainersApi() != null);
@@ -25,7 +25,7 @@ public class ClientTest {
 
     @Test
     public void setupEnvironment() throws Exception {
-        client = new Client(null);
+        client = new Client();
         client.setupClientEnvironment();
         development = client.development;
         Assert.assertTrue("client API could not start", client.getContainersApi() != null);
@@ -76,8 +76,7 @@ public class ClientTest {
     /**
      * This runs all the tool's dockerfiles
      */
-    @Test
-    public void runJenkinsTests() {
+    private void runJenkinsTests() {
         if (development) {
             client.setupJenkins();
             client.setupTesters();
@@ -91,20 +90,25 @@ public class ClientTest {
     }
 
     /**
-     * This runs all the tool's dockerfiles
+     * Creates the pipelines on Jenkins to test dockerfiles and parameter files
+     */
+    @Test
+    public void createAndrunJenkinsTests() {
+        if (development) {
+            String[] argv = { "--execution", "local", "--source", "docktesters", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
+            client.main(argv);
+            runJenkinsTests();
+        }
+    }
+
+    /**
+     * This gets the report of all the tools
      */
     @Test
     public void getJenkinsTests() {
         if (development) {
-            client.setupJenkins();
-            client.setupTesters();
-            JenkinsServer jenkins = client.getJenkins();
-            Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
-            List<Tool> tools = client.getVerifiedTools();
-            for (Tool tool : tools) {
-                client.getToolTestResults(tool);
-            }
-            client.finalizeResults();
+            String[] argv = { "report" };
+            client.main(argv);
         }
     }
 
