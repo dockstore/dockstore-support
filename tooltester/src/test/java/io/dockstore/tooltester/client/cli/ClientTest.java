@@ -97,7 +97,7 @@ public class ClientTest {
     @Test
     public void createAndrunJenkinsTests() {
         if (development) {
-            String[] argv = { "--execution", "local", "--source", "docktesters", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
+            String[] argv = { "--execution", "local", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
             main(argv);
             runJenkinsTests();
         }
@@ -112,6 +112,20 @@ public class ClientTest {
             String[] argv = { "report" };
             main(argv);
         }
+    }
+
+    @Test
+    public void reportHelp() {
+        if (development) {
+            String[] argv = { "report", "--help" };
+            main(argv);
+        }
+    }
+
+    @Test
+    public void mainHelp() {
+        String[] argv = { "--help" };
+        main(argv);
     }
 
     /**

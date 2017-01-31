@@ -13,7 +13,10 @@ import com.offbytwo.jenkins.model.BuildResult;
 import com.offbytwo.jenkins.model.BuildWithDetails;
 import com.offbytwo.jenkins.model.JobWithDetails;
 
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
 
 /**
@@ -44,6 +47,9 @@ public abstract class JenkinsJob {
         try {
             jobxml = jenkins.getJobXml(prefix);
             job = jenkins.getJob(name);
+            if (jobxml == null) {
+                errorMessage("Could not get Jenkins template job", COMMAND_ERROR);
+            }
         } catch (IOException e) {
             exceptionMessage(e, "Could not get Jenkins job", IO_ERROR);
         }
@@ -76,7 +82,11 @@ public abstract class JenkinsJob {
         JobWithDetails job;
         try {
             job = jenkins.getJob(name);
-            job.build(parameter, true);
+            if (job == null) {
+                errorMessage("Could not get Jenkins job", GENERIC_ERROR);
+            } else {
+                job.build(parameter, true);
+            }
         } catch (IOException e) {
             exceptionMessage(e, "Cannot get Jenkins job", IO_ERROR);
         }
@@ -90,15 +100,18 @@ public abstract class JenkinsJob {
      */
     Map<String, String> getTestResults(String suffix) {
         String prefix = getPREFIX();
-        String status = null;
+        String status;
         JobWithDetails job;
         String name;
-        Map<String, String> map = new HashMap();
+        Map<String, String> map = new HashMap<>();
         name = prefix + "-" + suffix;
 
         try {
             job = jenkins.getJob(name);
-
+            if (job == null) {
+                errorMessage("Could not get Jenkins job", COMMAND_ERROR);
+            }
+            assert job != null;
             Build build = job.getLastBuild();
             BuildWithDetails details = build.details();
 
@@ -128,15 +141,13 @@ public abstract class JenkinsJob {
      * @param suffix The suffix part of the Jenkins job name
      * @return The path to the output file
      */
-    String createConsoleOutputFile(String suffix) {
+    String getConsoleOutputFilePath(String suffix) {
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;
-        String path = null;
-        JobWithDetails job;
+        String path;
         String buildId = "1";
         String url = "142.1.177.103:8080";
         path = url + "/job/" + name + "/" + buildId + "/console";
-        //Files.write(path, consoleOutputText.getBytes(Charset.forName("UTF-8")));
         return path;
     }
 }

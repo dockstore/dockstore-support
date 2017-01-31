@@ -58,7 +58,7 @@ import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessa
  * Prototype for testing service
  */
 public class Client {
-    public boolean development = false;
+    boolean development = false;
     private ContainersApi containersApi;
     private UsersApi usersApi;
     private GAGHApi ga4ghApi;
@@ -69,7 +69,6 @@ public class Client {
     private DockerfileTester dockerfileTester;
     private ParameterFileTester parameterFileTester;
     private JenkinsServer jenkins;
-    private String command = null;
 
     public Client() {
 
@@ -78,7 +77,7 @@ public class Client {
     /**
      * Main method
      *
-     * @param argv Command line argumetns
+     * @param argv Command line arguments
      */
     public static void main(String[] argv) {
         Client client = new Client();
@@ -90,13 +89,21 @@ public class Client {
         if (jc.getParsedCommand() != null) {
             switch (jc.getParsedCommand()) {
             case "report":
-                client.handleReport(commandReport.tools);
+                if (commandReport.help) {
+                    jc.usage("report");
+                } else {
+                    client.handleReport(commandReport.tools);
+                }
                 break;
             default:
                 client.createToolTests(cm.api, cm.source, cm.execution);
             }
         } else {
-            client.createToolTests(cm.api, cm.source, cm.execution);
+            if (cm.help) {
+                jc.usage();
+            } else {
+                client.createToolTests(cm.api, cm.source, cm.execution);
+            }
         }
 
     }
@@ -107,7 +114,6 @@ public class Client {
      * @param toolNames The tools passed in as arguments from the commmand line
      */
     private void handleReport(List<String> toolNames) {
-
         setupClientEnvironment();
         setupJenkins();
         setupTesters();
@@ -122,13 +128,19 @@ public class Client {
         finalizeResults();
     }
 
-    private void createToolTests(String api, String source, String execution) {
+    /**
+     * Deletes all the DockerfileTest and ParameterFileTest jobs and creates all the tests again
+     * @param api   api to pull the tools from
+     * @param source    the testing group that verified the tools
+     * @param execution the location to test the tools
+     */
+    private void createToolTests(String api, List<String> source, String execution) {
         setupClientEnvironment();
         setupJenkins();
         setupTesters();
         deleteJobs("DockerfileTest");
         deleteJobs("ParameterFileTest");
-        List<Tool> tools = getVerifiedTools();
+        List<Tool> tools = getVerifiedTools(source);
         for (Tool tool : tools) {
             createToolTests(tool);
         }
@@ -186,6 +198,7 @@ public class Client {
 
     void setupClientEnvironment() {
         String userHome = System.getProperty("user.home");
+        System.out.println(userHome);
         try {
             File configFile = new File(userHome + File.separator + ".tooltester" + File.separator + "config");
             this.config = new HierarchicalINIConfiguration(configFile);
@@ -319,9 +332,7 @@ public class Client {
                         String path = testParameterFile.getPath();
                         path = path.replaceFirst("^/", "");
                         path = path.replace("/", "-");
-
                         parameterFileTester.createTest(name + "-" + path);
-
                     }
                 }
             } catch (ApiException e) {
@@ -356,7 +367,7 @@ public class Client {
             dockerfileStatus = map.get("status");
             if (!dockerfileStatus.equals("SUCCESS") && !dockerfileStatus.equals("NOT_BUILT")) {
 
-                dockerfileStatus = dockerfileStatus + " See " + dockerfileTester.createConsoleOutputFile(name);
+                dockerfileStatus = dockerfileStatus + " See " + dockerfileTester.getConsoleOutputFilePath(name);
 
             }
             try {
@@ -372,7 +383,7 @@ public class Client {
                         Map<String, String> map2 = parameterFileTester.getTestResults(name + "-" + path);
                         status = map2.get("status");
                         if (!status.equals("SUCCESS") && !status.equals("NOT_BUILT")) {
-                            status = status + " See " + parameterFileTester.createConsoleOutputFile(name + "-" + path);
+                            status = status + " See " + parameterFileTester.getConsoleOutputFilePath(name + "-" + path);
                         }
                         Long duration = Long.valueOf(map.get("duration"));
                         String durationString = Duration.ofMillis(duration).toString();
@@ -472,7 +483,7 @@ public class Client {
         } catch (ApiException e) {
             exceptionMessage(e, "Could not get published containers using the container API", API_ERROR);
         }
-        Map<String, String> parameter = new HashMap();
+        Map<String, String> parameter = new HashMap<>();
         List<ToolVersion> toolVersions = tool.getVersions();
         for (ToolVersion toolversion : toolVersions) {
             String url = dockstoreTool.getGitUrl();
@@ -547,16 +558,18 @@ public class Client {
         private Boolean all = false;
         @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
         private List<String> tools = new ArrayList<>();
+        @Parameter(names = "--help", help = true)
+        private boolean help;
     }
 
     private static class CommandMain {
         @Parameter(names = { "--execution", "--runtime-environment" }, description = "Location of Testing")
         private String execution = "local";
         @Parameter(names = { "--source" }, description = "Tester Group")
-        private String source = null;
+        private List<String> source = new ArrayList<>();
         @Parameter(names = { "--api", "--dockstore-url" }, description = "dockstore install that we wish to test tools from")
         private String api = "";
-        @Parameter(names = "--help", help = true)
+        @Parameter(names = "--help", description = "Prints help for main", help = true)
         private boolean help = false;
     }
 }
