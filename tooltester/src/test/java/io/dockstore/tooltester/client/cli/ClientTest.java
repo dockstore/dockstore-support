@@ -11,21 +11,23 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static io.dockstore.tooltester.client.cli.Client.main;
+
 public class ClientTest {
     private boolean development;
     private Client client;
 
     @Before
     public void initialize() {
-        client = new Client(null);
-        client.setupClientEnvironment();
-        development = client.development;
+        this.client = new Client();
+        this.client.setupClientEnvironment();
+        development = this.client.development;
         Assert.assertTrue("client API could not start", client.getContainersApi() != null);
     }
 
     @Test
     public void setupEnvironment() throws Exception {
-        client = new Client(null);
+        client = new Client();
         client.setupClientEnvironment();
         development = client.development;
         Assert.assertTrue("client API could not start", client.getContainersApi() != null);
@@ -76,8 +78,7 @@ public class ClientTest {
     /**
      * This runs all the tool's dockerfiles
      */
-    @Test
-    public void runJenkinsTests() {
+    private void runJenkinsTests() {
         if (development) {
             client.setupJenkins();
             client.setupTesters();
@@ -91,21 +92,40 @@ public class ClientTest {
     }
 
     /**
-     * This runs all the tool's dockerfiles
+     * Creates the pipelines on Jenkins to test dockerfiles and parameter files
+     */
+    @Test
+    public void createAndrunJenkinsTests() {
+        if (development) {
+            String[] argv = { "--execution", "local", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
+            main(argv);
+            runJenkinsTests();
+        }
+    }
+
+    /**
+     * This gets the report of all the tools
      */
     @Test
     public void getJenkinsTests() {
         if (development) {
-            client.setupJenkins();
-            client.setupTesters();
-            JenkinsServer jenkins = client.getJenkins();
-            Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
-            List<Tool> tools = client.getVerifiedTools();
-            for (Tool tool : tools) {
-                client.getToolTestResults(tool);
-            }
-            client.finalizeResults();
+            String[] argv = { "report" };
+            main(argv);
         }
+    }
+
+    @Test
+    public void reportHelp() {
+        if (development) {
+            String[] argv = { "report", "--help" };
+            main(argv);
+        }
+    }
+
+    @Test
+    public void mainHelp() {
+        String[] argv = { "--help" };
+        main(argv);
     }
 
     /**

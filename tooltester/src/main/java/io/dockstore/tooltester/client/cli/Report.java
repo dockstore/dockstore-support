@@ -1,17 +1,18 @@
 package io.dockstore.tooltester.client.cli;
 
+import java.io.BufferedWriter;
 import java.io.Closeable;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * @author gluu
@@ -23,11 +24,12 @@ class Report implements Closeable {
     private static final List<String> HEADER = Arrays
             .asList("Tool/Workflow ID", "DATE", "Version", "Location of testing", "Parameter file", "Runtime", "Status of Test Files",
                     "Status of Dockerfiles");
-    private Writer writer;
+    private BufferedWriter writer;
 
     Report(String name) {
         try {
-            this.writer = new OutputStreamWriter(new FileOutputStream(name), StandardCharsets.UTF_8);
+            File file = new File("target/" + name);
+            this.writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), UTF_8));
         } catch (FileNotFoundException e) {
             exceptionMessage(e, "Cannot create new file", IO_ERROR);
         }
@@ -53,8 +55,8 @@ class Report implements Closeable {
     @Override
     public void close() {
         try {
-            writer.close();
             writer.flush();
+            writer.close();
         } catch (IOException e) {
             exceptionMessage(e, "Could not close file", IO_ERROR);
         }
