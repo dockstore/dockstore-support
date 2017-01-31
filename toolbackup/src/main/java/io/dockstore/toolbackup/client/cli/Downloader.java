@@ -18,7 +18,7 @@ public class Downloader {
     }
 
     public static void main(String[] argv) {
-        final OptionParser parser = new OptionParser();
+        OptionParser parser = new OptionParser();
         final ArgumentAcceptingOptionSpec<String> bucketName = parser.accepts("bucket-name", "bucket to which files will be backed-up").withRequiredArg().defaultsTo("");
         final ArgumentAcceptingOptionSpec<String> keyPrefix = parser.accepts("key-prefix", "key prefix of bucket (ex. client)").withRequiredArg().defaultsTo("");
         final ArgumentAcceptingOptionSpec<String> localDir = parser.accepts("destination-dir", "local directory to which all specified cloud files will be downloaded").withRequiredArg().defaultsTo(".").ofType(String.class);

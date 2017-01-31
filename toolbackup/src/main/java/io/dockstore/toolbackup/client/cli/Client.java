@@ -77,19 +77,19 @@ public class Client {
 
         out.println(Arrays.toString(argv));
 
-        final OptionParser parser = new OptionParser();
+        OptionParser parser = new OptionParser();
         final ArgumentAcceptingOptionSpec<String> bucketName = parser.accepts("bucket-name", "bucket to which files will be backed-up").withRequiredArg().defaultsTo("");
         final ArgumentAcceptingOptionSpec<String> keyPrefix = parser.accepts("key-prefix", "key prefix of bucket (ex. client)").withRequiredArg().defaultsTo("");
         final ArgumentAcceptingOptionSpec<String> localDir = parser.accepts("local-dir", "local directory to which files will be backed-up").withRequiredArg().defaultsTo(".").ofType(String.class);
         final ArgumentAcceptingOptionSpec<Boolean> isTestMode = parser.accepts("test-mode-activate", "if true test mode is activated").withRequiredArg().ofType(Boolean.class);
 
         final OptionSet options = parser.parse(argv);
+        Client client = new Client(options);
 
         String local = options.valueOf(localDir);
         String dirPath = Paths.get(local).toAbsolutePath().toString();
         DirectoryGenerator.validatePath(dirPath);
 
-        Client client = new Client(options);
         client.run(dirPath, options.valueOf(bucketName), options.valueOf(keyPrefix), options.valueOf(isTestMode));
     }
 

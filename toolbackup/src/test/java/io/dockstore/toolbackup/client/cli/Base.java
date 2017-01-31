@@ -30,6 +30,17 @@ public class Base {
 
     protected static String userHome = System.getProperty("user.home");
 
+    protected static void generateAWSConfig() {
+        StringBuilder stringBuilder = new StringBuilder("[default]\n");
+        stringBuilder.append("aws_access_key_id=MOCK_ACCESS_KEY\n");
+        stringBuilder.append("aws_secret_access_key=MOCK_SECRET_KEY\n");
+        try {
+            FileUtils.writeStringToFile(new File(userHome + File.separator + ".aws/credentials"), stringBuilder.toString(), "UTF-8");
+        } catch (IOException e) {
+            throw new RuntimeException("Could not create ~/.aws/credentials");
+        }
+    }
+
     static {
         try {
             File configFile = new File(userHome + File.separator + ".toolbackup" + File.separator + "config.ini");

@@ -48,7 +48,7 @@ class S3Communicator {
         return s3Client.doesBucketExist(bucketName);
     }
 
-    private void createBucket(String bucketName) {
+    void createBucket(String bucketName) {
         if(!doesBucketExist(bucketName)) {
             s3Client.createBucket(new CreateBucketRequest(bucketName));
         }

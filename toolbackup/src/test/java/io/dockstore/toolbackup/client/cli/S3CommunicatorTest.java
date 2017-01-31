@@ -1,13 +1,9 @@
 package io.dockstore.toolbackup.client.cli;
 
 import com.amazonaws.services.s3.model.AmazonS3Exception;
-import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
 
 import static org.junit.Assume.assumeFalse;
 
@@ -17,24 +13,14 @@ import static org.junit.Assume.assumeFalse;
 public class S3CommunicatorTest extends Base {
     private static S3Communicator S_3_COMMUNICATOR;
 
-    private static boolean generateAWSConfig() {
-        StringBuilder stringBuilder = new StringBuilder("[default]\n");
-        stringBuilder.append("aws_access_key_id=MOCK_ACCESS_KEY\n");
-        stringBuilder.append("aws_secret_access_key=MOCK_SECRET_KEY\n");
-        try {
-            FileUtils.writeStringToFile(new File(userHome + File.separator + ".aws/credentials"), stringBuilder.toString(), "UTF-8");
-        } catch (IOException e) {
-            throw new RuntimeException("Could not create ~/.aws/credentials");
-        }
-        return true;
-    }
-
     @BeforeClass
     public static void setUp() {
         // generate ~/.aws/credentials
         generateAWSConfig();
 
         S_3_COMMUNICATOR = new S3Communicator();
+
+        S_3_COMMUNICATOR.createBucket(BUCKET);
     }
 
     @Test(expected = IllegalArgumentException.class)

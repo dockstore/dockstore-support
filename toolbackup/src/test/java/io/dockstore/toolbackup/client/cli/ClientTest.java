@@ -2,10 +2,18 @@ package io.dockstore.toolbackup.client.cli;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
+import java.util.List;
+
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Created by kcao on 25/01/17.
@@ -14,7 +22,20 @@ public class ClientTest extends Base {
     private static final DockerCommunicator DOCKER_COMMUNICATOR = new DockerCommunicator();
     private static final String[] ARGV = new String[]{"--bucket-name", BUCKET, "--local-dir", DIR, "--key-prefix", PREFIX, "--test-mode-activate", "true"};
 
-    /*
+    @BeforeClass
+    public static void setUp() {
+        generateAWSConfig();
+    }
+
+    @Test
+    public void setupEnvironment() throws Exception {
+        OptionParser parser = new OptionParser();
+        final OptionSet parsed = parser.parse("");
+        Client client = new Client(parsed);
+        client.setupClientEnvironment();
+        assertTrue("client API could not start", client.getContainersApi() != null);
+    }
+
     @Test
     public void main() throws Exception {
         Client.main(ARGV);
@@ -45,16 +66,6 @@ public class ClientTest extends Base {
 
         client.saveDockerImage(IMG, imgFile);
         assertTrue(imgFile.isFile());
-    }
-    */
-
-    @Test
-    public void setupEnvironment() throws Exception {
-        OptionParser parser = new OptionParser();
-        final OptionSet parsed = parser.parse("");
-        Client client = new Client(parsed);
-        client.setupClientEnvironment();
-        assertTrue("client API could not start", client.getContainersApi() != null);
     }
 
     @AfterClass
