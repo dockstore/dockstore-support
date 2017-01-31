@@ -24,7 +24,7 @@ install:
 - cd tooltester && mvn -B clean install -DskipITs=false cobertura:cobertura coveralls:report
 - docker pull quay.io/garyluu/jenkins
 - docker network create --subnet=172.18.0.0/16 travisnet
-- docker run --net travisnet --ip 172.18.0.22 -it quay.io/garyluu/jenkins
+- docker run --net travisnet --ip 172.18.0.22 -it quay.io/garyluu/jenkins &
 
 
 notifications:

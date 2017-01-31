@@ -47,8 +47,6 @@ import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.CLIENT_ERROR;
@@ -60,11 +58,7 @@ import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessa
  * Prototype for testing service
  */
 public class Client {
-    private static final Logger LOG = LoggerFactory.getLogger(Client.class);
     public boolean development = false;
-    private String execution = null;
-    private String source = null;
-    private String api = null;
     private ContainersApi containersApi;
     private UsersApi usersApi;
     private GAGHApi ga4ghApi;

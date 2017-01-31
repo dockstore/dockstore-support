@@ -11,15 +11,17 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static io.dockstore.tooltester.client.cli.Client.main;
+
 public class ClientTest {
     private boolean development;
     private Client client;
 
     @Before
     public void initialize() {
-        client = new Client();
-        client.setupClientEnvironment();
-        development = client.development;
+        this.client = new Client();
+        this.client.setupClientEnvironment();
+        development = this.client.development;
         Assert.assertTrue("client API could not start", client.getContainersApi() != null);
     }
 
@@ -96,7 +98,7 @@ public class ClientTest {
     public void createAndrunJenkinsTests() {
         if (development) {
             String[] argv = { "--execution", "local", "--source", "docktesters", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
-            client.main(argv);
+            main(argv);
             runJenkinsTests();
         }
     }
@@ -108,7 +110,7 @@ public class ClientTest {
     public void getJenkinsTests() {
         if (development) {
             String[] argv = { "report" };
-            client.main(argv);
+            main(argv);
         }
     }
 

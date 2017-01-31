@@ -3,7 +3,6 @@ package io.dockstore.tooltester.client.cli;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -50,17 +49,6 @@ public class JenkinsJobTest {
             map.put("ParameterPath", "test1.json");
 
             parameterFileTester.runTest(suffix, map);
-
-            int count = 0;
-
-            while (count < 10 && !parameterFileTester.getTestResults(suffix).equals("SUCCESS")) {
-                try {
-                    TimeUnit.SECONDS.sleep(1);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                count++;
-            }
             String status = parameterFileTester.getTestResults(suffix).get("status");
             assertTrue("Status is not SUCCESS: " + status, status.equals("SUCCESS") || status.equals("Building"));
             try {
