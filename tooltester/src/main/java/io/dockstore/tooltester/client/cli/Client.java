@@ -199,7 +199,6 @@ public class Client {
 
     void setupClientEnvironment() {
         String userHome = System.getProperty("user.home");
-        System.out.println(userHome);
         try {
             File configFile = new File(userHome + File.separator + ".tooltester" + File.separator + "config");
             this.config = new HierarchicalINIConfiguration(configFile);

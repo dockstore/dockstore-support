@@ -14,14 +14,12 @@ import org.junit.Test;
 import static io.dockstore.tooltester.client.cli.Client.main;
 
 public class ClientTest {
-    private boolean development;
     private Client client;
 
     @Before
     public void initialize() {
         this.client = new Client();
         this.client.setupClientEnvironment();
-        development = this.client.development;
         Assert.assertTrue("client API could not start", client.getContainersApi() != null);
     }
 
@@ -29,7 +27,6 @@ public class ClientTest {
     public void setupEnvironment() throws Exception {
         client = new Client();
         client.setupClientEnvironment();
-        development = client.development;
         Assert.assertTrue("client API could not start", client.getContainersApi() != null);
     }
 
@@ -38,10 +35,8 @@ public class ClientTest {
      */
     @Test
     public void setupJenkins() {
-        if (development) {
             client.setupJenkins();
             Assert.assertTrue("Jenkins server can not be reached", client.getJenkins() != null);
-        }
     }
 
     /**
@@ -49,13 +44,11 @@ public class ClientTest {
      */
     @Test
     public void deleteJenkinsTests() {
-        if (development) {
             client.setupJenkins();
             JenkinsServer jenkins = client.getJenkins();
             Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
             client.deleteJobs("DockerfileTest");
             client.deleteJobs("ParameterFileTest");
-        }
     }
 
     /**
@@ -63,7 +56,6 @@ public class ClientTest {
      */
     @Test
     public void createJenkinsTests() {
-        if (development) {
             client.setupJenkins();
             client.setupTesters();
             JenkinsServer jenkins = client.getJenkins();
@@ -72,14 +64,12 @@ public class ClientTest {
             for (Tool tool : tools) {
                 client.createToolTests(tool);
             }
-        }
     }
 
     /**
      * This runs all the tool's dockerfiles
      */
     private void runJenkinsTests() {
-        if (development) {
             client.setupJenkins();
             client.setupTesters();
             JenkinsServer jenkins = client.getJenkins();
@@ -88,7 +78,6 @@ public class ClientTest {
             for (Tool tool : tools) {
                 client.testTool(tool);
             }
-        }
     }
 
     /**
@@ -96,11 +85,9 @@ public class ClientTest {
      */
     @Test
     public void createAndrunJenkinsTests() {
-        if (development) {
             String[] argv = { "--execution", "local", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
             main(argv);
             runJenkinsTests();
-        }
     }
 
     /**
@@ -108,18 +95,14 @@ public class ClientTest {
      */
     @Test
     public void getJenkinsTests() {
-        if (development) {
             String[] argv = { "report" };
             main(argv);
-        }
     }
 
     @Test
     public void reportHelp() {
-        if (development) {
             String[] argv = { "report", "--help" };
             main(argv);
-        }
     }
 
     @Test
