@@ -47,6 +47,8 @@ import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.CLIENT_ERROR;
@@ -69,6 +71,7 @@ public class Client {
     private DockerfileTester dockerfileTester;
     private ParameterFileTester parameterFileTester;
     private JenkinsServer jenkins;
+    private static final Logger LOG = LoggerFactory.getLogger(Client.class);
 
     public Client() {
 
@@ -176,7 +179,6 @@ public class Client {
     }
 
     protected void setupJenkins() {
-        if (development) {
             try {
                 String serverUrl;
                 String username;
@@ -184,17 +186,15 @@ public class Client {
                 serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
                 username = config.getString("jenkins-username", "travis");
                 password = config.getString("jenkins-password", "travis");
-                ExceptionHandler.LOG.info("The current configuration: " + serverUrl + " " + username + "" + password);
                 setJenkins(new JenkinsServer(new URI(serverUrl), username, password));
                 Map<String, Job> jobs = jenkins.getJobs();
                 JenkinsVersion version = jenkins.getVersion();
-                System.out.println("Jenkins is version " + version.getLiteralVersion() + " and has " + jobs.size() + " jobs");
+                //LOG.info("Jenkins is version " + version.getLiteralVersion() + " and has " + jobs.size() + " jobs");
             } catch (URISyntaxException e) {
                 exceptionMessage(e, "Jenkins server URI is not valid", CLIENT_ERROR);
             } catch (IOException e) {
                 exceptionMessage(e, "Could not connect to Jenkins server", IO_ERROR);
             }
-        }
     }
 
     void setupClientEnvironment() {
@@ -206,11 +206,10 @@ public class Client {
             exceptionMessage(e, "", API_ERROR);
         }
 
-        // pull out the variables from the config
+        // pull out the variables from the config if it exists
         String token = config.getString("token", "");
         String serverUrl = config.getString("server-url", "https://www.dockstore.org:8443");
         this.development = config.getBoolean("development", true);
-        ExceptionHandler.LOG.info("The current configuration: " + development + " " + serverUrl);
 
         ApiClient defaultApiClient;
         defaultApiClient = Configuration.getDefaultApiClient();
@@ -227,7 +226,7 @@ public class Client {
             }
         } catch (ApiException e) {
             //exceptionMessage(e, "Could not use user API", API_ERROR);
-            System.out.println("Could not use user API.  Admin is false by default");
+            LOG.warn("Could not use user API.  Admin is false by default");
             this.isAdmin = false;
         }
         defaultApiClient.setDebugging(DEBUG.get());
