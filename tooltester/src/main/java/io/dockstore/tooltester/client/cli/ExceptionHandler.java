@@ -18,7 +18,7 @@ class ExceptionHandler {
     static final int CLIENT_ERROR = 4; // Client does something wrong (ex. input validation)
     static final int COMMAND_ERROR = 10; // Command is not successful, but not due to errors
     static final AtomicBoolean DEBUG = new AtomicBoolean(false);
-    private static final Logger LOG = LoggerFactory.getLogger(TypeData.ClassName.class.getName());
+    static final Logger LOG = LoggerFactory.getLogger(TypeData.ClassName.class);
 
     static void errorMessage(String message, int exitCode) {
         err(message);

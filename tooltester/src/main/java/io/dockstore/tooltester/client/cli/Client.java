@@ -181,9 +181,10 @@ public class Client {
                 String serverUrl;
                 String username;
                 String password;
-                serverUrl = config.getString("jenkins-server-url");
-                username = config.getString("jenkins-username");
-                password = config.getString("jenkins-password");
+                serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+                username = config.getString("jenkins-username", "jenkins");
+                password = config.getString("jenkins-password", "jenkins");
+                ExceptionHandler.LOG.info("The current configuration: " + serverUrl + " " + username + "" + password);
                 setJenkins(new JenkinsServer(new URI(serverUrl), username, password));
                 Map<String, Job> jobs = jenkins.getJobs();
                 JenkinsVersion version = jenkins.getVersion();
@@ -209,7 +210,8 @@ public class Client {
         // pull out the variables from the config
         String token = config.getString("token", "");
         String serverUrl = config.getString("server-url", "https://www.dockstore.org:8443");
-        this.development = config.getBoolean("development", false);
+        this.development = config.getBoolean("development", true);
+        ExceptionHandler.LOG.info("The current configuration: " + development + " " + serverUrl);
 
         ApiClient defaultApiClient;
         defaultApiClient = Configuration.getDefaultApiClient();
