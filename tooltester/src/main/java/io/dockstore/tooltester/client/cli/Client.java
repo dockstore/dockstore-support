@@ -182,8 +182,8 @@ public class Client {
                 String username;
                 String password;
                 serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-                username = config.getString("jenkins-username", "jenkins");
-                password = config.getString("jenkins-password", "jenkins");
+                username = config.getString("jenkins-username", "travis");
+                password = config.getString("jenkins-password", "travis");
                 ExceptionHandler.LOG.info("The current configuration: " + serverUrl + " " + username + "" + password);
                 setJenkins(new JenkinsServer(new URI(serverUrl), username, password));
                 Map<String, Job> jobs = jenkins.getJobs();
