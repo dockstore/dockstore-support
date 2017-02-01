@@ -27,9 +27,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 
 import com.beust.jcommander.JCommander;
+import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.offbytwo.jenkins.JenkinsServer;
@@ -52,14 +52,18 @@ import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.CLIENT_ERROR;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.DEBUG;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
+
+//import java.util.stream.LongStream;
 
 /**
  * Prototype for testing service
  */
 public class Client {
+    private static final Logger LOG = LoggerFactory.getLogger(Client.class);
     boolean development = false;
     private ContainersApi containersApi;
     private UsersApi usersApi;
@@ -71,7 +75,6 @@ public class Client {
     private DockerfileTester dockerfileTester;
     private ParameterFileTester parameterFileTester;
     private JenkinsServer jenkins;
-    private static final Logger LOG = LoggerFactory.getLogger(Client.class);
 
     public Client() {
 
@@ -88,7 +91,11 @@ public class Client {
         JCommander jc = new JCommander(cm);
         CommandReport commandReport = new CommandReport();
         jc.addCommand("report", commandReport);
-        jc.parse(argv);
+        try {
+            jc.parse(argv);
+        } catch (MissingCommandException e) {
+            exceptionMessage(e, "Unknown command", COMMAND_ERROR);
+        }
         if (jc.getParsedCommand() != null) {
             switch (jc.getParsedCommand()) {
             case "report":
@@ -98,8 +105,6 @@ public class Client {
                     client.handleReport(commandReport.tools);
                 }
                 break;
-            default:
-                client.createToolTests(cm.api, cm.source, cm.execution);
             }
         } else {
             if (cm.help) {
@@ -133,7 +138,8 @@ public class Client {
 
     /**
      * Deletes all the DockerfileTest and ParameterFileTest jobs and creates all the tests again
-     * @param api   api to pull the tools from
+     *
+     * @param api       api to pull the tools from
      * @param source    the testing group that verified the tools
      * @param execution the location to test the tools
      */
@@ -179,22 +185,22 @@ public class Client {
     }
 
     protected void setupJenkins() {
-            try {
-                String serverUrl;
-                String username;
-                String password;
-                serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-                username = config.getString("jenkins-username", "travis");
-                password = config.getString("jenkins-password", "travis");
-                setJenkins(new JenkinsServer(new URI(serverUrl), username, password));
-                Map<String, Job> jobs = jenkins.getJobs();
-                JenkinsVersion version = jenkins.getVersion();
-                //LOG.info("Jenkins is version " + version.getLiteralVersion() + " and has " + jobs.size() + " jobs");
-            } catch (URISyntaxException e) {
-                exceptionMessage(e, "Jenkins server URI is not valid", CLIENT_ERROR);
-            } catch (IOException e) {
-                exceptionMessage(e, "Could not connect to Jenkins server", IO_ERROR);
-            }
+        try {
+            String serverUrl;
+            String username;
+            String password;
+            serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+            username = config.getString("jenkins-username", "travis");
+            password = config.getString("jenkins-password", "travis");
+            setJenkins(new JenkinsServer(new URI(serverUrl), username, password));
+            Map<String, Job> jobs = jenkins.getJobs();
+            JenkinsVersion version = jenkins.getVersion();
+            //LOG.info("Jenkins is version " + version.getLiteralVersion() + " and has " + jobs.size() + " jobs");
+        } catch (URISyntaxException e) {
+            exceptionMessage(e, "Jenkins server URI is not valid", CLIENT_ERROR);
+        } catch (IOException e) {
+            exceptionMessage(e, "Could not connect to Jenkins server", IO_ERROR);
+        }
     }
 
     void setupClientEnvironment() {
@@ -218,7 +224,7 @@ public class Client {
 
         this.containersApi = new ContainersApi(defaultApiClient);
         this.usersApi = new UsersApi(defaultApiClient);
-        this.ga4ghApi = new GAGHApi(defaultApiClient);
+        setGa4ghApi(new GAGHApi(defaultApiClient));
 
         try {
             if (this.usersApi.getApiClient() != null) {
@@ -246,23 +252,23 @@ public class Client {
     /**
      * do the actual work here
      */
-    private void run() {
-        setupClientEnvironment();
-        setupJenkins();
-        boolean toolTestResult = false;
-        /** use swagger-generated classes to talk to dockstore */
-        try {
-            final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
-            System.out.println("Number of tools on Dockstore: " + tools.size());
-            LongStream longStream = tools.parallelStream().filter(Tool::getVerified)
-                    .mapToLong(tool -> tool.getVersions().parallelStream().filter(ToolVersion::getVerified).count());
-            System.out.println("Number of versions of tools to test on Dockstore (currently): " + longStream.sum());
-            //            toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testTool).reduce(true, Boolean::logicalAnd);
-            //            System.out.println("Successful \"testing\" of tools found on Dockstore: " + toolTestResult);
-        } catch (ApiException e) {
-            exceptionMessage(e, "", API_ERROR);
-        }
-    }
+    //    private void run() {
+    //        setupClientEnvironment();
+    //        setupJenkins();
+    //        boolean toolTestResult = false;
+    //        /** use swagger-generated classes to talk to dockstore */
+    //        try {
+    //            final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
+    //            System.out.println("Number of tools on Dockstore: " + tools.size());
+    //            LongStream longStream = tools.parallelStream().filter(Tool::getVerified)
+    //                    .mapToLong(tool -> tool.getVersions().parallelStream().filter(ToolVersion::getVerified).count());
+    //            System.out.println("Number of versions of tools to test on Dockstore (currently): " + longStream.sum());
+    //            //            toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testTool).reduce(true, Boolean::logicalAnd);
+    //            //            System.out.println("Successful \"testing\" of tools found on Dockstore: " + toolTestResult);
+    //        } catch (ApiException e) {
+    //            exceptionMessage(e, "", API_ERROR);
+    //        }
+    //    }
 
     /**
      * This function counts the number of tests that need to be created
@@ -436,6 +442,7 @@ public class Client {
      */
     List<Tool> getVerifiedTools() {
         List<Tool> verifiedTools = null;
+        GAGHApi ga4ghApi = getGa4ghApi();
         try {
             final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
             verifiedTools = tools.parallelStream().filter(Tool::getVerified).collect(Collectors.toList());

@@ -108,10 +108,6 @@ public abstract class JenkinsJob {
 
         try {
             job = jenkins.getJob(name);
-            if (job == null) {
-                errorMessage("Could not get Jenkins job", COMMAND_ERROR);
-            }
-            assert job != null;
             Build build = job.getLastBuild();
             BuildWithDetails details = build.details();
 
@@ -131,6 +127,8 @@ public abstract class JenkinsJob {
 
         } catch (IOException e) {
             exceptionMessage(e, "Could not get Jenkins job results", IO_ERROR);
+        } catch (NullPointerException e) {
+            errorMessage("Could not get Jenkins job", COMMAND_ERROR);
         }
         return map;
     }

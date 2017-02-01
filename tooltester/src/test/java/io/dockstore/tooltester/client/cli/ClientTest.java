@@ -9,11 +9,17 @@ import io.swagger.client.ApiException;
 import io.swagger.client.model.Tool;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 
 import static io.dockstore.tooltester.client.cli.Client.main;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.API_ERROR;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
 
 public class ClientTest {
+    @Rule
+    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
     private Client client;
 
     @Before
@@ -35,8 +41,8 @@ public class ClientTest {
      */
     @Test
     public void setupJenkins() {
-            client.setupJenkins();
-            Assert.assertTrue("Jenkins server can not be reached", client.getJenkins() != null);
+        client.setupJenkins();
+        Assert.assertTrue("Jenkins server can not be reached", client.getJenkins() != null);
     }
 
     /**
@@ -44,11 +50,11 @@ public class ClientTest {
      */
     @Test
     public void deleteJenkinsTests() {
-            client.setupJenkins();
-            JenkinsServer jenkins = client.getJenkins();
-            Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
-            client.deleteJobs("DockerfileTest");
-            client.deleteJobs("ParameterFileTest");
+        client.setupJenkins();
+        JenkinsServer jenkins = client.getJenkins();
+        Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
+        client.deleteJobs("DockerfileTest");
+        client.deleteJobs("ParameterFileTest");
     }
 
     /**
@@ -56,28 +62,38 @@ public class ClientTest {
      */
     @Test
     public void createJenkinsTests() {
-            client.setupJenkins();
-            client.setupTesters();
-            JenkinsServer jenkins = client.getJenkins();
-            Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
-            List<Tool> tools = client.getVerifiedTools();
-            for (Tool tool : tools) {
-                client.createToolTests(tool);
-            }
+        client.setupJenkins();
+        client.setupTesters();
+        JenkinsServer jenkins = client.getJenkins();
+        Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
+        List<Tool> tools = client.getVerifiedTools();
+        for (Tool tool : tools) {
+            client.createToolTests(tool);
+        }
     }
 
     /**
      * This runs all the tool's dockerfiles
      */
     private void runJenkinsTests() {
-            client.setupJenkins();
-            client.setupTesters();
-            JenkinsServer jenkins = client.getJenkins();
-            Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
-            List<Tool> tools = client.getVerifiedTools();
-            for (Tool tool : tools) {
-                client.testTool(tool);
-            }
+        client.setupJenkins();
+        client.setupTesters();
+        JenkinsServer jenkins = client.getJenkins();
+        Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
+        List<Tool> tools = client.getVerifiedTools();
+        for (Tool tool : tools) {
+            client.testTool(tool);
+        }
+    }
+
+    /**
+     * Test with unknown command
+     */
+    @Test
+    public void unknownCommand() {
+        String[] argv = { "unknown" };
+        exit.expectSystemExitWithStatus(COMMAND_ERROR);
+        main(argv);
     }
 
     /**
@@ -85,9 +101,29 @@ public class ClientTest {
      */
     @Test
     public void createAndrunJenkinsTests() {
-            String[] argv = { "--execution", "local", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
-            main(argv);
-            runJenkinsTests();
+        String[] argv = { "--execution", "local", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
+        main(argv);
+        runJenkinsTests();
+    }
+
+    /**
+     * This attempts to test an invalid tool
+     */
+    @Test
+    public void testInvalidTool() {
+        exit.expectSystemExitWithStatus(API_ERROR);
+        Tool tool = new Tool();
+        client.testTool(tool);
+    }
+
+    /**
+     * This attempts to get the results of an invalid tool;
+     */
+    @Test
+    public void getInvalidTool() {
+        exit.expectSystemExitWithStatus(API_ERROR);
+        Tool tool = new Tool();
+        client.getToolTestResults(tool);
     }
 
     /**
@@ -95,16 +131,24 @@ public class ClientTest {
      */
     @Test
     public void getJenkinsTests() {
-            String[] argv = { "report" };
-            main(argv);
+        String[] argv = { "report" };
+        main(argv);
+        argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow" };
+        main(argv);
     }
 
+    /**
+     * This displays the help menu for the report command
+     */
     @Test
     public void reportHelp() {
-            String[] argv = { "report", "--help" };
-            main(argv);
+        String[] argv = { "report", "--help" };
+        main(argv);
     }
 
+    /**
+     * This displays the help menu for the main command
+     */
     @Test
     public void mainHelp() {
         String[] argv = { "--help" };
