@@ -37,7 +37,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <github.url>scm:git:git@github.com:ga4gh/dockstore-support.git</github.url>
         <assertj.version>3.4.1</assertj.version>
-        <junit-version>4.12</junit-version>
+        <junit-version>4.11</junit-version>
         <slf4j.version>1.7.21</slf4j.version>
         <cwlavro.version>1.0.6</cwlavro.version>
         <jackson.version>2.7.6</jackson.version>
@@ -267,7 +267,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>4.11</version>
             <scope>test</scope>
         </dependency>
 

@@ -105,6 +105,8 @@ public class Client {
                     client.handleReport(commandReport.tools);
                 }
                 break;
+            default:
+                jc.usage();
             }
         } else {
             if (cm.help) {
