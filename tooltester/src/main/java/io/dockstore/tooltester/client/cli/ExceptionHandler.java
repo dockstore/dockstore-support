@@ -2,7 +2,6 @@ package io.dockstore.tooltester.client.cli;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javassist.bytecode.stackmap.TypeData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +17,7 @@ class ExceptionHandler {
     static final int CLIENT_ERROR = 4; // Client does something wrong (ex. input validation)
     static final int COMMAND_ERROR = 10; // Command is not successful, but not due to errors
     static final AtomicBoolean DEBUG = new AtomicBoolean(false);
-    static final Logger LOG = LoggerFactory.getLogger(TypeData.ClassName.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
 
     static void errorMessage(String message, int exitCode) {
         err(message);

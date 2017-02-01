@@ -21,12 +21,11 @@ jdk:
 - oraclejdk8
 
 install:
-- cd tooltester && mvn -B clean install -DskipITs=false cobertura:cobertura coveralls:report
-- ls
 - docker pull quay.io/garyluu/jenkins
 - docker network create --subnet=172.18.0.0/16 travisnet
-- docker run --net travisnet --ip 172.18.0.22 -it quay.io/garyluu/jenkins &
-
+- docker run -d --net travisnet --ip 172.18.0.22 quay.io/garyluu/jenkins
+- ping -c 4 172.18.0.22
+- cd tooltester && mvn -B clean install -DskipITs=false cobertura:cobertura coveralls:report
 
 notifications:
   webhooks:
