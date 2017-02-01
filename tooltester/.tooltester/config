@@ -1,7 +1,7 @@
 server-url = https://www.dockstore.org:8443
 token = ""
 jenkins-server-url = http://172.18.0.22:8080/
-jenkins-username = jenkins
-jenkins-password = jenkins
+jenkins-username = travis
+jenkins-password = travis
 development = true
 
