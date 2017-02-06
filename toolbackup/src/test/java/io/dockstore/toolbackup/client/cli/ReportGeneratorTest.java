@@ -29,7 +29,7 @@ public class ReportGeneratorTest extends Base {
     public static void setUpFiles() {
         Client.main(new String[]{"--bucket-name", BUCKET, "--local-dir", DIR, "--test-mode-activate", "true", "--key-prefix", PREFIX});
         htmlFiles = ((List<File>) FileUtils.listFiles(new File(REPORT), new String[] { "html" }, false));
-        jsonFiles = ((List<File>) FileUtils.listFiles(new File(REPORT), new String[] { "JSON" }, false));
+        jsonFiles = ((List<File>) FileUtils.listFiles(new File(REPORT), new String[] { "JSON", "json" }, false));
     }
 
     @Test

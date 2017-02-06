@@ -158,7 +158,7 @@ public class Client {
 
         // 3. upload to cloud
         // NOTE: cannot invoke getFilesForUpload again as sometimes the report size may be exactly the same but the contents will be different
-        forUpload.addAll(FileUtils.listFiles(new File(reportDir), new String[] { "html", "JSON" }, false));
+        forUpload.addAll(FileUtils.listFiles(new File(reportDir), new String[] { "html", "JSON", "json" }, false));
         s3Communicator.uploadDirectory(bucketName, keyPrefix, baseDir, forUpload);
 
         s3Communicator.shutDown();
