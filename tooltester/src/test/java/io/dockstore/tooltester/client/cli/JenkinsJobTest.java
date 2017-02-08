@@ -59,6 +59,32 @@ public class JenkinsJobTest {
     }
 
     @Test
+    public void PipelineTestJobIT() {
+        final String suffix = "id-tag";
+        client.setupJenkins();
+        Assert.assertTrue("Jenkins server can not be reached", client.getJenkins() != null);
+        client.setupTesters();
+        PipelineTester pipelineTester = client.getPipelineTester();
+        pipelineTester.createTest(suffix);
+
+        Map<String, String> map = new HashMap<>();
+        map.put("URL", "https://github.com/CancerCollaboratory/dockstore-tool-kallisto.git");
+        map.put("Tag", "master");
+        map.put("DockerfilePath", "Dockerfile");
+        map.put("DescriptorPath", "Dockstore.cwl Dockstore.cwl");
+        map.put("ParameterPath", "test1.json test2.json");
+
+        pipelineTester.runTest(suffix, map);
+        String status = pipelineTester.getTestResults(suffix).get("status");
+        assertTrue("Status is not SUCCESS: " + status != null);
+        //        try {
+        //            client.getJenkins().deleteJob("PipelineTest" + "-" + suffix, true);
+        //        } catch (IOException e) {
+        //            System.out.println("Could not delete Jenkins job");
+        //        }
+    }
+
+    @Test
     public void DockerfileTestJobIT() {
         final String suffix = "id-tag-test.json";
         client.setupJenkins();

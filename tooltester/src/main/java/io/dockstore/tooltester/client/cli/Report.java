@@ -22,8 +22,7 @@ class Report implements Closeable {
     private static final char COMMA_SEPARATOR = ',';
     //private static final char TAB_SEPERATOR = '\t';
     private static final List<String> HEADER = Arrays
-            .asList("Tool/Workflow ID", "DATE", "Version", "Location of testing", "Parameter file", "Runtime", "Status of Test Files",
-                    "Status of Dockerfiles");
+            .asList("Tool/Workflow ID", "DATE", "Version", "Location of testing", "Action Performed", "Runtime", "Status of Test Files");
     private BufferedWriter writer;
 
     Report(String name) {

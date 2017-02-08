@@ -7,6 +7,7 @@ import java.util.List;
 import com.offbytwo.jenkins.JenkinsServer;
 import io.swagger.client.ApiException;
 import io.swagger.client.model.Tool;
+import io.swagger.client.model.ToolVersion;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -55,21 +56,7 @@ public class ClientTest {
         Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
         client.deleteJobs("DockerfileTest");
         client.deleteJobs("ParameterFileTest");
-    }
-
-    /**
-     * Creates the pipelines on Jenkins to test dockerfiles and parameter files
-     */
-    @Test
-    public void createJenkinsTests() {
-        client.setupJenkins();
-        client.setupTesters();
-        JenkinsServer jenkins = client.getJenkins();
-        Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
-        List<Tool> tools = client.getVerifiedTools();
-        for (Tool tool : tools) {
-            client.createToolTests(tool);
-        }
+        client.deleteJobs("PipelineTest");
     }
 
     /**
@@ -82,7 +69,7 @@ public class ClientTest {
         Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
         List<Tool> tools = client.getVerifiedTools();
         for (Tool tool : tools) {
-            client.testTool(tool);
+            client.testTool2(tool);
         }
     }
 
@@ -100,10 +87,19 @@ public class ClientTest {
      * Creates the pipelines on Jenkins to test dockerfiles and parameter files
      */
     @Test
-    public void createAndrunJenkinsTests() {
+    public void createAndRunJenkinsTests() {
         String[] argv = { "--execution", "local", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
         main(argv);
         runJenkinsTests();
+    }
+
+    /**
+     * This tests the Jenkins pipeline creation
+     */
+    @Test
+    public void createJenkinsTests() {
+        String[] argv = { "--execution", "local", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
+        main(argv);
     }
 
     /**
@@ -113,7 +109,7 @@ public class ClientTest {
     public void testInvalidTool() {
         exit.expectSystemExitWithStatus(API_ERROR);
         Tool tool = new Tool();
-        client.testTool(tool);
+        client.testTool2(tool);
     }
 
     /**
@@ -121,9 +117,11 @@ public class ClientTest {
      */
     @Test
     public void getInvalidTool() {
-        exit.expectSystemExitWithStatus(API_ERROR);
+        exit.expectSystemExitWithStatus(COMMAND_ERROR);
         Tool tool = new Tool();
-        client.getToolTestResults(tool);
+        List<ToolVersion> versions = Arrays.asList(null, null);
+        tool.setVersions(versions);
+        client.getToolTestResults2(tool);
     }
 
     /**
@@ -133,7 +131,10 @@ public class ClientTest {
     public void getJenkinsTests() {
         String[] argv = { "report" };
         main(argv);
-        argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow" };
+    }
+
+    public void getSpecificJenkinsTest() {
+        String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow" };
         main(argv);
     }
 
