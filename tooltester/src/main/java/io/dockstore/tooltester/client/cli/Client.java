@@ -20,18 +20,24 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.MediaType;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import com.google.gson.Gson;
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.helper.JenkinsVersion;
 import com.offbytwo.jenkins.model.Job;
@@ -47,6 +53,7 @@ import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +61,9 @@ import static io.dockstore.tooltester.client.cli.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.CLIENT_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.DEBUG;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
 
 //import java.util.stream.LongStream;
@@ -74,6 +83,7 @@ public class Client {
     private HierarchicalINIConfiguration config;
     private DockerfileTester dockerfileTester;
     private ParameterFileTester parameterFileTester;
+    private PipelineTester pipelineTester;
     private JenkinsServer jenkins;
 
     public Client() {
@@ -90,10 +100,13 @@ public class Client {
         CommandMain cm = new CommandMain();
         JCommander jc = new JCommander(cm);
         CommandReport commandReport = new CommandReport();
+        CommandEnqueue commandEnqueue = new CommandEnqueue();
         jc.addCommand("report", commandReport);
+        jc.addCommand("enqueue", commandEnqueue);
         try {
             jc.parse(argv);
         } catch (MissingCommandException e) {
+            jc.usage();
             exceptionMessage(e, "Unknown command", COMMAND_ERROR);
         }
         if (jc.getParsedCommand() != null) {
@@ -105,6 +118,13 @@ public class Client {
                     client.handleReport(commandReport.tools);
                 }
                 break;
+            case "enqueue":
+                if (commandEnqueue.help) {
+                    jc.usage("enqueue");
+                } else {
+                    client.handleRunTests(commandEnqueue.tools);
+                }
+                break;
             default:
                 jc.usage();
             }
@@ -112,10 +132,14 @@ public class Client {
             if (cm.help) {
                 jc.usage();
             } else {
-                client.createToolTests(cm.api, cm.source, cm.execution);
+                client.handleCreateTests(cm.api, cm.source, cm.execution);
             }
         }
 
+    }
+
+    public PipelineTester getPipelineTester() {
+        return pipelineTester;
     }
 
     /**
@@ -124,18 +148,57 @@ public class Client {
      * @param toolNames The tools passed in as arguments from the commmand line
      */
     private void handleReport(List<String> toolNames) {
-        setupClientEnvironment();
-        setupJenkins();
-        setupTesters();
-        List<Tool> tools = getVerifiedTools();
-        openResults();
-        if (!toolNames.isEmpty()) {
-            tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
+        try {
+            setupClientEnvironment();
+            setupJenkins();
+            setupTesters();
+            List<Tool> tools = getVerifiedTools();
+            openResults();
+            if (!toolNames.isEmpty()) {
+                tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
+            }
+            for (Tool tool : tools) {
+                getToolTestResults2(tool);
+            }
+            finalizeResults();
+        } catch (Exception e) {
+            exceptionMessage(e, "Can't handle report", GENERIC_ERROR);
         }
-        for (Tool tool : tools) {
-            getToolTestResults(tool);
-        }
-        finalizeResults();
+    }
+
+    /**
+     * +     * This function gets the jenkins crumb in the event that the java jenkins api does not work
+     * +     *
+     * +     * @return The crumb string
+     * +
+     */
+    public String getJenkinsCrumb() {
+        String username = config.getString("jenkins-username", "travis");
+        String password = config.getString("jenkins-password", "travis");
+        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+        HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
+
+        javax.ws.rs.client.Client client = ClientBuilder.newClient();
+        client.register(feature);
+        String entity = client.target(serverUrl).path("crumbIssuer/api/json").request(MediaType.TEXT_PLAIN_TYPE).get(String.class);
+        Gson gson = new Gson();
+        CrumbJsonResult result = gson.fromJson(entity, CrumbJsonResult.class);
+        String crumb = result.crumb;
+        return crumb;
+    }
+
+    public JenkinsPipeline getJenkinsPipeline(String name, int buildId) {
+        String crumb = getJenkinsCrumb();
+        String username = config.getString("jenkins-username", "travis");
+        String password = config.getString("jenkins-password", "travis");
+        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+        HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
+        javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
+        String entity = client.target(serverUrl).path("job/" + name + "/" + buildId + "/wfapi/describe").request(MediaType.TEXT_PLAIN_TYPE)
+                .header("crumbRequestField", crumb).get(String.class);
+        Gson gson = new Gson();
+        JenkinsPipeline jenkinsPipeline = gson.fromJson(entity, JenkinsPipeline.class);
+        return jenkinsPipeline;
     }
 
     /**
@@ -145,15 +208,31 @@ public class Client {
      * @param source    the testing group that verified the tools
      * @param execution the location to test the tools
      */
-    private void createToolTests(String api, List<String> source, String execution) {
+    private void handleCreateTests(String api, List<String> source, String execution) {
         setupClientEnvironment();
         setupJenkins();
         setupTesters();
-        deleteJobs("DockerfileTest");
-        deleteJobs("ParameterFileTest");
-        List<Tool> tools = getVerifiedTools(source);
+        List<Tool> tools;
+        if (!source.isEmpty()) {
+            tools = getVerifiedTools(source);
+        } else {
+            tools = getVerifiedTools();
+        }
         for (Tool tool : tools) {
-            createToolTests(tool);
+            createToolTests2(tool);
+        }
+    }
+
+    private void handleRunTests(List<String> toolNames) {
+        setupClientEnvironment();
+        setupJenkins();
+        setupTesters();
+        List<Tool> tools = getVerifiedTools();
+        if (!toolNames.isEmpty()) {
+            tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
+        }
+        for (Tool tool : tools) {
+            testTool2(tool);
         }
     }
 
@@ -184,6 +263,7 @@ public class Client {
     protected void setupTesters() {
         dockerfileTester = new DockerfileTester(getJenkins());
         parameterFileTester = new ParameterFileTester(getJenkins());
+        pipelineTester = new PipelineTester(getJenkins());
     }
 
     protected void setupJenkins() {
@@ -352,6 +432,31 @@ public class Client {
     /**
      * Creates the pipeline(s) on Jenkins to test a tool
      *
+     * @param tool The tool to create tests for
+     */
+    void createToolTests2(Tool tool) {
+        DockstoreTool dockstoreTool = null;
+        try {
+            dockstoreTool = getContainersApi().getPublishedContainerByToolPath(tool.getId());
+        } catch (ApiException e) {
+            exceptionMessage(e, "Could not get published containers using the container api", API_ERROR);
+        }
+        List<ToolVersion> toolVersions = tool.getVersions();
+        for (ToolVersion toolversion : toolVersions) {
+            assert dockstoreTool != null;
+            Long containerId = dockstoreTool.getId();
+            String id = toolversion.getId();
+            String tag = toolversion.getName();
+            String name = id;
+            name = name.replace("/", "-");
+            name = name.replace(":", "-");
+            pipelineTester.createTest(name);
+        }
+    }
+
+    /**
+     * Creates the pipeline(s) on Jenkins to test a tool
+     *
      * @param tool The tool to get the test results for
      */
     void getToolTestResults(Tool tool) {
@@ -369,7 +474,6 @@ public class Client {
             String name = id;
             name = name.replace("/", "-");
             name = name.replace(":", "-");
-            Date date = new Date();
             String dockerfileStatus;
             Map<String, String> map = dockerfileTester.getTestResults(name);
             dockerfileStatus = map.get("status");
@@ -403,6 +507,47 @@ public class Client {
                 }
             } catch (ApiException e) {
                 exceptionMessage(e, "Could not get test parameter files using the container API", API_ERROR);
+            }
+        }
+    }
+
+    /**
+     * Creates the pipeline(s) on Jenkins to test a tool
+     *
+     * @param tool The tool to get the test results for
+     */
+    void getToolTestResults2(Tool tool) {
+        List<ToolVersion> toolVersions = tool.getVersions();
+        for (ToolVersion toolversion : toolVersions) {
+            if (toolversion != null) {
+                String id = toolversion.getId();
+                String tag = toolversion.getName();
+
+                String suffix = id;
+                suffix = suffix.replace("/", "-");
+                suffix = suffix.replace(":", "-");
+                if (pipelineTester.getJenkinsJob(suffix) == null) {
+                    LOG.info("Could not get job: " + suffix);
+                    continue;
+                } else {
+                    int buildId = pipelineTester.getLastBuildId(suffix);
+                    if (buildId == 0) {
+                        LOG.info("No build was ran");
+                    }
+                    String name = "PipelineTest" + "-" + suffix;
+                    JenkinsPipeline jenkinsPipeline = getJenkinsPipeline(name, buildId);
+                    Stage[] stages = jenkinsPipeline.getStages();
+                    for (Stage stage : stages) {
+                        LocalDateTime date = LocalDateTime
+                                .ofInstant(Instant.ofEpochMilli(stage.getStartTimeMillis()), ZoneId.systemDefault());
+                        List<String> record = Arrays.asList(toolversion.getId(), date.toString(), tag, "Jenkins", stage.getName(),
+                                Duration.ofMillis(stage.getDurationMillis()).toString(), stage.getStatus());
+                        System.out.println(record.stream().map(Object::toString).collect(Collectors.joining("\t")).toString());
+                        report.writeLine(record);
+                    }
+                }
+            } else {
+                errorMessage("Tool version is null", COMMAND_ERROR);
             }
         }
     }
@@ -549,6 +694,91 @@ public class Client {
         return true;
     }
 
+    /**
+     * test the tool by
+     * 1) Running available parameter files
+     * 2) Rebuilding docker images
+     * 3) Storing results for each tool as it finishes
+     * <p>
+     * in the early phases of the project, we can try to run these locally sequentially
+     * however, due to system requirements, it will quickly become necessary to hook this up to
+     * either a fixed network of slaves or Consonance on-demand hosts
+     *
+     * @param tool The tool to test
+     * @return boolean  Returns true
+     */
+    boolean testTool2(Tool tool) {
+        DockstoreTool dockstoreTool = null;
+        try {
+            dockstoreTool = containersApi.getPublishedContainerByToolPath(tool.getId());
+        } catch (ApiException e) {
+            exceptionMessage(e, "Could not get published containers using the container API", API_ERROR);
+        }
+        Map<String, String> parameter = new HashMap<>();
+        List<ToolVersion> toolVersions = tool.getVersions();
+        for (ToolVersion toolversion : toolVersions) {
+            String url = dockstoreTool.getGitUrl();
+            url = url.replace("git@github.com:", "https://github.com/");
+            String dockerfilePath = null;
+            Long containerId = dockstoreTool.getId();
+            String id = toolversion.getId();
+            String tag = toolversion.getName();
+            try {
+                SourceFile dockerfile = containersApi.dockerfile(containerId, tag);
+                dockerfilePath = dockerfile.getPath().replaceFirst("^/", "");
+            } catch (ApiException e) {
+                exceptionMessage(e, "Could not get dockerfile using the container API", API_ERROR);
+            }
+
+            String name = id;
+            name = name.replace("/", "-");
+            name = name.replace(":", "-");
+            parameter.put("Tag", tag);
+            parameter.put("URL", url);
+            parameter.put("DockerfilePath", dockerfilePath);
+            StringBuilder descriptorStringBuilder = new StringBuilder();
+            StringBuilder parameterStringBuilder = new StringBuilder();
+            try {
+                List<SourceFile> testParameterFiles;
+                SourceFile descriptor;
+                for (ToolVersion.DescriptorTypeEnum descriptorType : toolversion.getDescriptorType()) {
+                    switch (descriptorType.toString()) {
+                    case "CWL":
+                        descriptor = containersApi.cwl(containerId, tag);
+
+                        break;
+                    case "WDL":
+                        descriptor = containersApi.wdl(containerId, tag);
+                        break;
+                    default:
+                        LOG.info("Unknown descriptor, skipping");
+                        continue;
+                    }
+                    String descriptorPath = descriptor.getPath().replaceFirst("^/", "");
+                    testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
+                    for (SourceFile testParameterFile : testParameterFiles) {
+                        String parameterPath = testParameterFile.getPath();
+                        parameterPath = parameterPath.replaceFirst("^/", "");
+                        if (!descriptorStringBuilder.toString().equals("")) {
+                            descriptorStringBuilder.append(" ");
+                            parameterStringBuilder.append(" ");
+
+                        }
+                        descriptorStringBuilder.append(descriptorPath);
+                        parameterStringBuilder.append(parameterPath);
+                    }
+
+                }
+            } catch (ApiException e) {
+                exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the container API", API_ERROR);
+            }
+            parameter.put("ParameterPath", parameterStringBuilder.toString());
+            parameter.put("DescriptorPath", descriptorStringBuilder.toString());
+            pipelineTester.runTest(name, parameter);
+        }
+        return true;
+    }
+
     public ContainersApi getContainersApi() {
         return containersApi;
     }
@@ -567,8 +797,18 @@ public class Client {
         private Boolean all = false;
         @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
         private List<String> tools = new ArrayList<>();
-        @Parameter(names = "--help", help = true)
-        private boolean help;
+        @Parameter(names = "--help", description = "Prints help for report", help = true)
+        private boolean help = false;
+    }
+
+    @Parameters(separators = "=", commandDescription = "Test available tools on Jenkins")
+    private static class CommandEnqueue {
+        @Parameter(names = "--all", description = "Whether to test all tools or not")
+        private Boolean all = false;
+        @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
+        private List<String> tools = new ArrayList<>();
+        @Parameter(names = "--help", description = "Prints help for enqueue", help = true)
+        private boolean help = false;
     }
 
     private static class CommandMain {
