@@ -60,37 +60,31 @@ public class ClientTest {
     }
 
     /**
-     * This runs all the tool's dockerfiles
-     */
-    private void runJenkinsTests() {
-        client.setupJenkins();
-        client.setupTesters();
-        JenkinsServer jenkins = client.getJenkins();
-        Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
-        List<Tool> tools = client.getVerifiedTools();
-        for (Tool tool : tools) {
-            client.testTool2(tool);
-        }
-    }
-
-    /**
      * Test with unknown command
      */
     @Test
     public void unknownCommand() {
-        String[] argv = { "unknown" };
+        String[] argv = { "mmmrrrggglll" };
         exit.expectSystemExitWithStatus(COMMAND_ERROR);
         main(argv);
     }
 
     /**
-     * Creates the pipelines on Jenkins to test dockerfiles and parameter files
+     * Test enqueue with default options
      */
     @Test
-    public void createAndRunJenkinsTests() {
-        String[] argv = { "--execution", "local", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
+    public void enqueue() {
+        String[] argv = { "enqueue" };
         main(argv);
-        runJenkinsTests();
+    }
+
+    /**
+     * Test enqueue with default options
+     */
+    @Test
+    public void enqueueTool() {
+        String[] argv = { "enqueue", "--tool" , "quay.io/pancancer/pcawg_delly_workflow", "quay.io/pancancer/pcawg-dkfz-workflow"};
+        main(argv);
     }
 
     /**
@@ -99,6 +93,15 @@ public class ClientTest {
     @Test
     public void createJenkinsTests() {
         String[] argv = { "--execution", "local", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
+        main(argv);
+    }
+
+    /**
+     * This tests the client with no parameters
+     */
+    @Test
+    public void empty() {
+        String[] argv = {""};
         main(argv);
     }
 
@@ -133,10 +136,31 @@ public class ClientTest {
         main(argv);
     }
 
+    /**
+     * This reports on a specific tool
+     */
+    @Test
     public void getSpecificJenkinsTest() {
         String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow" };
         main(argv);
     }
+
+    /**
+     * This reports on specific tools
+     */
+    @Test
+    public void getSpecificJenkinsTests() {
+        String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow",
+                "quay.io/pancancer/pcawg-dkfz-workflow" };
+        main(argv);
+    }
+
+    @Test
+    public void getSpecificInvalidJenkinsTest() {
+        String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa"};
+        main(argv);
+    }
+
 
     /**
      * This displays the help menu for the report command

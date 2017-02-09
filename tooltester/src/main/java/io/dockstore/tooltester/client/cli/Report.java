@@ -27,7 +27,7 @@ class Report implements Closeable {
 
     Report(String name) {
         try {
-            File file = new File("target/" + name);
+            File file = new File(name);
             this.writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), UTF_8));
         } catch (FileNotFoundException e) {
             exceptionMessage(e, "Cannot create new file", IO_ERROR);

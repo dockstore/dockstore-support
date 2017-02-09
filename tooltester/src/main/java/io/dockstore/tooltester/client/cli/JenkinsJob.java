@@ -14,6 +14,8 @@ import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.BuildResult;
 import com.offbytwo.jenkins.model.BuildWithDetails;
 import com.offbytwo.jenkins.model.JobWithDetails;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.GENERIC_ERROR;
@@ -26,6 +28,7 @@ import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessa
  * @since 24/01/17
  */
 public abstract class JenkinsJob {
+    private static final Logger LOG = LoggerFactory.getLogger(JenkinsJob.class);
     private JenkinsServer jenkins;
 
     JenkinsJob(JenkinsServer jenkins) {
@@ -59,12 +62,14 @@ public abstract class JenkinsJob {
         if (job == null) {
             try {
                 jenkins.createJob(name, jobxml, true);
+                LOG.info("Created Jenkins job: " + name);
             } catch (IOException e) {
                 exceptionMessage(e, "Could not create Jenkins job", IO_ERROR);
             }
         } else {
             try {
                 jenkins.updateJob(name, jobxml, true);
+                LOG.info("Updated Jenkins job: " + name);
             } catch (IOException e) {
                 exceptionMessage(e, "Could not update existing Jenkins job", IO_ERROR);
             }
@@ -85,9 +90,10 @@ public abstract class JenkinsJob {
         try {
             job = jenkins.getJob(name);
             if (job == null) {
-                errorMessage("Could not get Jenkins job", GENERIC_ERROR);
+                LOG.info("Could not get Jenkins job: " + name);
             } else {
                 job.build(parameter, true);
+                LOG.info("Running: " + name);
             }
         } catch (IOException e) {
             exceptionMessage(e, "Cannot get Jenkins job", IO_ERROR);

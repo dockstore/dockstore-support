@@ -100,10 +100,13 @@ public class Client {
         CommandMain cm = new CommandMain();
         JCommander jc = new JCommander(cm);
         CommandReport commandReport = new CommandReport();
+        CommandEnqueue commandEnqueue = new CommandEnqueue();
         jc.addCommand("report", commandReport);
+        jc.addCommand("enqueue", commandEnqueue);
         try {
             jc.parse(argv);
         } catch (MissingCommandException e) {
+            jc.usage();
             exceptionMessage(e, "Unknown command", COMMAND_ERROR);
         }
         if (jc.getParsedCommand() != null) {
@@ -115,6 +118,13 @@ public class Client {
                     client.handleReport(commandReport.tools);
                 }
                 break;
+            case "enqueue":
+                if (commandEnqueue.help) {
+                    jc.usage("enqueue");
+                } else {
+                    client.handleRunTests(commandEnqueue.tools);
+                }
+                break;
             default:
                 jc.usage();
             }
@@ -122,7 +132,7 @@ public class Client {
             if (cm.help) {
                 jc.usage();
             } else {
-                client.createToolTests(cm.api, cm.source, cm.execution);
+                client.handleCreateTests(cm.api, cm.source, cm.execution);
             }
         }
 
@@ -165,12 +175,12 @@ public class Client {
     public String getJenkinsCrumb() {
         String username = config.getString("jenkins-username", "travis");
         String password = config.getString("jenkins-password", "travis");
+        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
         HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
 
         javax.ws.rs.client.Client client = ClientBuilder.newClient();
         client.register(feature);
-        String entity = client.target("http://142.1.177.103:8080").path("crumbIssuer/api/json").request(MediaType.TEXT_PLAIN_TYPE)
-                .get(String.class);
+        String entity = client.target(serverUrl).path("crumbIssuer/api/json").request(MediaType.TEXT_PLAIN_TYPE).get(String.class);
         Gson gson = new Gson();
         CrumbJsonResult result = gson.fromJson(entity, CrumbJsonResult.class);
         String crumb = result.crumb;
@@ -198,16 +208,31 @@ public class Client {
      * @param source    the testing group that verified the tools
      * @param execution the location to test the tools
      */
-    private void createToolTests(String api, List<String> source, String execution) {
+    private void handleCreateTests(String api, List<String> source, String execution) {
         setupClientEnvironment();
         setupJenkins();
         setupTesters();
-        deleteJobs("DockerfileTest");
-        deleteJobs("ParameterFileTest");
-        deleteJobs("PipelineTest");
-        List<Tool> tools = getVerifiedTools(source);
+        List<Tool> tools;
+        if (!source.isEmpty()) {
+            tools = getVerifiedTools(source);
+        } else {
+            tools = getVerifiedTools();
+        }
         for (Tool tool : tools) {
             createToolTests2(tool);
+        }
+    }
+
+    private void handleRunTests(List<String> toolNames) {
+        setupClientEnvironment();
+        setupJenkins();
+        setupTesters();
+        List<Tool> tools = getVerifiedTools();
+        if (!toolNames.isEmpty()) {
+            tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
+        }
+        for (Tool tool : tools) {
+            testTool2(tool);
         }
     }
 
@@ -502,16 +527,15 @@ public class Client {
                 suffix = suffix.replace("/", "-");
                 suffix = suffix.replace(":", "-");
                 if (pipelineTester.getJenkinsJob(suffix) == null) {
-                    LOG.info("Could not get job");
+                    LOG.info("Could not get job: " + suffix);
+                    continue;
                 } else {
                     int buildId = pipelineTester.getLastBuildId(suffix);
                     if (buildId == 0) {
                         LOG.info("No build was ran");
                     }
                     String name = "PipelineTest" + "-" + suffix;
-                    LOG.info("Didn't get pipeline");
                     JenkinsPipeline jenkinsPipeline = getJenkinsPipeline(name, buildId);
-                    LOG.info("Got pipeline");
                     Stage[] stages = jenkinsPipeline.getStages();
                     for (Stage stage : stages) {
                         LocalDateTime date = LocalDateTime
@@ -727,7 +751,7 @@ public class Client {
                         descriptor = containersApi.wdl(containerId, tag);
                         break;
                     default:
-                        descriptor = null;
+                        LOG.info("Unknown descriptor, skipping");
                         continue;
                     }
                     String descriptorPath = descriptor.getPath().replaceFirst("^/", "");
@@ -773,8 +797,18 @@ public class Client {
         private Boolean all = false;
         @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
         private List<String> tools = new ArrayList<>();
-        @Parameter(names = "--help", help = true)
-        private boolean help;
+        @Parameter(names = "--help", description = "Prints help for report", help = true)
+        private boolean help = false;
+    }
+
+    @Parameters(separators = "=", commandDescription = "Test available tools on Jenkins")
+    private static class CommandEnqueue {
+        @Parameter(names = "--all", description = "Whether to test all tools or not")
+        private Boolean all = false;
+        @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
+        private List<String> tools = new ArrayList<>();
+        @Parameter(names = "--help", description = "Prints help for enqueue", help = true)
+        private boolean help = false;
     }
 
     private static class CommandMain {
