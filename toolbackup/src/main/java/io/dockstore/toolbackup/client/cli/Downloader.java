@@ -3,17 +3,23 @@ package io.dockstore.toolbackup.client.cli;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
 
+import java.io.File;
 import java.nio.file.Paths;
+
+import static io.dockstore.toolbackup.client.cli.Client.API_ERROR;
 
 /**
  * Created by kcao on 20/01/17.
  */
-public class Downloader {
+class Downloader {
+    private static HierarchicalINIConfiguration config;
     private final OptionSet options;
-    private final S3Communicator s3Communicator= new S3Communicator();
+    private static String endpoint;
 
-    public Downloader(OptionSet options) {
+    Downloader(OptionSet options) {
         this.options = options;
     }
 
@@ -27,14 +33,29 @@ public class Downloader {
 
         String local = options.valueOf(localDir);
         String dirPath = Paths.get(local).toAbsolutePath().toString();
-        DirectoryGenerator.validatePath(dirPath);
+        DirectoryGenerator.createDir(dirPath);
 
+        setUpEndpoint();
         Downloader downloader = new Downloader(options);
-        downloader.download(options.valueOf(bucketName), options.valueOf(keyPrefix), dirPath);
+        S3Communicator s3Communicator= new S3Communicator("dockstore", endpoint);
+        downloader.download(options.valueOf(bucketName), options.valueOf(keyPrefix), dirPath, s3Communicator);
     }
 
-    private void download(String bucketName, String keyPrefix, String dirPath) {
+    public void download(String bucketName, String keyPrefix, String dirPath, S3Communicator s3Communicator) {
         s3Communicator.downloadDirectory(bucketName, keyPrefix, dirPath);
         s3Communicator.shutDown();
+    }
+
+    private static void setUpEndpoint() {
+        String userHome = System.getProperty("user.home");
+        try {
+            File configFile = new File(userHome + File.separator + ".toolbackup" + File.separator + "config.ini");
+            config = new HierarchicalINIConfiguration(configFile);
+        } catch (ConfigurationException e) {
+            ErrorExit.exceptionMessage(e, "", API_ERROR);
+        }
+
+        // pull out the variables from the config
+        endpoint = config.getString("endpoint");
     }
 }

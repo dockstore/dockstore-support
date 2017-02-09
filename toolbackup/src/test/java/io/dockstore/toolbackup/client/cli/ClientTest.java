@@ -1,5 +1,9 @@
 package io.dockstore.toolbackup.client.cli;
 
+import io.dockstore.toolbackup.client.cli.common.AWSConfig;
+import io.dockstore.toolbackup.client.cli.common.DirCleaner;
+import io.swagger.client.model.Tool;
+import io.swagger.client.model.ToolVersion;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.apache.commons.io.FileUtils;
@@ -8,27 +12,42 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import static junit.framework.TestCase.assertEquals;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR_CHECK_SIZE;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.ID;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.IMG;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.TAG;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.TIME;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.TOOL_NAME;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 /**
  * Created by kcao on 25/01/17.
  */
-public class ClientTest extends Base {
-    private static final DockerCommunicator DOCKER_COMMUNICATOR = new DockerCommunicator();
-    private static final String[] ARGV = new String[]{"--bucket-name", BUCKET, "--local-dir", DIR, "--key-prefix", PREFIX, "--test-mode-activate", "true"};
+public class ClientTest {
+    private final ByteArrayOutputStream outputContent = new ByteArrayOutputStream();
 
     @BeforeClass
     public static void setUp() {
-        generateAWSConfig();
+        AWSConfig.generateCredentials();
     }
 
+    /**
+     * Test for GA4GH API connection
+     * @throws Exception
+     */
     @Test
-    public void setupEnvironment() throws Exception {
+    public void setupClientEnvironment() throws Exception {
         OptionParser parser = new OptionParser();
         final OptionSet parsed = parser.parse("");
         Client client = new Client(parsed);
@@ -36,40 +55,114 @@ public class ClientTest extends Base {
         assertTrue("client API could not start", client.getContainersApi() != null);
     }
 
+    /**
+     * Test that the calculation for files' sizes is correct
+     * @throws Exception
+     */
     @Test
-    public void main() throws Exception {
-        Client.main(ARGV);
-    }
-
-    @Test
-    public void getAddedSizeInB() throws Exception {
-        File dir = new File(DIR_SAME);
-
+    public void getFilesTotalSize_B() throws Exception {
         OptionParser parser = new OptionParser();
         final OptionSet parsed = parser.parse("");
         Client client = new Client(parsed);
-
-
-        long directorySize = client.getAddedSizeInB((List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE));
+        File dir = new File(DIR_CHECK_SIZE);
+        long directorySize = client.getFilesTotalSizeB((List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE));
         assertEquals(FileUtils.sizeOfDirectory(dir), directorySize);
     }
 
-    @Test
-    public void saveDockerImage() throws Exception {
-        String imgPath = DIR + File.separator + "dockstore-saver-img.tar";
-        File imgFile = new File(imgPath);
-        assumeTrue(DOCKER_COMMUNICATOR.pullDockerImage(IMG));
+    private List<Tool> setUpTools() {
+        List<Tool> tools = new ArrayList<>();
+        Tool tool = new Tool();
 
+        tool.setToolname(TOOL_NAME);
+
+        tool.setId(ID);
+
+        List<ToolVersion> toolVersions = new ArrayList<>();
+        ToolVersion toolVersion = new ToolVersion();
+
+        toolVersion.setId(ID + ":" + TAG);
+        toolVersion.setMetaVersion(TIME);
+        toolVersion.setImage(IMG);
+        toolVersions.add(toolVersion);
+
+        tool.setVersions(toolVersions);
+        tools.add(tool);
+
+        return tools;
+    }
+
+    private void setUpMap(int offset, DockerCommunicator dockerCommunicator) {
+        Map<String, List<VersionDetail>> toolsToVersions = new HashMap<>();
+        List<VersionDetail> versionsDetails = new ArrayList<>();
+        versionsDetails.add(new VersionDetail(TAG, TIME, dockerCommunicator.getImageSize(IMG) + offset, 0, TIME, true, DIR));
+        toolsToVersions.put(TOOL_NAME, versionsDetails);
+        ReportGenerator.generateJSONMap(toolsToVersions, DIR);
+    }
+
+    @Test
+    public void saveToLocal_newImage() throws Exception {
         OptionParser parser = new OptionParser();
         final OptionSet parsed = parser.parse("");
         Client client = new Client(parsed);
 
-        client.saveDockerImage(IMG, imgFile);
+        DockerCommunicator dockerCommunicator = new DockerCommunicator();
+        client.saveToLocal(DIR, DIR, setUpTools(), dockerCommunicator);
+        assertTrue(new File(DIR + File.separator + ID + File.separator + TAG + ".tar").isFile());
+    }
+
+    @Test
+    public void saveToLocal_newVersion() throws Exception {
+        OptionParser parser = new OptionParser();
+        final OptionSet parsed = parser.parse("");
+        Client client = new Client(parsed);
+
+        DockerCommunicator dockerCommunicator = new DockerCommunicator();
+        setUpMap(1, dockerCommunicator);
+
+        System.setOut(new PrintStream(outputContent));
+
+        client.saveToLocal(DIR, DIR, setUpTools(), dockerCommunicator);
+        assertTrue(outputContent.toString().contains("had changed"));
+    }
+
+    @Test
+    public void saveToLocal_noChange() throws Exception {
+        OptionParser parser = new OptionParser();
+        final OptionSet parsed = parser.parse("");
+        Client client = new Client(parsed);
+
+        DockerCommunicator dockerCommunicator = new DockerCommunicator();
+        setUpMap(0, dockerCommunicator);
+
+        System.setOut(new PrintStream(outputContent));
+
+        client.saveToLocal(DIR, DIR, setUpTools(), dockerCommunicator);
+        assertTrue(outputContent.toString().contains("did not change"));
+    }
+
+    /**
+     * Test for saving pulled docker image
+     * @throws Exception
+     */
+    @Test
+    public void saveDockerImage() throws Exception {
+        OptionParser parser = new OptionParser();
+        final OptionSet parsed = parser.parse("");
+        Client client = new Client(parsed);
+        DockerCommunicator dockerCommunicator = new DockerCommunicator();
+
+        // confirm image can be pulled before test start
+        assumeTrue(dockerCommunicator.pullDockerImage(IMG));
+
+        File imgFile = new File( DIR + File.separator + "dockstore-saver-img.tar");
+        client.saveDockerImage(IMG, imgFile, dockerCommunicator);
         assertTrue(imgFile.isFile());
+
+        dockerCommunicator.closeDocker();
     }
 
     @AfterClass
     public static void closeDocker() {
-        DOCKER_COMMUNICATOR.closeDocker();
+        DirCleaner.deleteDir(DIR);
     }
 }

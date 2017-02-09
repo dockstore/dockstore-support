@@ -40,7 +40,7 @@ class ReportGenerator {
         STYLE = htmlBase.toString();
     }
 
-    private static double bToGB(double sizeInB) {
+    private static double bToGB(long sizeInB) {
         DoubleFunction<Double> bytesToGB = (bytes) -> bytes/NUM_B_IN_GB;
         DoubleFunction<Double> format2DecPlaces = (num) -> Math.round(num*DOUBLE_SPECIAL_NUM)/DOUBLE_SPECIAL_NUM;
         return format2DecPlaces.apply(bytesToGB.apply(sizeInB));
@@ -70,7 +70,7 @@ class ReportGenerator {
             mapperList.add(jsonMapper);
         }
 
-        File file = new File(basePath+"/map.JSON");
+        File file = new File(basePath + File.separator + "map.JSON");
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         try {
             FileUtils.writeStringToFile(file, gson.toJson(mapperList), "UTF-8");
@@ -81,7 +81,7 @@ class ReportGenerator {
 
     static Map<String, List<VersionDetail>> loadJSONMap(String basePath) {
         Map<String, List<VersionDetail>> toolsToVersions = new HashMap<>();
-        File file = new File(basePath+"/map.JSON");
+        File file = new File(basePath + File.separator + "map.JSON");
         try {
             if(file.exists()) {
                 String json = FileUtils.readFileToString(file, "UTF-8");
@@ -151,7 +151,7 @@ class ReportGenerator {
         return toolReport.toString();
     }
 
-    static String generateMainMenu(Set<String> tools, double addedInB, double totalInB) {
+    static String generateMainMenu(Set<String> tools, long addedInB, long totalInB) {
         StringBuilder menuBuilder = new StringBuilder();
         menuBuilder.append(STYLE);
 

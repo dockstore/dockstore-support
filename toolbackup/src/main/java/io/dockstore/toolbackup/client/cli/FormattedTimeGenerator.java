@@ -9,13 +9,13 @@ import java.util.Date;
 /**
  * Created by kcao on 11/01/17.
  */
-class FormattedTimeGenerator {
-    static String getFormattedTimeNow() {
+public class FormattedTimeGenerator {
+    public static String getFormattedTimeNow() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
         LocalDateTime now = LocalDateTime.now();
         return now.format(formatter);
     }
-    static Date strToDate(String dateStr){
+    public static Date strToDate(String dateStr){
         try {
             return new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").parse(dateStr);
         } catch (ParseException e) {
