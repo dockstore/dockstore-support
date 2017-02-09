@@ -56,6 +56,7 @@ import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.impl.SimpleLogger;
 
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.CLIENT_ERROR;
@@ -72,7 +73,7 @@ import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessa
  * Prototype for testing service
  */
 public class Client {
-    private static final Logger LOG = LoggerFactory.getLogger(Client.class);
+    private static final Logger LOG;
     boolean development = false;
     private ContainersApi containersApi;
     private UsersApi usersApi;
@@ -88,6 +89,11 @@ public class Client {
 
     public Client() {
 
+    }
+
+    static {
+        System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
+        LOG = LoggerFactory.getLogger(Client.class);
     }
 
     /**
@@ -122,9 +128,19 @@ public class Client {
                 if (commandEnqueue.help) {
                     jc.usage("enqueue");
                 } else {
-                    client.handleRunTests(commandEnqueue.tools);
+                    if (commandEnqueue.all) {
+                        client.handleRunTests(commandEnqueue.tools);
+                    } else {
+
+                        if (!commandEnqueue.tools.isEmpty()) {
+                            client.handleRunTests(commandEnqueue.tools);
+                        } else {
+                            jc.usage();
+                        }
+                    }
                 }
                 break;
+
             default:
                 jc.usage();
             }
@@ -188,16 +204,21 @@ public class Client {
     }
 
     public JenkinsPipeline getJenkinsPipeline(String name, int buildId) {
-        String crumb = getJenkinsCrumb();
-        String username = config.getString("jenkins-username", "travis");
-        String password = config.getString("jenkins-password", "travis");
-        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-        HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
-        javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
-        String entity = client.target(serverUrl).path("job/" + name + "/" + buildId + "/wfapi/describe").request(MediaType.TEXT_PLAIN_TYPE)
-                .header("crumbRequestField", crumb).get(String.class);
-        Gson gson = new Gson();
-        JenkinsPipeline jenkinsPipeline = gson.fromJson(entity, JenkinsPipeline.class);
+        JenkinsPipeline jenkinsPipeline = null;
+        try {
+            String crumb = getJenkinsCrumb();
+            String username = config.getString("jenkins-username", "travis");
+            String password = config.getString("jenkins-password", "travis");
+            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+            HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
+            javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
+            String entity = client.target(serverUrl).path("job/" + name + "/" + buildId + "/wfapi/describe")
+                    .request(MediaType.TEXT_PLAIN_TYPE).header("crumbRequestField", crumb).get(String.class);
+            Gson gson = new Gson();
+            jenkinsPipeline = gson.fromJson(entity, JenkinsPipeline.class);
+        } catch (Exception e) {
+            LOG.warn("Could not get Jenkins build for: " + name);
+        }
         return jenkinsPipeline;
     }
 
@@ -531,8 +552,9 @@ public class Client {
                     continue;
                 } else {
                     int buildId = pipelineTester.getLastBuildId(suffix);
-                    if (buildId == 0) {
+                    if (buildId == 0 || buildId == -1) {
                         LOG.info("No build was ran");
+                        continue;
                     }
                     String name = "PipelineTest" + "-" + suffix;
                     JenkinsPipeline jenkinsPipeline = getJenkinsPipeline(name, buildId);
@@ -813,11 +835,11 @@ public class Client {
 
     private static class CommandMain {
         @Parameter(names = { "--execution", "--runtime-environment" }, description = "Location of Testing")
-        private String execution = "local";
+        private String execution = "jenkins";
         @Parameter(names = { "--source" }, description = "Tester Group")
         private List<String> source = new ArrayList<>();
         @Parameter(names = { "--api", "--dockstore-url" }, description = "dockstore install that we wish to test tools from")
-        private String api = "";
+        private String api = "https://www.dockstore.org:8443/api/ga4gh/v1";
         @Parameter(names = "--help", description = "Prints help for main", help = true)
         private boolean help = false;
     }

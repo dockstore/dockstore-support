@@ -70,11 +70,20 @@ public class ClientTest {
     }
 
     /**
-     * Test enqueue with default options
+     * Test enqueue with no parameters which should print the help usage
      */
     @Test
     public void enqueue() {
         String[] argv = { "enqueue" };
+        main(argv);
+    }
+
+    /**
+     * Test enqueue with no parameters which should print the help usage
+     */
+    @Test
+    public void enqueueAll() {
+        String[] argv = { "enqueue" , "--all"};
         main(argv);
     }
 
