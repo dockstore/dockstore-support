@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,9 +37,13 @@ import static org.junit.Assume.assumeTrue;
  */
 public class ClientTest {
     private final ByteArrayOutputStream outputContent = new ByteArrayOutputStream();
+    private static Client client;
 
     @BeforeClass
     public static void setUp() {
+        OptionParser parser = new OptionParser();
+        final OptionSet parsed = parser.parse("");
+        client = new Client(parsed);
         AWSConfig.generateCredentials();
     }
 
@@ -48,9 +53,6 @@ public class ClientTest {
      */
     @Test
     public void setupClientEnvironment() throws Exception {
-        OptionParser parser = new OptionParser();
-        final OptionSet parsed = parser.parse("");
-        Client client = new Client(parsed);
         client.setupClientEnvironment();
         assertTrue("client API could not start", client.getContainersApi() != null);
     }
@@ -61,12 +63,16 @@ public class ClientTest {
      */
     @Test
     public void getFilesTotalSize_B() throws Exception {
-        OptionParser parser = new OptionParser();
-        final OptionSet parsed = parser.parse("");
-        Client client = new Client(parsed);
+        File newFile = new File(DIR_CHECK_SIZE + File.separator + "helloworld.txt");
+        try {
+            FileUtils.writeStringToFile(newFile, "Hello world!", "UTF-8");
+        } catch (IOException e) {
+            throw new RuntimeException("Could not create " + newFile.getAbsolutePath());
+        }
         File dir = new File(DIR_CHECK_SIZE);
         long directorySize = client.getFilesTotalSizeB((List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE));
         assertEquals(FileUtils.sizeOfDirectory(dir), directorySize);
+        DirCleaner.deleteDir(DIR_CHECK_SIZE);
     }
 
     private List<Tool> setUpTools() {
@@ -101,10 +107,6 @@ public class ClientTest {
 
     @Test
     public void saveToLocal_newImage() throws Exception {
-        OptionParser parser = new OptionParser();
-        final OptionSet parsed = parser.parse("");
-        Client client = new Client(parsed);
-
         DockerCommunicator dockerCommunicator = new DockerCommunicator();
         client.saveToLocal(DIR, DIR, setUpTools(), dockerCommunicator);
         assertTrue(new File(DIR + File.separator + ID + File.separator + TAG + ".tar").isFile());
@@ -112,10 +114,6 @@ public class ClientTest {
 
     @Test
     public void saveToLocal_newVersion() throws Exception {
-        OptionParser parser = new OptionParser();
-        final OptionSet parsed = parser.parse("");
-        Client client = new Client(parsed);
-
         DockerCommunicator dockerCommunicator = new DockerCommunicator();
         setUpMap(1, dockerCommunicator);
 
@@ -127,10 +125,6 @@ public class ClientTest {
 
     @Test
     public void saveToLocal_noChange() throws Exception {
-        OptionParser parser = new OptionParser();
-        final OptionSet parsed = parser.parse("");
-        Client client = new Client(parsed);
-
         DockerCommunicator dockerCommunicator = new DockerCommunicator();
         setUpMap(0, dockerCommunicator);
 
@@ -146,9 +140,6 @@ public class ClientTest {
      */
     @Test
     public void saveDockerImage() throws Exception {
-        OptionParser parser = new OptionParser();
-        final OptionSet parsed = parser.parse("");
-        Client client = new Client(parsed);
         DockerCommunicator dockerCommunicator = new DockerCommunicator();
 
         // confirm image can be pulled before test start

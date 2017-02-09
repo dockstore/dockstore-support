@@ -11,7 +11,6 @@ import java.util.List;
 
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.BUCKET;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR_CHECK_SIZE;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.PREFIX;
 
 /**
@@ -30,8 +29,7 @@ public class DownloaderTest {
         DirectoryGenerator.createDir(DIR);
         List<File> files = new ArrayList<>();
         files.add(new File(DIR + File.separator + "helloworld.txt"));
-        s3Communicator.uploadDirectory(BUCKET, PREFIX, DIR_CHECK_SIZE, files);
-
+        s3Communicator.uploadDirectory(BUCKET, PREFIX, DIR, files);
         new Downloader(null).download(BUCKET, PREFIX, DIR, s3Communicator);
         DirCleaner.deleteDir(DIR);
     }

@@ -9,7 +9,6 @@ import java.io.File;
 import java.security.Permission;
 
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR_SAME_NAME;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -30,6 +29,8 @@ public class DirectoryGeneratorTest {
             @Override
             public void checkPermission(final Permission perm) {}
         });
+
+        DirectoryGenerator.createDir(DIR);
     }
 
     /**
@@ -38,24 +39,15 @@ public class DirectoryGeneratorTest {
      */
     @Test(expected = SecurityException.class)
     public void createDir_existingFile() throws Exception {
-        File file = new File(DIR_SAME_NAME);
+        File file = new File(DIR + File.separator + "sameName.txt");
         assumeTrue(file.isFile() || !file.exists());
         file.createNewFile();
         DirectoryGenerator.createDir(file.getAbsolutePath());
     }
 
-    /**
-     * Sanity check for creating a directory
-     * @throws Exception
-     */
-    @Test
-    public void createDir() throws Exception {
-        DirectoryGenerator.createDir(DIR);
-        DirCleaner.deleteDir(DIR);
-    }
-
     @AfterClass
     public static void shutDown() {
         System.setSecurityManager(SM);
+        DirCleaner.deleteDir(DIR);
     }
 }

@@ -1,14 +1,11 @@
 package io.dockstore.toolbackup.client.cli.constants;
 
-import io.dockstore.toolbackup.client.cli.DirectoryGenerator;
 import io.dockstore.toolbackup.client.cli.ErrorExit;
 import io.dockstore.toolbackup.client.cli.FormattedTimeGenerator;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
-import org.apache.commons.io.FileUtils;
 
 import java.io.File;
-import java.io.IOException;
 
 import static io.dockstore.toolbackup.client.cli.Client.API_ERROR;
 
@@ -24,6 +21,7 @@ public class TestConstants {
     public static String NONEXISTING_BUCKET;
     public static String PREFIX;
     // local
+    public static String BASEDIR;
     public static String DIR;
     public static String DIR_CHECK_SIZE;
     public static String DIR_SAME_NAME;
@@ -44,22 +42,14 @@ public class TestConstants {
             BUCKET = config.getString("bucket", "testbucket");
             PREFIX = config.getString("prefix", "testprefix");
             IMG = config.getString("img", "docker/whalesay");
+            BASEDIR = config.getString("baseDir", USER_HOME + File.separator + "dockstore-saver");
 
-            DIR = config.getString("dir", USER_HOME + File.separator + "dockstore-saver" + File.separator  + "dir");
-            DIR_SAME_NAME = config.getString("samename.dir", USER_HOME + File.separator + "dockstore-save-sameName");
+            DIR = config.getString("dir",  BASEDIR + File.separator + "dir");
+            DIR_CHECK_SIZE = config.getString("checkSizeDir", BASEDIR + File.separator + "checkSize");
 
-            DIR_CHECK_SIZE = config.getString("checksize.dir", USER_HOME + File.separator + "dockstore-save-size");
-            DirectoryGenerator.createDir(DIR_CHECK_SIZE);
-            File newFile = new File(DIR_CHECK_SIZE + File.separator + "helloworld.txt");
-            try {
-                FileUtils.writeStringToFile(newFile, "Hello world!", "UTF-8");
-            } catch (IOException e) {
-                throw new RuntimeException("Could not create " + newFile.getAbsolutePath());
-            }
-
-            NONEXISTING_BUCKET = config.getString("nonexisting.bucket", "dockstore-saver-gibberish");
-            NONEXISTING_DIR = config.getString("nonexisting.dir", "dockstore-saver-gibberish");
-            NONEXISTING_IMG = config.getString("nonexisting.img", "dockstore-saver-gibberish");
+            NONEXISTING_BUCKET = config.getString("nonexistent.bucket", "dockstore-saver-gibberish");
+            NONEXISTING_DIR = config.getString("nonexistent.dir", "dockstore-saver-gibberish");
+            NONEXISTING_IMG = config.getString("nonexistent.img", "dockstore-saver-gibberish");
         } catch (ConfigurationException e) {
             ErrorExit.exceptionMessage(e, "", API_ERROR);
         }
