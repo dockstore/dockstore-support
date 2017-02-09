@@ -1,10 +1,14 @@
 package io.dockstore.toolbackup.client.cli;
 
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.transfer.ObjectMetadataProvider;
 import com.amazonaws.services.s3.transfer.TransferManager;
 
 import java.io.File;
@@ -12,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static io.dockstore.toolbackup.client.cli.Client.COMMAND_ERROR;
 import static java.lang.System.out;
 
 /**
@@ -25,6 +30,17 @@ class S3Communicator {
         s3Client = new AmazonS3Client(new ProfileCredentialsProvider().getCredentials());
         s3Client.setEndpoint("http://localhost:8080");
         s3Client.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).disableChunkedEncoding().build());
+
+        transferManager = new TransferManager(s3Client);
+    }
+
+    S3Communicator(String section, String endpoint) {
+        ClientConfiguration opts = new ClientConfiguration();
+        opts.setSignerOverride("S3SignerType");
+        s3Client = new AmazonS3Client(new ProfileCredentialsProvider(section).getCredentials(),  opts);
+
+        s3Client.setEndpoint(endpoint);
+        s3Client.setS3ClientOptions(S3ClientOptions.builder().build());
 
         transferManager = new TransferManager(s3Client);
     }
@@ -63,8 +79,7 @@ class S3Communicator {
         return keysToSizes;
     }
 
-    /*
-     static private ObjectMetadataProvider encrypt() {
+     private static ObjectMetadataProvider encrypt() {
         ObjectMetadataProvider objectMetadataProvider = new ObjectMetadataProvider() {
             @Override
             public void provideObjectMetadata(File file, ObjectMetadata objectMetadata) {
@@ -72,19 +87,19 @@ class S3Communicator {
             }
         };
         return objectMetadataProvider;
-     } */
+     }
 
     void uploadDirectory(String bucketName, String keyPrefix, String dirPath, List<File> files) {
         createBucket(bucketName);
-        // ideally do this but s3proxy does not support encryption
-        // uploadFileList(String bucketName, String virtualDirectoryKeyPrefix, File directory, List<File> files, ObjectMetadataProvider metadataProvider)
 
         try {
-            transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files).waitForCompletion();
+            transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files, encrypt()).waitForCompletion();
+            out.println("Uploaded necessary files in: " + dirPath);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Could not upload the directory: " + dirPath + " in its entirety");
+        } catch (AmazonS3Exception e) {
+            ErrorExit.exceptionMessage(e, "MultiplePartUpload cannot finish. Check your keys and sign methods.", COMMAND_ERROR);
         }
-        out.println("Uploaded necessary files in: " + dirPath);
     }
 
     //-----------------------Download-----------------------

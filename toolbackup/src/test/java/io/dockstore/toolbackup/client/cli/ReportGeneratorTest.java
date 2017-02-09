@@ -1,78 +1,93 @@
 package io.dockstore.toolbackup.client.cli;
 
 import com.google.gson.Gson;
+import io.dockstore.toolbackup.client.cli.common.DirCleaner;
 import org.apache.commons.io.FileUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.w3c.tidy.Tidy;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static java.lang.System.out;
-import static junit.framework.TestCase.assertEquals;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.TAG;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.TIME;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.TOOL_NAME;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by kcao on 25/01/17.
- */
-public class ReportGeneratorTest extends Base {
-    private static List<File> htmlFiles;
-    private static List<File> jsonFiles;
+*/
+public class ReportGeneratorTest {
+    private static List<VersionDetail> versionsDetails = new ArrayList<>();
 
     @BeforeClass
     public static void setUpFiles() {
-        Client.main(new String[]{"--bucket-name", BUCKET, "--local-dir", DIR, "--test-mode-activate", "true", "--key-prefix", PREFIX});
-        htmlFiles = ((List<File>) FileUtils.listFiles(new File(REPORT), new String[] { "html" }, false));
-        jsonFiles = ((List<File>) FileUtils.listFiles(new File(REPORT), new String[] { "JSON", "json" }, false));
+        DirectoryGenerator.createDir(DIR);
+        versionsDetails.add(new VersionDetail(TAG, TIME, 2000, 0, TIME, true, DIR));
     }
 
     @Test
-    public void validateHTMLSyntax()  throws Exception {
-        Tidy tidy = new Tidy();
+    public void generateJSONMap() throws Exception {
+        Map<String, List<VersionDetail>> toolsToVersions = new HashMap<>();
+        toolsToVersions.put(TOOL_NAME, versionsDetails);
 
-        for(File file : htmlFiles) {
-            try {
-                tidy.parse(FileUtils.openInputStream(file), out);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            if(tidy.getParseErrors() > 0) {
-                break;
-            }
-        }
-        assertEquals(tidy.getParseErrors(), 0);
+        ReportGenerator.generateJSONMap(toolsToVersions, DIR);
+
+        Gson gson = new Gson();
+        File map = new File(DIR + File.separator + "map.JSON");
+        gson.fromJson(FileUtils.readFileToString(map, "UTF-8"), Object.class);
     }
 
     @Test
-    public void validateReport() throws Exception {
+    public void generateToolReport() throws Exception {
         List<String> headings = new ArrayList<>();
 
-        for(File file : htmlFiles) {
-            Document doc = Jsoup.parse(file, "UTF-8");
-            Elements thHeadings = doc.select("th");
+        File html = new File(DIR + File.separator + "tool.html");
+        FileUtils.writeStringToFile(html, ReportGenerator.generateToolReport(versionsDetails), "UTF-8");
 
-            for(Element heading : thHeadings) {
-                headings.add(heading.text());
-            }
+        Document doc = Jsoup.parse(html, "UTF-8");
+        Elements thHeadings = doc.select("th");
+
+        for(Element heading : thHeadings) {
+            headings.add(heading.text());
         }
 
         assertEquals(headings.stream().anyMatch(str -> str.contains("Meta-Version") || str.contains("Version") || str.contains("Size") || str.contains("Time") || str.contains("Availability")), true);
     }
 
     @Test
-    public void validateJSONSyntax() throws Exception {
-        //assertEquals(1, jsonFiles.size());
+    public void generateMainMenu() throws Exception {
+        List<String> rowsText = new ArrayList<>();
 
-        Gson gson = new Gson();
+        Set<String> tools = new HashSet<>();
+        tools.add(TOOL_NAME);
 
-        for(File file : jsonFiles) {
-            gson.fromJson(FileUtils.readFileToString(file, "UTF-8"), Object.class);
+        File html = new File(DIR + File.separator + "index.html");
+        FileUtils.writeStringToFile(html, ReportGenerator.generateMainMenu(tools, 1000, 2000), "UTF-8");
+
+        Document doc = Jsoup.parse(html, "UTF-8");
+        Elements rows = doc.select("td");
+
+        for(Element row: rows) {
+            rowsText.add(row.text());
         }
+
+        assertEquals(rowsText.stream().anyMatch(str -> str.contains(TOOL_NAME)), true);
+    }
+
+    @AfterClass
+    public static void cleanUpDIR() {
+        DirCleaner.deleteDir(DIR);
     }
 }
