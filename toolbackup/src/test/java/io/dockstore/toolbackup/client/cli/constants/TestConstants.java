@@ -43,6 +43,7 @@ public class TestConstants {
             config = new HierarchicalINIConfiguration(configFile);
             BUCKET = config.getString("bucket", "testbucket");
             PREFIX = config.getString("prefix", "testprefix");
+            IMG = config.getString("img", "docker/whalesay");
 
             DIR = config.getString("dir", USER_HOME + File.separator + "dockstore-saver" + File.separator  + "dir");
             DIR_SAME_NAME = config.getString("samename.dir", USER_HOME + File.separator + "dockstore-save-sameName");
@@ -55,9 +56,6 @@ public class TestConstants {
             } catch (IOException e) {
                 throw new RuntimeException("Could not create " + newFile.getAbsolutePath());
             }
-
-            IMG = config.getString("img", "docker/whalesay");
-            IMG = config.getString("img", "docker/whalesay");
 
             NONEXISTING_BUCKET = config.getString("nonexisting.bucket", "dockstore-saver-gibberish");
             NONEXISTING_DIR = config.getString("nonexisting.dir", "dockstore-saver-gibberish");
