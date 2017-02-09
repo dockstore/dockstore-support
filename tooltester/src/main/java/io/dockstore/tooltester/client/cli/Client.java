@@ -188,16 +188,20 @@ public class Client {
     }
 
     public JenkinsPipeline getJenkinsPipeline(String name, int buildId) {
-        String crumb = getJenkinsCrumb();
-        String username = config.getString("jenkins-username", "travis");
-        String password = config.getString("jenkins-password", "travis");
-        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-        HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
-        javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
-        String entity = client.target(serverUrl).path("job/" + name + "/" + buildId + "/wfapi/describe").request(MediaType.TEXT_PLAIN_TYPE)
-                .header("crumbRequestField", crumb).get(String.class);
-        Gson gson = new Gson();
-        JenkinsPipeline jenkinsPipeline = gson.fromJson(entity, JenkinsPipeline.class);
+        JenkinsPipeline jenkinsPipeline = null;
+        try {
+            String crumb = getJenkinsCrumb();
+            String username = config.getString("jenkins-username", "travis");
+            String password = config.getString("jenkins-password", "travis");
+            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+            HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
+            javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
+            String entity = client.target(serverUrl).path("job/" + name + "/" + buildId + "/wfapi/describe").request(MediaType.TEXT_PLAIN_TYPE).header("crumbRequestField", crumb).get(String.class);
+            Gson gson = new Gson();
+            jenkinsPipeline = gson.fromJson(entity, JenkinsPipeline.class);
+        } catch (Exception e) {
+            LOG.warn("Could not get Jenkins build for: " + name);
+        }
         return jenkinsPipeline;
     }
 
@@ -531,8 +535,9 @@ public class Client {
                     continue;
                 } else {
                     int buildId = pipelineTester.getLastBuildId(suffix);
-                    if (buildId == 0) {
+                    if (buildId == 0 || buildId == -1) {
                         LOG.info("No build was ran");
+                        continue;
                     }
                     String name = "PipelineTest" + "-" + suffix;
                     JenkinsPipeline jenkinsPipeline = getJenkinsPipeline(name, buildId);
