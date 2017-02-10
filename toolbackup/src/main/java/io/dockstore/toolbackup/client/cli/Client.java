@@ -257,7 +257,7 @@ public class Client {
             before = findLocalVD(versionsDetails, versionTag);
 
             // image had not changed from the last encounter
-            if(before != null && 2 == dockerCommunicator.getImageSize(img)) {
+            if(before != null && before.getDockerSize() == dockerCommunicator.getImageSize(img)) {
                 out.println(img + " did not change");
                 before.addTime(stringTime);
 
