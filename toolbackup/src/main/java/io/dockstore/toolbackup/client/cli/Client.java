@@ -179,7 +179,7 @@ public class Client {
 
         out.println("Files to be uploaded: " + Arrays.toString(forUpload.toArray()));
 
-        s3Communicator.uploadDirectory(bucketName, keyPrefix, baseDir, forUpload);
+        s3Communicator.uploadDirectory(bucketName, keyPrefix, baseDir, forUpload, true);
 
         s3Communicator.shutDown();
     }
@@ -257,7 +257,7 @@ public class Client {
             before = findLocalVD(versionsDetails, versionTag);
 
             // image had not changed from the last encounter
-            if(before != null && before.getDockerSize() == dockerCommunicator.getImageSize(img)) {
+            if(before != null && 2 == dockerCommunicator.getImageSize(img)) {
                 out.println(img + " did not change");
                 before.addTime(stringTime);
 
