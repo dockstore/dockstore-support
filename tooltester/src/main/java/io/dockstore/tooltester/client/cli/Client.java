@@ -15,6 +15,19 @@
  */
 package io.dockstore.tooltester.client.cli;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.LongStream;
+
+import com.offbytwo.jenkins.JenkinsServer;
+import com.offbytwo.jenkins.helper.JenkinsVersion;
+import com.offbytwo.jenkins.model.Job;
+import com.offbytwo.jenkins.model.JobWithDetails;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
@@ -22,16 +35,13 @@ import io.swagger.client.api.ContainersApi;
 import io.swagger.client.api.GAGHApi;
 import io.swagger.client.api.UsersApi;
 import io.swagger.client.model.Tool;
+import io.swagger.client.model.ToolVersion;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Prototype for testing service
@@ -81,11 +91,10 @@ public class Client {
         System.exit(exitCode);
     }
 
-    /*
- * Main Method
- * --------------------------------------------------------------------------------------------------------------------------
- * --------------
- */
+    /**
+     * Main method
+     * @param argv
+     */
     public static void main(String[] argv) {
         OptionParser parser = new OptionParser();
         parser.accepts("dockstore-url", "dockstore install that we wish to test tools from").withRequiredArg().defaultsTo("");
@@ -97,6 +106,23 @@ public class Client {
         client.run();
 
         client.finalizeResults();
+
+        boolean jenkinsExperiment = true;
+        if (jenkinsExperiment) {
+            JenkinsServer jenkins = null;
+            try {
+                jenkins = new JenkinsServer(new URI("http://142.1.177.103:8080"), "admin", "dummy password");
+                Map<String, Job> jobs = jenkins.getJobs();
+                JenkinsVersion version = jenkins.getVersion();
+                JobWithDetails test = jobs.get("test").details();
+                //jenkins.createJob("test2", "test");
+                System.out.println("Jenkins is version " + version.getLiteralVersion() + " and has " + jobs.size() + " jobs");
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     protected void setupClientEnvironment() {
@@ -148,8 +174,12 @@ public class Client {
         /** use swagger-generated classes to talk to dockstore */
         try {
             final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
-            toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testTool)
-                    .reduce(true, Boolean::logicalAnd);
+            System.out.println("Number of tools on Dockstore: " + tools.size());
+            LongStream longStream = tools.parallelStream().filter(Tool::getVerified)
+                    .mapToLong(tool -> tool.getVersions().parallelStream().filter(ToolVersion::getVerified).count());
+            System.out.println("Number of versions of tools to test on Dockstore (currently): " + longStream.sum());
+            toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testTool).reduce(true, Boolean::logicalAnd);
+            System.out.println("Successful \"testing\" of tools found on Dockstore: " + toolTestResult);
         } catch (ApiException e) {
             exceptionMessage(e, "", API_ERROR);
         }
@@ -163,7 +193,7 @@ public class Client {
      * 1) Running available parameter files
      * 2) Rebuilding docker images
      * 3) Storing results for each tool as it finishes
-     *
+     * <p>
      * in the early phases of the project, we can try to run these locally sequentially
      * however, due to system requirements, it will quickly become necessary to hook this up to
      * either a fixed network of slaves or Consonance on-demand hosts
