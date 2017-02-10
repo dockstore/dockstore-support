@@ -72,3 +72,29 @@ We are downloading everything in the key-prefix <b>client</b> within the bucket 
 ## Tests
 
 The tests do not require a configuration file, but if you wish to set up the values yourself, you can add to the aforementioned ~/.toolbackup/config.ini
+The default values are shown here.
+```
+bucket = testbucket
+prefix = testprefix
+img = docker/whalesay
+baseDir = /home/ubuntu/dockstore-saver
+dir = /home/ubuntu/dockstore-saver/dir
+checkSizeDir = /home/ubuntu/dockstore-saver/checkSize
+
+[nonexistent]
+bucket = dockstore-saver-gibberish
+dir = dockstore-saver-gibberish
+img = dockstore-saver-gibberish
+```
+- bucket: Amazon bucket you wish to use for testing the client and downloader
+- prefix: Consider it a "subdirectory" of the bucket
+- img: A valid image that can be pulled by any environment which has Docker
+- baseDir: A local directory which <b>will not be deleted</b>
+- dir: A local directory which <b>will be deleted</b>, if not specified it will be ~/...baseDir.../dir
+- checkSizeDir: A local directory to test that the calculation of files' sizes is correct
+- nonexistent.bucket: A non-existent bucket
+- nonexistent.dir: A non-existent local directory
+- nonexistent.img: A non-existent Docker image
+
+The tests will clean up everything but the baseDir. <b>It would be best if you specify directories which do not currently exist, even for the baseDir.</b>
+
