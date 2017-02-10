@@ -140,7 +140,7 @@ public class ClientTest {
      * This gets the report of all the tools
      */
     @Test
-    public void getJenkinsTests() {
+    public void report() {
         String[] argv = { "report" };
         main(argv);
     }

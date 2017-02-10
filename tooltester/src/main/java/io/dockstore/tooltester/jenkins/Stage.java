@@ -1,21 +1,27 @@
-package io.dockstore.tooltester.client.cli;
+package io.dockstore.tooltester.jenkins;
 
 /**
  * @author gluu
  * @since 08/02/17
  */
-public class JenkinsPipeline {
+public class Stage {
+    //@Checkstyle:off
+    private JenkinsLink _links;
+    //@Checkstyle:on
     private String id;
     private String name;
+    private String execNode;
     private String status;
+    private JenkinsError error;
     private Long startTimeMillis;
-    private Long endTimeMillis;
     private Long durationMillis;
-    private Long queueDurationMillis;
     private Long pauseDurationMillis;
-    private Stage[] stages;
 
-    public JenkinsPipeline() {
+    public Stage() {
+    }
+
+    public JenkinsLink getLinks() {
+        return _links;
     }
 
     public String getId() {
@@ -26,31 +32,27 @@ public class JenkinsPipeline {
         return name;
     }
 
+    public String getExecNode() {
+        return execNode;
+    }
+
     public String getStatus() {
         return status;
+    }
+
+    public JenkinsError getError() {
+        return error;
     }
 
     public Long getStartTimeMillis() {
         return startTimeMillis;
     }
 
-    public Long getEndTimeMillis() {
-        return endTimeMillis;
-    }
-
     public Long getDurationMillis() {
         return durationMillis;
     }
 
-    public Long getQueueDurationMillis() {
-        return queueDurationMillis;
-    }
-
     public Long getPauseDurationMillis() {
         return pauseDurationMillis;
-    }
-
-    public Stage[] getStages() {
-        return stages;
     }
 }

@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -41,6 +42,12 @@ import com.google.gson.Gson;
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.helper.JenkinsVersion;
 import com.offbytwo.jenkins.model.Job;
+import io.dockstore.tooltester.jenkins.CrumbJsonResult;
+import io.dockstore.tooltester.jenkins.JenkinsLog;
+import io.dockstore.tooltester.jenkins.JenkinsPipeline;
+import io.dockstore.tooltester.jenkins.Node;
+import io.dockstore.tooltester.jenkins.Stage;
+import io.dockstore.tooltester.jenkins.StageFlowNode;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
@@ -66,7 +73,6 @@ import static io.dockstore.tooltester.client.cli.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
-
 //import java.util.stream.LongStream;
 
 /**
@@ -74,6 +80,12 @@ import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessa
  */
 public class Client {
     private static final Logger LOG;
+
+    static {
+        System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
+        LOG = LoggerFactory.getLogger(Client.class);
+    }
+
     boolean development = false;
     private ContainersApi containersApi;
     private UsersApi usersApi;
@@ -89,11 +101,6 @@ public class Client {
 
     public Client() {
 
-    }
-
-    static {
-        System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
-        LOG = LoggerFactory.getLogger(Client.class);
     }
 
     /**
@@ -559,12 +566,20 @@ public class Client {
                     String name = "PipelineTest" + "-" + suffix;
                     JenkinsPipeline jenkinsPipeline = getJenkinsPipeline(name, buildId);
                     Stage[] stages = jenkinsPipeline.getStages();
+
                     for (Stage stage : stages) {
+                        String status = stage.getStatus();
+                        if (status.equals("FAILED")) {
+
+                            status += " See " + getLog(stage);
+                        }
                         LocalDateTime date = LocalDateTime
                                 .ofInstant(Instant.ofEpochMilli(stage.getStartTimeMillis()), ZoneId.systemDefault());
-                        List<String> record = Arrays.asList(toolversion.getId(), date.toString(), tag, "Jenkins", stage.getName(),
-                                Duration.ofMillis(stage.getDurationMillis()).toString(), stage.getStatus());
-                        System.out.println(record.stream().map(Object::toString).collect(Collectors.joining("\t")).toString());
+                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyy-MM-dd HH:mm");
+                        String formatDateTime = date.format(formatter);
+
+                        List<String> record = Arrays.asList(toolversion.getId(), formatDateTime, tag, "Jenkins", stage.getName(),
+                                TimeHelper.durationToString(stage.getDurationMillis()), status);
                         report.writeLine(record);
                     }
                 }
@@ -572,6 +587,40 @@ public class Client {
                 errorMessage("Tool version is null", COMMAND_ERROR);
             }
         }
+    }
+
+    private String getLog(Stage stage) {
+        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+        String entity = getEntity(stage.getLinks().getSelf().getHref());
+        Gson gson = new Gson();
+        Node node = gson.fromJson(entity, Node.class);
+        StageFlowNode[] stageFlowNodes = node.getStageFlowNodes();
+        for (StageFlowNode stageFlowNode : stageFlowNodes) {
+            if (stageFlowNode.getStatus().equals("FAILED")) {
+                entity = getEntity(stageFlowNode.getLinks().getLog().getHref());
+                break;
+            }
+        }
+        JenkinsLog jenkinsLog = gson.fromJson(entity, JenkinsLog.class);
+        String log = serverUrl+jenkinsLog.getConsoleUrl();
+        return log;
+    }
+
+    String getEntity(String uri) {
+        String entity = null;
+        try {
+            String crumb = getJenkinsCrumb();
+            String username = config.getString("jenkins-username", "travis");
+            String password = config.getString("jenkins-password", "travis");
+            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+            HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
+            javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
+            entity = client.target(serverUrl).path(uri).request(MediaType.TEXT_PLAIN_TYPE).header("crumbRequestField", crumb)
+                    .get(String.class);
+        } catch (Exception e) {
+            LOG.warn("Could not get Jenkins stage: " + uri);
+        }
+        return entity;
     }
 
     /**
