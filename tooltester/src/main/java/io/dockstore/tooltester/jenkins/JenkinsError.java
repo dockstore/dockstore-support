@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.client.cli;
+package io.dockstore.tooltester.jenkins;
 
 /**
  * @author gluu
@@ -9,5 +9,9 @@ public class JenkinsError {
     private String type;
 
     public JenkinsError() {
+    }
+
+    public String getMessage() {
+        return message;
     }
 }

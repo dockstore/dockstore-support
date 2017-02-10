@@ -5,11 +5,10 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.offbytwo.jenkins.JenkinsServer;
-import com.offbytwo.jenkins.model.Artifact;
+//import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.BuildResult;
 import com.offbytwo.jenkins.model.BuildWithDetails;
@@ -18,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
@@ -51,10 +49,10 @@ public abstract class JenkinsJob {
         String jobxml = null;
         try {
             jobxml = jenkins.getJobXml(prefix);
-            job = jenkins.getJob(name);
             if (jobxml == null) {
                 errorMessage("Could not get Jenkins template job", COMMAND_ERROR);
             }
+            job = jenkins.getJob(name);
         } catch (IOException e) {
             exceptionMessage(e, "Could not get Jenkins job", IO_ERROR);
         }
@@ -140,38 +138,35 @@ public abstract class JenkinsJob {
         return map;
     }
 
-    /**
-     * Creates the consoleOutputFile
-     *
-     * @param suffix The suffix part of the Jenkins job name
-     * @return The path to the output file
-     */
-    String getConsoleOutputFilePath(String suffix) {
+    boolean isRunning(String suffix) {
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;
-        String path;
-        String buildId = "1";
-        String url = "142.1.177.103:8080";
-        path = url + "/job/" + name + "/" + buildId + "/console";
-        return path;
-    }
-
-    List<Artifact> getArtifacts(String suffix) {
-        String prefix = getPREFIX();
-        String name = prefix + "-" + suffix;
-        List<Artifact> artifacts = null;
         try {
             JobWithDetails job = jenkins.getJob(name);
-            Build lastBuild = job.getLastBuild();
-            BuildWithDetails details = lastBuild.details();
-            artifacts = details.getArtifacts();
-        } catch (IOException e) {
-            exceptionMessage(e, "Could not get Jenkins job results", IO_ERROR);
+            Build build = job.getLastBuild();
+            return build.details().isBuilding();
+        } catch (Exception e) {
+            LOG.info("Could not get Jenkins job: " + name);
+            return false;
         }
-        return artifacts;
     }
 
-    public JobWithDetails getJenkinsJob(String suffix) {
+//    List<Artifact> getArtifacts(String suffix) {
+//        String prefix = getPREFIX();
+//        String name = prefix + "-" + suffix;
+//        List<Artifact> artifacts = null;
+//        try {
+//            JobWithDetails job = jenkins.getJob(name);
+//            Build lastBuild = job.getLastBuild();
+//            BuildWithDetails details = lastBuild.details();
+//            artifacts = details.getArtifacts();
+//        } catch (IOException e) {
+//            exceptionMessage(e, "Could not get Jenkins job results", IO_ERROR);
+//        }
+//        return artifacts;
+//    }
+
+    JobWithDetails getJenkinsJob(String suffix) {
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;
         JobWithDetails job = null;
@@ -190,21 +185,12 @@ public abstract class JenkinsJob {
         int buildId = 0;
         try {
             JobWithDetails job = jenkins.getJob(name);
-            if (job == null) {
-                errorMessage("Could not get job" + name, IO_ERROR);
-            }
             Build build = job.getLastBuild();
-            if (build == null) {
-                errorMessage("Could not get last build", IO_ERROR);
-            }
             buildId = build.getNumber();
-            if (buildId == 0) {
-                errorMessage("Could not get build Id", IO_ERROR);
-            }
         } catch (IOException e) {
             exceptionMessage(e, "Could not get Jenkins job", IO_ERROR);
         } catch (NullPointerException e) {
-            exceptionMessage(e, "Null pointer exception for some reason", GENERIC_ERROR);
+            return -1;
         }
         return buildId;
     }

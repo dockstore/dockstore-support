@@ -1,11 +1,13 @@
-package io.dockstore.tooltester.client.cli;
+package io.dockstore.tooltester.jenkins;
 
 /**
  * @author gluu
  * @since 08/02/17
  */
 public class Stage {
-    private JenkinsLink links;
+    //@Checkstyle:off
+    private JenkinsLink _links;
+    //@Checkstyle:on
     private String id;
     private String name;
     private String execNode;
@@ -19,27 +21,15 @@ public class Stage {
     }
 
     public JenkinsLink getLinks() {
-        return links;
-    }
-
-    public String getId() {
-        return id;
+        return _links;
     }
 
     public String getName() {
         return name;
     }
 
-    public String getExecNode() {
-        return execNode;
-    }
-
     public String getStatus() {
         return status;
-    }
-
-    public JenkinsError getError() {
-        return error;
     }
 
     public Long getStartTimeMillis() {
@@ -50,7 +40,4 @@ public class Stage {
         return durationMillis;
     }
 
-    public Long getPauseDurationMillis() {
-        return pauseDurationMillis;
-    }
 }
