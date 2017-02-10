@@ -26,10 +26,10 @@ docker run -d --publish 8080:80 --env S3PROXY_AUTHORIZATION=none andrewgaul/s3pr
 To use the script, you must provide an endpoint in ~/.toolbackup/config.ini
 ```
 token = XXX
-server-url = XXX
+server-url = https://dockstore.org:8443
 endpoint = XXX
 ```
-Only endpoint is mandatory. The others are for retrieving dockstore tools. You can set up your config like so:
+By default the token is empty. The default value for the server-url is shown above. These two values are for retrieving dockstore tools.Only the endpoint is mandatory.  You can set up your config like so:
 ```
 endpoint = XXX
 ```
@@ -60,6 +60,57 @@ This is the script to backup dockstore images from quay.io into Openstack
 java -jar target/client.jar --bucket-name clientbucket --key-prefix client --local-dir /home/ubuntu/clientEx --test-mode-activate true
 ```
 We are running with test mode activated which means we will not download all dockstore images. The dockstore images targeted will be stored on Openstack in the bucket <b>clientbucket</b> and in the key-prefix <b>client</b> within the bucket. The bucket and key-prefix need not have been created. The directory, <b>/home/ubuntu/clientEx</b> will act as temporary storage and it need not to have already been created. 
+
+### How it Works
+
+Client will pull all the GA4GH tools from the server-url and save them locally. It will not pull a docker image again if its size has not changed. It will then detect which files need to be uploaded to OpenStack based on file sizes. However, the script will always upload report files in the report subdirectory. This subdirectory will be generated in the local directory that the user specified. For this example, /home/ubuntu/clientEx/report will be generated containing the HTML report and map.JSON.
+
+### map.JSON
+```
+[
+  {
+    "toolname": "dockstore-tool-bamstats",
+    "versions": [
+      {
+        "version": "develop",
+        "metaVersion": "2016-11-11 18:17:46.0",
+        "dockerSize": 541073189,
+        "fileSize": 558081536,
+        "valid": true,
+        "timesOfExecution": [
+          "10-02-2017 10:39:55",
+          "10-02-2017 10:40:59"
+        ],
+        "path": ""
+      },
+      {
+        "version": "develop",
+        "metaVersion": "2016-11-11 18:17:46.0",
+        "dockerSize": 681073489,
+        "fileSize": 692073489,
+        "valid": true,
+        "timesOfExecution": [
+          "10-02-2017 11:28:39"
+        ],
+        "path": "/home/kcao/clientEx/quay.io/collaboratory/dockstore-tool-bamstats/develop.tar"
+      }
+  }
+]
+```
+Here is an example map.JSON file. It keeps track of tools and their versions and meta-versions. It also contains information about an image's size on docker and its file size when saved locally. If an image was not able to be pulled, its <b>valid</b> field would be false. The <b>timesOfExecution</b> tracks the times the script has executed and the version of this tool's version has remained the same. The <b>path</b> refers to the saved image's local file path. If the image changes, as shown here, there would be a new version object. If the modified image is valid, the old version 
+
+### HTML Report
+
+The index.html is the main menu for all GA4GH tools. It also displays how many GBs have been added to cloud as well as how many GBs were previously on the cloud. The individual tool reports which can be accessed on index.html displays the information in map.JSON in a more readable format with the following columns:
+
+- Version
+- Meta-Version (API)
+- Size (GB)
+- Recent Executions
+- Availability
+- File Path
+
+Please note that in <b>Recent Executions</b> in the report, it will at most 3 times of execution. <b>Availability</b> is the same as <b>valid</b> in the JSON file.
 
 ## Downloader
 
