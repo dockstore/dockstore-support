@@ -6,6 +6,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 
 import java.io.File;
+import java.time.LocalDateTime;
 
 import static io.dockstore.toolbackup.client.cli.Client.API_ERROR;
 
@@ -33,7 +34,7 @@ public class TestConstants {
     public static final String TOOL_NAME = "saver_test_tool";
     public static final String ID = "test/" + TOOL_NAME;
     public static final String TAG = "master";
-    public static final String TIME = FormattedTimeGenerator.getFormattedTimeNow();
+    public static final String TIME = FormattedTimeGenerator.getFormattedTimeNow(LocalDateTime.now());
 
     static {
         try {

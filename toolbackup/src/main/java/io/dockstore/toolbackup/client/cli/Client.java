@@ -15,6 +15,8 @@
  */
 package io.dockstore.toolbackup.client.cli;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
@@ -30,12 +32,13 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,7 +47,7 @@ import java.util.Map;
 import static java.lang.System.out;
 
 public class Client {
-    private static final Logger LOG = LoggerFactory.getLogger(Client.class);
+    private static final Logger ROOT_LOGGER = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
     private final OptionSet options;
     private ContainersApi containersApi;
     private UsersApi usersApi;
@@ -62,7 +65,8 @@ public class Client {
     // dockerstor_tutorial [42, 43)
     private static final int FROM_INDEX = 4;
     private static final int TO_INDEX = 5;
-    private static final String TIME_NOW = FormattedTimeGenerator.getFormattedTimeNow();
+    private static final LocalDateTime TIME_NOW = LocalDateTime.now();
+    private static String stringTime;
 
     private Map<String, List<VersionDetail>> toolsToVersions;
     private HierarchicalINIConfiguration config;
@@ -71,8 +75,13 @@ public class Client {
         this.options = options;
     }
 
+    static {
+        ROOT_LOGGER.setLevel(Level.WARN);
+        stringTime = FormattedTimeGenerator.getFormattedTimeNow(TIME_NOW);
+    }
+
     public static void main(String[] argv) {
-        out.println("Back-up script started: " + TIME_NOW);
+        out.println("Back-up script started: " + stringTime);
 
         out.println(Arrays.toString(argv));
 
@@ -89,7 +98,14 @@ public class Client {
         String dirPath = Paths.get(local).toAbsolutePath().toString();
         DirectoryGenerator.createDir(dirPath);
 
-        client.run(dirPath, options.valueOf(bucketName), options.valueOf(keyPrefix), options.valueOf(isTestMode));
+        try {
+            client.run(dirPath, options.valueOf(bucketName), options.valueOf(keyPrefix), options.valueOf(isTestMode));
+        }  catch (UnknownHostException e) {
+            ErrorExit.exceptionMessage(e, "No internet access", CONNECTION_ERROR);
+        }
+
+        final LocalDateTime end = LocalDateTime.now();
+        FormattedTimeGenerator.elapsedTime(TIME_NOW, end);
     }
 
     //-----------------------Main invocations-----------------------
@@ -136,7 +152,7 @@ public class Client {
         return uploadList;
     }
 
-    private void run(String baseDir, String bucketName, String keyPrefix, boolean isTestMode) {
+    private void run(String baseDir, String bucketName, String keyPrefix, boolean isTestMode) throws UnknownHostException {
         // use swagger-generated classes to talk to dockstore
         setupClientEnvironment();
         List<Tool> tools = getTools();
@@ -243,7 +259,7 @@ public class Client {
             // image had not changed from the last encounter
             if(before != null && before.getDockerSize() == dockerCommunicator.getImageSize(img)) {
                 out.println(img + " did not change");
-                before.addTime(TIME_NOW);
+                before.addTime(stringTime);
 
                 long fileSize = imgFile.length();
                 // image not yet saved in local
@@ -260,16 +276,16 @@ public class Client {
                     before.setPath("");
                 }
 
-                versionsDetails.add(new VersionDetail(versionTag, metaVersion, dockerSize, imgFile.length(), TIME_NOW, true, imgFile.getAbsolutePath()));
+                versionsDetails.add(new VersionDetail(versionTag, metaVersion, dockerSize, imgFile.length(), stringTime, true, imgFile.getAbsolutePath()));
             }
 
         } else {
             // non-existent image
             before = findInvalidVD(versionsDetails, versionTag);
             if(before != null) {
-                before.addTime(TIME_NOW);
+                before.addTime(stringTime);
             } else {
-                versionsDetails.add(new VersionDetail(versionTag, metaVersion, 0, 0, TIME_NOW, false, ""));
+                versionsDetails.add(new VersionDetail(versionTag, metaVersion, 0, 0, stringTime, false, ""));
             }
         }
     }
@@ -334,10 +350,9 @@ public class Client {
             if (this.usersApi.getApiClient() != null) {
                 this.isAdmin = this.usersApi.getUser().getIsAdmin();
             }
-        } catch (ApiException ex) {
+        } catch (ApiException e) {
             this.isAdmin = false;
         }
-
         defaultApiClient.setDebugging(ErrorExit.DEBUG.get());
     }
 
