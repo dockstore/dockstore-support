@@ -97,7 +97,7 @@ Client will pull all the GA4GH tools from the server-url and save them locally. 
   }
 ]
 ```
-Here is an example map.JSON file. It keeps track of tools and their versions and meta-versions. It also contains information about an image's size on docker and its file size when saved locally. If an image was not able to be pulled, its <b>valid</b> field would be false. The <b>timesOfExecution</b> tracks the times the script has executed and the version of this tool's version has remained the same. The <b>path</b> refers to the saved image's local file path. If the image changes, as shown here, there would be a new version object. If the modified image is valid, the old version 
+Here is an example map.JSON file. It keeps track of tools and their versions and meta-versions. It also contains information about an image's size on docker and its file size when saved locally. If an image was not able to be pulled, its <b>valid</b> field would be false. The <b>timesOfExecution</b> tracks the times the script has executed and the version of this tool's version has remained the same. The <b>path</b> refers to the saved image's local file path. If the image changes, as shown here, there would be a new version object. If the modified image is valid, the old version will have an empty path. 
 
 ### HTML Report
 
@@ -110,7 +110,7 @@ The index.html is the main menu for all GA4GH tools. It also displays how many G
 - Availability
 - File Path
 
-Please note that in <b>Recent Executions</b> in the report, it will at most 3 times of execution. <b>Availability</b> is the same as <b>valid</b> in the JSON file.
+Please note that in <b>Recent Executions</b> in the report, it will show at most three times of execution. <b>Availability</b> is the same as <b>valid</b> in the JSON file.
 
 ## Downloader
 
