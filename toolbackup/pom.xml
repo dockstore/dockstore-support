@@ -244,17 +244,35 @@
                 <version>2.7</version>
             </dependency>
 
-
             <dependency>
                 <groupId>org.gaul</groupId>
                 <artifactId>s3proxy</artifactId>
                 <version>1.5.1</version>
             </dependency>
 
+            <!-- https://mvnrepository.com/artifact/junit/junit -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.12</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.stefanbirkner</groupId>
+            <artifactId>system-rules</artifactId>
+            <version>1.16.1</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -331,13 +349,6 @@
             <version>1.10</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/junit/junit -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.spotify/docker-client -->
         <dependency>
@@ -415,7 +426,7 @@
                                 <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                                 <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                                 <addClasspath>true</addClasspath>
-                               <!--  <mainClass>io.dockstore.tooltester.client.cli.Client</mainClass> -->
+                                <!--  <mainClass>io.dockstore.tooltester.client.cli.Client</mainClass> -->
                             </manifest>
                         </archive>
                     </configuration>
@@ -570,7 +581,8 @@
                         </goals>
                         <configuration>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
                                         <Main-Class>io.dockstore.toolbackup.client.cli.Client</Main-Class>
                                     </manifestEntries>
@@ -587,7 +599,8 @@
                         </goals>
                         <configuration>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
                                         <Main-Class>io.dockstore.toolbackup.client.cli.Downloader</Main-Class>
                                     </manifestEntries>

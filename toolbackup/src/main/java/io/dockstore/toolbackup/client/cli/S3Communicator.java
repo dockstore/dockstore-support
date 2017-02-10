@@ -89,11 +89,15 @@ class S3Communicator {
         return objectMetadataProvider;
      }
 
-    void uploadDirectory(String bucketName, String keyPrefix, String dirPath, List<File> files) {
+    void uploadDirectory(String bucketName, String keyPrefix, String dirPath, List<File> files, boolean encrypt) {
         createBucket(bucketName);
 
         try {
-            transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files, encrypt()).waitForCompletion();
+            if(encrypt) {
+                transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files, encrypt()).waitForCompletion();
+            } else {
+                transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files).waitForCompletion();
+            }
             out.println("Uploaded necessary files in: " + dirPath);
         } catch (InterruptedException e) {
             throw new RuntimeException("Could not upload the directory: " + dirPath + " in its entirety");

@@ -7,12 +7,17 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.BUCKET;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.NONEXISTING_BUCKET;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.NONEXISTING_DIR;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.PREFIX;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Created by kcao on 24/01/17.
@@ -31,9 +36,20 @@ public class S3CommunicatorTest {
         S_3_COMMUNICATOR.createBucket(BUCKET);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void uploadDirectory() throws Exception {
-        S_3_COMMUNICATOR.uploadDirectory(BUCKET, PREFIX, NONEXISTING_DIR, null);
+        List<File> files = new ArrayList<>();
+        File file = new File(DIR + File.separator + "helloworld.txt");
+        assumeTrue(file.isFile() || !file.exists());
+        file.createNewFile();
+        files.add(file);
+
+        S_3_COMMUNICATOR.uploadDirectory(BUCKET, PREFIX, DIR, files,false);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void uploadDirectory_nonexistentDirectory() throws Exception {
+        S_3_COMMUNICATOR.uploadDirectory(BUCKET, PREFIX, NONEXISTING_DIR, null, false);
     }
 
     @Test (expected = RuntimeException.class)

@@ -62,9 +62,10 @@ public class Client {
     public static final int CLIENT_ERROR = 4;           // Client does something wrong (ex. input validation)
     public static final int COMMAND_ERROR = 10;         // Command is not successful, but not due to errors
 
-    // dockerstor_tutorial [42, 43)
+    // retrieves only the bamstats tool as shown in https://dockstore.org/docs/getting-started-with-docker
     private static final int FROM_INDEX = 4;
     private static final int TO_INDEX = 5;
+
     private static final LocalDateTime TIME_NOW = LocalDateTime.now();
     private static String stringTime;
 
@@ -179,7 +180,7 @@ public class Client {
 
         out.println("Files to be uploaded: " + Arrays.toString(forUpload.toArray()));
 
-        s3Communicator.uploadDirectory(bucketName, keyPrefix, baseDir, forUpload);
+        s3Communicator.uploadDirectory(bucketName, keyPrefix, baseDir, forUpload, true);
 
         s3Communicator.shutDown();
     }
@@ -325,8 +326,11 @@ public class Client {
     //-----------------------Set up to connect to GA4GH API-----------------------
     protected void setupClientEnvironment() {
         String userHome = System.getProperty("user.home");
+
+        String configFilePath = userHome + File.separator + ".toolbackup" + File.separator + "config.ini";
+
         try {
-            File configFile = new File(userHome + File.separator + ".toolbackup" + File.separator + "config.ini");
+            File configFile = new File(configFilePath);
             this.config = new HierarchicalINIConfiguration(configFile);
         } catch (ConfigurationException e) {
             ErrorExit.exceptionMessage(e, "", API_ERROR);
@@ -335,7 +339,12 @@ public class Client {
         // pull out the variables from the config
         String token = config.getString("token", "");
         String serverUrl = config.getString("server-url", "https://www.dockstore.org:8443");
-        endpoint = config.getString("endpoint");
+
+        try {
+            endpoint = config.getString("endpoint");
+        } catch(NullPointerException e) {
+            throw new RuntimeException("Expected " + configFilePath + " with an endpoint initialization");
+        }
 
         ApiClient defaultApiClient;
         defaultApiClient = Configuration.getDefaultApiClient();

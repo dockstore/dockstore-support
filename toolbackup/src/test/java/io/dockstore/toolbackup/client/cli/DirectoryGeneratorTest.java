@@ -3,10 +3,11 @@ package io.dockstore.toolbackup.client.cli;
 import io.dockstore.toolbackup.client.cli.common.DirCleaner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 
 import java.io.File;
-import java.security.Permission;
 
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
 import static org.junit.Assume.assumeTrue;
@@ -15,21 +16,11 @@ import static org.junit.Assume.assumeTrue;
  * Created by kcao on 25/01/17.
  */
 public class DirectoryGeneratorTest {
-    private static final SecurityManager SM = System.getSecurityManager();
+    @Rule
+    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
     @BeforeClass
     public static void setUp() {
-        System.setSecurityManager(new SecurityManager() {
-            @Override
-            public void checkExit(int status) {
-                super.checkExit(status);
-                throw new SecurityException("Overriding shutdown...");
-            }
-
-            @Override
-            public void checkPermission(final Permission perm) {}
-        });
-
         DirectoryGenerator.createDir(DIR);
     }
 
@@ -37,8 +28,9 @@ public class DirectoryGeneratorTest {
      * Test that the script exits if the user is attempting to create a directory with the same path as an existing file
      * @throws Exception
      */
-    @Test(expected = SecurityException.class)
+    @Test
     public void createDir_existingFile() throws Exception {
+        exit.expectSystemExit();
         File file = new File(DIR + File.separator + "sameName.txt");
         assumeTrue(file.isFile() || !file.exists());
         file.createNewFile();
@@ -47,7 +39,6 @@ public class DirectoryGeneratorTest {
 
     @AfterClass
     public static void shutDown() {
-        System.setSecurityManager(SM);
         DirCleaner.deleteDir(DIR);
     }
 }
