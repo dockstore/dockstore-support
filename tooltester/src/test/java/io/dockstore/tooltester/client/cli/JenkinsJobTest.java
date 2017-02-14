@@ -33,32 +33,6 @@ public class JenkinsJobTest {
     }
 
     @Test
-    public void ParameterTestJobIT() {
-        final String suffix = "id-tag-test.json";
-        client.setupJenkins();
-        Assert.assertTrue("Jenkins server can not be reached", client.getJenkins() != null);
-        client.setupTesters();
-        ParameterFileTester parameterFileTester = client.getParameterFileTester();
-
-        parameterFileTester.createTest(suffix);
-
-        Map<String, String> map = new HashMap<>();
-        map.put("URL", "https://github.com/CancerCollaboratory/dockstore-tool-kallisto.git");
-        map.put("Tag", "master");
-        map.put("DescriptorPath", "Dockstore.cwl");
-        map.put("ParameterPath", "test1.json");
-
-        parameterFileTester.runTest(suffix, map);
-        String status = parameterFileTester.getTestResults(suffix).get("status");
-        assertTrue("Status is not SUCCESS: " + status != null);
-        try {
-            client.getJenkins().deleteJob("ParameterFileTest" + "-" + suffix, true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Test
     public void PipelineTestJobIT() {
         final String suffix = "id-tag";
         client.setupJenkins();
@@ -85,36 +59,12 @@ public class JenkinsJobTest {
     }
 
     @Test
-    public void DockerfileTestJobIT() {
-        final String suffix = "id-tag-test.json";
-        client.setupJenkins();
-        Assert.assertTrue("Jenkins server can not be reached", client.getJenkins() != null);
-        client.setupTesters();
-        DockerfileTester dockerfileTester = client.getDockerfileTester();
-        dockerfileTester.createTest(suffix);
-
-        Map<String, String> map = new HashMap<>();
-        map.put("URL", "https://github.com/CancerCollaboratory/dockstore-tool-kallisto.git");
-        map.put("Tag", "master");
-        map.put("DockerfilePath", "Dockerfile");
-
-        dockerfileTester.runTest(suffix, map);
-        String status = dockerfileTester.getTestResults(suffix).get("status");
-        assertTrue("Status is not SUCCESS: " + status != null);
-        try {
-            client.getJenkins().deleteJob("DockerfileTest" + "-" + suffix, true);
-        } catch (IOException e) {
-            System.out.println("Could not delete Jenkins job");
-        }
-    }
-
-    @Test
     public void getNonExistantTest() {
         exit.expectSystemExitWithStatus(10);
         client.setupJenkins();
         client.setupTesters();
-        DockerfileTester dockerfileTester = client.getDockerfileTester();
-        dockerfileTester.getTestResults("SuffixOfATestThatShouldNotExist");
+        PipelineTester pipelineTester = client.getPipelineTester();
+        pipelineTester.getTestResults("SuffixOfATestThatShouldNotExist");
 
     }
 }
