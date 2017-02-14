@@ -163,7 +163,7 @@ public abstract class JenkinsJob {
             JobWithDetails job = jenkins.getJob(name);
             Build build = job.getLastBuild();
             return build.details().isBuilding();
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOG.info("Could not get Jenkins job: " + name);
             return false;
         }

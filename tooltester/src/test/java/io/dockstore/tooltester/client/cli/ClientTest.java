@@ -49,7 +49,7 @@ public class ClientTest {
     /**
      * This is for admin use only.  It deletes all created Jenkins pipelines
      */
-    private void deleteJenkinsTests() {
+   private void deleteJenkinsTests() {
         client.setupJenkins();
         JenkinsServer jenkins = client.getJenkins();
         Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
