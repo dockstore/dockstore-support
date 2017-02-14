@@ -156,6 +156,19 @@ public abstract class JenkinsJob {
         return path;
     }
 
+    boolean isRunning(String suffix) {
+        String prefix = getPREFIX();
+        String name = prefix + "-" + suffix;
+        try {
+            JobWithDetails job = jenkins.getJob(name);
+            Build build = job.getLastBuild();
+            return build.details().isBuilding();
+        } catch (IOException e) {
+            LOG.info("Could not get Jenkins job: " + name);
+            return false;
+        }
+    }
+
     List<Artifact> getArtifacts(String suffix) {
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;

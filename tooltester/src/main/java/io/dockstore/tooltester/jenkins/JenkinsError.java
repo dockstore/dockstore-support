@@ -10,4 +10,8 @@ public class JenkinsError {
 
     public JenkinsError() {
     }
+
+    public String getMessage() {
+        return message;
+    }
 }

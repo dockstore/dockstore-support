@@ -73,7 +73,6 @@ import static io.dockstore.tooltester.client.cli.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
-//import java.util.stream.LongStream;
 
 /**
  * Prototype for testing service
@@ -82,7 +81,7 @@ public class Client {
     private static final Logger LOG;
 
     static {
-        System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
+        System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "TRACE");
         LOG = LoggerFactory.getLogger(Client.class);
     }
 
@@ -190,10 +189,9 @@ public class Client {
     }
 
     /**
-     * +     * This function gets the jenkins crumb in the event that the java jenkins api does not work
-     * +     *
-     * +     * @return The crumb string
-     * +
+     * This function gets the jenkins crumb in the event that the java jenkins api does not work
+     *
+     * @return The crumb string
      */
     public String getJenkinsCrumb() {
         String username = config.getString("jenkins-username", "travis");
@@ -568,7 +566,15 @@ public class Client {
                     Stage[] stages = jenkinsPipeline.getStages();
 
                     for (Stage stage : stages) {
+
                         String status = stage.getStatus();
+
+                        // Jenkins reports the wrong status and duration for in-progress stages, return the total job info instead
+                        Long runtime = stage.getDurationMillis();
+                        if (stage.getDurationMillis() < 0) {
+                            status = jenkinsPipeline.getStatus();
+                            runtime = jenkinsPipeline.getDurationMillis();
+                        }
                         if (status.equals("FAILED")) {
 
                             status += " See " + getLog(stage);
@@ -579,7 +585,7 @@ public class Client {
                         String formatDateTime = date.format(formatter);
 
                         List<String> record = Arrays.asList(toolversion.getId(), formatDateTime, tag, "Jenkins", stage.getName(),
-                                TimeHelper.durationToString(stage.getDurationMillis()), status);
+                                TimeHelper.durationToString(runtime), status);
                         report.writeLine(record);
                     }
                 }
@@ -597,12 +603,16 @@ public class Client {
         StageFlowNode[] stageFlowNodes = node.getStageFlowNodes();
         for (StageFlowNode stageFlowNode : stageFlowNodes) {
             if (stageFlowNode.getStatus().equals("FAILED")) {
-                entity = getEntity(stageFlowNode.getLinks().getLog().getHref());
+                try {
+                    entity = getEntity(stageFlowNode.getLinks().getLog().getHref());
+                } catch (Exception e) {
+                    return node.getError().getMessage();
+                }
                 break;
             }
         }
         JenkinsLog jenkinsLog = gson.fromJson(entity, JenkinsLog.class);
-        String log = serverUrl+jenkinsLog.getConsoleUrl();
+        String log = serverUrl + jenkinsLog.getConsoleUrl().replaceFirst("^/", "");
         return log;
     }
 
@@ -631,6 +641,7 @@ public class Client {
             Map<String, Job> jobs = jenkins.getJobs();
             jobs.entrySet().stream().filter(map -> map.getKey().matches(pattern + ".+")).forEach(map -> {
                 try {
+
                     jenkins.deleteJob(map.getKey(), true);
                 } catch (IOException e) {
                     exceptionMessage(e, "Could not delete Jenkins job", IO_ERROR);
@@ -845,7 +856,12 @@ public class Client {
             }
             parameter.put("ParameterPath", parameterStringBuilder.toString());
             parameter.put("DescriptorPath", descriptorStringBuilder.toString());
-            pipelineTester.runTest(name, parameter);
+            if (!pipelineTester.isRunning(name)) {
+                pipelineTester.runTest(name, parameter);
+            } else {
+                LOG.info("Job " + name + " is already running");
+            }
+
         }
         return true;
     }

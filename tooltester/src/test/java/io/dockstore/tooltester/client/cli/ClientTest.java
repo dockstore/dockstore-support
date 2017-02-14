@@ -47,10 +47,9 @@ public class ClientTest {
     }
 
     /**
-     * This test deletes all created Jenkins pipelines
+     * This is for admin use only.  It deletes all created Jenkins pipelines
      */
-    @Test
-    public void deleteJenkinsTests() {
+    private void deleteJenkinsTests() {
         client.setupJenkins();
         JenkinsServer jenkins = client.getJenkins();
         Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
@@ -79,7 +78,7 @@ public class ClientTest {
     }
 
     /**
-     * Test enqueue with no parameters which should print the help usage
+     * Test enqueue with option --all which should run all jobs
      */
     @Test
     public void enqueueAll() {
@@ -115,28 +114,6 @@ public class ClientTest {
     }
 
     /**
-     * This attempts to test an invalid tool
-     */
-    @Test
-    public void testInvalidTool() {
-        exit.expectSystemExitWithStatus(API_ERROR);
-        Tool tool = new Tool();
-        client.testTool2(tool);
-    }
-
-    /**
-     * This attempts to get the results of an invalid tool;
-     */
-    @Test
-    public void getInvalidTool() {
-        exit.expectSystemExitWithStatus(COMMAND_ERROR);
-        Tool tool = new Tool();
-        List<ToolVersion> versions = Arrays.asList(null, null);
-        tool.setVersions(versions);
-        client.getToolTestResults2(tool);
-    }
-
-    /**
      * This gets the report of all the tools
      */
     @Test
@@ -149,7 +126,7 @@ public class ClientTest {
      * This reports on a specific tool
      */
     @Test
-    public void getSpecificJenkinsTest() {
+    public void reportTool() {
         String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow" };
         main(argv);
     }
@@ -158,14 +135,13 @@ public class ClientTest {
      * This reports on specific tools
      */
     @Test
-    public void getSpecificJenkinsTests() {
-        String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow",
-                "quay.io/pancancer/pcawg-dkfz-workflow" };
+    public void reportTools() {
+        String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow" };
         main(argv);
     }
 
     @Test
-    public void getSpecificInvalidJenkinsTest() {
+    public void reportInvalidTool() {
         String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa"};
         main(argv);
     }
