@@ -10,6 +10,7 @@ public class TimeHelperTest {
     @Test
     public void durationToString() throws Exception {
         System.out.println(TimeHelper.durationToString(Long.valueOf(3700000)));
+        System.out.println(TimeHelper.durationToString(Long.valueOf(-2)));
     }
 
 }

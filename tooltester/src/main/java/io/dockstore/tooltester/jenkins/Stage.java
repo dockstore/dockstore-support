@@ -24,24 +24,12 @@ public class Stage {
         return _links;
     }
 
-    public String getId() {
-        return id;
-    }
-
     public String getName() {
         return name;
     }
 
-    public String getExecNode() {
-        return execNode;
-    }
-
     public String getStatus() {
         return status;
-    }
-
-    public JenkinsError getError() {
-        return error;
     }
 
     public Long getStartTimeMillis() {
@@ -52,7 +40,4 @@ public class Stage {
         return durationMillis;
     }
 
-    public Long getPauseDurationMillis() {
-        return pauseDurationMillis;
-    }
 }

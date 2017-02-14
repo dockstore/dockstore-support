@@ -65,6 +65,5 @@ public class JenkinsJobTest {
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
         pipelineTester.getTestResults("SuffixOfATestThatShouldNotExist");
-
     }
 }

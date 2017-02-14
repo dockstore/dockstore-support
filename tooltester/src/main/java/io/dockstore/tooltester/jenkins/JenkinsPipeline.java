@@ -18,36 +18,12 @@ public class JenkinsPipeline {
     public JenkinsPipeline() {
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
     public String getStatus() {
         return status;
     }
 
-    public Long getStartTimeMillis() {
-        return startTimeMillis;
-    }
-
-    public Long getEndTimeMillis() {
-        return endTimeMillis;
-    }
-
     public Long getDurationMillis() {
         return durationMillis;
-    }
-
-    public Long getQueueDurationMillis() {
-        return queueDurationMillis;
-    }
-
-    public Long getPauseDurationMillis() {
-        return pauseDurationMillis;
     }
 
     public Stage[] getStages() {
