@@ -5,7 +5,11 @@ import java.util.Collections;
 import java.util.List;
 
 import com.offbytwo.jenkins.JenkinsServer;
+import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
+import io.swagger.client.Configuration;
+import io.swagger.client.api.GAGHApi;
+import io.swagger.client.api.UsersApi;
 import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
 import org.junit.Assert;
@@ -163,6 +167,13 @@ public class ClientTest {
     public void mainHelp() {
         String[] argv = { "--help" };
         main(argv);
+    }
+
+    /**
+     * Temporary test created to test the md5sum challenge tool
+     */
+    private void testmd5sum(){
+        client.md5sumChallenge();
     }
 
     /**

@@ -55,6 +55,7 @@ import io.swagger.client.api.GAGHApi;
 import io.swagger.client.api.UsersApi;
 import io.swagger.client.model.DockstoreTool;
 import io.swagger.client.model.SourceFile;
+import io.swagger.client.model.Tag;
 import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
 import org.apache.commons.configuration.ConfigurationException;
@@ -336,6 +337,24 @@ public class Client {
         report.close();
     }
 
+    public void md5sumChallenge() {
+        setupClientEnvironment();
+        setupJenkins();
+        setupTesters();
+        List<Tool> verifiedTools = null;
+        GAGHApi ga4ghApi = getGa4ghApi();
+        List<Tool> tools = null;
+        try {
+            tools = ga4ghApi.toolsGet("quay.io/briandoconnor/dockstore-tool-md5sum", null, null, null, null, null, null, null, null);
+        } catch (ApiException e) {
+            exceptionMessage(e, "", API_ERROR);
+        }
+        for (Tool tool : tools) {
+            createToolTests(tool);
+            testTool(tool);
+        }
+    }
+
     private void openResults() {
         report = new Report("Report.csv");
     }
@@ -605,18 +624,21 @@ public class Client {
             assert dockstoreTool != null;
             Long containerId = dockstoreTool.getId();
             String id = toolversion.getId();
-            String tag = toolversion.getName();
-            try {
-                SourceFile dockerfile = containersApi.dockerfile(containerId, tag);
-                dockerfilePath = dockerfile.getPath().replaceFirst("^/", "");
-            } catch (ApiException e) {
-                exceptionMessage(e, "Could not get dockerfile using the container API", API_ERROR);
+            String tagName = toolversion.getName();
+            String referenceName = tagName;
+            List<Tag> tags = dockstoreTool.getTags();
+            for (Tag tag : tags) {
+                if (tag.getName().equals(tagName)){
+                    referenceName = tag.getReference();
+                    dockerfilePath = tag.getDockerfilePath();
+                }
             }
 
+            dockerfilePath = dockerfilePath.replaceFirst("^/", "");
             String name = id;
             name = name.replace("/", "-");
             name = name.replace(":", "-");
-            parameter.put("Tag", tag);
+            parameter.put("Tag", referenceName);
 
             parameter.put("DockerfilePath", dockerfilePath);
             StringBuilder descriptorStringBuilder = new StringBuilder();
@@ -627,18 +649,18 @@ public class Client {
                 for (ToolVersion.DescriptorTypeEnum descriptorType : toolversion.getDescriptorType()) {
                     switch (descriptorType.toString()) {
                     case "CWL":
-                        descriptor = containersApi.cwl(containerId, tag);
+                        descriptor = containersApi.cwl(containerId, tagName);
 
                         break;
                     case "WDL":
-                        descriptor = containersApi.wdl(containerId, tag);
+                        descriptor = containersApi.wdl(containerId, tagName);
                         break;
                     default:
                         LOG.info("Unknown descriptor, skipping");
                         continue;
                     }
                     String descriptorPath = descriptor.getPath().replaceFirst("^/", "");
-                    testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
+                    testParameterFiles = containersApi.getTestParameterFiles(containerId, tagName, descriptorType.toString());
                     for (SourceFile testParameterFile : testParameterFiles) {
                         String parameterPath = testParameterFile.getPath();
                         parameterPath = parameterPath.replaceFirst("^/", "");
