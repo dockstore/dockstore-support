@@ -1,3 +1,6 @@
+[![Coverage Status](https://coveralls.io/repos/github/ga4gh/dockstore-support/badge.svg?branch=feature%2Fsaver)](https://coveralls.io/github/ga4gh/dockstore-support?branch=feature%2Fsaver)
+[![Build Status](https://travis-ci.org/ga4gh/dockstore-support.svg?branch=feature%2Fsaver)](https://travis-ci.org/ga4gh/dockstore-support)
+
 # dockstore-support
 
 This repo is a sandbox for support code for running, testing workflows on Dockstore, and indexing GA4GH tool registries. 
@@ -36,7 +39,7 @@ endpoint = XXX
 
 ### AWS Credentials
 
-The tests will generate an example config file for you as ~/.aws/credentials with only the default profile if you do not have this file already.
+If you do not have ~/.aws/credentials, during testing, the script will generate this file with only the default profile. The default profile is necessary for this script's tests. <b>If you have the credentials file but it is missing the default profile, you must add it in.</b>
 ```
 [default]
 aws_access_key_id=MOCK_ACCESS_KEY
@@ -114,7 +117,7 @@ Please note that in <b>Recent Executions</b> in the report, it will show at most
 
 ## Downloader
 
-This is the script to backup dockstore images from quay.io into Openstack
+This is the script to download images from OpenStack to the user's local file system.
 ```
 java -jar target/downloader.jar --bucket-name clientbucket --key-prefix client --destination-dir /home/ubuntu/downloaderEx
 ```
