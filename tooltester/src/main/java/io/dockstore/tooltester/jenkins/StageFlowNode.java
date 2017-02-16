@@ -6,7 +6,7 @@ package io.dockstore.tooltester.jenkins;
  */
 public class StageFlowNode {
     //@Checkstyle:off
-    private JenkinsLink _links;
+    private Links _links;
     //@Checkstyle:on
     private String status;
 
@@ -14,7 +14,7 @@ public class StageFlowNode {
         return status;
     }
 
-    public JenkinsLink getLinks() {
+    public Links getLinks() {
         return _links;
     }
 }

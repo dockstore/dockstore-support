@@ -16,7 +16,7 @@ def transformIntoStep(url, tag, descriptor, parameter) {
         stage('Test ' + parameter) {
             node {
                 ws {
-                    deleteDir()
+                    step([$class: 'WsCleanup'])
                     sh 'git clone ${URL} target'
                     dir('target') {
                         sh 'git checkout ${Tag}'
@@ -38,21 +38,14 @@ def transformIntoDockerfileStep(){
         stage('Build ' + dockerfilePath){
             node {
                 ws {
-                    deleteDir()
+                    step([$class: 'WsCleanup'])
                     sh 'git clone ${URL} .'
                     sh 'git checkout ${Tag}'
                     LOCATION = sh (script: 'dirname "${DockerfilePath}"', returnStdout: true).trim()
-                    try {
-                        dir(LOCATION){
-                            sh 'docker build .'
-                        }
+                    dir(LOCATION){
+                        sh 'docker build .'
                     }
-                    catch (Exception e) {
-                        currentStage.result =  'FAILURE'
-                    }
-                    finally {
-                        deleteDir()
-                    }
+
                 }
             }
         }

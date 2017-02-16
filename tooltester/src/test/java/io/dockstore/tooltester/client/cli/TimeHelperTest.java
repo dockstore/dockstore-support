@@ -1,5 +1,6 @@
 package io.dockstore.tooltester.client.cli;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -9,8 +10,8 @@ import org.junit.Test;
 public class TimeHelperTest {
     @Test
     public void durationToString() throws Exception {
-        System.out.println(TimeHelper.durationToString(Long.valueOf(3700000)));
-        System.out.println(TimeHelper.durationToString(Long.valueOf(-2)));
+        String durationString = TimeHelper.durationToString(Long.valueOf(3700000));
+        Assert.assertTrue("Incorret time calculated, expected \"1h 2m\" but got " + durationString, durationString.equals("1h 2m"));
     }
 
 }

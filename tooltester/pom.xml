@@ -191,11 +191,11 @@
                 <!--<artifactId>guava</artifactId>-->
                 <!--<version>19.0</version>-->
             <!--</dependency>-->
-            <!--<dependency>-->
-                <!--<groupId>commons-io</groupId>-->
-                <!--<artifactId>commons-io</artifactId>-->
-                <!--<version>2.5</version>-->
-            <!--</dependency>-->
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>2.4</version>
+            </dependency>
             <!--<dependency>-->
                 <!--<groupId>org.apache.httpcomponents</groupId>-->
                 <!--<artifactId>httpcore</artifactId>-->
@@ -212,11 +212,11 @@
     </dependencyManagement>
 
     <dependencies>
-        <!--<dependency>-->
-            <!--<groupId>commons-io</groupId>-->
-            <!--<artifactId>commons-io</artifactId>-->
-            <!--<version>2.5</version>-->
-        <!--</dependency>-->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
+        </dependency>
         <!--<dependency>-->
             <!--<groupId>com.github.docker-java</groupId>-->
             <!--<artifactId>docker-java</artifactId>-->

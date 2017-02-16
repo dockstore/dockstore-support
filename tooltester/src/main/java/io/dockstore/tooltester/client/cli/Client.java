@@ -45,6 +45,7 @@ import io.dockstore.tooltester.jenkins.CrumbJsonResult;
 import io.dockstore.tooltester.jenkins.JenkinsLog;
 import io.dockstore.tooltester.jenkins.JenkinsPipeline;
 import io.dockstore.tooltester.jenkins.Node;
+import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.jenkins.Stage;
 import io.dockstore.tooltester.jenkins.StageFlowNode;
 import io.swagger.client.ApiClient;
@@ -87,7 +88,8 @@ public class Client {
 
     private ContainersApi containersApi;
     private GAGHApi ga4ghApi;
-    private Report report;
+    private StatusReport report;
+    private FileReport fileReport;
     private int count = 0;
     private HierarchicalINIConfiguration config;
     private PipelineTester pipelineTester;
@@ -108,8 +110,10 @@ public class Client {
         JCommander jc = new JCommander(cm);
         CommandReport commandReport = new CommandReport();
         CommandEnqueue commandEnqueue = new CommandEnqueue();
+        CommandFileReport commandFileReport = new CommandFileReport();
         jc.addCommand("report", commandReport);
         jc.addCommand("enqueue", commandEnqueue);
+        jc.addCommand("file-report", commandFileReport);
         try {
             jc.parse(argv);
         } catch (MissingCommandException e) {
@@ -141,7 +145,13 @@ public class Client {
                     }
                 }
                 break;
-
+            case "file-report":
+                if (commandFileReport.help) {
+                    jc.usage("file-report");
+                } else {
+                    client.handleFileReport(commandFileReport.tool);
+                }
+                break;
             default:
                 jc.usage();
             }
@@ -153,6 +163,42 @@ public class Client {
             }
         }
 
+    }
+
+    private void handleFileReport(String toolName) {
+        setupClientEnvironment();
+        setupJenkins();
+        setupTesters();
+        createFileReport("FileReport.csv");
+        DockstoreTool dockstoreTool = null;
+        try {
+            dockstoreTool = containersApi.getPublishedContainerByToolPath(toolName);
+        } catch (ApiException e) {
+            exceptionMessage(e, "Could not get container: " + toolName, API_ERROR);
+        }
+        List<Tag> tags = dockstoreTool.getTags();
+        for (Tag tag : tags) {
+            String name = dockstoreTool.getPath();
+            name = name.replaceAll("/", "-");
+            name = name + "-" + tag.getName();
+            Map<Integer, List<Map<String, OutputFile>>> artifacts = pipelineTester.getAllArtifactsAllBuilds(name);
+            if (artifacts == null) {
+                continue;
+            }
+            for (Map.Entry<Integer, List<Map<String, OutputFile>>> entry : artifacts.entrySet()) {
+                for (Map<String, OutputFile> artifactString : entry.getValue()) {
+                    artifactString.entrySet().parallelStream().forEach(file -> {
+                        String buildId = entry.getKey().toString();
+                        String basename = file.getKey();
+                        String checksum = file.getValue().getChecksum();
+                        String size = file.getValue().getSize().toString();
+                        List<String> record = Arrays.asList(buildId, tag.getName(), basename, checksum, size);
+                        fileReport.printAndWriteLine(record);
+                    });
+                }
+            }
+        }
+        finalizeFileReport();
     }
 
     PipelineTester getPipelineTester() {
@@ -170,7 +216,7 @@ public class Client {
             setupJenkins();
             setupTesters();
             List<Tool> tools = getVerifiedTools();
-            openResults();
+            createResults("Report.csv");
             if (!toolNames.isEmpty()) {
                 tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
             }
@@ -298,6 +344,8 @@ public class Client {
     void setupClientEnvironment() {
         String userHome = System.getProperty("user.home");
         try {
+            // This is the config file for production use.
+            // If there's no configuration file, all properties will default to Travis ones.
             File configFile = new File(userHome + File.separator + ".tooltester" + File.separator + "config");
             this.config = new HierarchicalINIConfiguration(configFile);
         } catch (ConfigurationException e) {
@@ -337,26 +385,34 @@ public class Client {
         report.close();
     }
 
-    public void md5sumChallenge() {
-        setupClientEnvironment();
-        setupJenkins();
-        setupTesters();
-        List<Tool> verifiedTools = null;
-        GAGHApi ga4ghApi = getGa4ghApi();
-        List<Tool> tools = null;
-        try {
-            tools = ga4ghApi.toolsGet("quay.io/briandoconnor/dockstore-tool-md5sum", null, null, null, null, null, null, null, null);
-        } catch (ApiException e) {
-            exceptionMessage(e, "", API_ERROR);
-        }
-        for (Tool tool : tools) {
-            createToolTests(tool);
-            testTool(tool);
-        }
+    private void finalizeFileReport() {
+        fileReport.close();
     }
 
-    private void openResults() {
-        report = new Report("Report.csv");
+    //    public void md5sumChallenge() {
+    //        setupClientEnvironment();
+    //        setupJenkins();
+    //        setupTesters();
+    //        List<Tool> verifiedTools = null;
+    //        GAGHApi ga4ghApi = getGa4ghApi();
+    //        List<Tool> tools = null;
+    //        try {
+    //            tools = ga4ghApi.toolsGet("quay.io/briandoconnor/dockstore-tool-md5sum", null, null, null, null, null, null, null, null);
+    //        } catch (ApiException e) {
+    //            exceptionMessage(e, "", API_ERROR);
+    //        }
+    //        for (Tool tool : tools) {
+    //            createToolTests(tool);
+    //            testTool(tool);
+    //        }
+    //    }
+
+    private void createResults(String name) {
+        report = new StatusReport(name);
+    }
+
+    private void createFileReport(String name) {
+        fileReport = new FileReport(name);
     }
 
     /**
@@ -432,7 +488,6 @@ public class Client {
         }
     }
 
-
     /**
      * Creates the pipeline(s) on Jenkins to test a tool
      *
@@ -458,7 +513,7 @@ public class Client {
                     }
                     String name = "PipelineTest" + "-" + suffix;
                     JenkinsPipeline jenkinsPipeline = getJenkinsPipeline(name, buildId);
-                    Stage[] stages = jenkinsPipeline.getStages();
+                    List<Stage> stages = jenkinsPipeline.getStages();
 
                     for (Stage stage : stages) {
 
@@ -466,7 +521,7 @@ public class Client {
 
                         // Jenkins reports the wrong status and duration for in-progress stages, return the total job info instead
                         Long runtime = stage.getDurationMillis();
-                        if (stage.getDurationMillis() < 0) {
+                        if (stage.getDurationMillis() <= 0) {
                             status = jenkinsPipeline.getStatus();
                             runtime = jenkinsPipeline.getDurationMillis();
                         }
@@ -481,7 +536,7 @@ public class Client {
 
                         List<String> record = Arrays.asList(toolversion.getId(), formatDateTime, tag, "Jenkins", stage.getName(),
                                 TimeHelper.durationToString(runtime), status);
-                        report.writeLine(record);
+                        report.printAndWriteLine(record);
                     }
                 }
             } else {
@@ -495,7 +550,7 @@ public class Client {
         String entity = getEntity(stage.getLinks().getSelf().getHref());
         Gson gson = new Gson();
         Node node = gson.fromJson(entity, Node.class);
-        StageFlowNode[] stageFlowNodes = node.getStageFlowNodes();
+        List<StageFlowNode> stageFlowNodes = node.getStageFlowNodes();
         for (StageFlowNode stageFlowNode : stageFlowNodes) {
             if (stageFlowNode.getStatus().equals("FAILED")) {
                 try {
@@ -514,6 +569,8 @@ public class Client {
         String entity = null;
         try {
             String crumb = getJenkinsCrumb();
+
+            // The configuration file is only used for production.  Otherwise it defaults to the travis ones.
             String username = config.getString("jenkins-username", "travis");
             String password = config.getString("jenkins-password", "travis");
             String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
@@ -628,7 +685,7 @@ public class Client {
             String referenceName = tagName;
             List<Tag> tags = dockstoreTool.getTags();
             for (Tag tag : tags) {
-                if (tag.getName().equals(tagName)){
+                if (tag.getName().equals(tagName)) {
                     referenceName = tag.getReference();
                     dockerfilePath = tag.getDockerfilePath();
                 }
@@ -729,6 +786,13 @@ public class Client {
         @Parameter(names = { "--api", "--dockstore-url" }, description = "dockstore install that we wish to test tools from")
         private String api = "https://www.dockstore.org:8443/api/ga4gh/v1";
         @Parameter(names = "--help", description = "Prints help for main", help = true)
+        private boolean help = false;
+    }
+
+    private static class CommandFileReport {
+        @Parameter(names = "--tool", description = "Specific tool to report", required = true)
+        private String tool;
+        @Parameter(names = "--help", description = "Prints help for file-report", help = true)
         private boolean help = false;
     }
 }

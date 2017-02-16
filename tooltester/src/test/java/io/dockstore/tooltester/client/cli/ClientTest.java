@@ -3,15 +3,12 @@ package io.dockstore.tooltester.client.cli;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import com.beust.jcommander.ParameterException;
 import com.offbytwo.jenkins.JenkinsServer;
-import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
-import io.swagger.client.Configuration;
-import io.swagger.client.api.GAGHApi;
-import io.swagger.client.api.UsersApi;
 import io.swagger.client.model.Tool;
-import io.swagger.client.model.ToolVersion;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -53,7 +50,8 @@ public class ClientTest {
     /**
      * This is for admin use only.  It deletes all created Jenkins pipelines
      */
-   private void deleteJenkinsTests() {
+    @Test
+   public void deleteJenkinsTests() {
         client.setupJenkins();
         JenkinsServer jenkins = client.getJenkins();
         Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
@@ -95,7 +93,7 @@ public class ClientTest {
      */
     @Test
     public void enqueueTool() {
-        String[] argv = { "enqueue", "--tool" , "quay.io/pancancer/pcawg_delly_workflow", "quay.io/pancancer/pcawg-dkfz-workflow"};
+        String[] argv = { "enqueue", "--tool" , "quay.io/pancancer/pcawg-bwa-mem-workflow"};
         main(argv);
     }
 
@@ -150,6 +148,32 @@ public class ClientTest {
         main(argv);
     }
 
+    /**
+     * This tests file-report with no --tool option
+     */
+    @Test(expected=ParameterException.class)
+    public void fileReport() {
+        String[] argv = new String[] { "file-report"};
+        main(argv);
+    }
+
+    /**
+     * This tests file-report with no --tool option
+     */
+    @Test
+    public void fileReportTool() {
+        String[] argv = new String[] { "file-report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow"};
+        main(argv);
+    }
+
+    /**
+     * This tests the help message for the file-report command
+     */
+    @Test
+    public void fileReportHelp() {
+        String[] argv = new String[] { "file-report", "--help"};
+        main(argv);
+    }
 
     /**
      * This displays the help menu for the report command
@@ -172,9 +196,9 @@ public class ClientTest {
     /**
      * Temporary test created to test the md5sum challenge tool
      */
-    private void testmd5sum(){
-        client.md5sumChallenge();
-    }
+//    private void testmd5sum(){
+//        client.md5sumChallenge();
+//    }
 
     /**
      * Gets all the file combinations with any verified source.
