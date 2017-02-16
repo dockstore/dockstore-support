@@ -151,4 +151,3 @@ img = dockstore-saver-gibberish
 - nonexistent.img: A non-existent Docker image
 
 The tests will clean up everything but the baseDir. <b>It would be best if you specify directories which do not currently exist, even for the baseDir.</b>
-
