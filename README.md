@@ -1,3 +1,6 @@
+[![Coverage Status](https://coveralls.io/repos/github/ga4gh/dockstore-support/badge.svg?branch=feature%2Fsaver)](https://coveralls.io/github/ga4gh/dockstore-support?branch=feature%2Fsaver)
+[![Build Status](https://travis-ci.org/ga4gh/dockstore-support.svg?branch=master)](https://travis-ci.org/ga4gh/dockstore-support)
+
 # dockstore-support
 
 This repo is a sandbox for support code for running, testing workflows on Dockstore, and indexing GA4GH tool registries. 
