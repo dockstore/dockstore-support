@@ -21,10 +21,13 @@ jdk:
 - oraclejdk8
 
 install:
+# Pull docker jenkins image from quay.io
 - docker pull quay.io/garyluu/jenkins
+# Create an arbitrary subnet for the docker container to run on
 - docker network create --subnet=172.18.0.0/16 travisnet
+# Create a docker container with a specific IP that travis can connect to during testing
 - docker run -d --net travisnet --ip 172.18.0.22 quay.io/garyluu/jenkins
-- ping -c 4 172.18.0.22
+# Build and run tests
 - cd tooltester && mvn -B clean install -DskipITs=false cobertura:cobertura coveralls:report
 
 notifications:

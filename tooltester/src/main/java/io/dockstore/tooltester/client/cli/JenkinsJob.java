@@ -5,10 +5,10 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.offbytwo.jenkins.JenkinsServer;
-//import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.BuildResult;
 import com.offbytwo.jenkins.model.BuildWithDetails;
@@ -20,6 +20,8 @@ import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
+
+//import com.offbytwo.jenkins.model.Artifact;
 
 /**
  * @author gluu
@@ -151,20 +153,17 @@ public abstract class JenkinsJob {
         }
     }
 
-//    List<Artifact> getArtifacts(String suffix) {
-//        String prefix = getPREFIX();
-//        String name = prefix + "-" + suffix;
-//        List<Artifact> artifacts = null;
-//        try {
-//            JobWithDetails job = jenkins.getJob(name);
-//            Build lastBuild = job.getLastBuild();
-//            BuildWithDetails details = lastBuild.details();
-//            artifacts = details.getArtifacts();
-//        } catch (IOException e) {
-//            exceptionMessage(e, "Could not get Jenkins job results", IO_ERROR);
-//        }
-//        return artifacts;
-//    }
+    List<Build> getAllBuilds(String suffix) {
+        String prefix = getPREFIX();
+        String name = prefix + "-" + suffix;
+        List<Build> builds = null;
+        try {
+            builds = jenkins.getJob(name).getAllBuilds();
+        } catch (IOException | NullPointerException e) {
+            LOG.warn("Could not find job: " + name);
+        }
+        return builds;
+    }
 
     JobWithDetails getJenkinsJob(String suffix) {
         String prefix = getPREFIX();
