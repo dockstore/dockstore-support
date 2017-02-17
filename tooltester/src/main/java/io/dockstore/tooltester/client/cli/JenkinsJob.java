@@ -1,34 +1,22 @@
 package io.dockstore.tooltester.client.cli;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Type;
-import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.FieldNamingPolicy;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import com.offbytwo.jenkins.JenkinsServer;
-import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.BuildResult;
 import com.offbytwo.jenkins.model.BuildWithDetails;
 import com.offbytwo.jenkins.model.JobWithDetails;
-import io.dockstore.tooltester.jenkins.OutputFile;
-import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
@@ -165,42 +153,16 @@ public abstract class JenkinsJob {
         }
     }
 
-    Map<Integer, List<Map<String, OutputFile>>> getAllArtifactsAllBuilds(String suffix) {
+    List<Build> getAllBuilds(String suffix) {
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;
         List<Build> builds = null;
-        Map<Integer, List<Map<String, OutputFile>>> map = new HashMap<>();
         try {
             builds = jenkins.getJob(name).getAllBuilds();
         } catch (IOException | NullPointerException e) {
             LOG.warn("Could not find job: " + name);
-            return null;
         }
-        for (Build build : builds) {
-            int buildId = build.getNumber();
-            List<Map<String, OutputFile>> artifactStrings = new ArrayList<>();
-            try {
-                List<Artifact> artifacts = build.details().getArtifacts();
-                for (Artifact artifact : artifacts) {
-                    try {
-                        InputStream inputStream = build.details().downloadArtifact(artifact);
-                        String artifactString = IOUtils.toString(inputStream, "UTF-8");
-                        Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create();
-                        Type mapType = new TypeToken<Map<String, OutputFile>>() {
-                        }.getType();
-                        Map<String, OutputFile> map2 = gson.fromJson(artifactString, mapType);
-                        artifactStrings.add(map2);
-                    } catch (URISyntaxException e) {
-                        exceptionMessage(e, "Could not download artifact", GENERIC_ERROR);
-                    }
-                }
-
-            } catch (IOException e) {
-                exceptionMessage(e, "Could not get artifacts", IO_ERROR);
-            }
-            map.put(buildId, artifactStrings);
-        }
-        return map;
+        return builds;
     }
 
     JobWithDetails getJenkinsJob(String suffix) {

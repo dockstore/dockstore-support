@@ -17,6 +17,8 @@ package io.dockstore.tooltester.client.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
@@ -38,8 +40,11 @@ import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.helper.JenkinsVersion;
+import com.offbytwo.jenkins.model.Artifact;
+import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.Job;
 import io.dockstore.tooltester.jenkins.CrumbJsonResult;
 import io.dockstore.tooltester.jenkins.JenkinsLog;
@@ -61,6 +66,7 @@ import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.apache.commons.io.IOUtils;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -181,20 +187,35 @@ public class Client {
             String name = dockstoreTool.getPath();
             name = name.replaceAll("/", "-");
             name = name + "-" + tag.getName();
-            Map<Integer, List<Map<String, OutputFile>>> artifacts = pipelineTester.getAllArtifactsAllBuilds(name);
-            if (artifacts == null) {
+            List<Build> builds = pipelineTester.getAllBuilds(name);
+            if (builds == null) {
                 continue;
             }
-            for (Map.Entry<Integer, List<Map<String, OutputFile>>> entry : artifacts.entrySet()) {
-                for (Map<String, OutputFile> artifactString : entry.getValue()) {
-                    artifactString.entrySet().parallelStream().forEach(file -> {
-                        String buildId = entry.getKey().toString();
-                        String basename = file.getKey();
-                        String checksum = file.getValue().getChecksum();
-                        String size = file.getValue().getSize().toString();
-                        List<String> record = Arrays.asList(buildId, tag.getName(), basename, checksum, size);
-                        fileReport.printAndWriteLine(record);
-                    });
+            for (Build build : builds) {
+                int buildId = build.getNumber();
+                try {
+                    List<Artifact> artifactList = build.details().getArtifacts();
+                    for (Artifact artifact : artifactList) {
+                        try {
+                            InputStream inputStream = build.details().downloadArtifact(artifact);
+                            String artifactString = IOUtils.toString(inputStream, "UTF-8");
+                            Gson gson = new Gson();
+                            Type mapType = new TypeToken<Map<String, OutputFile>>() {
+                            }.getType();
+                            Map<String, OutputFile> outputFiles = gson.fromJson(artifactString, mapType);
+                            outputFiles.entrySet().parallelStream().forEach(file -> {
+                                String basename = file.getKey();
+                                String checksum = file.getValue().getChecksum();
+                                String size = file.getValue().getSize().toString();
+                                List<String> record = Arrays.asList(String.valueOf(buildId), tag.getName(), basename, checksum, size);
+                                fileReport.printAndWriteLine(record);
+                            });
+                        } catch (URISyntaxException e) {
+                            exceptionMessage(e, "Could not download artifact", GENERIC_ERROR);
+                        }
+                    }
+                } catch (IOException e) {
+                    exceptionMessage(e, "Could not get artifacts", IO_ERROR);
                 }
             }
         }
