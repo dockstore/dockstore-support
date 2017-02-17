@@ -106,7 +106,7 @@ public class Client {
         }
 
         final LocalDateTime end = LocalDateTime.now();
-        FormattedTimeGenerator.elapsedTime(TIME_NOW, end);
+        out.println("Back-up script completed successfully in " + FormattedTimeGenerator.elapsedTime(TIME_NOW, end));
     }
 
     //-----------------------Main invocations-----------------------
