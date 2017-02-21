@@ -1,0 +1,40 @@
+- name: Jenkins slave requirements
+  hosts: local
+  connection: local
+  tasks:
+    - name: Install docker
+      become: yes
+      apt:
+        name: docker-engine
+    - name: Install setuptools
+      become: yes
+      pip:
+        name: setuptools
+        version: 24.0.3
+    - name: Install cwltool
+      become: yes
+      pip:
+        name: cwltool
+        version: 1.0.20161114152756
+    - name: Install schema-salad
+      become: yes
+      pip:
+        name: schema-salad
+        version: 1.18.20161005190847
+    - name: Install avro
+      become: yes
+      pip:
+        name: avro
+        version: 1.8.1
+    - name: Download Dockstore
+      become: yes
+      get_url:
+        url: https://github.com/ga4gh/dockstore/releases/download/1.1.2/dockstore
+        dest: /usr/local/bin
+        mode: a+rwx
+    - name: Write dockstore config file
+      become: yes
+      copy:
+        content: "token: test \nserver-url: https://dockstore.org:8443"
+        dest: "{{lookup('env','HOME')}}/.dockstore/config"
+        mode: 0555
