@@ -20,8 +20,7 @@ def transformIntoStep(url, tag, descriptor, parameter) {
                     sh 'git clone ${URL} target'
                     dir('target') {
                         sh 'git checkout ${Tag}'
-                        //sh "dockstore tool launch --entry $descriptor --local-entry --json $parameter"
-                        FILE = sh (script: "dockstore tool launch --entry $descriptor --local-entry --json $parameter | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
+                        FILE = sh (script: "set -o pipefail && dockstore tool launch --entry $descriptor --local-entry --json $parameter | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
                         sh "mv $FILE $parameter"
                         archiveArtifacts artifacts: parameter
                     }
