@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.client.cli;
+package io.dockstore.tooltester.report;
 
 import java.util.Arrays;
 import java.util.List;
@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
  * @author gluu
  * @since 23/01/17
  */
-class StatusReport extends Report {
+public class StatusReport extends Report {
     private static final int ID = 0;
     private static final int DATE = 1;
     private static final int VERSION = 2;
@@ -19,7 +19,7 @@ class StatusReport extends Report {
     private static final List<String> HEADER = Arrays
             .asList("Tool/Workflow ID", "DATE", "Version", "Location of testing", "Action Performed", "Runtime", "Status of Test Files");
 
-    StatusReport(String name) {
+    public StatusReport(String name) {
         super(name);
     }
 

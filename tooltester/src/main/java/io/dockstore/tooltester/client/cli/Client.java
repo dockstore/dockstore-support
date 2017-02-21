@@ -46,6 +46,8 @@ import com.offbytwo.jenkins.helper.JenkinsVersion;
 import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.Job;
+import io.dockstore.tooltester.helper.PipelineTester;
+import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.jenkins.CrumbJsonResult;
 import io.dockstore.tooltester.jenkins.JenkinsLog;
 import io.dockstore.tooltester.jenkins.JenkinsPipeline;
@@ -53,6 +55,8 @@ import io.dockstore.tooltester.jenkins.Node;
 import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.jenkins.Stage;
 import io.dockstore.tooltester.jenkins.StageFlowNode;
+import io.dockstore.tooltester.report.FileReport;
+import io.dockstore.tooltester.report.StatusReport;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
@@ -72,14 +76,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.impl.SimpleLogger;
 
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.API_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.CLIENT_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.DEBUG;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.GENERIC_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.errorMessage;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
+import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.DEBUG;
+import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 
 /**
  * Prototype for testing service
@@ -114,6 +118,7 @@ public class Client {
         Client client = new Client();
         CommandMain cm = new CommandMain();
         JCommander jc = new JCommander(cm);
+        jc.setProgramName("autotool");
         CommandReport commandReport = new CommandReport();
         CommandEnqueue commandEnqueue = new CommandEnqueue();
         CommandFileReport commandFileReport = new CommandFileReport();
@@ -182,6 +187,7 @@ public class Client {
         } catch (ApiException e) {
             exceptionMessage(e, "Could not get container: " + toolName, API_ERROR);
         }
+        assert dockstoreTool != null;
         List<Tag> tags = dockstoreTool.getTags();
         for (Tag tag : tags) {
             String name = dockstoreTool.getPath();
@@ -296,6 +302,12 @@ public class Client {
      * @param execution the location to test the tools
      */
     private void handleCreateTests(String api, List<String> source, String execution) {
+        if (execution != "jenkins") {
+            errorMessage("Can only execute on jenkins, no other location is currently supported", COMMAND_ERROR);
+        }
+        if (api != "https://www.dockstore.org:8443/api/ga4gh/v1") {
+            errorMessage("Can only use https://www.dockstore.org:8443/api/ga4gh/v1, no other api is currently supported", COMMAND_ERROR);
+        }
         setupClientEnvironment();
         setupJenkins();
         setupTesters();
@@ -410,23 +422,23 @@ public class Client {
         fileReport.close();
     }
 
-    //    public void md5sumChallenge() {
-    //        setupClientEnvironment();
-    //        setupJenkins();
-    //        setupTesters();
-    //        List<Tool> verifiedTools = null;
-    //        GAGHApi ga4ghApi = getGa4ghApi();
-    //        List<Tool> tools = null;
-    //        try {
-    //            tools = ga4ghApi.toolsGet("quay.io/briandoconnor/dockstore-tool-md5sum", null, null, null, null, null, null, null, null);
-    //        } catch (ApiException e) {
-    //            exceptionMessage(e, "", API_ERROR);
-    //        }
-    //        for (Tool tool : tools) {
-    //            createToolTests(tool);
-    //            testTool(tool);
-    //        }
-    //    }
+    public void md5sumChallenge() {
+        setupClientEnvironment();
+        setupJenkins();
+        setupTesters();
+        List<Tool> verifiedTools = null;
+        GAGHApi ga4ghApi = getGa4ghApi();
+        List<Tool> tools = null;
+        try {
+            tools = ga4ghApi.toolsGet("quay.io/briandoconnor/dockstore-tool-md5sum", null, null, null, null, null, null, null, null);
+        } catch (ApiException e) {
+            exceptionMessage(e, "", API_ERROR);
+        }
+        for (Tool tool : tools) {
+            createToolTests(tool);
+            testTool(tool);
+        }
+    }
 
     private void createResults(String name) {
         report = new StatusReport(name);
@@ -712,6 +724,7 @@ public class Client {
                 }
             }
 
+            assert dockerfilePath != null;
             dockerfilePath = dockerfilePath.replaceFirst("^/", "");
             String name = id;
             name = name.replace("/", "-");
@@ -812,7 +825,7 @@ public class Client {
 
     private static class CommandFileReport {
         @Parameter(names = "--tool", description = "Specific tool to report", required = true)
-        private String tool;
+        private String tool = "";
         @Parameter(names = "--help", description = "Prints help for file-report", help = true)
         private boolean help = false;
     }

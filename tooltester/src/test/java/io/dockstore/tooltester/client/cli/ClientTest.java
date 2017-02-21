@@ -3,7 +3,6 @@ package io.dockstore.tooltester.client.cli;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import com.beust.jcommander.ParameterException;
 import com.offbytwo.jenkins.JenkinsServer;
@@ -16,8 +15,7 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 
 import static io.dockstore.tooltester.client.cli.Client.main;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.API_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 
 public class ClientTest {
     @Rule
@@ -50,7 +48,8 @@ public class ClientTest {
     /**
      * This is for admin use only.  It deletes all created Jenkins pipelines
      */
-   private void deleteJenkinsTests() {
+  @Test
+  public void deleteJenkinsTests() {
         client.setupJenkins();
         JenkinsServer jenkins = client.getJenkins();
         Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
@@ -79,6 +78,15 @@ public class ClientTest {
     }
 
     /**
+     * Test enqueue with option --help which should display enqueue help
+     */
+    @Test
+    public void enqueueHelp() {
+        String[] argv = { "enqueue" , "--help"};
+        main(argv);
+    }
+
+    /**
      * Test enqueue with option --all which should run all jobs
      */
     @Test
@@ -101,7 +109,7 @@ public class ClientTest {
      */
     @Test
     public void createJenkinsTests() {
-        String[] argv = { "--execution", "local", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
+        String[] argv = { "--execution", "jenkins", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
         main(argv);
     }
 
@@ -161,7 +169,7 @@ public class ClientTest {
      */
     @Test
     public void fileReportTool() {
-        String[] argv = new String[] { "file-report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow"};
+        String[] argv = new String[] { "file-report", "--tool", "quay.io/briandoconnor/dockstore-tool-md5sum"};
         main(argv);
     }
 
@@ -195,9 +203,10 @@ public class ClientTest {
     /**
      * Temporary test created to test the md5sum challenge tool
      */
-//    private void testmd5sum(){
-//        client.md5sumChallenge();
-//    }
+    @Test
+    public void testmd5sum(){
+        client.md5sumChallenge();
+    }
 
     /**
      * Gets all the file combinations with any verified source.

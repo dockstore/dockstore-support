@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.client.cli;
+package io.dockstore.tooltester.report;
 
 import java.io.BufferedWriter;
 import java.io.Closeable;
@@ -10,8 +10,8 @@ import java.io.OutputStreamWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
+import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -52,9 +52,9 @@ public abstract class Report implements Closeable {
     }
 
     void writeLine(List<String> values) {
-        String value2 = values.stream().map(Object::toString).collect(Collectors.joining(COMMA_SEPARATOR));
+        String commaSeperatedValues = values.stream().map(Object::toString).collect(Collectors.joining(COMMA_SEPARATOR));
         try {
-            writer.append(value2);
+            writer.append(commaSeperatedValues);
             writer.append("\n");
         } catch (IOException e) {
             exceptionMessage(e, "Cannot write to file", IO_ERROR);

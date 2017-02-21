@@ -1,0 +1,63 @@
+- name: Jenkins slave requirements
+  hosts: local
+  connection: local
+  tasks:
+    - name: Install JDK
+      become: yes
+      apt:
+        name: default-jre
+    - name: Install python-pip
+      become: yes
+      easy_install:
+        name: pip
+        state: latest
+    - name: Install https
+      become: yes
+      apt:
+        name: apt-transport-https
+    - name: Add docker repository and update apt cache
+      apt_repository:
+        repo: "deb https://apt.dockerproject.org/repo {{ansible_distribution | lower }}-{{ansible_distribution_release}} main"
+        update_cache: yes
+        state: present
+    - name: Install docker
+      become: yes
+      apt:
+        name: docker-engine
+        allow_unauthenticated: yes
+    - name: Install setuptools
+      become: yes
+      pip:
+        name: setuptools
+        version: 24.0.3
+    - name: Install schema-salad
+      become: yes
+      pip:
+        name: schema-salad
+        version: 1.18.20161005190847
+    - name: Install avro
+      become: yes
+      pip:
+        name: avro
+        version: 1.8.1
+    - name: Install cwltool
+      become: yes
+      pip:
+        name: cwltool
+        version: 1.0.20161114152756
+    - name: Download Dockstore
+      become: yes
+      get_url:
+        url: https://github.com/ga4gh/dockstore/releases/download/1.1.2/dockstore
+        dest: /usr/local/bin
+        mode: a+rwx
+    - name: Create directory if it doesn't exist
+      file:
+        path: "{{lookup('env','HOME')}}/.dockstore"
+        state: directory
+    - name: Write dockstore config file
+      become: yes
+      copy:
+        content: "token: test \nserver-url: https://dockstore.org:8443"
+        dest: "{{lookup('env','HOME')}}/.dockstore/config"
+        mode: 0555

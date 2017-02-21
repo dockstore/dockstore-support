@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.client.cli;
+package io.dockstore.tooltester.helper;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -16,10 +16,10 @@ import com.offbytwo.jenkins.model.JobWithDetails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.errorMessage;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
+import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 
 //import com.offbytwo.jenkins.model.Artifact;
 
@@ -27,11 +27,11 @@ import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessa
  * @author gluu
  * @since 24/01/17
  */
-public abstract class JenkinsJob {
-    private static final Logger LOG = LoggerFactory.getLogger(JenkinsJob.class);
+public abstract class JenkinsHelper {
+    private static final Logger LOG = LoggerFactory.getLogger(JenkinsHelper.class);
     private JenkinsServer jenkins;
 
-    JenkinsJob(JenkinsServer jenkins) {
+    JenkinsHelper(JenkinsServer jenkins) {
         this.jenkins = jenkins;
     }
 
@@ -43,7 +43,7 @@ public abstract class JenkinsJob {
      * @param suffix The suffix of the test name
      */
 
-    void createTest(String suffix) {
+    public void createTest(String suffix) {
 
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;
@@ -83,7 +83,7 @@ public abstract class JenkinsJob {
      * @param suffix    Suffix of the test name
      * @param parameter Input parameter for the test
      */
-    void runTest(String suffix, Map<String, String> parameter) {
+    public void runTest(String suffix, Map<String, String> parameter) {
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;
         JobWithDetails job;
@@ -106,7 +106,7 @@ public abstract class JenkinsJob {
      *
      * @param suffix The suffix of the test name
      */
-    Map<String, String> getTestResults(String suffix) {
+    public Map<String, String> getTestResults(String suffix) {
         String prefix = getPREFIX();
         String status;
         JobWithDetails job;
@@ -140,7 +140,7 @@ public abstract class JenkinsJob {
         return map;
     }
 
-    boolean isRunning(String suffix) {
+    public boolean isRunning(String suffix) {
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;
         try {
@@ -153,7 +153,7 @@ public abstract class JenkinsJob {
         }
     }
 
-    List<Build> getAllBuilds(String suffix) {
+    public List<Build> getAllBuilds(String suffix) {
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;
         List<Build> builds = null;
@@ -165,7 +165,7 @@ public abstract class JenkinsJob {
         return builds;
     }
 
-    JobWithDetails getJenkinsJob(String suffix) {
+    public JobWithDetails getJenkinsJob(String suffix) {
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;
         JobWithDetails job = null;
@@ -178,7 +178,7 @@ public abstract class JenkinsJob {
         return job;
     }
 
-    int getLastBuildId(String suffix) {
+    public int getLastBuildId(String suffix) {
         String prefix = getPREFIX();
         String name = prefix + "-" + suffix;
         int buildId = 0;

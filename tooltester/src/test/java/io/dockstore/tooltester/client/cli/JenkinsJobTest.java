@@ -1,9 +1,9 @@
 package io.dockstore.tooltester.client.cli;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.dockstore.tooltester.helper.PipelineTester;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;

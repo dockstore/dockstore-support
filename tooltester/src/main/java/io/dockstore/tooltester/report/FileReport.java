@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.client.cli;
+package io.dockstore.tooltester.report;
 
 import java.util.Arrays;
 import java.util.List;
@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
  * @author gluu
  * @since 23/01/17
  */
-class FileReport extends Report {
+public class FileReport extends Report {
     private static final int ID = 0;
     private static final int TAG = 1;
     private static final int NAME = 2;
@@ -16,7 +16,7 @@ class FileReport extends Report {
     private static final int FILESIZE = 4;
     private static final List<String> HEADER = Arrays.asList("Build ID", "Tag", "File Name", "md5sum", "File Size");
 
-    FileReport(String name) {
+    public FileReport(String name) {
         super(name);
     }
 

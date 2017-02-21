@@ -1,5 +1,6 @@
 package io.dockstore.tooltester.client.cli;
 
+import io.dockstore.tooltester.helper.TimeHelper;
 import org.junit.Assert;
 import org.junit.Test;
 

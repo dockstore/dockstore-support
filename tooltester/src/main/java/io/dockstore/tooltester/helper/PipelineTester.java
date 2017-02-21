@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.client.cli;
+package io.dockstore.tooltester.helper;
 
 import com.offbytwo.jenkins.JenkinsServer;
 
@@ -6,10 +6,10 @@ import com.offbytwo.jenkins.JenkinsServer;
  * @author gluu
  * @since 20/01/17
  */
-class PipelineTester extends JenkinsJob {
+public class PipelineTester extends JenkinsHelper {
     private static final String PREFIX = "PipelineTest";
 
-    PipelineTester(JenkinsServer jenkins) {
+    public PipelineTester(JenkinsServer jenkins) {
         super(jenkins);
     }
 
