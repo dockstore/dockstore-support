@@ -21,10 +21,7 @@ import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,15 +43,14 @@ import com.offbytwo.jenkins.helper.JenkinsVersion;
 import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.Job;
+import io.dockstore.tooltester.blueOcean.PipelineImpl;
+import io.dockstore.tooltester.blueOcean.PipelineNodeImpl;
+import io.dockstore.tooltester.blueOcean.PipelineStepImpl;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.jenkins.CrumbJsonResult;
-import io.dockstore.tooltester.jenkins.JenkinsLog;
 import io.dockstore.tooltester.jenkins.JenkinsPipeline;
-import io.dockstore.tooltester.jenkins.Node;
 import io.dockstore.tooltester.jenkins.OutputFile;
-import io.dockstore.tooltester.jenkins.Stage;
-import io.dockstore.tooltester.jenkins.StageFlowNode;
 import io.dockstore.tooltester.report.FileReport;
 import io.dockstore.tooltester.report.StatusReport;
 import io.swagger.client.ApiClient;
@@ -275,6 +271,15 @@ public class Client {
         return result.crumb;
     }
 
+    private PipelineNodeImpl[] getBlueOceanJenkinsPipeline(String suffix) {
+        String entity = getEntity("blue/rest/organizations/jenkins/pipelines/PipelineTest-" + suffix);
+        Gson gson = new Gson();
+        PipelineImpl example = gson.fromJson(entity, PipelineImpl.class);
+        String uri = example.getLatestRun().getLinks().getNodes().getHref();
+        entity = getEntity(uri);
+        return gson.fromJson(entity, PipelineNodeImpl[].class);
+    }
+
     private JenkinsPipeline getJenkinsPipeline(String name, int buildId) {
         JenkinsPipeline jenkinsPipeline = null;
         try {
@@ -302,10 +307,10 @@ public class Client {
      * @param execution the location to test the tools
      */
     private void handleCreateTests(String api, List<String> source, String execution) {
-        if (execution != "jenkins") {
-            errorMessage("Can only execute on jenkins, no other location is currently supported", COMMAND_ERROR);
+        if (!execution.equals("jenkins")) {
+            errorMessage("Can only execute on jenkins, no other location is currently supported.  Received " + execution, COMMAND_ERROR);
         }
-        if (api != "https://www.dockstore.org:8443/api/ga4gh/v1") {
+        if (!api.equals("https://www.dockstore.org:8443/api/ga4gh/v1")) {
             errorMessage("Can only use https://www.dockstore.org:8443/api/ga4gh/v1, no other api is currently supported", COMMAND_ERROR);
         }
         setupClientEnvironment();
@@ -404,8 +409,7 @@ public class Client {
                 isAdmin = usersApi.getUser().getIsAdmin();
             }
         } catch (ApiException e) {
-            //exceptionMessage(e, "Could not use user API", API_ERROR);
-            LOG.warn("Could not use user API.  Admin is false by default");
+            LOG.debug("Could not use user API.  Admin is false by default");
             isAdmin = false;
         }
         defaultApiClient.setDebugging(DEBUG.get());
@@ -422,23 +426,23 @@ public class Client {
         fileReport.close();
     }
 
-    public void md5sumChallenge() {
-        setupClientEnvironment();
-        setupJenkins();
-        setupTesters();
-        List<Tool> verifiedTools = null;
-        GAGHApi ga4ghApi = getGa4ghApi();
-        List<Tool> tools = null;
-        try {
-            tools = ga4ghApi.toolsGet("quay.io/briandoconnor/dockstore-tool-md5sum", null, null, null, null, null, null, null, null);
-        } catch (ApiException e) {
-            exceptionMessage(e, "", API_ERROR);
-        }
-        for (Tool tool : tools) {
-            createToolTests(tool);
-            testTool(tool);
-        }
-    }
+//    public void md5sumChallenge() {
+//        setupClientEnvironment();
+//        setupJenkins();
+//        setupTesters();
+//        List<Tool> verifiedTools = null;
+//        GAGHApi ga4ghApi = getGa4ghApi();
+//        List<Tool> tools = null;
+//        try {
+//            tools = ga4ghApi.toolsGet("quay.io/briandoconnor/dockstore-tool-md5sum", null, null, null, null, null, null, null, null);
+//        } catch (ApiException e) {
+//            exceptionMessage(e, "", API_ERROR);
+//        }
+//        for (Tool tool : tools) {
+//            createToolTests(tool);
+//            testTool(tool);
+//        }
+//    }
 
     private void createResults(String name) {
         report = new StatusReport(name);
@@ -527,6 +531,7 @@ public class Client {
      * @param tool The tool to get the test results for
      */
     private void getToolTestResults(Tool tool) {
+        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
         List<ToolVersion> toolVersions = tool.getVersions();
         for (ToolVersion toolversion : toolVersions) {
             if (toolversion != null) {
@@ -545,31 +550,49 @@ public class Client {
                         continue;
                     }
                     String name = "PipelineTest" + "-" + suffix;
-                    JenkinsPipeline jenkinsPipeline = getJenkinsPipeline(name, buildId);
-                    List<Stage> stages = jenkinsPipeline.getStages();
-
-                    for (Stage stage : stages) {
-
-                        String status = stage.getStatus();
-
-                        // Jenkins reports the wrong status and duration for in-progress stages, return the total job info instead
-                        Long runtime = stage.getDurationMillis();
-                        if (stage.getDurationMillis() <= 0) {
-                            status = jenkinsPipeline.getStatus();
-                            runtime = jenkinsPipeline.getDurationMillis();
+                    PipelineNodeImpl[] pipelineNodes = getBlueOceanJenkinsPipeline(suffix);
+                    for (PipelineNodeImpl pipelineNode : pipelineNodes) {
+                        // There's pretty much always going to be a parallel node that does not matter
+                        if (pipelineNode.getDisplayName().equals("Parallel") || pipelineNode.getDurationInMillis() < 0L) {
+                            continue;
                         }
-                        if (status.equals("FAILED")) {
-
-                            status += " See " + getLog(stage);
+                        String state = pipelineNode.getState();
+                        String result = pipelineNode.getResult();
+                        if (state.equals("RUNNING")) {
+                            result = "RUNNING";
                         }
-                        LocalDateTime date = LocalDateTime
-                                .ofInstant(Instant.ofEpochMilli(stage.getStartTimeMillis()), ZoneId.systemDefault());
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyy-MM-dd HH:mm");
-                        String formatDateTime = date.format(formatter);
+                        Long runtime = 0L;
 
-                        List<String> record = Arrays.asList(toolversion.getId(), formatDateTime, tag, "Jenkins", stage.getName(),
-                                TimeHelper.durationToString(runtime), status);
+                        String entity = getEntity(pipelineNode.getLinks().getSteps().getHref());
+                        Gson gson = new Gson();
+                        PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
+                        for (PipelineStepImpl pipelineStep : pipelineSteps) {
+                            runtime += pipelineStep.getDurationInMillis();
+                            if (!state.equals("RUNNING") && pipelineStep.getResult().equals("FAILURE")) {
+                                result += " See " + serverUrl + pipelineStep.getActions().get(0).getLinks().getSelf().getHref();
+                            }
+                        }
+                        String date = pipelineNode.getStartTime();
+                        String duration = null;
+                        // Blue Ocean REST API does not know how long the job is running for
+                        // If it's still running, we get the duration since the start date
+                        // If it's finished running, we sum up the duration of each step
+                        if (state.equals("RUNNING")) {
+                            duration = TimeHelper.getDurationSinceDate(date);
+                        } else {
+                            duration = TimeHelper.durationToString(runtime);
+                        }
+
+                        try {
+                            date = TimeHelper.timeFormatConvert(date);
+                        } catch (ParseException e) {
+                            errorMessage("Could not parse start time " + date, CLIENT_ERROR);
+                        }
+
+                        List<String> record = Arrays
+                                .asList(toolversion.getId(), date, tag, "Jenkins", pipelineNode.getDisplayName(), duration, result);
                         report.printAndWriteLine(record);
+
                     }
                 }
             } else {
@@ -578,25 +601,25 @@ public class Client {
         }
     }
 
-    private String getLog(Stage stage) {
-        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-        String entity = getEntity(stage.getLinks().getSelf().getHref());
-        Gson gson = new Gson();
-        Node node = gson.fromJson(entity, Node.class);
-        List<StageFlowNode> stageFlowNodes = node.getStageFlowNodes();
-        for (StageFlowNode stageFlowNode : stageFlowNodes) {
-            if (stageFlowNode.getStatus().equals("FAILED")) {
-                try {
-                    entity = getEntity(stageFlowNode.getLinks().getLog().getHref());
-                } catch (Exception e) {
-                    return node.getError().getMessage();
-                }
-                break;
-            }
-        }
-        JenkinsLog jenkinsLog = gson.fromJson(entity, JenkinsLog.class);
-        return serverUrl + jenkinsLog.getConsoleUrl().replaceFirst("^/", "");
-    }
+    //    private String getLog(Stage stage) {
+    //        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+    //        String entity = getEntity(stage.getLinks().getSelf().getHref());
+    //        Gson gson = new Gson();
+    //        Node node = gson.fromJson(entity, Node.class);
+    //        List<StageFlowNode> stageFlowNodes = node.getStageFlowNodes();
+    //        for (StageFlowNode stageFlowNode : stageFlowNodes) {
+    //            if (stageFlowNode.getStatus().equals("FAILED")) {
+    //                try {
+    //                    entity = getEntity(stageFlowNode.getLinks().getLog().getHref());
+    //                } catch (Exception e) {
+    //                    return node.getError().getMessage();
+    //                }
+    //                break;
+    //            }
+    //        }
+    //        JenkinsLog jenkinsLog = gson.fromJson(entity, JenkinsLog.class);
+    //        return serverUrl + jenkinsLog.getConsoleUrl().replaceFirst("^/", "");
+    //    }
 
     private String getEntity(String uri) {
         String entity = null;
@@ -619,6 +642,7 @@ public class Client {
 
     /**
      * This function deletes all jobs on jenkins matching "Test.*"
+     * Only used by admin
      */
     void deleteJobs(String pattern) {
         try {

@@ -18,8 +18,4 @@ public class Self {
         return href;
     }
 
-    public void setHref(String href) {
-        this.href = href;
-    }
-
 }

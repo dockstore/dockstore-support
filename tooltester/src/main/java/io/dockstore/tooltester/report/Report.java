@@ -52,9 +52,9 @@ public abstract class Report implements Closeable {
     }
 
     void writeLine(List<String> values) {
-        String commaSeperatedValues = values.stream().map(Object::toString).collect(Collectors.joining(COMMA_SEPARATOR));
+        String commaSeparatedValues = values.stream().map(Object::toString).collect(Collectors.joining(COMMA_SEPARATOR));
         try {
-            writer.append(commaSeperatedValues);
+            writer.append(commaSeparatedValues);
             writer.append("\n");
         } catch (IOException e) {
             exceptionMessage(e, "Cannot write to file", IO_ERROR);

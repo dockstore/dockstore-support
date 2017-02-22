@@ -47,80 +47,40 @@ public class JenkinsPipeline {
         return links;
     }
 
-    public void setLinks(Links links) {
-        this.links = links;
-    }
-
     public String getId() {
         return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getStatus() {
         return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 
     public Long getStartTimeMillis() {
         return startTimeMillis;
     }
 
-    public void setStartTimeMillis(Long startTimeMillis) {
-        this.startTimeMillis = startTimeMillis;
-    }
-
     public Long getEndTimeMillis() {
         return endTimeMillis;
-    }
-
-    public void setEndTimeMillis(Long endTimeMillis) {
-        this.endTimeMillis = endTimeMillis;
     }
 
     public Long getDurationMillis() {
         return durationMillis;
     }
 
-    public void setDurationMillis(Long durationMillis) {
-        this.durationMillis = durationMillis;
-    }
-
     public Long getQueueDurationMillis() {
         return queueDurationMillis;
-    }
-
-    public void setQueueDurationMillis(Long queueDurationMillis) {
-        this.queueDurationMillis = queueDurationMillis;
     }
 
     public Long getPauseDurationMillis() {
         return pauseDurationMillis;
     }
 
-    public void setPauseDurationMillis(Long pauseDurationMillis) {
-        this.pauseDurationMillis = pauseDurationMillis;
-    }
-
     public List<Stage> getStages() {
         return stages;
-    }
-
-    public void setStages(List<Stage> stages) {
-        this.stages = stages;
     }
 
 }

@@ -48,8 +48,7 @@ public class ClientTest {
     /**
      * This is for admin use only.  It deletes all created Jenkins pipelines
      */
-  @Test
-  public void deleteJenkinsTests() {
+  private void deleteJenkinsTests() {
         client.setupJenkins();
         JenkinsServer jenkins = client.getJenkins();
         Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
@@ -203,10 +202,10 @@ public class ClientTest {
     /**
      * Temporary test created to test the md5sum challenge tool
      */
-    @Test
-    public void testmd5sum(){
-        client.md5sumChallenge();
-    }
+//    @Test
+//    public void testmd5sum(){
+//        client.md5sumChallenge();
+//    }
 
     /**
      * Gets all the file combinations with any verified source.
