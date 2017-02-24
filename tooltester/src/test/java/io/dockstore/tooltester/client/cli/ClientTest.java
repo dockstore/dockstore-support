@@ -48,7 +48,7 @@ public class ClientTest {
     /**
      * This is for admin use only.  It deletes all created Jenkins pipelines
      */
-  private void deleteJenkinsTests() {
+     private void deleteJenkinsTests() {
         client.setupJenkins();
         JenkinsServer jenkins = client.getJenkins();
         Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
@@ -108,7 +108,7 @@ public class ClientTest {
      */
     @Test
     public void createJenkinsTests() {
-        String[] argv = { "--execution", "jenkins", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
+        String[] argv = { "sync", "--execution", "jenkins", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
         main(argv);
     }
 
@@ -222,7 +222,7 @@ public class ClientTest {
             }
         }
         count = client.getCount();
-        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files", count == 5);
+        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files.  Got "+ count, count == 10);
     }
 
     /**
@@ -241,7 +241,7 @@ public class ClientTest {
             }
         }
         count = client.getCount();
-        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count == 5);
+        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count == 8);
         client.setCount(0);
         verifiedSources = Arrays.asList("Docktesters group", "Another Group");
         verifiedTools = client.getVerifiedTools(verifiedSources);
@@ -253,7 +253,7 @@ public class ClientTest {
             }
         }
         count = client.getCount();
-        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count == 5);
+        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count == 8);
         client.setCount(0);
         verifiedSources = Collections.singletonList("Another Group");
         verifiedTools = client.getVerifiedTools(verifiedSources);

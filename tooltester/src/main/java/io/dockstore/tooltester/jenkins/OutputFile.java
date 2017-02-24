@@ -12,6 +12,9 @@ public class OutputFile {
     @SerializedName("checksum")
     @Expose
     private String checksum;
+    @SerializedName("basename")
+    @Expose
+    private String basename;
     @SerializedName("size")
     @Expose
     private Integer size;
@@ -22,5 +25,9 @@ public class OutputFile {
 
     public Integer getSize() {
         return size;
+    }
+
+    public String getBasename() {
+        return basename;
     }
 }

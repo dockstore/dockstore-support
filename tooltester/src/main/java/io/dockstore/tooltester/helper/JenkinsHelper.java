@@ -27,6 +27,7 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
  * @author gluu
  * @since 24/01/17
  */
+
 public abstract class JenkinsHelper {
     private static final Logger LOG = LoggerFactory.getLogger(JenkinsHelper.class);
     private JenkinsServer jenkins;

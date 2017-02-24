@@ -49,7 +49,6 @@ import io.dockstore.tooltester.blueOcean.PipelineStepImpl;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.jenkins.CrumbJsonResult;
-import io.dockstore.tooltester.jenkins.JenkinsPipeline;
 import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.report.FileReport;
 import io.dockstore.tooltester.report.StatusReport;
@@ -70,7 +69,6 @@ import org.apache.commons.io.IOUtils;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.impl.SimpleLogger;
 
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
@@ -88,7 +86,6 @@ public class Client {
     private static final Logger LOG;
 
     static {
-        System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "TRACE");
         LOG = LoggerFactory.getLogger(Client.class);
     }
 
@@ -112,64 +109,73 @@ public class Client {
      */
     public static void main(String[] argv) {
         Client client = new Client();
-        CommandMain cm = new CommandMain();
-        JCommander jc = new JCommander(cm);
+        CommandMain commandMain = new CommandMain();
+        JCommander jc = new JCommander(commandMain);
         jc.setProgramName("autotool");
         CommandReport commandReport = new CommandReport();
         CommandEnqueue commandEnqueue = new CommandEnqueue();
         CommandFileReport commandFileReport = new CommandFileReport();
+        CommandSync commandSync = new CommandSync();
         jc.addCommand("report", commandReport);
         jc.addCommand("enqueue", commandEnqueue);
         jc.addCommand("file-report", commandFileReport);
+        jc.addCommand("sync", commandSync);
         try {
             jc.parse(argv);
         } catch (MissingCommandException e) {
             jc.usage();
             exceptionMessage(e, "Unknown command", COMMAND_ERROR);
         }
-        if (jc.getParsedCommand() != null) {
-            switch (jc.getParsedCommand()) {
-            case "report":
-                if (commandReport.help) {
-                    jc.usage("report");
-                } else {
-                    client.handleReport(commandReport.tools);
-                }
-                break;
-            case "enqueue":
-                if (commandEnqueue.help) {
-                    jc.usage("enqueue");
-                } else {
-                    if (commandEnqueue.all) {
-                        client.handleRunTests(commandEnqueue.tools);
-                    } else {
+        if (commandMain.help) {
+            jc.usage();
+        } else {
 
-                        if (!commandEnqueue.tools.isEmpty()) {
+            if (jc.getParsedCommand() != null) {
+                switch (jc.getParsedCommand()) {
+                case "report":
+                    if (commandReport.help) {
+                        jc.usage("report");
+                    } else {
+                        client.handleReport(commandReport.tools);
+                    }
+                    break;
+                case "enqueue":
+                    if (commandEnqueue.help) {
+                        jc.usage("enqueue");
+                    } else {
+                        if (commandEnqueue.all) {
                             client.handleRunTests(commandEnqueue.tools);
                         } else {
-                            jc.usage();
+
+                            if (!commandEnqueue.tools.isEmpty()) {
+                                client.handleRunTests(commandEnqueue.tools);
+                            } else {
+                                jc.usage();
+                            }
                         }
                     }
+                    break;
+                case "file-report":
+                    if (commandFileReport.help) {
+                        jc.usage("file-report");
+                    } else {
+                        client.handleFileReport(commandFileReport.tool);
+                    }
+                    break;
+                case "sync":
+                    if (commandSync.help) {
+                        jc.usage("sync");
+                    } else {
+                        client.handleCreateTests(commandSync.api, commandSync.source, commandSync.execution);
+                    }
+                    break;
+                default:
+                    jc.usage();
                 }
-                break;
-            case "file-report":
-                if (commandFileReport.help) {
-                    jc.usage("file-report");
-                } else {
-                    client.handleFileReport(commandFileReport.tool);
-                }
-                break;
-            default:
-                jc.usage();
-            }
-        } else {
-            if (cm.help) {
-                jc.usage();
             } else {
-                client.handleCreateTests(cm.api, cm.source, cm.execution);
+                jc.usage();
             }
         }
-
     }
 
     private void handleFileReport(String toolName) {
@@ -206,10 +212,12 @@ public class Client {
                             }.getType();
                             Map<String, OutputFile> outputFiles = gson.fromJson(artifactString, mapType);
                             outputFiles.entrySet().parallelStream().forEach(file -> {
-                                String basename = file.getKey();
+                                String cwlID = file.getKey();
                                 String checksum = file.getValue().getChecksum();
                                 String size = file.getValue().getSize().toString();
-                                List<String> record = Arrays.asList(String.valueOf(buildId), tag.getName(), basename, checksum, size);
+                                String basename = file.getValue().getBasename();
+                                List<String> record = Arrays
+                                        .asList(String.valueOf(buildId), tag.getName(), cwlID, basename, checksum, size);
                                 fileReport.printAndWriteLine(record);
                             });
                         } catch (URISyntaxException e) {
@@ -280,24 +288,25 @@ public class Client {
         return gson.fromJson(entity, PipelineNodeImpl[].class);
     }
 
-    private JenkinsPipeline getJenkinsPipeline(String name, int buildId) {
-        JenkinsPipeline jenkinsPipeline = null;
-        try {
-            String crumb = getJenkinsCrumb();
-            String username = config.getString("jenkins-username", "travis");
-            String password = config.getString("jenkins-password", "travis");
-            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-            HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
-            javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
-            String entity = client.target(serverUrl).path("job/" + name + "/" + buildId + "/wfapi/describe")
-                    .request(MediaType.TEXT_PLAIN_TYPE).header("crumbRequestField", crumb).get(String.class);
-            Gson gson = new Gson();
-            jenkinsPipeline = gson.fromJson(entity, JenkinsPipeline.class);
-        } catch (Exception e) {
-            LOG.warn("Could not get Jenkins build for: " + name);
-        }
-        return jenkinsPipeline;
-    }
+    // Deprecated, using blue ocean instead
+    //    private JenkinsPipeline getJenkinsPipeline(String name, int buildId) {
+    //        JenkinsPipeline jenkinsPipeline = null;
+    //        try {
+    //            String crumb = getJenkinsCrumb();
+    //            String username = config.getString("jenkins-username", "travis");
+    //            String password = config.getString("jenkins-password", "travis");
+    //            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+    //            HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
+    //            javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
+    //            String entity = client.target(serverUrl).path("job/" + name + "/" + buildId + "/wfapi/describe")
+    //                    .request(MediaType.TEXT_PLAIN_TYPE).header("crumbRequestField", crumb).get(String.class);
+    //            Gson gson = new Gson();
+    //            jenkinsPipeline = gson.fromJson(entity, JenkinsPipeline.class);
+    //        } catch (Exception e) {
+    //            LOG.warn("Could not get Jenkins build for: " + name);
+    //        }
+    //        return jenkinsPipeline;
+    //    }
 
     /**
      * Deletes all the DockerfileTest and ParameterFileTest jobs and creates all the tests again
@@ -426,23 +435,23 @@ public class Client {
         fileReport.close();
     }
 
-//    public void md5sumChallenge() {
-//        setupClientEnvironment();
-//        setupJenkins();
-//        setupTesters();
-//        List<Tool> verifiedTools = null;
-//        GAGHApi ga4ghApi = getGa4ghApi();
-//        List<Tool> tools = null;
-//        try {
-//            tools = ga4ghApi.toolsGet("quay.io/briandoconnor/dockstore-tool-md5sum", null, null, null, null, null, null, null, null);
-//        } catch (ApiException e) {
-//            exceptionMessage(e, "", API_ERROR);
-//        }
-//        for (Tool tool : tools) {
-//            createToolTests(tool);
-//            testTool(tool);
-//        }
-//    }
+    //    public void md5sumChallenge() {
+    //        setupClientEnvironment();
+    //        setupJenkins();
+    //        setupTesters();
+    //        List<Tool> verifiedTools = null;
+    //        GAGHApi ga4ghApi = getGa4ghApi();
+    //        List<Tool> tools = null;
+    //        try {
+    //            tools = ga4ghApi.toolsGet("quay.io/briandoconnor/dockstore-tool-md5sum", null, null, null, null, null, null, null, null);
+    //        } catch (ApiException e) {
+    //            exceptionMessage(e, "", API_ERROR);
+    //        }
+    //        for (Tool tool : tools) {
+    //            createToolTests(tool);
+    //            testTool(tool);
+    //        }
+    //    }
 
     private void createResults(String name) {
         report = new StatusReport(name);
@@ -549,7 +558,6 @@ public class Client {
                         LOG.info("No build was ran");
                         continue;
                     }
-                    String name = "PipelineTest" + "-" + suffix;
                     PipelineNodeImpl[] pipelineNodes = getBlueOceanJenkinsPipeline(suffix);
                     for (PipelineNodeImpl pipelineNode : pipelineNodes) {
                         // There's pretty much always going to be a parallel node that does not matter
@@ -569,11 +577,12 @@ public class Client {
                         for (PipelineStepImpl pipelineStep : pipelineSteps) {
                             runtime += pipelineStep.getDurationInMillis();
                             if (!state.equals("RUNNING") && pipelineStep.getResult().equals("FAILURE")) {
-                                result += " See " + serverUrl + pipelineStep.getActions().get(0).getLinks().getSelf().getHref();
+                                result += " See " + serverUrl + pipelineStep.getActions().get(0).getLinks().getSelf().getHref()
+                                        .replaceFirst("^/", "");
                             }
                         }
                         String date = pipelineNode.getStartTime();
-                        String duration = null;
+                        String duration;
                         // Blue Ocean REST API does not know how long the job is running for
                         // If it's still running, we get the duration since the start date
                         // If it's finished running, we sum up the duration of each step
@@ -816,27 +825,13 @@ public class Client {
         this.ga4ghApi = ga4ghApi;
     }
 
-    @Parameters(separators = "=", commandDescription = "Report status of tools tested")
-    private static class CommandReport {
-        @Parameter(names = "--all", description = "Whether to report all tools or not")
-        private Boolean all = false;
-        @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
-        private List<String> tools = new ArrayList<>();
-        @Parameter(names = "--help", description = "Prints help for report", help = true)
-        private boolean help = false;
-    }
-
-    @Parameters(separators = "=", commandDescription = "Test available tools on Jenkins")
-    private static class CommandEnqueue {
-        @Parameter(names = "--all", description = "Whether to test all tools or not")
-        private Boolean all = false;
-        @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
-        private List<String> tools = new ArrayList<>();
-        @Parameter(names = "--help", description = "Prints help for enqueue", help = true)
-        private boolean help = false;
-    }
-
     private static class CommandMain {
+        @Parameter(names = "--help", description = "Prints help for autotool", help = true)
+        private boolean help = false;
+    }
+
+    @Parameters(separators = "=", commandDescription = "Synchronizes with Jenkins to create tests for verified tools")
+    private static class CommandSync {
         @Parameter(names = { "--execution", "--runtime-environment" }, description = "Location of Testing")
         private String execution = "jenkins";
         @Parameter(names = { "--source" }, description = "Tester Group")
@@ -847,6 +842,27 @@ public class Client {
         private boolean help = false;
     }
 
+    @Parameters(separators = "=", commandDescription = "Test verified tools on Jenkins")
+    private static class CommandEnqueue {
+        @Parameter(names = "--all", description = "Whether to test all tools or not")
+        private Boolean all = false;
+        @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
+        private List<String> tools = new ArrayList<>();
+        @Parameter(names = "--help", description = "Prints help for enqueue", help = true)
+        private boolean help = false;
+    }
+
+    @Parameters(separators = "=", commandDescription = "Report status of verified tools tested")
+    private static class CommandReport {
+        @Parameter(names = "--all", description = "Whether to report all tools or not")
+        private Boolean all = false;
+        @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
+        private List<String> tools = new ArrayList<>();
+        @Parameter(names = "--help", description = "Prints help for report", help = true)
+        private boolean help = false;
+    }
+
+    @Parameters(separators = "=", commandDescription = "Reports the file sizes and checksum of a verified tool across all tested versions")
     private static class CommandFileReport {
         @Parameter(names = "--tool", description = "Specific tool to report", required = true)
         private String tool = "";

@@ -44,6 +44,7 @@ public abstract class Report implements Closeable {
 
     public void close() {
         try {
+            System.out.println();
             writer.flush();
             writer.close();
         } catch (IOException e) {
