@@ -1,5 +1,6 @@
 package io.dockstore.tooltester.client.cli;
 
+<<<<<<< HEAD
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,6 +9,15 @@ import java.util.List;
 import com.beust.jcommander.ParameterException;
 import com.offbytwo.jenkins.JenkinsServer;
 import io.dockstore.tooltester.helper.PipelineTester;
+=======
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import com.beust.jcommander.ParameterException;
+import com.offbytwo.jenkins.JenkinsServer;
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
 import io.swagger.client.ApiException;
 import io.swagger.client.model.Tool;
 import org.junit.Assert;
@@ -15,18 +25,28 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
+<<<<<<< HEAD
 import org.junit.contrib.java.lang.system.SystemOutRule;
 
 import static io.dockstore.tooltester.client.cli.Client.main;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+=======
+
+import static io.dockstore.tooltester.client.cli.Client.main;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.API_ERROR;
+import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
 
 public class ClientTest {
     @Rule
     public final ExpectedSystemExit exit = ExpectedSystemExit.none();
+<<<<<<< HEAD
 
     @Rule
     public final SystemOutRule systemOutRule = new SystemOutRule().enableLog();
 
+=======
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     private Client client;
 
     @Before
@@ -47,15 +67,22 @@ public class ClientTest {
      * Tests if Jenkins server is set up
      */
     @Test
+<<<<<<< HEAD
     public void setupTesters() {
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
         Assert.assertTrue("Jenkins server can not be reached", pipelineTester.getJenkins() != null);
+=======
+    public void setupJenkins() {
+        client.setupJenkins();
+        Assert.assertTrue("Jenkins server can not be reached", client.getJenkins() != null);
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
      * This is for admin use only.  It deletes all created Jenkins pipelines
      */
+<<<<<<< HEAD
 //    public void deleteJenkinsTests() {
 //        client.setupTesters();
 //        PipelineTester pipelineTester = client.getPipelineTester();
@@ -65,6 +92,16 @@ public class ClientTest {
 //        pipelineTester.deleteJobs("ParameterFileTest");
 //        pipelineTester.deleteJobs("PipelineTest");
 //    }
+=======
+   private void deleteJenkinsTests() {
+        client.setupJenkins();
+        JenkinsServer jenkins = client.getJenkins();
+        Assert.assertTrue("Jenkins server can not be reached", jenkins != null);
+        client.deleteJobs("DockerfileTest");
+        client.deleteJobs("ParameterFileTest");
+        client.deleteJobs("PipelineTest");
+    }
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
 
     /**
      * Test with unknown command
@@ -83,6 +120,7 @@ public class ClientTest {
     public void enqueue() {
         String[] argv = { "enqueue" };
         main(argv);
+<<<<<<< HEAD
         Assert.assertTrue(systemOutRule.getLog().contains("Test verified tools on Jenkins."));
 
     }
@@ -95,6 +133,8 @@ public class ClientTest {
         String[] argv = { "enqueue", "--help" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().contains("Test verified tools on Jenkins."));
+=======
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
@@ -102,9 +142,14 @@ public class ClientTest {
      */
     @Test
     public void enqueueAll() {
+<<<<<<< HEAD
         String[] argv = { "enqueue", "--all" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
+=======
+        String[] argv = { "enqueue" , "--all"};
+        main(argv);
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
@@ -112,6 +157,7 @@ public class ClientTest {
      */
     @Test
     public void enqueueTool() {
+<<<<<<< HEAD
         String[] argv = { "enqueue", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
@@ -125,6 +171,10 @@ public class ClientTest {
         String[] argv = { "enqueue", "--unverified-tool", "quay.io/jeltje/adtex" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
+=======
+        String[] argv = { "enqueue", "--tool" , "quay.io/pancancer/pcawg-bwa-mem-workflow"};
+        main(argv);
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
@@ -132,6 +182,7 @@ public class ClientTest {
      */
     @Test
     public void createJenkinsTests() {
+<<<<<<< HEAD
         String[] argv = { "sync", "--execution", "jenkins", "--source", "Docktesters group", "--api",
                 "https://www.dockstore.org:8443/api/ga4gh/v1" };
         main(argv);
@@ -147,6 +198,10 @@ public class ClientTest {
                 "https://www.dockstore.org:8443/api/ga4gh/v1", "--unverified-tool", "quay.io/jeltje/adtex" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
+=======
+        String[] argv = { "--execution", "local", "--source", "Docktesters group", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
+        main(argv);
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
@@ -154,9 +209,14 @@ public class ClientTest {
      */
     @Test
     public void empty() {
+<<<<<<< HEAD
         String[] argv = { "" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().contains("Usage: autotool [options] [command] [command options]"));
+=======
+        String[] argv = {""};
+        main(argv);
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
@@ -166,7 +226,10 @@ public class ClientTest {
     public void report() {
         String[] argv = { "report" };
         main(argv);
+<<<<<<< HEAD
         assertReport();
+=======
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
@@ -176,7 +239,10 @@ public class ClientTest {
     public void reportTool() {
         String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow" };
         main(argv);
+<<<<<<< HEAD
         assertReport();
+=======
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
@@ -186,6 +252,7 @@ public class ClientTest {
     public void reportTools() {
         String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow" };
         main(argv);
+<<<<<<< HEAD
         assertReport();
 
     }
@@ -209,21 +276,34 @@ public class ClientTest {
         Assert.assertTrue(systemOutRule.getLog().contains("md5sum"));
         Assert.assertTrue(systemOutRule.getLog().contains("File Size"));
         Assert.assertTrue(!new File("tooltester/FileReport.csv").exists());
+=======
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     @Test
     public void reportInvalidTool() {
+<<<<<<< HEAD
         String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa" };
         main(argv);
         assertReport();
+=======
+        String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa"};
+        main(argv);
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
      * This tests file-report with no --tool option
      */
+<<<<<<< HEAD
     @Test(expected = ParameterException.class)
     public void fileReport() {
         String[] argv = new String[] { "file-report" };
+=======
+    @Test(expected=ParameterException.class)
+    public void fileReport() {
+        String[] argv = new String[] { "file-report"};
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
         main(argv);
     }
 
@@ -232,9 +312,14 @@ public class ClientTest {
      */
     @Test
     public void fileReportTool() {
+<<<<<<< HEAD
         String[] argv = new String[] { "file-report", "--tool", "quay.io/briandoconnor/dockstore-tool-md5sum" };
         main(argv);
         assertFileReport();
+=======
+        String[] argv = new String[] { "file-report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow"};
+        main(argv);
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
@@ -242,10 +327,15 @@ public class ClientTest {
      */
     @Test
     public void fileReportHelp() {
+<<<<<<< HEAD
         String[] argv = new String[] { "file-report", "--help" };
         main(argv);
         Assert.assertTrue(
                 systemOutRule.getLog().contains("Reports the file sizes and checksum of a verified tool across all tested versions."));
+=======
+        String[] argv = new String[] { "file-report", "--help"};
+        main(argv);
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
@@ -255,7 +345,10 @@ public class ClientTest {
     public void reportHelp() {
         String[] argv = { "report", "--help" };
         main(argv);
+<<<<<<< HEAD
         Assert.assertTrue(systemOutRule.getLog().contains("Report status of verified tools tested."));
+=======
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
@@ -265,10 +358,23 @@ public class ClientTest {
     public void mainHelp() {
         String[] argv = { "--help" };
         main(argv);
+<<<<<<< HEAD
         Assert.assertTrue(systemOutRule.getLog().contains("Usage: autotool [options] [command] [command options]"));
     }
 
     /**
+=======
+    }
+
+    /**
+     * Temporary test created to test the md5sum challenge tool
+     */
+//    private void testmd5sum(){
+//        client.md5sumChallenge();
+//    }
+
+    /**
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
      * Gets all the file combinations with any verified source.
      */
     @Test
@@ -283,7 +389,11 @@ public class ClientTest {
             }
         }
         count = client.getCount();
+<<<<<<< HEAD
         Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files.  Got " + count, count != 0);
+=======
+        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files", count == 5);
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     /**
@@ -302,7 +412,11 @@ public class ClientTest {
             }
         }
         count = client.getCount();
+<<<<<<< HEAD
         Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count != 0);
+=======
+        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count == 5);
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
         client.setCount(0);
         verifiedSources = Arrays.asList("Docktesters group", "Another Group");
         verifiedTools = client.getVerifiedTools(verifiedSources);
@@ -314,7 +428,11 @@ public class ClientTest {
             }
         }
         count = client.getCount();
+<<<<<<< HEAD
         Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count != 0);
+=======
+        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count == 5);
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
         client.setCount(0);
         verifiedSources = Collections.singletonList("Another Group");
         verifiedTools = client.getVerifiedTools(verifiedSources);
@@ -329,4 +447,8 @@ public class ClientTest {
         Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count == 0);
     }
 
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d7e8c79... Feature/jenkins example (#5)

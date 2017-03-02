@@ -2,6 +2,7 @@
   hosts: local
   connection: local
   tasks:
+<<<<<<< HEAD
     - name: Install JDK
       become: yes
       apt:
@@ -20,16 +21,29 @@
         repo: "deb https://apt.dockerproject.org/repo {{ansible_distribution | lower }}-{{ansible_distribution_release}} main"
         update_cache: yes
         state: present
+=======
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     - name: Install docker
       become: yes
       apt:
         name: docker-engine
+<<<<<<< HEAD
         allow_unauthenticated: yes
+=======
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     - name: Install setuptools
       become: yes
       pip:
         name: setuptools
         version: 24.0.3
+<<<<<<< HEAD
+=======
+    - name: Install cwltool
+      become: yes
+      pip:
+        name: cwltool
+        version: 1.0.20161114152756
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     - name: Install schema-salad
       become: yes
       pip:
@@ -40,21 +54,27 @@
       pip:
         name: avro
         version: 1.8.1
+<<<<<<< HEAD
     - name: Install cwltool
       become: yes
       pip:
         name: cwltool
         version: 1.0.20161114152756
+=======
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     - name: Download Dockstore
       become: yes
       get_url:
         url: https://github.com/ga4gh/dockstore/releases/download/1.1.2/dockstore
         dest: /usr/local/bin
         mode: a+rwx
+<<<<<<< HEAD
     - name: Create directory if it doesn't exist
       file:
         path: "{{lookup('env','HOME')}}/.dockstore"
         state: directory
+=======
+>>>>>>> d7e8c79... Feature/jenkins example (#5)
     - name: Write dockstore config file
       become: yes
       copy:
