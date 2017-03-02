@@ -471,49 +471,56 @@ public class Client {
                         LOG.info("No build was ran");
                         continue;
                     }
-                    PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(suffix);
+
+                        PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(suffix);
+
                     for (PipelineNodeImpl pipelineNode : pipelineNodes) {
-                        // There's pretty much always going to be a parallel node that does not matter
-                        if (pipelineNode.getDisplayName().equals("Parallel") || pipelineNode.getDurationInMillis() < 0L) {
+                        try {
+                            // There's pretty much always going to be a parallel node that does not matter
+                            if (pipelineNode.getDisplayName().equals("Parallel") || pipelineNode.getDurationInMillis() < 0L) {
+                                continue;
+                            }
+                            String state = pipelineNode.getState();
+                            String result = pipelineNode.getResult();
+                            if (state.equals("RUNNING")) {
+                                result = "RUNNING";
+                            }
+                            Long runtime = 0L;
+
+                            String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
+                            Gson gson = new Gson();
+                            PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
+                            for (PipelineStepImpl pipelineStep : pipelineSteps) {
+                                runtime += pipelineStep.getDurationInMillis();
+                                if (!state.equals("RUNNING") && pipelineStep.getResult().equals("FAILURE")) {
+                                    result += " See " + serverUrl + pipelineStep.getActions().get(0).getLinks().getSelf().getHref()
+                                            .replaceFirst("^/", "");
+                                }
+                            }
+                            String date = pipelineNode.getStartTime();
+                            String duration;
+                            // Blue Ocean REST API does not know how long the job is running for
+                            // If it's still running, we get the duration since the start date
+                            // If it's finished running, we sum up the duration of each step
+                            if (state.equals("RUNNING")) {
+                                duration = TimeHelper.getDurationSinceDate(date);
+                            } else {
+                                duration = TimeHelper.durationToString(runtime);
+                            }
+
+                            try {
+                                date = TimeHelper.timeFormatConvert(date);
+                            } catch (ParseException e) {
+                                errorMessage("Could not parse start time " + date, CLIENT_ERROR);
+                            }
+
+                            List<String> record = Arrays
+                                    .asList(toolversion.getId(), date, tag, "Jenkins", pipelineNode.getDisplayName(), duration, result);
+                            report.printAndWriteLine(record);
+                        } catch (NullPointerException e) {
+                            LOG.warn(e.getMessage());
                             continue;
                         }
-                        String state = pipelineNode.getState();
-                        String result = pipelineNode.getResult();
-                        if (state.equals("RUNNING")) {
-                            result = "RUNNING";
-                        }
-                        Long runtime = 0L;
-
-                        String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
-                        Gson gson = new Gson();
-                        PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
-                        for (PipelineStepImpl pipelineStep : pipelineSteps) {
-                            runtime += pipelineStep.getDurationInMillis();
-                            if (!state.equals("RUNNING") && pipelineStep.getResult().equals("FAILURE")) {
-                                result += " See " + serverUrl + pipelineStep.getActions().get(0).getLinks().getSelf().getHref()
-                                        .replaceFirst("^/", "");
-                            }
-                        }
-                        String date = pipelineNode.getStartTime();
-                        String duration;
-                        // Blue Ocean REST API does not know how long the job is running for
-                        // If it's still running, we get the duration since the start date
-                        // If it's finished running, we sum up the duration of each step
-                        if (state.equals("RUNNING")) {
-                            duration = TimeHelper.getDurationSinceDate(date);
-                        } else {
-                            duration = TimeHelper.durationToString(runtime);
-                        }
-
-                        try {
-                            date = TimeHelper.timeFormatConvert(date);
-                        } catch (ParseException e) {
-                            errorMessage("Could not parse start time " + date, CLIENT_ERROR);
-                        }
-
-                        List<String> record = Arrays
-                                .asList(toolversion.getId(), date, tag, "Jenkins", pipelineNode.getDisplayName(), duration, result);
-                        report.printAndWriteLine(record);
 
                     }
                 }

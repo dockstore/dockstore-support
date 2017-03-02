@@ -8,14 +8,14 @@
         name: default-jre
     - name: Install python-pip
       become: yes
-      easy_install:
-        name: pip
-        state: latest
+      apt:
+        name: python-pip
     - name: Install https
       become: yes
       apt:
         name: apt-transport-https
     - name: Add docker repository and update apt cache
+      become: yes
       apt_repository:
         repo: "deb https://apt.dockerproject.org/repo {{ansible_distribution | lower }}-{{ansible_distribution_release}} main"
         update_cache: yes
