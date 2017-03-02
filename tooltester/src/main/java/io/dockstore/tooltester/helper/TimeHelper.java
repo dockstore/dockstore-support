@@ -41,7 +41,7 @@ public class TimeHelper {
     public static String getDurationSinceDate(String date) {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSZ");
         Date result;
-        Long diffInMillies = null;
+        Long diffInMillies;
         String duration = null;
         try {
             result = df.parse(date);

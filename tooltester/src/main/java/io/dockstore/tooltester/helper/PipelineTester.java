@@ -1,6 +1,6 @@
 package io.dockstore.tooltester.helper;
 
-import com.offbytwo.jenkins.JenkinsServer;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
 
 /**
  * @author gluu
@@ -9,8 +9,8 @@ import com.offbytwo.jenkins.JenkinsServer;
 public class PipelineTester extends JenkinsHelper {
     private static final String PREFIX = "PipelineTest";
 
-    public PipelineTester(JenkinsServer jenkins) {
-        super(jenkins);
+    public PipelineTester(HierarchicalINIConfiguration config) {
+        super(config);
     }
 
     public String getPREFIX() {

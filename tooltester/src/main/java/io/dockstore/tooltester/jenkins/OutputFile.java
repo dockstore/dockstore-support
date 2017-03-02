@@ -1,13 +1,11 @@
 package io.dockstore.tooltester.jenkins;
 
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 /**
  * @author gluu
  * @since 15/02/17
  */
-
-import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.SerializedName;
-
 public class OutputFile {
     @SerializedName("checksum")
     @Expose

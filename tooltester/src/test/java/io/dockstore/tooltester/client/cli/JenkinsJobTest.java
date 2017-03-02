@@ -35,8 +35,8 @@ public class JenkinsJobTest {
     @Test
     public void PipelineTestJobIT() {
         final String suffix = "id-tag";
-        client.setupJenkins();
-        Assert.assertTrue("Jenkins server can not be reached", client.getJenkins() != null);
+        client.setupTesters();
+        Assert.assertTrue("Jenkins server can not be reached", client.getPipelineTester().getJenkins() != null);
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
         pipelineTester.createTest(suffix);
@@ -61,7 +61,6 @@ public class JenkinsJobTest {
     @Test
     public void getNonExistantTest() {
         exit.expectSystemExitWithStatus(10);
-        client.setupJenkins();
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
         pipelineTester.getTestResults("SuffixOfATestThatShouldNotExist");

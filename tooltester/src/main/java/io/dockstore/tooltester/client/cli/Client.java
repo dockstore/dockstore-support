@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -29,26 +28,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
-
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.offbytwo.jenkins.JenkinsServer;
-import com.offbytwo.jenkins.helper.JenkinsVersion;
 import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
-import com.offbytwo.jenkins.model.Job;
-import io.dockstore.tooltester.blueOcean.PipelineImpl;
 import io.dockstore.tooltester.blueOcean.PipelineNodeImpl;
 import io.dockstore.tooltester.blueOcean.PipelineStepImpl;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.TimeHelper;
-import io.dockstore.tooltester.jenkins.CrumbJsonResult;
 import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.report.FileReport;
 import io.dockstore.tooltester.report.StatusReport;
@@ -57,7 +48,6 @@ import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
 import io.swagger.client.api.ContainersApi;
 import io.swagger.client.api.GAGHApi;
-import io.swagger.client.api.UsersApi;
 import io.swagger.client.model.DockstoreTool;
 import io.swagger.client.model.SourceFile;
 import io.swagger.client.model.Tag;
@@ -66,7 +56,6 @@ import io.swagger.client.model.ToolVersion;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.io.IOUtils;
-import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +85,6 @@ public class Client {
     private int count = 0;
     private HierarchicalINIConfiguration config;
     private PipelineTester pipelineTester;
-    private JenkinsServer jenkins;
 
     Client() {
 
@@ -144,13 +132,13 @@ public class Client {
                         jc.usage("enqueue");
                     } else {
                         if (commandEnqueue.all) {
-                            client.handleRunTests(commandEnqueue.tools);
+                            client.handleRunTests(commandEnqueue.tools, commandEnqueue.unverifiedTool);
                         } else {
 
-                            if (!commandEnqueue.tools.isEmpty()) {
-                                client.handleRunTests(commandEnqueue.tools);
+                            if (commandEnqueue.tools != null || commandEnqueue.unverifiedTool != null) {
+                                client.handleRunTests(commandEnqueue.tools, commandEnqueue.unverifiedTool);
                             } else {
-                                jc.usage();
+                                jc.usage("enqueue");
                             }
                         }
                     }
@@ -166,7 +154,11 @@ public class Client {
                     if (commandSync.help) {
                         jc.usage("sync");
                     } else {
-                        client.handleCreateTests(commandSync.api, commandSync.source, commandSync.execution);
+                        if (commandSync.tool != null) {
+                            client.handleCreateTests(commandSync.api, commandSync.source, commandSync.execution, commandSync.tool);
+                        } else {
+                            client.handleCreateTests(commandSync.api, commandSync.source, commandSync.execution, null);
+                        }
                     }
                     break;
                 default:
@@ -180,7 +172,6 @@ public class Client {
 
     private void handleFileReport(String toolName) {
         setupClientEnvironment();
-        setupJenkins();
         setupTesters();
         createFileReport("FileReport.csv");
         DockstoreTool dockstoreTool = null;
@@ -244,7 +235,6 @@ public class Client {
     private void handleReport(List<String> toolNames) {
         try {
             setupClientEnvironment();
-            setupJenkins();
             setupTesters();
             List<Tool> tools = getVerifiedTools();
             createResults("Report.csv");
@@ -258,34 +248,6 @@ public class Client {
         } catch (Exception e) {
             exceptionMessage(e, "Can't handle report", GENERIC_ERROR);
         }
-    }
-
-    /**
-     * This function gets the jenkins crumb in the event that the java jenkins api does not work
-     *
-     * @return The crumb string
-     */
-    private String getJenkinsCrumb() {
-        String username = config.getString("jenkins-username", "travis");
-        String password = config.getString("jenkins-password", "travis");
-        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-        HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
-
-        javax.ws.rs.client.Client client = ClientBuilder.newClient();
-        client.register(feature);
-        String entity = client.target(serverUrl).path("crumbIssuer/api/json").request(MediaType.TEXT_PLAIN_TYPE).get(String.class);
-        Gson gson = new Gson();
-        CrumbJsonResult result = gson.fromJson(entity, CrumbJsonResult.class);
-        return result.crumb;
-    }
-
-    private PipelineNodeImpl[] getBlueOceanJenkinsPipeline(String suffix) {
-        String entity = getEntity("blue/rest/organizations/jenkins/pipelines/PipelineTest-" + suffix);
-        Gson gson = new Gson();
-        PipelineImpl example = gson.fromJson(entity, PipelineImpl.class);
-        String uri = example.getLatestRun().getLinks().getNodes().getHref();
-        entity = getEntity(uri);
-        return gson.fromJson(entity, PipelineNodeImpl[].class);
     }
 
     // Deprecated, using blue ocean instead
@@ -315,7 +277,7 @@ public class Client {
      * @param source    the testing group that verified the tools
      * @param execution the location to test the tools
      */
-    private void handleCreateTests(String api, List<String> source, String execution) {
+    private void handleCreateTests(String api, List<String> source, String execution, String toolname) {
         if (!execution.equals("jenkins")) {
             errorMessage("Can only execute on jenkins, no other location is currently supported.  Received " + execution, COMMAND_ERROR);
         }
@@ -323,38 +285,38 @@ public class Client {
             errorMessage("Can only use https://www.dockstore.org:8443/api/ga4gh/v1, no other api is currently supported", COMMAND_ERROR);
         }
         setupClientEnvironment();
-        setupJenkins();
         setupTesters();
         List<Tool> tools;
-        if (!source.isEmpty()) {
-            tools = getVerifiedTools(source);
+        if (toolname == null) {
+            if (!source.isEmpty()) {
+                tools = getVerifiedTools(source);
+            } else {
+                tools = getVerifiedTools();
+            }
         } else {
-            tools = getVerifiedTools();
+            tools = getTools(toolname);
         }
         for (Tool tool : tools) {
             createToolTests(tool);
         }
+
     }
 
-    private void handleRunTests(List<String> toolNames) {
+    private void handleRunTests(List<String> toolNames, String unverifiedTool) {
         setupClientEnvironment();
-        setupJenkins();
         setupTesters();
-        List<Tool> tools = getVerifiedTools();
-        if (!toolNames.isEmpty()) {
-            tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
+        List<Tool> tools;
+        if (unverifiedTool != null) {
+            tools = getTools(unverifiedTool);
+        } else {
+            tools = getVerifiedTools();
+            if (toolNames != null) {
+                tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
+            }
         }
         for (Tool tool : tools) {
             testTool(tool);
         }
-    }
-
-    public JenkinsServer getJenkins() {
-        return jenkins;
-    }
-
-    private void setJenkins(JenkinsServer jenkins) {
-        this.jenkins = jenkins;
     }
 
     int getCount() {
@@ -366,26 +328,7 @@ public class Client {
     }
 
     void setupTesters() {
-        pipelineTester = new PipelineTester(getJenkins());
-    }
-
-    void setupJenkins() {
-        try {
-            String serverUrl;
-            String username;
-            String password;
-            serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-            username = config.getString("jenkins-username", "travis");
-            password = config.getString("jenkins-password", "travis");
-            setJenkins(new JenkinsServer(new URI(serverUrl), username, password));
-            Map<String, Job> jobs = jenkins.getJobs();
-            JenkinsVersion version = jenkins.getVersion();
-            LOG.trace("Jenkins is version " + version.getLiteralVersion() + " and has " + jobs.size() + " jobs");
-        } catch (URISyntaxException e) {
-            exceptionMessage(e, "Jenkins server URI is not valid", CLIENT_ERROR);
-        } catch (IOException e) {
-            exceptionMessage(e, "Could not connect to Jenkins server", IO_ERROR);
-        }
+        pipelineTester = new PipelineTester(config);
     }
 
     void setupClientEnvironment() {
@@ -409,18 +352,7 @@ public class Client {
         defaultApiClient.setBasePath(serverUrl);
 
         this.containersApi = new ContainersApi(defaultApiClient);
-        UsersApi usersApi = new UsersApi(defaultApiClient);
         setGa4ghApi(new GAGHApi(defaultApiClient));
-
-        boolean isAdmin = false;
-        try {
-            if (usersApi.getApiClient() != null) {
-                isAdmin = usersApi.getUser().getIsAdmin();
-            }
-        } catch (ApiException e) {
-            LOG.debug("Could not use user API.  Admin is false by default");
-            isAdmin = false;
-        }
         defaultApiClient.setDebugging(DEBUG.get());
     }
 
@@ -435,24 +367,6 @@ public class Client {
         fileReport.close();
     }
 
-    //    public void md5sumChallenge() {
-    //        setupClientEnvironment();
-    //        setupJenkins();
-    //        setupTesters();
-    //        List<Tool> verifiedTools = null;
-    //        GAGHApi ga4ghApi = getGa4ghApi();
-    //        List<Tool> tools = null;
-    //        try {
-    //            tools = ga4ghApi.toolsGet("quay.io/briandoconnor/dockstore-tool-md5sum", null, null, null, null, null, null, null, null);
-    //        } catch (ApiException e) {
-    //            exceptionMessage(e, "", API_ERROR);
-    //        }
-    //        for (Tool tool : tools) {
-    //            createToolTests(tool);
-    //            testTool(tool);
-    //        }
-    //    }
-
     private void createResults(String name) {
         report = new StatusReport(name);
     }
@@ -466,7 +380,6 @@ public class Client {
      */
     //    private void run() {
     //        setupClientEnvironment();
-    //        setupJenkins();
     //        boolean toolTestResult = false;
     //        /** use swagger-generated classes to talk to dockstore */
     //        try {
@@ -558,7 +471,7 @@ public class Client {
                         LOG.info("No build was ran");
                         continue;
                     }
-                    PipelineNodeImpl[] pipelineNodes = getBlueOceanJenkinsPipeline(suffix);
+                    PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(suffix);
                     for (PipelineNodeImpl pipelineNode : pipelineNodes) {
                         // There's pretty much always going to be a parallel node that does not matter
                         if (pipelineNode.getDisplayName().equals("Parallel") || pipelineNode.getDurationInMillis() < 0L) {
@@ -571,7 +484,7 @@ public class Client {
                         }
                         Long runtime = 0L;
 
-                        String entity = getEntity(pipelineNode.getLinks().getSteps().getHref());
+                        String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
                         Gson gson = new Gson();
                         PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
                         for (PipelineStepImpl pipelineStep : pipelineSteps) {
@@ -630,45 +543,6 @@ public class Client {
     //        return serverUrl + jenkinsLog.getConsoleUrl().replaceFirst("^/", "");
     //    }
 
-    private String getEntity(String uri) {
-        String entity = null;
-        try {
-            String crumb = getJenkinsCrumb();
-
-            // The configuration file is only used for production.  Otherwise it defaults to the travis ones.
-            String username = config.getString("jenkins-username", "travis");
-            String password = config.getString("jenkins-password", "travis");
-            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-            HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
-            javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
-            entity = client.target(serverUrl).path(uri).request(MediaType.TEXT_PLAIN_TYPE).header("crumbRequestField", crumb)
-                    .get(String.class);
-        } catch (Exception e) {
-            LOG.warn("Could not get Jenkins stage: " + uri);
-        }
-        return entity;
-    }
-
-    /**
-     * This function deletes all jobs on jenkins matching "Test.*"
-     * Only used by admin
-     */
-    void deleteJobs(String pattern) {
-        try {
-            Map<String, Job> jobs = jenkins.getJobs();
-            jobs.entrySet().stream().filter(map -> map.getKey().matches(pattern + ".+")).forEach(map -> {
-                try {
-
-                    jenkins.deleteJob(map.getKey(), true);
-                } catch (IOException e) {
-                    exceptionMessage(e, "Could not delete Jenkins job", IO_ERROR);
-                }
-            });
-        } catch (IOException e) {
-            exceptionMessage(e, "Could not find and delete Jenkins job", IO_ERROR);
-        }
-    }
-
     /**
      * This function checks if the any of the tool's verified source matches the filter
      *
@@ -699,6 +573,18 @@ public class Client {
             exceptionMessage(e, "", API_ERROR);
         }
         return verifiedTools;
+    }
+
+    private List<Tool> getTools(String toolname) {
+        List<Tool> tools = null;
+        GAGHApi ga4ghApi = getGa4ghApi();
+        try {
+            tools = ga4ghApi.toolsGet(toolname, null, null, null, null, null, null, null, null);
+
+        } catch (ApiException e) {
+            exceptionMessage(e, "", API_ERROR);
+        }
+        return tools;
     }
 
     /**
@@ -813,15 +699,15 @@ public class Client {
         return true;
     }
 
-    public ContainersApi getContainersApi() {
+    ContainersApi getContainersApi() {
         return containersApi;
     }
 
-    public GAGHApi getGa4ghApi() {
+    private GAGHApi getGa4ghApi() {
         return ga4ghApi;
     }
 
-    public void setGa4ghApi(GAGHApi ga4ghApi) {
+    private void setGa4ghApi(GAGHApi ga4ghApi) {
         this.ga4ghApi = ga4ghApi;
     }
 
@@ -830,7 +716,7 @@ public class Client {
         private boolean help = false;
     }
 
-    @Parameters(separators = "=", commandDescription = "Synchronizes with Jenkins to create tests for verified tools")
+    @Parameters(separators = "=", commandDescription = "Synchronizes with Jenkins to create tests for verified tools.")
     private static class CommandSync {
         @Parameter(names = { "--execution", "--runtime-environment" }, description = "Location of Testing")
         private String execution = "jenkins";
@@ -840,19 +726,23 @@ public class Client {
         private String api = "https://www.dockstore.org:8443/api/ga4gh/v1";
         @Parameter(names = "--help", description = "Prints help for main", help = true)
         private boolean help = false;
+        @Parameter(names = "--unverified-tool", description = "Unverified tool to specifically test")
+        private String tool;
     }
 
-    @Parameters(separators = "=", commandDescription = "Test verified tools on Jenkins")
+    @Parameters(separators = "=", commandDescription = "Test verified tools on Jenkins.")
     private static class CommandEnqueue {
+        @Parameter(names = "--unverified-tool", description = "Unverified tool to specifically test.")
+        public String unverifiedTool;
         @Parameter(names = "--all", description = "Whether to test all tools or not")
         private Boolean all = false;
-        @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
-        private List<String> tools = new ArrayList<>();
+        @Parameter(names = "--tool", description = "The specific tools to test", variableArity = true)
+        private List<String> tools;
         @Parameter(names = "--help", description = "Prints help for enqueue", help = true)
         private boolean help = false;
     }
 
-    @Parameters(separators = "=", commandDescription = "Report status of verified tools tested")
+    @Parameters(separators = "=", commandDescription = "Report status of verified tools tested.")
     private static class CommandReport {
         @Parameter(names = "--all", description = "Whether to report all tools or not")
         private Boolean all = false;
@@ -862,7 +752,7 @@ public class Client {
         private boolean help = false;
     }
 
-    @Parameters(separators = "=", commandDescription = "Reports the file sizes and checksum of a verified tool across all tested versions")
+    @Parameters(separators = "=", commandDescription = "Reports the file sizes and checksum of a verified tool across all tested versions.")
     private static class CommandFileReport {
         @Parameter(names = "--tool", description = "Specific tool to report", required = true)
         private String tool = "";

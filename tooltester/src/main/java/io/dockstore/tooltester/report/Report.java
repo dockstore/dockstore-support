@@ -19,9 +19,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * @since 23/01/17
  */
 public abstract class Report implements Closeable {
-    static final CharSequence COMMA_SEPARATOR = ",";
+    private static final CharSequence COMMA_SEPARATOR = ",";
     static final CharSequence TAB_SEPARATOR = "\t";
-    public BufferedWriter writer;
+    private BufferedWriter writer;
 
     Report(String name) {
         List<String> header = getHeader();
@@ -52,7 +52,7 @@ public abstract class Report implements Closeable {
         }
     }
 
-    void writeLine(List<String> values) {
+    private void writeLine(List<String> values) {
         String commaSeparatedValues = values.stream().map(Object::toString).collect(Collectors.joining(COMMA_SEPARATOR));
         try {
             writer.append(commaSeparatedValues);

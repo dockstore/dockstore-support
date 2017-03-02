@@ -1,6 +1,8 @@
 package io.dockstore.tooltester.helper;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -8,14 +10,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.MediaType;
+
+import com.google.gson.Gson;
 import com.offbytwo.jenkins.JenkinsServer;
+import com.offbytwo.jenkins.helper.JenkinsVersion;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.BuildResult;
 import com.offbytwo.jenkins.model.BuildWithDetails;
+import com.offbytwo.jenkins.model.Job;
 import com.offbytwo.jenkins.model.JobWithDetails;
+import io.dockstore.tooltester.blueOcean.PipelineImpl;
+import io.dockstore.tooltester.blueOcean.PipelineNodeImpl;
+import io.dockstore.tooltester.jenkins.CrumbJsonResult;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
@@ -27,16 +41,105 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
  * @author gluu
  * @since 24/01/17
  */
-
 public abstract class JenkinsHelper {
     private static final Logger LOG = LoggerFactory.getLogger(JenkinsHelper.class);
     private JenkinsServer jenkins;
+    private HierarchicalINIConfiguration config;
+    JenkinsHelper(HierarchicalINIConfiguration config) {
+        this.config = config;
+        setupJenkins();
+    }
 
-    JenkinsHelper(JenkinsServer jenkins) {
-        this.jenkins = jenkins;
+    public JenkinsServer getJenkins() {
+        return jenkins;
     }
 
     public abstract String getPREFIX();
+
+    public PipelineNodeImpl[] getBlueOceanJenkinsPipeline(String suffix) {
+        String entity = getEntity("blue/rest/organizations/jenkins/pipelines/PipelineTest-" + suffix);
+        Gson gson = new Gson();
+        PipelineImpl example = gson.fromJson(entity, PipelineImpl.class);
+        String uri = example.getLatestRun().getLinks().getNodes().getHref();
+        entity = getEntity(uri);
+        return gson.fromJson(entity, PipelineNodeImpl[].class);
+    }
+
+    private void setupJenkins() {
+        try {
+            String serverUrl;
+            String username;
+            String password;
+            serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+            username = config.getString("jenkins-username", "travis");
+            password = config.getString("jenkins-password", "travis");
+            this.jenkins = new JenkinsServer(new URI(serverUrl), username, password);
+            Map<String, Job> jobs = jenkins.getJobs();
+            JenkinsVersion version = jenkins.getVersion();
+            LOG.trace("Jenkins is version " + version.getLiteralVersion() + " and has " + jobs.size() + " jobs");
+        } catch (URISyntaxException e) {
+            exceptionMessage(e, "Jenkins server URI is not valid", CLIENT_ERROR);
+        } catch (IOException e) {
+            exceptionMessage(e, "Could not connect to Jenkins server", IO_ERROR);
+        }
+    }
+
+    /**
+     * This function deletes all jobs on jenkins matching "Test.*"
+     * Only used by admin
+     */
+    //    public void deleteJobs(String pattern) {
+    //        try {
+    //            Map<String, Job> jobs = jenkins.getJobs();
+    //            jobs.entrySet().stream().filter(map -> map.getKey().matches(pattern + ".+")).forEach(map -> {
+    //                try {
+    //
+    //                    jenkins.deleteJob(map.getKey(), true);
+    //                } catch (IOException e) {
+    //                    exceptionMessage(e, "Could not delete Jenkins job", IO_ERROR);
+    //                }
+    //            });
+    //        } catch (IOException e) {
+    //            exceptionMessage(e, "Could not find and delete Jenkins job", IO_ERROR);
+    //        }
+    //    }
+    public String getEntity(String uri) {
+        String entity = null;
+        try {
+            String crumb = getJenkinsCrumb();
+
+            // The configuration file is only used for production.  Otherwise it defaults to the travis ones.
+            String username = config.getString("jenkins-username", "travis");
+            String password = config.getString("jenkins-password", "travis");
+            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+            HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
+            javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
+            entity = client.target(serverUrl).path(uri).request(MediaType.TEXT_PLAIN_TYPE).header("crumbRequestField", crumb)
+                    .get(String.class);
+        } catch (Exception e) {
+            LOG.warn("Could not get Jenkins stage: " + uri);
+        }
+        return entity;
+    }
+
+    /**
+     * This function gets the jenkins crumb in the event that the java jenkins api does not work
+     *
+     * @return The crumb string
+     */
+    private String getJenkinsCrumb() {
+        String username = config.getString("jenkins-username", "travis");
+        String password = config.getString("jenkins-password", "travis");
+        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+        HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
+
+        javax.ws.rs.client.Client client = ClientBuilder.newClient();
+        client.register(feature);
+        String entity = client.target(serverUrl).path("crumbIssuer/api/json").request(MediaType.TEXT_PLAIN_TYPE).get(String.class);
+        Gson gson = new Gson();
+        CrumbJsonResult result = gson.fromJson(entity, CrumbJsonResult.class);
+        return result.crumb;
+    }
 
     /**
      * Creates a pipeline on Jenkins to test the parameter file

@@ -20,7 +20,7 @@ def transformIntoStep(url, tag, descriptor, parameter) {
                 sh 'git clone ${URL} target'
                 dir('target') {
                     sh 'git checkout ${Tag}'
-                    FILE = sh (script: "set -o pipefail && dockstore tool launch --entry $descriptor --local-entry --json $parameter | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
+                    FILE = sh(script: "set -o pipefail && dockstore tool launch --entry $descriptor --local-entry --json $parameter | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
                     sh "mv $FILE $parameter"
                     archiveArtifacts artifacts: parameter
                 }
@@ -32,15 +32,15 @@ def transformIntoStep(url, tag, descriptor, parameter) {
     }
 }
 
-def transformIntoDockerfileStep(){
+def transformIntoDockerfileStep() {
     return {
         node {
             ws {
                 step([$class: 'WsCleanup'])
                 sh 'git clone ${URL} .'
                 sh 'git checkout ${Tag}'
-                LOCATION = sh (script: 'dirname "${DockerfilePath}"', returnStdout: true).trim()
-                dir(LOCATION){
+                LOCATION = sh(script: 'dirname "${DockerfilePath}"', returnStdout: true).trim()
+                dir(LOCATION) {
                     sh 'docker build .'
                 }
 
