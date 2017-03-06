@@ -20,12 +20,15 @@ language: java
 jdk:
 - oraclejdk8
 
-install: 
-  - cd tooltester && mvn -B clean install -DskipITs=false cobertura:cobertura coveralls:report
-  - cd ..
-  - docker pull andrewgaul/s3proxy
-  - docker run -d --publish 8080:80 --env S3PROXY_AUTHORIZATION=none andrewgaul/s3proxy
-  - cd toolbackup && mvn -B clean install -DskipITs=false cobertura:cobertura coveralls:report
+install:
+# Pull docker jenkins image from quay.io
+- docker pull quay.io/garyluu/jenkins
+# Create an arbitrary subnet for the docker container to run on
+- docker network create --subnet=172.18.0.0/16 travisnet
+# Create a docker container with a specific IP that travis can connect to during testing
+- docker run -d --net travisnet --ip 172.18.0.22 quay.io/garyluu/jenkins
+# Build and run tests
+- cd tooltester && mvn -B clean install -DskipITs=false cobertura:cobertura coveralls:report
 
 notifications:
   webhooks:
