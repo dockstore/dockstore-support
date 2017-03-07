@@ -80,6 +80,7 @@ public class ClientTest {
     }
 
     /**
+<<<<<<< HEAD
      * This is for admin use only.  It deletes all created Jenkins pipelines
      */
 <<<<<<< HEAD
@@ -104,6 +105,8 @@ public class ClientTest {
 >>>>>>> d7e8c79... Feature/jenkins example (#5)
 
     /**
+=======
+>>>>>>> 8353215... Pretty print reports and added documentation
      * Test with unknown command
      */
     @Test
@@ -158,7 +161,11 @@ public class ClientTest {
     @Test
     public void enqueueTool() {
 <<<<<<< HEAD
+<<<<<<< HEAD
         String[] argv = { "enqueue", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow" };
+=======
+        String[] argv = { "enqueue", "--tool", "quay.io/pancancer/pcawg_delly_workflow" };
+>>>>>>> 8353215... Pretty print reports and added documentation
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
     }
@@ -183,6 +190,20 @@ public class ClientTest {
     @Test
     public void createJenkinsTests() {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+        String[] argv = { "sync", "--execution", "jenkins", "--api",
+                "https://www.dockstore.org:8443/api/ga4gh/v1" };
+        main(argv);
+        Assert.assertTrue(systemOutRule.getLog().isEmpty());
+    }
+
+    /**
+     * This tests the Jenkins pipeline creation
+     */
+    @Test
+    public void createJenkinsTestsSource() {
+>>>>>>> 8353215... Pretty print reports and added documentation
         String[] argv = { "sync", "--execution", "jenkins", "--source", "Docktesters group", "--api",
                 "https://www.dockstore.org:8443/api/ga4gh/v1" };
         main(argv);

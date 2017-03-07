@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.blueOcean;
+package io.dockstore.tooltester.blueOceanJsonObjects;
 
 import java.util.List;
 
@@ -8,6 +8,10 @@ import com.google.gson.annotations.SerializedName;
 /**
  * @author gluu
  * @since 22/02/17
+ */
+
+/**
+ * Json object returned when grabbing pipeline steps from Blue Ocean REST API
  */
 public class PipelineStepImpl {
     @SerializedName("actions")

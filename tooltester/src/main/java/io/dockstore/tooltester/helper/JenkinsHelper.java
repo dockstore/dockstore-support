@@ -21,8 +21,8 @@ import com.offbytwo.jenkins.model.BuildResult;
 import com.offbytwo.jenkins.model.BuildWithDetails;
 import com.offbytwo.jenkins.model.Job;
 import com.offbytwo.jenkins.model.JobWithDetails;
-import io.dockstore.tooltester.blueOcean.PipelineImpl;
-import io.dockstore.tooltester.blueOcean.PipelineNodeImpl;
+import io.dockstore.tooltester.blueOceanJsonObjects.PipelineImpl;
+import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.jenkins.CrumbJsonResult;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
@@ -45,6 +45,7 @@ public abstract class JenkinsHelper {
     private static final Logger LOG = LoggerFactory.getLogger(JenkinsHelper.class);
     private JenkinsServer jenkins;
     private HierarchicalINIConfiguration config;
+
     JenkinsHelper(HierarchicalINIConfiguration config) {
         this.config = config;
         setupJenkins();
@@ -88,21 +89,21 @@ public abstract class JenkinsHelper {
      * This function deletes all jobs on jenkins matching "Test.*"
      * Only used by admin
      */
-    //    public void deleteJobs(String pattern) {
-    //        try {
-    //            Map<String, Job> jobs = jenkins.getJobs();
-    //            jobs.entrySet().stream().filter(map -> map.getKey().matches(pattern + ".+")).forEach(map -> {
-    //                try {
-    //
-    //                    jenkins.deleteJob(map.getKey(), true);
-    //                } catch (IOException e) {
-    //                    exceptionMessage(e, "Could not delete Jenkins job", IO_ERROR);
-    //                }
-    //            });
-    //        } catch (IOException e) {
-    //            exceptionMessage(e, "Could not find and delete Jenkins job", IO_ERROR);
-    //        }
-    //    }
+        public void deleteJobs(String pattern) {
+            try {
+                Map<String, Job> jobs = jenkins.getJobs();
+                jobs.entrySet().stream().filter(map -> map.getKey().matches(pattern + ".+")).forEach(map -> {
+                    try {
+
+                        jenkins.deleteJob(map.getKey(), true);
+                    } catch (IOException e) {
+                        exceptionMessage(e, "Could not delete Jenkins job", IO_ERROR);
+                    }
+                });
+            } catch (IOException e) {
+                exceptionMessage(e, "Could not find and delete Jenkins job", IO_ERROR);
+            }
+        }
     public String getEntity(String uri) {
         String entity = null;
         try {
@@ -156,27 +157,22 @@ public abstract class JenkinsHelper {
         try {
             jobxml = jenkins.getJobXml(prefix);
             if (jobxml == null) {
-                errorMessage("Could not get Jenkins template job", COMMAND_ERROR);
+                errorMessage("Could not get Jenkins template job: " + prefix, COMMAND_ERROR);
             }
             job = jenkins.getJob(name);
         } catch (IOException e) {
-            exceptionMessage(e, "Could not get Jenkins job", IO_ERROR);
+            exceptionMessage(e, "Could not get Jenkins job: " + name, IO_ERROR);
         }
-
-        if (job == null) {
-            try {
+        try {
+            if (job == null) {
                 jenkins.createJob(name, jobxml, true);
                 LOG.info("Created Jenkins job: " + name);
-            } catch (IOException e) {
-                exceptionMessage(e, "Could not create Jenkins job", IO_ERROR);
-            }
-        } else {
-            try {
+            } else {
                 jenkins.updateJob(name, jobxml, true);
                 LOG.info("Updated Jenkins job: " + name);
-            } catch (IOException e) {
-                exceptionMessage(e, "Could not update existing Jenkins job", IO_ERROR);
             }
+        } catch (IOException e) {
+            exceptionMessage(e, "Could not create or update Jenkins job: " + name, IO_ERROR);
         }
 
     }

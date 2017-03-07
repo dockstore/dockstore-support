@@ -1,9 +1,12 @@
-package io.dockstore.tooltester.blueOcean;
+package io.dockstore.tooltester.blueOceanJsonObjects;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class LogActionImpl {
+/**
+ * Json object part of the PipelineImpl Json object
+ */
+public class LatestRun {
     @SerializedName("_links")
     @Expose
     private Links links;

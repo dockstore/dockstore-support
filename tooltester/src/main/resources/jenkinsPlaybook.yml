@@ -69,15 +69,27 @@
         dest: /usr/local/bin
         mode: a+rwx
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    - name: echo $HOME
+      become: yes
+      become_user: jenkins
+      shell: "echo $HOME"
+      register: jenkins_home
+>>>>>>> 8353215... Pretty print reports and added documentation
     - name: Create directory if it doesn't exist
+      become: yes
+      become_user: jenkins
       file:
-        path: "{{lookup('env','HOME')}}/.dockstore"
+        path: "{{jenkins_home.stdout}}/.dockstore"
         state: directory
 =======
 >>>>>>> d7e8c79... Feature/jenkins example (#5)
     - name: Write dockstore config file
       become: yes
+      become_user: jenkins
       copy:
         content: "token: test \nserver-url: https://dockstore.org:8443"
-        dest: "{{lookup('env','HOME')}}/.dockstore/config"
+        dest: "{{jenkins_home.stdout}}/.dockstore/config"
         mode: 0555
+

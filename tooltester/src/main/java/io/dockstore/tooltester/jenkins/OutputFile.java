@@ -57,6 +57,9 @@ public class OutputFile {
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 8353215... Pretty print reports and added documentation
     public Integer getSize() {
         return size;
 =======

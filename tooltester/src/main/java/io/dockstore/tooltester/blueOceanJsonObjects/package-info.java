@@ -14,4 +14,4 @@
  *    limitations under the License.
  */
 
-package io.dockstore.tooltester.blueOcean;
+package io.dockstore.tooltester.blueOceanJsonObjects;

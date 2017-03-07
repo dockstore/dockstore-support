@@ -55,8 +55,8 @@ import com.google.gson.reflect.TypeToken;
 <<<<<<< HEAD
 import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
-import io.dockstore.tooltester.blueOcean.PipelineNodeImpl;
-import io.dockstore.tooltester.blueOcean.PipelineStepImpl;
+import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
+import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.jenkins.OutputFile;
@@ -511,7 +511,7 @@ public class Client {
 
 >>>>>>> d7e8c79... Feature/jenkins example (#5)
     /**
-     * Deletes all the DockerfileTest and ParameterFileTest jobs and creates all the tests again
+     * Creates or updates the tests
      *
      * @param api       api to pull the tools from
      * @param source    the testing group that verified the tools
@@ -521,9 +521,6 @@ public class Client {
     private void handleCreateTests(String api, List<String> source, String execution, String toolname) {
         if (!execution.equals("jenkins")) {
             errorMessage("Can only execute on jenkins, no other location is currently supported.  Received " + execution, COMMAND_ERROR);
-        }
-        if (!api.equals("https://www.dockstore.org:8443/api/ga4gh/v1")) {
-            errorMessage("Can only use https://www.dockstore.org:8443/api/ga4gh/v1, no other api is currently supported", COMMAND_ERROR);
         }
         setupClientEnvironment();
         setupTesters();

@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.blueOcean;
+package io.dockstore.tooltester.blueOceanJsonObjects;
 
 /**
  * @author gluu
@@ -8,6 +8,9 @@ package io.dockstore.tooltester.blueOcean;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * Json object returned by JenkinsHelper's getBlueOceanJenkinsPipeline function
+ */
 public class PipelineNodeImpl {
 
     @SerializedName("_links")
