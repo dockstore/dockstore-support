@@ -21,8 +21,6 @@ jdk:
 - oraclejdk8
 
 install: 
-  - cd tooltester && mvn -B clean install -DskipITs=false cobertura:cobertura coveralls:report
-  - cd ..
   - docker pull andrewgaul/s3proxy
   - docker run -d --publish 8080:80 --env S3PROXY_AUTHORIZATION=none andrewgaul/s3proxy
   - cd toolbackup && mvn -B clean install -DskipITs=false cobertura:cobertura coveralls:report
