@@ -2,7 +2,6 @@
   hosts: local
   connection: local
   tasks:
-<<<<<<< HEAD
     - name: Install JDK
       become: yes
       apt:
@@ -18,32 +17,19 @@
     - name: Add docker repository and update apt cache
       become: yes
       apt_repository:
-        repo: "deb https://apt.dockerproject.org/repo {{ansible_distribution | lower }}-{{ansible_distribution_release}} main"
+        repo: "deb https://download.docker.com/linux/{{ansible_distribution | lower }} {{ansible_distribution_release}} stable"
         update_cache: yes
         state: present
-=======
->>>>>>> d7e8c79... Feature/jenkins example (#5)
     - name: Install docker
       become: yes
       apt:
-        name: docker-engine
-<<<<<<< HEAD
+        name: docker-ce
         allow_unauthenticated: yes
-=======
->>>>>>> d7e8c79... Feature/jenkins example (#5)
     - name: Install setuptools
       become: yes
       pip:
         name: setuptools
         version: 24.0.3
-<<<<<<< HEAD
-=======
-    - name: Install cwltool
-      become: yes
-      pip:
-        name: cwltool
-        version: 1.0.20161114152756
->>>>>>> d7e8c79... Feature/jenkins example (#5)
     - name: Install schema-salad
       become: yes
       pip:
@@ -54,37 +40,28 @@
       pip:
         name: avro
         version: 1.8.1
-<<<<<<< HEAD
     - name: Install cwltool
       become: yes
       pip:
         name: cwltool
         version: 1.0.20161114152756
-=======
->>>>>>> d7e8c79... Feature/jenkins example (#5)
     - name: Download Dockstore
       become: yes
       get_url:
         url: https://github.com/ga4gh/dockstore/releases/download/1.1.2/dockstore
         dest: /usr/local/bin
         mode: a+rwx
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
     - name: echo $HOME
       become: yes
       become_user: jenkins
       shell: "echo $HOME"
       register: jenkins_home
->>>>>>> 8353215... Pretty print reports and added documentation
     - name: Create directory if it doesn't exist
       become: yes
       become_user: jenkins
       file:
         path: "{{jenkins_home.stdout}}/.dockstore"
         state: directory
-=======
->>>>>>> d7e8c79... Feature/jenkins example (#5)
     - name: Write dockstore config file
       become: yes
       become_user: jenkins
