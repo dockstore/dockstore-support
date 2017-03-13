@@ -140,14 +140,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-
-            <!-- slf4j -->
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-
             <dependency>
                 <groupId>commons-logging</groupId>
                 <artifactId>commons-logging</artifactId>
@@ -213,6 +205,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>de.vandermeer</groupId>
+            <artifactId>asciitable</artifactId>
+            <version>0.2.5</version>
+        </dependency>
+        <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>2.4</version>
@@ -259,7 +256,7 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
-            <scope>provided</scope>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>commons-configuration</groupId>
@@ -288,6 +285,7 @@
             <artifactId>junit</artifactId>
             <version>4.11</version>
             <scope>test</scope>
+
         </dependency>
 
         <dependency>
@@ -303,6 +301,7 @@
             <version>1.16.0</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>

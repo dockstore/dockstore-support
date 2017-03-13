@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.client.cli;
+package io.dockstore.tooltester.report;
 
 import java.io.BufferedWriter;
 import java.io.Closeable;
@@ -10,8 +10,14 @@ import java.io.OutputStreamWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
+import de.vandermeer.asciitable.v2.RenderedTable;
+import de.vandermeer.asciitable.v2.V2_AsciiTable;
+import de.vandermeer.asciitable.v2.render.V2_AsciiTableRenderer;
+import de.vandermeer.asciitable.v2.render.WidthLongestLine;
+import de.vandermeer.asciitable.v2.themes.V2_E_TableThemes;
+
+import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -19,11 +25,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * @since 23/01/17
  */
 public abstract class Report implements Closeable {
-    static final CharSequence COMMA_SEPARATOR = ",";
-    static final CharSequence TAB_SEPARATOR = "\t";
-    public BufferedWriter writer;
+    private static final CharSequence COMMA_SEPARATOR = ",";
+    private BufferedWriter writer;
+    private V2_AsciiTable at;
 
     Report(String name) {
+        at = new V2_AsciiTable();
         List<String> header = getHeader();
         try {
 
@@ -38,29 +45,35 @@ public abstract class Report implements Closeable {
     public abstract List<String> getHeader();
 
     public void printAndWriteLine(List<String> string) {
-        printLine(string);
         writeLine(string);
     }
 
     public void close() {
         try {
+            System.out.println();
             writer.flush();
             writer.close();
+            V2_AsciiTableRenderer rend = new V2_AsciiTableRenderer();
+            rend.setTheme(V2_E_TableThemes.UTF_LIGHT.get());
+            rend.setWidth(new WidthLongestLine());
+            at.addRule();
+            RenderedTable rt = rend.render(at);
+            System.out.println(rt);
         } catch (IOException e) {
             exceptionMessage(e, "Could not close file", IO_ERROR);
         }
     }
 
-    void writeLine(List<String> values) {
-        String value2 = values.stream().map(Object::toString).collect(Collectors.joining(COMMA_SEPARATOR));
+    private void writeLine(List<String> values) {
+        at.addRule();
+        at.addRow(values.toArray());
+        String commaSeparatedValues = values.stream().map(Object::toString).collect(Collectors.joining(COMMA_SEPARATOR));
         try {
-            writer.append(value2);
+            writer.append(commaSeparatedValues);
             writer.append("\n");
         } catch (IOException e) {
             exceptionMessage(e, "Cannot write to file", IO_ERROR);
         }
     }
-
-    public abstract void printLine(List<String> string);
 }
 
