@@ -19,17 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
-<<<<<<< HEAD
 import java.net.URISyntaxException;
 import java.text.ParseException;
-=======
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
->>>>>>> d7e8c79... Feature/jenkins example (#5)
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -37,24 +28,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
-
->>>>>>> d7e8c79... Feature/jenkins example (#5)
-=======
->>>>>>> d889a5a... Logger not avail at compile time fix.
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-<<<<<<< HEAD
 import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
+import com.offbytwo.jenkins.model.JobWithDetails;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
 import io.dockstore.tooltester.helper.PipelineTester;
@@ -62,29 +44,11 @@ import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.report.FileReport;
 import io.dockstore.tooltester.report.StatusReport;
-=======
-import com.offbytwo.jenkins.JenkinsServer;
-import com.offbytwo.jenkins.helper.JenkinsVersion;
-import com.offbytwo.jenkins.model.Artifact;
-import com.offbytwo.jenkins.model.Build;
-import com.offbytwo.jenkins.model.Job;
-import io.dockstore.tooltester.jenkins.CrumbJsonResult;
-import io.dockstore.tooltester.jenkins.JenkinsLog;
-import io.dockstore.tooltester.jenkins.JenkinsPipeline;
-import io.dockstore.tooltester.jenkins.Node;
-import io.dockstore.tooltester.jenkins.OutputFile;
-import io.dockstore.tooltester.jenkins.Stage;
-import io.dockstore.tooltester.jenkins.StageFlowNode;
->>>>>>> d7e8c79... Feature/jenkins example (#5)
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
 import io.swagger.client.api.ContainersApi;
 import io.swagger.client.api.GAGHApi;
-<<<<<<< HEAD
-=======
-import io.swagger.client.api.UsersApi;
->>>>>>> d7e8c79... Feature/jenkins example (#5)
 import io.swagger.client.model.DockstoreTool;
 import io.swagger.client.model.SourceFile;
 import io.swagger.client.model.Tag;
@@ -93,14 +57,9 @@ import io.swagger.client.model.ToolVersion;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.io.IOUtils;
-<<<<<<< HEAD
-=======
-import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
->>>>>>> d7e8c79... Feature/jenkins example (#5)
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-<<<<<<< HEAD
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
@@ -109,35 +68,12 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
-=======
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.API_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.CLIENT_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.DEBUG;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.GENERIC_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.errorMessage;
-import static io.dockstore.tooltester.client.cli.ExceptionHandler.exceptionMessage;
->>>>>>> d7e8c79... Feature/jenkins example (#5)
 
 /**
  * Prototype for testing service
  */
 public class Client {
-<<<<<<< HEAD
-    private static final Logger LOG;
-
-    static {
-<<<<<<< HEAD
-=======
-        System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "TRACE");
->>>>>>> d7e8c79... Feature/jenkins example (#5)
-        LOG = LoggerFactory.getLogger(Client.class);
-    }
-
-=======
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
->>>>>>> d889a5a... Logger not avail at compile time fix.
     private ContainersApi containersApi;
     private GAGHApi ga4ghApi;
     private StatusReport report;
@@ -145,10 +81,6 @@ public class Client {
     private int count = 0;
     private HierarchicalINIConfiguration config;
     private PipelineTester pipelineTester;
-<<<<<<< HEAD
-=======
-    private JenkinsServer jenkins;
->>>>>>> d7e8c79... Feature/jenkins example (#5)
 
     Client() {
 
@@ -161,7 +93,6 @@ public class Client {
      */
     public static void main(String[] argv) {
         Client client = new Client();
-<<<<<<< HEAD
         CommandMain commandMain = new CommandMain();
         JCommander jc = new JCommander(commandMain);
         jc.setProgramName("autotool");
@@ -173,23 +104,12 @@ public class Client {
         jc.addCommand("enqueue", commandEnqueue);
         jc.addCommand("file-report", commandFileReport);
         jc.addCommand("sync", commandSync);
-=======
-        CommandMain cm = new CommandMain();
-        JCommander jc = new JCommander(cm);
-        CommandReport commandReport = new CommandReport();
-        CommandEnqueue commandEnqueue = new CommandEnqueue();
-        CommandFileReport commandFileReport = new CommandFileReport();
-        jc.addCommand("report", commandReport);
-        jc.addCommand("enqueue", commandEnqueue);
-        jc.addCommand("file-report", commandFileReport);
->>>>>>> d7e8c79... Feature/jenkins example (#5)
         try {
             jc.parse(argv);
         } catch (MissingCommandException e) {
             jc.usage();
             exceptionMessage(e, "Unknown command", COMMAND_ERROR);
         }
-<<<<<<< HEAD
         if (commandMain.help) {
             jc.usage();
         } else {
@@ -262,6 +182,10 @@ public class Client {
             String name = dockstoreTool.getPath();
             name = name.replaceAll("/", "-");
             name = name + "-" + tag.getName();
+            JobWithDetails jobWithDetails = pipelineTester.getJenkinsJob(name);
+            if (jobWithDetails == null) {
+                continue;
+            }
             List<Build> builds = pipelineTester.getAllBuilds(name);
             if (builds == null) {
                 continue;
@@ -286,6 +210,11 @@ public class Client {
                                 List<String> record = Arrays
                                         .asList(String.valueOf(buildId), tag.getName(), cwlID, basename, checksum, size);
                                 fileReport.printAndWriteLine(record);
+                                try {
+                                    inputStream.close();
+                                } catch (IOException e) {
+                                    exceptionMessage(e, "Could not close input stream", IO_ERROR);
+                                }
                             });
                         } catch (URISyntaxException e) {
                             exceptionMessage(e, "Could not download artifact", GENERIC_ERROR);
@@ -346,170 +275,6 @@ public class Client {
     //        return jenkinsPipeline;
     //    }
 
-=======
-        if (jc.getParsedCommand() != null) {
-            switch (jc.getParsedCommand()) {
-            case "report":
-                if (commandReport.help) {
-                    jc.usage("report");
-                } else {
-                    client.handleReport(commandReport.tools);
-                }
-                break;
-            case "enqueue":
-                if (commandEnqueue.help) {
-                    jc.usage("enqueue");
-                } else {
-                    if (commandEnqueue.all) {
-                        client.handleRunTests(commandEnqueue.tools);
-                    } else {
-
-                        if (!commandEnqueue.tools.isEmpty()) {
-                            client.handleRunTests(commandEnqueue.tools);
-                        } else {
-                            jc.usage();
-                        }
-                    }
-                }
-                break;
-            case "file-report":
-                if (commandFileReport.help) {
-                    jc.usage("file-report");
-                } else {
-                    client.handleFileReport(commandFileReport.tool);
-                }
-                break;
-            default:
-                jc.usage();
-            }
-        } else {
-            if (cm.help) {
-                jc.usage();
-            } else {
-                client.handleCreateTests(cm.api, cm.source, cm.execution);
-            }
-        }
-
-    }
-
-    private void handleFileReport(String toolName) {
-        setupClientEnvironment();
-        setupJenkins();
-        setupTesters();
-        createFileReport("FileReport.csv");
-        DockstoreTool dockstoreTool = null;
-        try {
-            dockstoreTool = containersApi.getPublishedContainerByToolPath(toolName);
-        } catch (ApiException e) {
-            exceptionMessage(e, "Could not get container: " + toolName, API_ERROR);
-        }
-        List<Tag> tags = dockstoreTool.getTags();
-        for (Tag tag : tags) {
-            String name = dockstoreTool.getPath();
-            name = name.replaceAll("/", "-");
-            name = name + "-" + tag.getName();
-            List<Build> builds = pipelineTester.getAllBuilds(name);
-            if (builds == null) {
-                continue;
-            }
-            for (Build build : builds) {
-                int buildId = build.getNumber();
-                try {
-                    List<Artifact> artifactList = build.details().getArtifacts();
-                    for (Artifact artifact : artifactList) {
-                        try {
-                            InputStream inputStream = build.details().downloadArtifact(artifact);
-                            String artifactString = IOUtils.toString(inputStream, "UTF-8");
-                            Gson gson = new Gson();
-                            Type mapType = new TypeToken<Map<String, OutputFile>>() {
-                            }.getType();
-                            Map<String, OutputFile> outputFiles = gson.fromJson(artifactString, mapType);
-                            outputFiles.entrySet().parallelStream().forEach(file -> {
-                                String basename = file.getKey();
-                                String checksum = file.getValue().getChecksum();
-                                String size = file.getValue().getSize().toString();
-                                List<String> record = Arrays.asList(String.valueOf(buildId), tag.getName(), basename, checksum, size);
-                                fileReport.printAndWriteLine(record);
-                            });
-                        } catch (URISyntaxException e) {
-                            exceptionMessage(e, "Could not download artifact", GENERIC_ERROR);
-                        }
-                    }
-                } catch (IOException e) {
-                    exceptionMessage(e, "Could not get artifacts", IO_ERROR);
-                }
-            }
-        }
-        finalizeFileReport();
-    }
-
-    PipelineTester getPipelineTester() {
-        return pipelineTester;
-    }
-
-    /**
-     * This function handles the report command
-     *
-     * @param toolNames The tools passed in as arguments from the commmand line
-     */
-    private void handleReport(List<String> toolNames) {
-        try {
-            setupClientEnvironment();
-            setupJenkins();
-            setupTesters();
-            List<Tool> tools = getVerifiedTools();
-            createResults("Report.csv");
-            if (!toolNames.isEmpty()) {
-                tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
-            }
-            for (Tool tool : tools) {
-                getToolTestResults(tool);
-            }
-            finalizeResults();
-        } catch (Exception e) {
-            exceptionMessage(e, "Can't handle report", GENERIC_ERROR);
-        }
-    }
-
-    /**
-     * This function gets the jenkins crumb in the event that the java jenkins api does not work
-     *
-     * @return The crumb string
-     */
-    private String getJenkinsCrumb() {
-        String username = config.getString("jenkins-username", "travis");
-        String password = config.getString("jenkins-password", "travis");
-        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-        HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
-
-        javax.ws.rs.client.Client client = ClientBuilder.newClient();
-        client.register(feature);
-        String entity = client.target(serverUrl).path("crumbIssuer/api/json").request(MediaType.TEXT_PLAIN_TYPE).get(String.class);
-        Gson gson = new Gson();
-        CrumbJsonResult result = gson.fromJson(entity, CrumbJsonResult.class);
-        return result.crumb;
-    }
-
-    private JenkinsPipeline getJenkinsPipeline(String name, int buildId) {
-        JenkinsPipeline jenkinsPipeline = null;
-        try {
-            String crumb = getJenkinsCrumb();
-            String username = config.getString("jenkins-username", "travis");
-            String password = config.getString("jenkins-password", "travis");
-            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-            HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
-            javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
-            String entity = client.target(serverUrl).path("job/" + name + "/" + buildId + "/wfapi/describe")
-                    .request(MediaType.TEXT_PLAIN_TYPE).header("crumbRequestField", crumb).get(String.class);
-            Gson gson = new Gson();
-            jenkinsPipeline = gson.fromJson(entity, JenkinsPipeline.class);
-        } catch (Exception e) {
-            LOG.warn("Could not get Jenkins build for: " + name);
-        }
-        return jenkinsPipeline;
-    }
-
->>>>>>> d7e8c79... Feature/jenkins example (#5)
     /**
      * Creates or updates the tests
      *
@@ -517,7 +282,6 @@ public class Client {
      * @param source    the testing group that verified the tools
      * @param execution the location to test the tools
      */
-<<<<<<< HEAD
     private void handleCreateTests(String api, List<String> source, String execution, String toolname) {
         if (!execution.equals("jenkins")) {
             errorMessage("Can only execute on jenkins, no other location is currently supported.  Received " + execution, COMMAND_ERROR);
@@ -533,29 +297,13 @@ public class Client {
             }
         } else {
             tools = getTools(toolname);
-=======
-    private void handleCreateTests(String api, List<String> source, String execution) {
-        setupClientEnvironment();
-        setupJenkins();
-        setupTesters();
-        List<Tool> tools;
-        if (!source.isEmpty()) {
-            tools = getVerifiedTools(source);
-        } else {
-            tools = getVerifiedTools();
->>>>>>> d7e8c79... Feature/jenkins example (#5)
+
         }
         for (Tool tool : tools) {
             createToolTests(tool);
         }
     }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    }
-
-=======
->>>>>>> 3b9a054... Fix merge
     private void handleRunTests(List<String> toolNames, String unverifiedTool) {
         setupClientEnvironment();
         setupTesters();
@@ -583,58 +331,6 @@ public class Client {
 
     void setupTesters() {
         pipelineTester = new PipelineTester(config);
-=======
-    private void handleRunTests(List<String> toolNames) {
-        setupClientEnvironment();
-        setupJenkins();
-        setupTesters();
-        List<Tool> tools = getVerifiedTools();
-        if (!toolNames.isEmpty()) {
-            tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
-        }
-        for (Tool tool : tools) {
-            testTool(tool);
-        }
-    }
-
-    public JenkinsServer getJenkins() {
-        return jenkins;
-    }
-
-    private void setJenkins(JenkinsServer jenkins) {
-        this.jenkins = jenkins;
-    }
-
-    int getCount() {
-        return count;
-    }
-
-    void setCount(int count) {
-        this.count = count;
-    }
-
-    void setupTesters() {
-        pipelineTester = new PipelineTester(getJenkins());
-    }
-
-    void setupJenkins() {
-        try {
-            String serverUrl;
-            String username;
-            String password;
-            serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-            username = config.getString("jenkins-username", "travis");
-            password = config.getString("jenkins-password", "travis");
-            setJenkins(new JenkinsServer(new URI(serverUrl), username, password));
-            Map<String, Job> jobs = jenkins.getJobs();
-            JenkinsVersion version = jenkins.getVersion();
-            LOG.trace("Jenkins is version " + version.getLiteralVersion() + " and has " + jobs.size() + " jobs");
-        } catch (URISyntaxException e) {
-            exceptionMessage(e, "Jenkins server URI is not valid", CLIENT_ERROR);
-        } catch (IOException e) {
-            exceptionMessage(e, "Could not connect to Jenkins server", IO_ERROR);
-        }
->>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
     void setupClientEnvironment() {
@@ -658,23 +354,7 @@ public class Client {
         defaultApiClient.setBasePath(serverUrl);
 
         this.containersApi = new ContainersApi(defaultApiClient);
-<<<<<<< HEAD
         setGa4ghApi(new GAGHApi(defaultApiClient));
-=======
-        UsersApi usersApi = new UsersApi(defaultApiClient);
-        setGa4ghApi(new GAGHApi(defaultApiClient));
-
-        boolean isAdmin = false;
-        try {
-            if (usersApi.getApiClient() != null) {
-                isAdmin = usersApi.getUser().getIsAdmin();
-            }
-        } catch (ApiException e) {
-            //exceptionMessage(e, "Could not use user API", API_ERROR);
-            LOG.warn("Could not use user API.  Admin is false by default");
-            isAdmin = false;
-        }
->>>>>>> d7e8c79... Feature/jenkins example (#5)
         defaultApiClient.setDebugging(DEBUG.get());
     }
 
@@ -689,27 +369,6 @@ public class Client {
         fileReport.close();
     }
 
-<<<<<<< HEAD
-=======
-    //    public void md5sumChallenge() {
-    //        setupClientEnvironment();
-    //        setupJenkins();
-    //        setupTesters();
-    //        List<Tool> verifiedTools = null;
-    //        GAGHApi ga4ghApi = getGa4ghApi();
-    //        List<Tool> tools = null;
-    //        try {
-    //            tools = ga4ghApi.toolsGet("quay.io/briandoconnor/dockstore-tool-md5sum", null, null, null, null, null, null, null, null);
-    //        } catch (ApiException e) {
-    //            exceptionMessage(e, "", API_ERROR);
-    //        }
-    //        for (Tool tool : tools) {
-    //            createToolTests(tool);
-    //            testTool(tool);
-    //        }
-    //    }
-
->>>>>>> d7e8c79... Feature/jenkins example (#5)
     private void createResults(String name) {
         report = new StatusReport(name);
     }
@@ -723,10 +382,6 @@ public class Client {
      */
     //    private void run() {
     //        setupClientEnvironment();
-<<<<<<< HEAD
-=======
-    //        setupJenkins();
->>>>>>> d7e8c79... Feature/jenkins example (#5)
     //        boolean toolTestResult = false;
     //        /** use swagger-generated classes to talk to dockstore */
     //        try {
@@ -800,10 +455,7 @@ public class Client {
      * @param tool The tool to get the test results for
      */
     private void getToolTestResults(Tool tool) {
-<<<<<<< HEAD
         String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-=======
->>>>>>> d7e8c79... Feature/jenkins example (#5)
         List<ToolVersion> toolVersions = tool.getVersions();
         for (ToolVersion toolversion : toolVersions) {
             if (toolversion != null) {
@@ -821,13 +473,7 @@ public class Client {
                         LOG.info("No build was ran");
                         continue;
                     }
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-                        PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(suffix);
-=======
                     PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(suffix);
->>>>>>> d889a5a... Logger not avail at compile time fix.
 
                     for (PipelineNodeImpl pipelineNode : pipelineNodes) {
                         try {
@@ -904,100 +550,6 @@ public class Client {
     //        return serverUrl + jenkinsLog.getConsoleUrl().replaceFirst("^/", "");
     //    }
 
-=======
-                    String name = "PipelineTest" + "-" + suffix;
-                    JenkinsPipeline jenkinsPipeline = getJenkinsPipeline(name, buildId);
-                    List<Stage> stages = jenkinsPipeline.getStages();
-
-                    for (Stage stage : stages) {
-
-                        String status = stage.getStatus();
-
-                        // Jenkins reports the wrong status and duration for in-progress stages, return the total job info instead
-                        Long runtime = stage.getDurationMillis();
-                        if (stage.getDurationMillis() <= 0) {
-                            status = jenkinsPipeline.getStatus();
-                            runtime = jenkinsPipeline.getDurationMillis();
-                        }
-                        if (status.equals("FAILED")) {
-
-                            status += " See " + getLog(stage);
-                        }
-                        LocalDateTime date = LocalDateTime
-                                .ofInstant(Instant.ofEpochMilli(stage.getStartTimeMillis()), ZoneId.systemDefault());
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyy-MM-dd HH:mm");
-                        String formatDateTime = date.format(formatter);
-
-                        List<String> record = Arrays.asList(toolversion.getId(), formatDateTime, tag, "Jenkins", stage.getName(),
-                                TimeHelper.durationToString(runtime), status);
-                        report.printAndWriteLine(record);
-                    }
-                }
-            } else {
-                errorMessage("Tool version is null", COMMAND_ERROR);
-            }
-        }
-    }
-
-    private String getLog(Stage stage) {
-        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-        String entity = getEntity(stage.getLinks().getSelf().getHref());
-        Gson gson = new Gson();
-        Node node = gson.fromJson(entity, Node.class);
-        List<StageFlowNode> stageFlowNodes = node.getStageFlowNodes();
-        for (StageFlowNode stageFlowNode : stageFlowNodes) {
-            if (stageFlowNode.getStatus().equals("FAILED")) {
-                try {
-                    entity = getEntity(stageFlowNode.getLinks().getLog().getHref());
-                } catch (Exception e) {
-                    return node.getError().getMessage();
-                }
-                break;
-            }
-        }
-        JenkinsLog jenkinsLog = gson.fromJson(entity, JenkinsLog.class);
-        return serverUrl + jenkinsLog.getConsoleUrl().replaceFirst("^/", "");
-    }
-
-    private String getEntity(String uri) {
-        String entity = null;
-        try {
-            String crumb = getJenkinsCrumb();
-
-            // The configuration file is only used for production.  Otherwise it defaults to the travis ones.
-            String username = config.getString("jenkins-username", "travis");
-            String password = config.getString("jenkins-password", "travis");
-            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-            HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
-            javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
-            entity = client.target(serverUrl).path(uri).request(MediaType.TEXT_PLAIN_TYPE).header("crumbRequestField", crumb)
-                    .get(String.class);
-        } catch (Exception e) {
-            LOG.warn("Could not get Jenkins stage: " + uri);
-        }
-        return entity;
-    }
-
-    /**
-     * This function deletes all jobs on jenkins matching "Test.*"
-     */
-    void deleteJobs(String pattern) {
-        try {
-            Map<String, Job> jobs = jenkins.getJobs();
-            jobs.entrySet().stream().filter(map -> map.getKey().matches(pattern + ".+")).forEach(map -> {
-                try {
-
-                    jenkins.deleteJob(map.getKey(), true);
-                } catch (IOException e) {
-                    exceptionMessage(e, "Could not delete Jenkins job", IO_ERROR);
-                }
-            });
-        } catch (IOException e) {
-            exceptionMessage(e, "Could not find and delete Jenkins job", IO_ERROR);
-        }
-    }
-
->>>>>>> d7e8c79... Feature/jenkins example (#5)
     /**
      * This function checks if the any of the tool's verified source matches the filter
      *
@@ -1030,7 +582,6 @@ public class Client {
         return verifiedTools;
     }
 
-<<<<<<< HEAD
     private List<Tool> getTools(String toolname) {
         List<Tool> tools = null;
         GAGHApi ga4ghApi = getGa4ghApi();
@@ -1043,11 +594,6 @@ public class Client {
         return tools;
     }
 
-<<<<<<< HEAD
-=======
->>>>>>> d7e8c79... Feature/jenkins example (#5)
-=======
->>>>>>> d889a5a... Logger not avail at compile time fix.
     /**
      * Gets the list of verified tools and applies filter to it
      *
@@ -1104,10 +650,7 @@ public class Client {
                 }
             }
 
-<<<<<<< HEAD
             assert dockerfilePath != null;
-=======
->>>>>>> d7e8c79... Feature/jenkins example (#5)
             dockerfilePath = dockerfilePath.replaceFirst("^/", "");
             String name = id;
             name = name.replace("/", "-");
@@ -1175,7 +718,6 @@ public class Client {
         this.ga4ghApi = ga4ghApi;
     }
 
-<<<<<<< HEAD
     private static class CommandMain {
         @Parameter(names = "--help", description = "Prints help for autotool", help = true)
         private boolean help = false;
@@ -1203,29 +745,10 @@ public class Client {
         private Boolean all = false;
         @Parameter(names = "--tool", description = "The specific tools to test", variableArity = true)
         private List<String> tools;
-=======
-    @Parameters(separators = "=", commandDescription = "Report status of tools tested")
-    private static class CommandReport {
-        @Parameter(names = "--all", description = "Whether to report all tools or not")
-        private Boolean all = false;
-        @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
-        private List<String> tools = new ArrayList<>();
-        @Parameter(names = "--help", description = "Prints help for report", help = true)
-        private boolean help = false;
-    }
-
-    @Parameters(separators = "=", commandDescription = "Test available tools on Jenkins")
-    private static class CommandEnqueue {
-        @Parameter(names = "--all", description = "Whether to test all tools or not")
-        private Boolean all = false;
-        @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
-        private List<String> tools = new ArrayList<>();
->>>>>>> d7e8c79... Feature/jenkins example (#5)
         @Parameter(names = "--help", description = "Prints help for enqueue", help = true)
         private boolean help = false;
     }
 
-<<<<<<< HEAD
     @Parameters(separators = "=", commandDescription = "Report status of verified tools tested.")
     private static class CommandReport {
         @Parameter(names = "--all", description = "Whether to report all tools or not")
@@ -1239,27 +762,7 @@ public class Client {
     @Parameters(separators = "=", commandDescription = "Reports the file sizes and checksum of a verified tool across all tested versions.")
     private static class CommandFileReport {
         @Parameter(names = "--tool", description = "Specific tool to report", required = true)
-<<<<<<< HEAD
-        private String tool = "";
-=======
-    private static class CommandMain {
-        @Parameter(names = { "--execution", "--runtime-environment" }, description = "Location of Testing")
-        private String execution = "jenkins";
-        @Parameter(names = { "--source" }, description = "Tester Group")
-        private List<String> source = new ArrayList<>();
-        @Parameter(names = { "--api", "--dockstore-url" }, description = "dockstore install that we wish to test tools from")
-        private String api = "https://www.dockstore.org:8443/api/ga4gh/v1";
-        @Parameter(names = "--help", description = "Prints help for main", help = true)
-        private boolean help = false;
-    }
-
-    private static class CommandFileReport {
-        @Parameter(names = "--tool", description = "Specific tool to report", required = true)
         private String tool;
->>>>>>> d7e8c79... Feature/jenkins example (#5)
-=======
-        private String tool;
->>>>>>> d889a5a... Logger not avail at compile time fix.
         @Parameter(names = "--help", description = "Prints help for file-report", help = true)
         private boolean help = false;
     }

@@ -1,16 +1,9 @@
 package io.dockstore.tooltester.client.cli;
 
-<<<<<<< HEAD
 import java.util.HashMap;
 import java.util.Map;
 
 import io.dockstore.tooltester.helper.PipelineTester;
-=======
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
->>>>>>> d7e8c79... Feature/jenkins example (#5)
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,13 +35,8 @@ public class JenkinsJobTest {
     @Test
     public void PipelineTestJobIT() {
         final String suffix = "id-tag";
-<<<<<<< HEAD
         client.setupTesters();
         Assert.assertTrue("Jenkins server can not be reached", client.getPipelineTester().getJenkins() != null);
-=======
-        client.setupJenkins();
-        Assert.assertTrue("Jenkins server can not be reached", client.getJenkins() != null);
->>>>>>> d7e8c79... Feature/jenkins example (#5)
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
         pipelineTester.createTest(suffix);
@@ -73,16 +61,8 @@ public class JenkinsJobTest {
     @Test
     public void getNonExistantTest() {
         exit.expectSystemExitWithStatus(10);
-<<<<<<< HEAD
-=======
-        client.setupJenkins();
->>>>>>> d7e8c79... Feature/jenkins example (#5)
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
         pipelineTester.getTestResults("SuffixOfATestThatShouldNotExist");
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> d7e8c79... Feature/jenkins example (#5)

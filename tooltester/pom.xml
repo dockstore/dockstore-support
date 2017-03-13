@@ -140,17 +140,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-<<<<<<< HEAD
-=======
-
-            <!-- slf4j -->
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-
->>>>>>> d7e8c79... Feature/jenkins example (#5)
             <dependency>
                 <groupId>commons-logging</groupId>
                 <artifactId>commons-logging</artifactId>
@@ -267,11 +256,7 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
-<<<<<<< HEAD
             <scope>runtime</scope>
-=======
-            <scope>provided</scope>
->>>>>>> d7e8c79... Feature/jenkins example (#5)
         </dependency>
         <dependency>
             <groupId>commons-configuration</groupId>
@@ -300,7 +285,7 @@
             <artifactId>junit</artifactId>
             <version>4.11</version>
             <scope>test</scope>
-<<<<<<< HEAD
+
         </dependency>
 
         <dependency>
@@ -316,23 +301,7 @@
             <version>1.16.0</version>
             <scope>test</scope>
         </dependency>
-=======
-        </dependency>
 
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-all</artifactId>
-            <version>1.3</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.github.stefanbirkner</groupId>
-            <artifactId>system-rules</artifactId>
-            <version>1.16.0</version>
-            <scope>test</scope>
-        </dependency>
->>>>>>> d7e8c79... Feature/jenkins example (#5)
         <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>

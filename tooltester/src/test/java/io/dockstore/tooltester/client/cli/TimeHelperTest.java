@@ -1,15 +1,9 @@
 package io.dockstore.tooltester.client.cli;
 
-<<<<<<< HEAD
 import java.text.ParseException;
 import java.util.Objects;
 
 import io.dockstore.tooltester.helper.TimeHelper;
-<<<<<<< HEAD
-=======
->>>>>>> d7e8c79... Feature/jenkins example (#5)
-=======
->>>>>>> d889a5a... Logger not avail at compile time fix.
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -21,7 +15,6 @@ public class TimeHelperTest {
     @Test
     public void durationToString() throws Exception {
         String durationString = TimeHelper.durationToString(Long.valueOf(3700000));
-<<<<<<< HEAD
         Assert.assertTrue("Incorrect time calculated, expected \"1h 2m\" but got " + durationString, durationString.equals("1h 2m"));
     }
 
@@ -35,9 +28,6 @@ public class TimeHelperTest {
         }
         Assert.assertTrue("Incorrect date calculated, expected \"2017-02-22 15:36\" but got " + time,
                 Objects.equals(time, "2017-02-22 15:36"));
-=======
-        Assert.assertTrue("Incorret time calculated, expected \"1h 2m\" but got " + durationString, durationString.equals("1h 2m"));
->>>>>>> d7e8c79... Feature/jenkins example (#5)
     }
 
 }

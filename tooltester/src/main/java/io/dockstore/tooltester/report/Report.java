@@ -25,7 +25,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * @since 23/01/17
  */
 public abstract class Report implements Closeable {
-    static final CharSequence TAB_SEPARATOR = "\t";
     private static final CharSequence COMMA_SEPARATOR = ",";
     private BufferedWriter writer;
     private V2_AsciiTable at;
@@ -57,6 +56,7 @@ public abstract class Report implements Closeable {
             V2_AsciiTableRenderer rend = new V2_AsciiTableRenderer();
             rend.setTheme(V2_E_TableThemes.UTF_LIGHT.get());
             rend.setWidth(new WidthLongestLine());
+            at.addRule();
             RenderedTable rt = rend.render(at);
             System.out.println(rt);
         } catch (IOException e) {
