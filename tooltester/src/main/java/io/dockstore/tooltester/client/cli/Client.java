@@ -44,6 +44,7 @@ import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.report.FileReport;
 import io.dockstore.tooltester.report.StatusReport;
+import io.dockstore.tooltester.helper.TinyUrl;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
@@ -494,8 +495,8 @@ public class Client {
                             for (PipelineStepImpl pipelineStep : pipelineSteps) {
                                 runtime += pipelineStep.getDurationInMillis();
                                 if (!state.equals("RUNNING") && pipelineStep.getResult().equals("FAILURE")) {
-                                    result += " See " + serverUrl + pipelineStep.getActions().get(0).getLinks().getSelf().getHref()
-                                            .replaceFirst("^/", "");
+                                    result += " See " + TinyUrl.getTinyUrl(serverUrl + pipelineStep.getActions().get(0).getLinks().getSelf().getHref()
+                                            .replaceFirst("^/", ""));
                                 }
                             }
                             String date = pipelineNode.getStartTime();

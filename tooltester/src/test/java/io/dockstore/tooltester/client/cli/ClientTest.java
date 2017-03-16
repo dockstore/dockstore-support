@@ -192,7 +192,7 @@ public class ClientTest {
         Assert.assertTrue(systemOutRule.getLog().contains("Tool/Workflow ID"));
         Assert.assertTrue(systemOutRule.getLog().contains("DATE"));
         Assert.assertTrue(systemOutRule.getLog().contains("Version"));
-        Assert.assertTrue(systemOutRule.getLog().contains("Location of testing"));
+        Assert.assertTrue(systemOutRule.getLog().contains("Location of Testing"));
         Assert.assertTrue(systemOutRule.getLog().contains("Action Performed"));
         Assert.assertTrue(systemOutRule.getLog().contains("Runtime"));
         Assert.assertTrue(systemOutRule.getLog().contains("Status of Test Files"));
