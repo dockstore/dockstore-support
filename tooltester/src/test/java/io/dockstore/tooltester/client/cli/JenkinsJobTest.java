@@ -63,6 +63,7 @@ public class JenkinsJobTest {
         exit.expectSystemExitWithStatus(10);
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
+        Assert.assertTrue("Jenkins server can not be reached", pipelineTester.getJenkins() != null);
         pipelineTester.getTestResults("SuffixOfATestThatShouldNotExist");
     }
 }

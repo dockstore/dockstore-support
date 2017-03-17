@@ -27,6 +27,8 @@ install:
 - docker network create --subnet=172.18.0.0/16 travisnet
 # Create a docker container with a specific IP that travis can connect to during testing
 - docker run -d --net travisnet --ip 172.18.0.22 quay.io/garyluu/jenkins
+# Sleep for 20 seconds while jenkins loads
+- 'sleep 20'
 # Build and run tests
 - cd tooltester && mvn -B clean install -DskipITs=false cobertura:cobertura coveralls:report
 
