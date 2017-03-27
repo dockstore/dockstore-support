@@ -86,26 +86,7 @@ public abstract class JenkinsHelper {
             exceptionMessage(e, "Could not connect to Jenkins server", IO_ERROR);
         }
     }
-
-    /**
-     * This function deletes all jobs on jenkins matching "Test.*"
-     * Only used by admin
-     */
-        public void deleteJobs(String pattern) {
-            try {
-                Map<String, Job> jobs = jenkins.getJobs();
-                jobs.entrySet().stream().filter(map -> map.getKey().matches(pattern + ".+")).forEach(map -> {
-                    try {
-
-                        jenkins.deleteJob(map.getKey(), true);
-                    } catch (IOException e) {
-                        exceptionMessage(e, "Could not delete Jenkins job", IO_ERROR);
-                    }
-                });
-            } catch (IOException e) {
-                exceptionMessage(e, "Could not find and delete Jenkins job", IO_ERROR);
-            }
-        }
+    
     public String getEntity(String uri) {
         String entity = null;
         try {
