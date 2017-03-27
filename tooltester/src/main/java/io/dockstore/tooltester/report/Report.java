@@ -54,7 +54,7 @@ public abstract class Report implements Closeable {
             writer.flush();
             writer.close();
             V2_AsciiTableRenderer rend = new V2_AsciiTableRenderer();
-            rend.setTheme(V2_E_TableThemes.UTF_LIGHT.get());
+            rend.setTheme(V2_E_TableThemes.PLAIN_7BIT.get());
             rend.setWidth(new WidthLongestLine());
             at.addRule();
             RenderedTable rt = rend.render(at);
