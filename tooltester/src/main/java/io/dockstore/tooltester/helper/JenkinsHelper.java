@@ -45,6 +45,7 @@ public abstract class JenkinsHelper {
     private static final Logger LOG = LoggerFactory.getLogger(JenkinsHelper.class);
     private JenkinsServer jenkins;
     private HierarchicalINIConfiguration config;
+    private String crumb;
 
     JenkinsHelper(HierarchicalINIConfiguration config) {
         this.config = config;
@@ -78,36 +79,18 @@ public abstract class JenkinsHelper {
             Map<String, Job> jobs = jenkins.getJobs();
             JenkinsVersion version = jenkins.getVersion();
             LOG.trace("Jenkins is version " + version.getLiteralVersion() + " and has " + jobs.size() + " jobs");
+            setCrumb(getJenkinsCrumb());
         } catch (URISyntaxException e) {
             exceptionMessage(e, "Jenkins server URI is not valid", CLIENT_ERROR);
         } catch (IOException e) {
             exceptionMessage(e, "Could not connect to Jenkins server", IO_ERROR);
         }
     }
-
-    /**
-     * This function deletes all jobs on jenkins matching "Test.*"
-     * Only used by admin
-     */
-        public void deleteJobs(String pattern) {
-            try {
-                Map<String, Job> jobs = jenkins.getJobs();
-                jobs.entrySet().stream().filter(map -> map.getKey().matches(pattern + ".+")).forEach(map -> {
-                    try {
-
-                        jenkins.deleteJob(map.getKey(), true);
-                    } catch (IOException e) {
-                        exceptionMessage(e, "Could not delete Jenkins job", IO_ERROR);
-                    }
-                });
-            } catch (IOException e) {
-                exceptionMessage(e, "Could not find and delete Jenkins job", IO_ERROR);
-            }
-        }
+    
     public String getEntity(String uri) {
         String entity = null;
         try {
-            String crumb = getJenkinsCrumb();
+            String crumb = getCrumb();
 
             // The configuration file is only used for production.  Otherwise it defaults to the travis ones.
             String username = config.getString("jenkins-username", "travis");
@@ -292,5 +275,13 @@ public abstract class JenkinsHelper {
             return -1;
         }
         return buildId;
+    }
+
+    public String getCrumb() {
+        return crumb;
+    }
+
+    public void setCrumb(String crumb) {
+        this.crumb = crumb;
     }
 }
