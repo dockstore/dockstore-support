@@ -15,8 +15,8 @@ public class TinyUrl {
 
     public static String getTinyUrl(String longUrl) {
         String tinyUrlLookup = TINY_URL + longUrl;
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(new URL(tinyUrlLookup).openStream(), "UTF-8"));
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new URL(tinyUrlLookup).openStream(), "UTF-8")))
+        {
             return reader.readLine();
         } catch (IOException e) {
             e.printStackTrace();
