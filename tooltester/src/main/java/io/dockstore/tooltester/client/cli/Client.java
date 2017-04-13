@@ -121,7 +121,12 @@ public class Client {
                     if (commandReport.help) {
                         jc.usage("report");
                     } else {
-                        client.handleReport(commandReport.tools);
+                        if (commandReport.all || !commandReport.tools.isEmpty()) {
+                            client.handleReport(commandReport.tools);
+                        } else {
+                            LOG.warn("You must specify --all or --tool");
+                            jc.usage("report");
+                        }
                     }
                     break;
                 case "enqueue":

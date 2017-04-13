@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.List;
 
 import com.beust.jcommander.ParameterException;
-import com.offbytwo.jenkins.JenkinsServer;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.swagger.client.ApiException;
 import io.swagger.client.model.Tool;
@@ -119,8 +118,7 @@ public class ClientTest {
      */
     @Test
     public void createJenkinsTests() {
-        String[] argv = { "sync", "--execution", "jenkins", "--api",
-                "https://www.dockstore.org:8443/api/ga4gh/v1" };
+        String[] argv = { "sync", "--execution", "jenkins", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
     }
@@ -158,11 +156,21 @@ public class ClientTest {
     }
 
     /**
-     * This gets the report of all the tools
+     * This prints the usage for report
      */
     @Test
     public void report() {
         String[] argv = { "report" };
+        main(argv);
+        Assert.assertTrue(systemOutRule.getLog().contains("Report status of verified tools tested."));
+    }
+
+    /**
+     * This gets the report of all the tools
+     */
+    @Test
+    public void reportAll() {
+        String[] argv = { "report", "--all" };
         main(argv);
         assertReport();
     }
@@ -182,7 +190,8 @@ public class ClientTest {
      */
     @Test
     public void reportTools() {
-        String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow" };
+        String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow",
+                "quay.io/briandoconnor/dockstore-tool-md5sum" };
         main(argv);
         assertReport();
 
