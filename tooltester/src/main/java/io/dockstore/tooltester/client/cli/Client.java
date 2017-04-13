@@ -490,14 +490,14 @@ public class Client {
                             Long runtime = 0L;
 
                             String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
+
+                            String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
+                            String logURL = TinyUrl.getTinyUrl(serverUrl+nodeLogURI);
                             Gson gson = new Gson();
+                            result += " See " + logURL;
                             PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
                             for (PipelineStepImpl pipelineStep : pipelineSteps) {
                                 runtime += pipelineStep.getDurationInMillis();
-                                if (!state.equals("RUNNING") && pipelineStep.getResult().equals("FAILURE")) {
-                                    result += " See " + TinyUrl.getTinyUrl(serverUrl + pipelineStep.getActions().get(0).getLinks().getSelf().getHref()
-                                            .replaceFirst("^/", ""));
-                                }
                             }
                             String date = pipelineNode.getStartTime();
                             String duration;
