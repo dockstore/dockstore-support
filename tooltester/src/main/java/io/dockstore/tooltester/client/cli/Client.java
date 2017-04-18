@@ -23,6 +23,8 @@ import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -175,7 +177,13 @@ public class Client {
     private void handleFileReport(String toolName) {
         setupClientEnvironment();
         setupTesters();
-        createFileReport("FileReport.csv");
+        Date date = new Date();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        int year = cal.get(Calendar.YEAR);
+        int month = cal.get(Calendar.MONTH);
+        int day = cal.get(Calendar.DAY_OF_MONTH);
+        createFileReport(year + "-" + month + "-" + day + "-" + "FileReport.csv");
         DockstoreTool dockstoreTool = null;
         try {
             dockstoreTool = containersApi.getPublishedContainerByToolPath(toolName);
@@ -248,7 +256,13 @@ public class Client {
             setupClientEnvironment();
             setupTesters();
             List<Tool> tools = getVerifiedTools();
-            createResults("Report.csv");
+            Date date = new Date();
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(date);
+            int year = cal.get(Calendar.YEAR);
+            int month = cal.get(Calendar.MONTH);
+            int day = cal.get(Calendar.DAY_OF_MONTH);
+            createResults(year + "-" + month + "-" + day + "-" + "Report.csv");
             if (!toolNames.isEmpty()) {
                 tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
             }
