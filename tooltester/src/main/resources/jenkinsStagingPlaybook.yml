@@ -66,7 +66,7 @@
       become: yes
       become_user: jenkins
       copy:
-        content: "token: test \nserver-url: https://staging.dockstore.org:8443"
+        content: "token: test \nserver-url: https://staging.dockstore.org:8443" # Contents shouldn't matter since they're local-launches
         dest: "{{jenkins_home.stdout}}/.dockstore/config"
         mode: 0555
 
