@@ -33,7 +33,7 @@ public class JenkinsJobTest {
     }
 
     @Test
-    public void PipelineTestJobIT() {
+    public void pipelineTestJobIT() {
         final String suffix = "id-tag";
         client.setupTesters();
         Assert.assertTrue("Jenkins server can not be reached", client.getPipelineTester().getJenkins() != null);

@@ -1,9 +1,10 @@
 package io.dockstore.tooltester.helper;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.net.URL;
+
+import org.apache.commons.io.IOUtils;
 
 /**
  * @author gluu
@@ -15,12 +16,14 @@ public class TinyUrl {
 
     public static String getTinyUrl(String longUrl) {
         String tinyUrlLookup = TINY_URL + longUrl;
+        InputStream in = null;
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(new URL(tinyUrlLookup).openStream(), "UTF-8"));
-            return reader.readLine();
+            in = new URL(tinyUrlLookup).openStream();
+            return IOUtils.toString(in);
         } catch (IOException e) {
-            e.printStackTrace();
-            return longUrl;
+            throw new RuntimeException(e);
+        } finally {
+            IOUtils.closeQuietly(in);
         }
     }
 }

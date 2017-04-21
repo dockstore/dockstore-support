@@ -23,6 +23,8 @@ import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -121,7 +123,12 @@ public class Client {
                     if (commandReport.help) {
                         jc.usage("report");
                     } else {
-                        client.handleReport(commandReport.tools);
+                        if (commandReport.all || !commandReport.tools.isEmpty()) {
+                            client.handleReport(commandReport.tools);
+                        } else {
+                            LOG.warn("You must specify --all or --tool");
+                            jc.usage("report");
+                        }
                     }
                     break;
                 case "enqueue":
@@ -170,7 +177,13 @@ public class Client {
     private void handleFileReport(String toolName) {
         setupClientEnvironment();
         setupTesters();
-        createFileReport("FileReport.csv");
+        Date date = new Date();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        int year = cal.get(Calendar.YEAR);
+        int month = cal.get(Calendar.MONTH);
+        int day = cal.get(Calendar.DAY_OF_MONTH);
+        createFileReport(year + "-" + month + "-" + day + "-" + "FileReport.csv");
         DockstoreTool dockstoreTool = null;
         try {
             dockstoreTool = containersApi.getPublishedContainerByToolPath(toolName);
@@ -243,7 +256,13 @@ public class Client {
             setupClientEnvironment();
             setupTesters();
             List<Tool> tools = getVerifiedTools();
-            createResults("Report.csv");
+            Date date = new Date();
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(date);
+            int year = cal.get(Calendar.YEAR);
+            int month = cal.get(Calendar.MONTH);
+            int day = cal.get(Calendar.DAY_OF_MONTH);
+            createResults(year + "-" + month + "-" + day + "-" + "Report.csv");
             if (!toolNames.isEmpty()) {
                 tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
             }
@@ -490,14 +509,14 @@ public class Client {
                             Long runtime = 0L;
 
                             String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
+
+                            String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
+                            String logURL = TinyUrl.getTinyUrl(serverUrl+nodeLogURI);
                             Gson gson = new Gson();
+                            result += " See " + logURL;
                             PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
                             for (PipelineStepImpl pipelineStep : pipelineSteps) {
                                 runtime += pipelineStep.getDurationInMillis();
-                                if (!state.equals("RUNNING") && pipelineStep.getResult().equals("FAILURE")) {
-                                    result += " See " + TinyUrl.getTinyUrl(serverUrl + pipelineStep.getActions().get(0).getLinks().getSelf().getHref()
-                                            .replaceFirst("^/", ""));
-                                }
                             }
                             String date = pipelineNode.getStartTime();
                             String duration;
