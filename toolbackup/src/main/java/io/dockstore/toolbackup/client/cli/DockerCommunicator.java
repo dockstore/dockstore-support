@@ -33,11 +33,10 @@ class DockerCommunicator {
         try {
             return dockerClient.inspectImage(img).size();
         } catch (DockerException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Could not inspect: " + img + " because of docker");
         } catch (InterruptedException e) {
-            throw new RuntimeException("Could not inspect: " + img + " in its entirety");
+            throw new RuntimeException("Could not inspect: " + img + " as it was interrupted");
         }
-        return 0;
     }
 
     boolean pullDockerImage(String img) {
@@ -68,6 +67,16 @@ class DockerCommunicator {
             throw new RuntimeException("Could not save: " + img + " in its entirety");
         }
         return  inputStream;
+    }
+
+    void removeDockerImage(String img) {
+        try {
+            dockerClient.removeImage(img);
+        } catch (DockerException e) {
+            throw new RuntimeException("Could not remove: " + img + " because of docker");
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Program was interrupted while removing: " + img);
+        }
     }
 
     void closeDocker() {

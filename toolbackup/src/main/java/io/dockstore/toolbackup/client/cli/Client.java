@@ -63,8 +63,7 @@ public class Client {
     public static final int COMMAND_ERROR = 10;         // Command is not successful, but not due to errors
 
     // retrieves only the bamstats tool as shown in https://dockstore.org/docs/getting-started-with-docker
-    private static final int FROM_INDEX = 4;
-    private static final int TO_INDEX = 5;
+    private static final String BAMSTATS = "quay.io/briandoconnor/dockstore-tool-bamstats";
 
     private static final LocalDateTime TIME_NOW = LocalDateTime.now();
     private static String stringTime;
@@ -120,6 +119,16 @@ public class Client {
         return tools;
     }
 
+    private List<Tool> getTestTool(String id) {
+        List<Tool> tools = new ArrayList<>();
+        try {
+            tools.add(ga4ghApi.toolsIdGet(id));
+        } catch (ApiException e) {
+            ErrorExit.exceptionMessage(e, "Could not retrieve dockstore tool: " + id, API_ERROR);
+        }
+        return tools;
+    }
+
     private List<File> getModifiedFiles(String key, final Map<String, Long> keysToSizes, File file) {
         List<File> modifiedFiles = new ArrayList<>();
         for(Map.Entry<String, Long> entry: keysToSizes.entrySet()) {
@@ -156,9 +165,11 @@ public class Client {
     private void run(String baseDir, String bucketName, String keyPrefix, boolean isTestMode) throws UnknownHostException {
         // use swagger-generated classes to talk to dockstore
         setupClientEnvironment();
-        List<Tool> tools = getTools();
+        List<Tool> tools = null;
         if(isTestMode) {
-            tools = tools.subList(FROM_INDEX, TO_INDEX);
+            tools = getTestTool(BAMSTATS);
+        } else {
+            tools = getTools();
         }
 
         final S3Communicator s3Communicator= new S3Communicator("dockstore", endpoint);
@@ -178,7 +189,8 @@ public class Client {
         // NOTE: cannot invoke getFilesForUpload again as sometimes the report size may be exactly the same but the contents will be different
         forUpload.addAll(FileUtils.listFiles(new File(reportDir), new String[] { "html", "JSON", "json" }, false));
 
-        out.println("Files to be uploaded: " + Arrays.toString(forUpload.toArray()));
+        // show all files to be uploaded to cloud
+        // out.println("Files to be uploaded: " + Arrays.toString(forUpload.toArray()));
 
         s3Communicator.uploadDirectory(bucketName, keyPrefix, baseDir, forUpload, true);
 
@@ -279,6 +291,8 @@ public class Client {
 
                 versionsDetails.add(new VersionDetail(versionTag, metaVersion, dockerSize, imgFile.length(), stringTime, true, imgFile.getAbsolutePath()));
             }
+
+            dockerCommunicator.removeDockerImage(img);
 
         } else {
             // non-existent image
