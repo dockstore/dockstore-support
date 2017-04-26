@@ -126,6 +126,8 @@ public class ClientTest {
     @Test
     public void saveToLocal_noChange() throws Exception {
         DockerCommunicator dockerCommunicator = new DockerCommunicator();
+
+        dockerCommunicator.pullDockerImage(IMG);
         setUpMap(0, dockerCommunicator);
 
         System.setOut(new PrintStream(outputContent));
