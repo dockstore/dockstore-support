@@ -43,10 +43,10 @@ import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.TimeHelper;
+import io.dockstore.tooltester.helper.TinyUrl;
 import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.report.FileReport;
 import io.dockstore.tooltester.report.StatusReport;
-import io.dockstore.tooltester.helper.TinyUrl;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
@@ -181,7 +181,8 @@ public class Client {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
         int year = cal.get(Calendar.YEAR);
-        int month = cal.get(Calendar.MONTH);
+        // Incrementing calendar month by 1 because it starts from 0
+        int month = cal.get(Calendar.MONTH) + 1;
         int day = cal.get(Calendar.DAY_OF_MONTH);
         createFileReport(year + "-" + month + "-" + day + "-" + "FileReport.csv");
         DockstoreTool dockstoreTool = null;
@@ -260,7 +261,8 @@ public class Client {
             Calendar cal = Calendar.getInstance();
             cal.setTime(date);
             int year = cal.get(Calendar.YEAR);
-            int month = cal.get(Calendar.MONTH);
+            // Incrementing calendar month by 1 because it starts from 0
+            int month = cal.get(Calendar.MONTH) + 1;
             int day = cal.get(Calendar.DAY_OF_MONTH);
             createResults(year + "-" + month + "-" + day + "-" + "Report.csv");
             if (!toolNames.isEmpty()) {
@@ -511,7 +513,7 @@ public class Client {
                             String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
 
                             String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
-                            String logURL = TinyUrl.getTinyUrl(serverUrl+nodeLogURI);
+                            String logURL = TinyUrl.getTinyUrl(serverUrl + nodeLogURI);
                             Gson gson = new Gson();
                             result += " See " + logURL;
                             PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
