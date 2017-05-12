@@ -3,6 +3,7 @@ package io.dockstore.tooltester.helper;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -12,12 +13,28 @@ import java.util.concurrent.TimeUnit;
  * @since 10/02/17
  */
 public class TimeHelper {
-    private static final double MILLISECONDSPERMINUTE = 60000;
-    private static final long MINUTESPERHOUR = 60;
+    private static final double MILLISECONDS_PER_MINUTE = 60000;
+    private static final long MINUTES_PER_HOUR = 60;
+
+    /**
+     * Generates prefix for the report name
+     *
+     * @return the prefix for the report names based on the current date and time
+     */
+    public static String getDateFilePrefix() {
+        Date date = new Date();
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        int year = cal.get(Calendar.YEAR);
+        // Incrementing calendar month by 1 because it starts from 0
+        int month = cal.get(Calendar.MONTH) + 1;
+        int day = cal.get(Calendar.DAY_OF_MONTH);
+        return year + "-" + month + "-" + day + "-";
+    }
 
     public static String durationToString(long millis) {
-        double minutes = (double)millis / MILLISECONDSPERMINUTE;
-        long roundedMinutes = (long)Math.ceil(minutes) % MINUTESPERHOUR;
+        double minutes = (double)millis / MILLISECONDS_PER_MINUTE;
+        long roundedMinutes = (long)Math.ceil(minutes) % MINUTES_PER_HOUR;
         if (!(roundedMinutes > 0)) {
             System.out.print(millis);
         }
