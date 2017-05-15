@@ -23,8 +23,6 @@ import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,10 +41,10 @@ import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.TimeHelper;
+import io.dockstore.tooltester.helper.TinyUrl;
 import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.report.FileReport;
 import io.dockstore.tooltester.report.StatusReport;
-import io.dockstore.tooltester.helper.TinyUrl;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
@@ -177,13 +175,8 @@ public class Client {
     private void handleFileReport(String toolName) {
         setupClientEnvironment();
         setupTesters();
-        Date date = new Date();
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        int year = cal.get(Calendar.YEAR);
-        int month = cal.get(Calendar.MONTH);
-        int day = cal.get(Calendar.DAY_OF_MONTH);
-        createFileReport(year + "-" + month + "-" + day + "-" + "FileReport.csv");
+        String prefix = TimeHelper.getDateFilePrefix();
+        createFileReport(prefix + "FileReport.csv");
         DockstoreTool dockstoreTool = null;
         try {
             dockstoreTool = containersApi.getPublishedContainerByToolPath(toolName);
@@ -256,13 +249,8 @@ public class Client {
             setupClientEnvironment();
             setupTesters();
             List<Tool> tools = getVerifiedTools();
-            Date date = new Date();
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(date);
-            int year = cal.get(Calendar.YEAR);
-            int month = cal.get(Calendar.MONTH);
-            int day = cal.get(Calendar.DAY_OF_MONTH);
-            createResults(year + "-" + month + "-" + day + "-" + "Report.csv");
+            String prefix = TimeHelper.getDateFilePrefix();
+            createResults(prefix + "Report.csv");
             if (!toolNames.isEmpty()) {
                 tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
             }
@@ -511,7 +499,7 @@ public class Client {
                             String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
 
                             String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
-                            String logURL = TinyUrl.getTinyUrl(serverUrl+nodeLogURI);
+                            String logURL = TinyUrl.getTinyUrl(serverUrl + nodeLogURI);
                             Gson gson = new Gson();
                             result += " See " + logURL;
                             PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);

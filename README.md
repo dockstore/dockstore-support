@@ -1,9 +1,9 @@
-[![Coverage Status](https://coveralls.io/repos/github/ga4gh/dockstore-support/badge.svg?branch=feature%2Fsaver)](https://coveralls.io/github/ga4gh/dockstore-support?branch=feature%2Fsaver)
-[![Build Status](https://travis-ci.org/ga4gh/dockstore-support.svg?branch=feature%2Fsaver)](https://travis-ci.org/ga4gh/dockstore-support)
+[![Coverage Status](https://coveralls.io/repos/github/ga4gh/dockstore-support/badge.svg?branch=develop)](https://coveralls.io/github/ga4gh/dockstore-support?branch=feature%2Fsaver)
+[![Build Status](https://travis-ci.org/ga4gh/dockstore-support.svg?branch=develop)](https://travis-ci.org/ga4gh/dockstore-support)
 
 # dockstore-support
 
-This repo is a sandbox for support code for running, testing workflows on Dockstore, and indexing GA4GH tool registries. 
+This repo is a sandbox for support code for running, testing workflows on Dockstore, and indexing GA4GH tool registries.
 Send issues to the main dockstore repo.
 
 ## Prerequisites
@@ -11,7 +11,7 @@ Send issues to the main dockstore repo.
 Your environment needs to have the following items:
 
 * [Maven](https://maven.apache.org/)
-* [Docker](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-16-04) 
+* [Docker](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-16-04)
 
 Before you can run the script, you must generate the jar files.
 ```
@@ -62,7 +62,7 @@ This is the script to backup dockstore images from quay.io into Openstack
 ```
 java -jar target/client.jar --bucket-name clientbucket --key-prefix client --local-dir /home/ubuntu/clientEx --test-mode-activate true
 ```
-We are running with test mode activated which means we will not download all dockstore images. The dockstore images targeted will be stored on Openstack in the bucket <b>clientbucket</b> and in the key-prefix <b>client</b> within the bucket. The bucket and key-prefix need not have been created. The directory, <b>/home/ubuntu/clientEx</b> will act as temporary storage and it need not to have already been created. 
+We are running with test mode activated which means we will not download all dockstore images. The dockstore images targeted will be stored on Openstack in the bucket <b>clientbucket</b> and in the key-prefix <b>client</b> within the bucket. The bucket and key-prefix need not have been created. The directory, <b>/home/ubuntu/clientEx</b> will act as temporary storage and it need not to have already been created.
 
 ### How it Works
 
@@ -100,7 +100,7 @@ Client will pull all the GA4GH tools from the server-url and save them locally. 
   }
 ]
 ```
-Here is an example map.JSON file. It keeps track of tools and their versions and meta-versions. It also contains information about an image's size on docker and its file size when saved locally. If an image was not able to be pulled, its <b>valid</b> field would be false. The <b>timesOfExecution</b> tracks the times the script has executed and the version of this tool's version has remained the same. The <b>path</b> refers to the saved image's local file path. If the image changes, as shown here, there would be a new version object. If the modified image is valid, the old version will have an empty path. 
+Here is an example map.JSON file. It keeps track of tools and their versions and meta-versions. It also contains information about an image's size on docker and its file size when saved locally. If an image was not able to be pulled, its <b>valid</b> field would be false. The <b>timesOfExecution</b> tracks the times the script has executed and the version of this tool's version has remained the same. The <b>path</b> refers to the saved image's local file path. If the image changes, as shown here, there would be a new version object. If the modified image is valid, the old version will have an empty path.
 
 ### HTML Report
 
