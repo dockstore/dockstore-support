@@ -49,3 +49,14 @@ Last tested with ansible 2.2.1.0
     sudo usermod -aG docker jenkins
 9. Put the master's public key into the authorized_keys file of jenkins
 10. Check and see if dockstore command and docker command is working correctly.
+
+# Running tooltester:
+1. Check .tooltester to see if the 'server-url' needs to be changed
+2. Modify the playbook on ubuntu@JenkinsMaster to have the right dockstore version
+3. Modify the apt and pip dependencies if needed
+4. Run the playbook on ubuntu@JenkinsMaster
+5. 'sudo -u jenkins -i' and then 'dockstore' to confirm the right version
+6. Copy the playbook on JenkinsMaster to the ubuntu@JenkinsSlaves
+7. Run the playbook on ubuntu@JenkinsSlaves
+8. 'sudo -u jenkins -i' and then 'dockstore' to confirm the right version
+9. Configure the PipelineTest's currentBuild.display name to the Dockstore version that's going to be ran.
