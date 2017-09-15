@@ -277,11 +277,11 @@ public abstract class JenkinsHelper {
         return buildId;
     }
 
-    public String getCrumb() {
+    private String getCrumb() {
         return crumb;
     }
 
-    public void setCrumb(String crumb) {
+    private void setCrumb(String crumb) {
         this.crumb = crumb;
     }
 }
