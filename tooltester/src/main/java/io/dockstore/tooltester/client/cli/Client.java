@@ -50,11 +50,15 @@ import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
 import io.swagger.client.api.ContainersApi;
 import io.swagger.client.api.GAGHApi;
+import io.swagger.client.api.WorkflowsApi;
 import io.swagger.client.model.DockstoreTool;
 import io.swagger.client.model.SourceFile;
 import io.swagger.client.model.Tag;
 import io.swagger.client.model.Tool;
+import io.swagger.client.model.ToolClass;
 import io.swagger.client.model.ToolVersion;
+import io.swagger.client.model.Workflow;
+import io.swagger.client.model.WorkflowVersion;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.io.IOUtils;
@@ -76,6 +80,7 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
     private ContainersApi containersApi;
+    private WorkflowsApi workflowsApi;
     private GAGHApi ga4ghApi;
     private StatusReport report;
     private FileReport fileReport;
@@ -362,6 +367,7 @@ public class Client {
         defaultApiClient.setBasePath(serverUrl);
 
         this.containersApi = new ContainersApi(defaultApiClient);
+        this.workflowsApi = new WorkflowsApi(defaultApiClient);
         setGa4ghApi(new GAGHApi(defaultApiClient));
         defaultApiClient.setDebugging(DEBUG.get());
     }
@@ -398,7 +404,7 @@ public class Client {
     //            LongStream longStream = tools.parallelStream().filter(Tool::getVerified)
     //                    .mapToLong(tool -> tool.getVersions().parallelStream().filter(ToolVersion::getVerified).count());
     //            System.out.println("Number of versions of tools to test on Dockstore (currently): " + longStream.sum());
-    //            //            toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testTool).reduce(true, Boolean::logicalAnd);
+    //            //            toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testDockstoreTool).reduce(true, Boolean::logicalAnd);
     //            //            System.out.println("Successful \"testing\" of tools found on Dockstore: " + toolTestResult);
     //        } catch (ApiException e) {
     //            exceptionMessage(e, "", API_ERROR);
@@ -451,10 +457,16 @@ public class Client {
         List<ToolVersion> toolVersions = tool.getVersions();
         for (ToolVersion toolversion : toolVersions) {
             String name = toolversion.getId();
-            name = name.replace("/", "-");
-            name = name.replace(":", "-");
+            name = cleanSuffx(name);
             pipelineTester.createTest(name);
         }
+    }
+
+    private String cleanSuffx(String name) {
+        name = name.replace("/", "-");
+        name = name.replace(":", "-");
+        name = name.replace("#", "-");
+        return name;
     }
 
     /**
@@ -471,8 +483,7 @@ public class Client {
                 String tag = toolversion.getName();
 
                 String suffix = id;
-                suffix = suffix.replace("/", "-");
-                suffix = suffix.replace(":", "-");
+                suffix = cleanSuffx(suffix);
                 if (pipelineTester.getJenkinsJob(suffix) == null) {
                     LOG.info("Could not get job: " + suffix);
                 } else {
@@ -591,10 +602,13 @@ public class Client {
     }
 
     private List<Tool> getTools(String toolname) {
-        List<Tool> tools = null;
+        List<Tool> tools = new ArrayList<>();
         GAGHApi ga4ghApi = getGa4ghApi();
         try {
-            tools = ga4ghApi.toolsGet(toolname, null, null, null, null, null, null, null, null);
+            Tool tool = ga4ghApi.toolsIdGet(toolname);
+            if (tool != null) {
+                tools.add(tool);
+            }
 
         } catch (ApiException e) {
             exceptionMessage(e, "", API_ERROR);
@@ -617,6 +631,116 @@ public class Client {
         return verifiedTools;
     }
 
+    private Map<String, String> constructParameterMap(String url, String referenceName, String entryType, String dockerfilePath,
+            String parameterPath, String descriptorPath) {
+        Map<String, String> parameter = new HashMap<>();
+        parameter.put("URL", url);
+        parameter.put("ParameterPath", parameterPath);
+        parameter.put("DescriptorPath", descriptorPath);
+        parameter.put("Tag", referenceName);
+        parameter.put("EntryType", entryType);
+        parameter.put("DockerfilePath", dockerfilePath);
+        return parameter;
+    }
+
+    /**
+     * test the workflow by
+     * 1) Running available parameter files
+     * 2) Storing results for each workflow as it finishes
+     *
+     * @param tool The tool to test
+     * @return boolean  Returns true
+     */
+    private boolean testWorkflow(Tool tool) {
+        Workflow workflow = null;
+        String toolId = tool.getId();
+        String path = toolId.replace("#workflow/", "");
+        try {
+            workflow = workflowsApi.getPublishedWorkflowByPath(path);
+        } catch (ApiException e) {
+            exceptionMessage(e, "Could not get published containers using the workflowsApi API", API_ERROR);
+        }
+        if (workflow == null) {
+            return false;
+        }
+        List<WorkflowVersion> versions = workflow.getWorkflowVersions();
+        for (WorkflowVersion version : versions) {
+            if (!version.getValid()) {
+                continue;
+            }
+            String url = workflow.getGitUrl();
+            url = url != null ? url.replace("git@github.com:", "https://github.com/") : null;
+            String dockerfilePath = "";
+            Long containerId = workflow.getId();
+            String tagName = version.getReference();
+            dockerfilePath = dockerfilePath.replaceFirst("^/", "");
+            String name = toolId + "-" + tagName;
+            name = cleanSuffx(name);
+            List<String> descriptorList = new ArrayList<>();
+            List<String> parameterList = new ArrayList<>();
+            String descriptorType = workflow.getDescriptorType();
+            List<SourceFile> testParameterFiles;
+            SourceFile descriptor;
+            try {
+                switch (descriptorType) {
+                case "cwl":
+                    descriptor = workflowsApi.cwl(containerId, tagName);
+                    break;
+                case "wdl":
+                    descriptor = workflowsApi.wdl(containerId, tagName);
+                    break;
+                default:
+                    LOG.info("Unknown descriptor, skipping");
+                    continue;
+                }
+                String descriptorPath = descriptor.getPath().replaceFirst("^/", "");
+                testParameterFiles = workflowsApi.getTestParameterFiles(containerId, tagName);
+                testParameterFiles.stream().map(testParameterFile -> testParameterFile.getPath().replaceFirst("^/", "")).forEach(parameterPath -> {
+                    parameterList.add(parameterPath);
+                    descriptorList.add(descriptorPath);
+                });
+            } catch (ApiException e) {
+                exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the workflows API", API_ERROR);
+            }
+
+            Map<String, String> parameter = constructParameterMap(url, tagName, "workflow", dockerfilePath,
+                    parameterList.stream().collect(Collectors.joining(" ")), descriptorList.stream().collect(Collectors.joining(" ")));
+            if (!pipelineTester.isRunning(name)) {
+                pipelineTester.runTest(name, parameter);
+            } else {
+                LOG.info("Job " + name + " is already running");
+            }
+        }
+        return true;
+    }
+
+    private boolean testTool(Tool tool) {
+        ToolClass toolClass = tool.getToolclass();
+        if (toolClass == null) {
+            LOG.error("toolclass not found");
+            return false;
+        } else {
+            String name = toolClass.getName();
+            if (name == null) {
+                LOG.error("toolclass name not found");
+                return false;
+            } else {
+                switch (name) {
+                case "CommandLineTool":
+                    testDockstoreTool(tool);
+                    break;
+                case "Workflow":
+                    testWorkflow(tool);
+                    break;
+                default:
+                    LOG.error("Unrecognized toolclass name.  Expected 'CommandLineTool' or 'Workflow'.  Got " + name);
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     /**
      * test the tool by
      * 1) Running available parameter files
@@ -630,7 +754,7 @@ public class Client {
      * @param tool The tool to test
      * @return boolean  Returns true
      */
-    private boolean testTool(Tool tool) {
+    private boolean testDockstoreTool(Tool tool) {
         DockstoreTool dockstoreTool = null;
         try {
             dockstoreTool = containersApi.getPublishedContainerByToolPath(tool.getId());
@@ -661,10 +785,9 @@ public class Client {
             assert dockerfilePath != null;
             dockerfilePath = dockerfilePath.replaceFirst("^/", "");
             String name = id;
-            name = name.replace("/", "-");
-            name = name.replace(":", "-");
+            name = cleanSuffx(name);
             parameter.put("Tag", referenceName);
-
+            parameter.put("EntryType", "tool");
             parameter.put("DockerfilePath", dockerfilePath);
             StringBuilder descriptorStringBuilder = new StringBuilder();
             StringBuilder parameterStringBuilder = new StringBuilder();
