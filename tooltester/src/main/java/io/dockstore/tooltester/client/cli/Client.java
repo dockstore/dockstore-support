@@ -39,6 +39,7 @@ import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.JobWithDetails;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
+import io.dockstore.tooltester.helper.GA4GHHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.helper.TinyUrl;
@@ -632,7 +633,7 @@ public class Client {
     }
 
     private Map<String, String> constructParameterMap(String url, String referenceName, String entryType, String dockerfilePath,
-            String parameterPath, String descriptorPath) {
+            String parameterPath, String descriptorPath, String synapseCache) {
         Map<String, String> parameter = new HashMap<>();
         parameter.put("URL", url);
         parameter.put("ParameterPath", parameterPath);
@@ -640,6 +641,7 @@ public class Client {
         parameter.put("Tag", referenceName);
         parameter.put("EntryType", entryType);
         parameter.put("DockerfilePath", dockerfilePath);
+        parameter.put("SynapseCache", synapseCache);
         return parameter;
     }
 
@@ -664,10 +666,8 @@ public class Client {
             return false;
         }
         List<WorkflowVersion> versions = workflow.getWorkflowVersions();
-        for (WorkflowVersion version : versions) {
-            if (!version.getValid()) {
-                continue;
-            }
+        List<WorkflowVersion> validVersions = versions.parallelStream().filter(version -> version.getValid()).collect(Collectors.toList());
+        for (WorkflowVersion version : validVersions) {
             String url = workflow.getGitUrl();
             url = url != null ? url.replace("git@github.com:", "https://github.com/") : null;
             String dockerfilePath = "";
@@ -702,9 +702,9 @@ public class Client {
             } catch (ApiException e) {
                 exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the workflows API", API_ERROR);
             }
-
+            String synapseCache = GA4GHHelper.mapRepositoryToCache(workflow.getPath());
             Map<String, String> parameter = constructParameterMap(url, tagName, "workflow", dockerfilePath,
-                    parameterList.stream().collect(Collectors.joining(" ")), descriptorList.stream().collect(Collectors.joining(" ")));
+                    parameterList.stream().collect(Collectors.joining(" ")), descriptorList.stream().collect(Collectors.joining(" ")), synapseCache);
             if (!pipelineTester.isRunning(name)) {
                 pipelineTester.runTest(name, parameter);
             } else {
