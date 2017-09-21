@@ -1,6 +1,6 @@
 currentBuild.displayName = "1.2.8"
 def buildJob = [:]
-if (params.Entry == "tool") {
+if ("tool".equalsIgnoreCase(params.Entrytool)) {
     buildJob["Build " + params.DockerfilePath] = transformIntoDockerfileStep()
 }
 def ParameterPaths = params.ParameterPath.split(' ')
