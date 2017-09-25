@@ -394,26 +394,6 @@ public class Client {
     }
 
     /**
-     * do the actual work here
-     */
-    //    private void run() {
-    //        setupClientEnvironment();
-    //        boolean toolTestResult = false;
-    //        /** use swagger-generated classes to talk to dockstore */
-    //        try {
-    //            final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
-    //            System.out.println("Number of tools on Dockstore: " + tools.size());
-    //            LongStream longStream = tools.parallelStream().filter(Tool::getVerified)
-    //                    .mapToLong(tool -> tool.getVersions().parallelStream().filter(ToolVersion::getVerified).count());
-    //            System.out.println("Number of versions of tools to test on Dockstore (currently): " + longStream.sum());
-    //            //            toolTestResult = tools.parallelStream().filter(Tool::getVerified).map(this::testDockstoreTool).reduce(true, Boolean::logicalAnd);
-    //            //            System.out.println("Successful \"testing\" of tools found on Dockstore: " + toolTestResult);
-    //        } catch (ApiException e) {
-    //            exceptionMessage(e, "", API_ERROR);
-    //        }
-    //    }
-
-    /**
      * This function counts the number of tests that need to be created
      *
      * @param verifiedTool The verified tool
