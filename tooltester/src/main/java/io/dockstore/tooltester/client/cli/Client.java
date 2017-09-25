@@ -40,6 +40,7 @@ import com.offbytwo.jenkins.model.JobWithDetails;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
 import io.dockstore.tooltester.helper.GA4GHHelper;
+import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.helper.TinyUrl;
@@ -458,16 +459,9 @@ public class Client {
         List<ToolVersion> toolVersions = tool.getVersions();
         for (ToolVersion toolversion : toolVersions) {
             String name = toolversion.getId();
-            name = cleanSuffx(name);
+            name = JenkinsHelper.cleanSuffx(name);
             pipelineTester.createTest(name);
         }
-    }
-
-    private String cleanSuffx(String name) {
-        name = name.replace("/", "-");
-        name = name.replace(":", "-");
-        name = name.replace("#", "-");
-        return name;
     }
 
     /**
@@ -484,7 +478,7 @@ public class Client {
                 String tag = toolversion.getName();
 
                 String suffix = id;
-                suffix = cleanSuffx(suffix);
+                suffix = JenkinsHelper.cleanSuffx(suffix);
                 if (pipelineTester.getJenkinsJob(suffix) == null) {
                     LOG.info("Could not get job: " + suffix);
                 } else {
@@ -675,7 +669,7 @@ public class Client {
             String tagName = version.getReference();
             dockerfilePath = dockerfilePath.replaceFirst("^/", "");
             String name = toolId + "-" + tagName;
-            name = cleanSuffx(name);
+            name = JenkinsHelper.cleanSuffx(name);
             List<String> descriptorList = new ArrayList<>();
             List<String> parameterList = new ArrayList<>();
             String descriptorType = workflow.getDescriptorType();
@@ -785,7 +779,7 @@ public class Client {
             assert dockerfilePath != null;
             dockerfilePath = dockerfilePath.replaceFirst("^/", "");
             String name = id;
-            name = cleanSuffx(name);
+            name = JenkinsHelper.cleanSuffx(name);
             parameter.put("Tag", referenceName);
             parameter.put("EntryType", "tool");
             parameter.put("DockerfilePath", dockerfilePath);

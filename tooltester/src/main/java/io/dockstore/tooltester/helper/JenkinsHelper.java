@@ -52,6 +52,11 @@ public abstract class JenkinsHelper {
         setupJenkins();
     }
 
+    public static String cleanSuffx(String name) {
+        name = name.replaceAll("[/:#]", "-");
+        return name;
+    }
+
     public JenkinsServer getJenkins() {
         return jenkins;
     }
