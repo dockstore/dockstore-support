@@ -5,7 +5,7 @@ Last tested with ansible 2.2.1.0
 3.  Create a pipeline called PipelineTest
 4.  Copy the contents of resources/PipelineTest.groovy into the Pipeline Script textbox
 5.  Check the checkbox:  "This project is parameterized"
-6.  Create 5 String Parameters with the names: "URL", "Tag", "DescriptorPath", "ParameterPath", "DockerfilePath"
+6.  Create the String Parameters mentioned in the constructParameterMap(...) function
 7.  Install ansible
     sudo apt-get install software-properties-common
     sudo apt-add-repository ppa:ansible/ansible

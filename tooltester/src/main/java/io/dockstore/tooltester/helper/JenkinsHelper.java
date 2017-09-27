@@ -52,6 +52,11 @@ public abstract class JenkinsHelper {
         setupJenkins();
     }
 
+    public static String cleanSuffx(String name) {
+        name = name.replaceAll("[/:#]", "-");
+        return name;
+    }
+
     public JenkinsServer getJenkins() {
         return jenkins;
     }
@@ -277,11 +282,11 @@ public abstract class JenkinsHelper {
         return buildId;
     }
 
-    public String getCrumb() {
+    private String getCrumb() {
         return crumb;
     }
 
-    public void setCrumb(String crumb) {
+    private void setCrumb(String crumb) {
         this.crumb = crumb;
     }
 }
