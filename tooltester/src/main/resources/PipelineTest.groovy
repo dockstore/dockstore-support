@@ -28,7 +28,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                 dir('target') {
                     sh 'git checkout ${Tag}'
                     if (synapseCache != "") {
-                        sh 's3cmd get --skip-existing --recursive s3://dockstore/test_files/ga4gh-dream/${SynapseCache}/'
+                        sh 's3cmd get --skip-existing --recursive s3://dockstore/test_files/${SynapseCache}/'
                     }
                     sh 'echo dockstore ${entryType} launch --local-entry ${descriptor} --json ${parameter} --script'
                     FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --json $parameter --script | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
