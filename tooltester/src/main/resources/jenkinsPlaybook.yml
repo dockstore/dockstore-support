@@ -29,26 +29,40 @@
       become: yes
       pip:
         name: setuptools
-        version: 24.0.3
+        version: 34.2.0
     - name: Install schema-salad
       become: yes
       pip:
         name: schema-salad
-        version: 1.18.20161005190847
+        version: 2.2.20170222151604
     - name: Install avro
       become: yes
       pip:
         name: avro
         version: 1.8.1
+    - name: Install ruamel.yaml
+      become: yes
+      pip:
+        name: ruamel.yaml
+        version: 0.12.4
+    - name: Install html5lib
+      become: yes
+      pip:
+        name: html5lib
     - name: Install cwltool
       become: yes
       pip:
         name: cwltool
-        version: 1.0.20161114152756
+        version: 1.0.20170217172322
+    - name: Install requests
+      become: yes
+      pip:
+        name: requests
+        version: 2.18.4
     - name: Download Dockstore
       become: yes
       get_url:
-        url: https://github.com/ga4gh/dockstore/releases/download/1.1.2/dockstore
+        url: https://github.com/ga4gh/dockstore/releases/download/1.2.10/dockstore
         dest: /usr/local/bin
         mode: a+rwx
     - name: echo $HOME
@@ -62,11 +76,15 @@
       file:
         path: "{{jenkins_home.stdout}}/.dockstore"
         state: directory
+    - name: Install s3cmd
+      become: yes
+      apt:
+        name: s3cmd
     - name: Write dockstore config file
       become: yes
       become_user: jenkins
       copy:
-        content: "token: test \nserver-url: https://dockstore.org:8443" # Contents shouldn't matter since they're local-launches
+        content: "token: test \nserver-url: https://staging.dockstore.org:8443"
         dest: "{{jenkins_home.stdout}}/.dockstore/config"
         mode: 0555
-
+                                                                                                                                                                       35,7          Top

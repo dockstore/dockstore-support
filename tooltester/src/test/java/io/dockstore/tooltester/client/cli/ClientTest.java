@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.beust.jcommander.ParameterException;
+import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.swagger.client.ApiException;
 import io.swagger.client.model.Tool;
@@ -223,6 +224,14 @@ public class ClientTest {
         String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa" };
         main(argv);
         assertReport();
+    }
+
+    @Test
+    public void testCleanSuffix() {
+        final String testSuffix1 = "quay.io/pancancer/pcawg-bwa";
+        final String testSuffix2 = "#workflow/pancancer/pcawg-bwa";
+        Assert.assertTrue(JenkinsHelper.cleanSuffx(testSuffix1).equals("quay.io-pancancer-pcawg-bwa"));
+        Assert.assertTrue(JenkinsHelper.cleanSuffx(testSuffix2).equals("-workflow-pancancer-pcawg-bwa"));
     }
 
     /**
