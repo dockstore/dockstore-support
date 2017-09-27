@@ -5,7 +5,7 @@ Last tested with ansible 2.2.1.0
 3.  Create a pipeline called PipelineTest
 4.  Copy the contents of resources/PipelineTest.groovy into the Pipeline Script textbox
 5.  Check the checkbox:  "This project is parameterized"
-6.  Create the String Parameters mentioned in the constructParameterMap(...) function
+6.  Create the String Parameters mentioned in the [constructParameterMap](https://github.com/ga4gh/dockstore-support/blob/897a2803fcd9c24d31fdd35fa55c2623c53cc50b/tooltester/src/main/java/io/dockstore/tooltester/client/cli/Client.java#L609) function
 7.  Install ansible
     sudo apt-get install software-properties-common
     sudo apt-add-repository ppa:ansible/ansible
