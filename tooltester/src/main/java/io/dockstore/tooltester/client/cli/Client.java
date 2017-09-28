@@ -81,6 +81,7 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
  */
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
+    private static boolean testVerified = true;
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private GAGHApi ga4ghApi;
@@ -329,6 +330,7 @@ public class Client {
         setupTesters();
         List<Tool> tools;
         if (unverifiedTool != null) {
+            testVerified = false;
             tools = getTools(unverifiedTool);
         } else {
             if (!source.isEmpty()) {
@@ -650,6 +652,9 @@ public class Client {
             return false;
         }
         List<WorkflowVersion> versions = workflow.getWorkflowVersions();
+        if (testVerified) {
+            versions.removeIf(version -> !version.getVerified());
+        }
         List<WorkflowVersion> validVersions = versions.parallelStream().filter(version -> version.getValid()).collect(Collectors.toList());
         for (WorkflowVersion version : validVersions) {
             String url = workflow.getGitUrl();
