@@ -1,7 +1,14 @@
 Last tested with ansible 2.2.1.0
 # Master Setup:
 1.  Install the Jenkins pipeline suite
-2.  Install all plugins filtered with "blue ocean"
+2.  Install these plugins:
+- Blue Ocean 1.0.1
+- build timeout plugin 1.18
+- build-name-setter 1.6.5
+- Pipeline 2.5
+- SSH Slaves plugin 1.13
+- Timestamper 1.8.8
+- Workspace Cleanup Plugin 0.32
 3.  Create a pipeline called PipelineTest
 4.  Copy the contents of resources/PipelineTest.groovy into the Pipeline Script textbox
 5.  Check the checkbox:  "This project is parameterized"
