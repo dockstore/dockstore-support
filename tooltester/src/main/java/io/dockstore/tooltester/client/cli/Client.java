@@ -141,11 +141,11 @@ public class Client {
                         jc.usage("enqueue");
                     } else {
                         if (commandEnqueue.all) {
-                            client.handleRunTests(commandEnqueue.tools, commandEnqueue.unverifiedTool);
+                            client.handleRunTests(commandEnqueue.tools, commandEnqueue.unverifiedTool, commandEnqueue.source);
                         } else {
 
                             if (commandEnqueue.tools != null || commandEnqueue.unverifiedTool != null) {
-                                client.handleRunTests(commandEnqueue.tools, commandEnqueue.unverifiedTool);
+                                client.handleRunTests(commandEnqueue.tools, commandEnqueue.unverifiedTool, commandEnqueue.source);
                             } else {
                                 jc.usage("enqueue");
                             }
@@ -291,9 +291,9 @@ public class Client {
     //    }
 
     /**
-     * Creates or updates the tests
+     * Creates or updates the tests. If tool is verified, will create tests for verified versions.  If tool is not verified, will create test for valid versions.
      *
-     * @param api       api to pull the tools from
+     * @param api       api to pull the tools from (currently not used because config file has it)
      * @param source    the testing group that verified the tools
      * @param execution the location to test the tools
      */
@@ -319,17 +319,27 @@ public class Client {
         }
     }
 
-    private void handleRunTests(List<String> toolNames, String unverifiedTool) {
+    /**
+     * Runs tests that should've been created.  If tool is verified, it will run tests for verified versions.  If tool is not verified, it will run tests for valid versions.
+     * @param toolNames
+     * @param unverifiedTool
+     */
+    private void handleRunTests(List<String> toolNames, String unverifiedTool, List<String> source) {
         setupClientEnvironment();
         setupTesters();
         List<Tool> tools;
         if (unverifiedTool != null) {
             tools = getTools(unverifiedTool);
         } else {
-            tools = getVerifiedTools();
+            if (!source.isEmpty()) {
+                tools = getVerifiedTools(source);
+            } else {
+                tools = getVerifiedTools();
+            }
             if (toolNames != null) {
                 tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
             }
+
         }
         for (Tool tool : tools) {
             testTool(tool);
@@ -848,6 +858,8 @@ public class Client {
         public String unverifiedTool;
         @Parameter(names = "--all", description = "Whether to test all tools or not")
         private Boolean all = false;
+        @Parameter(names = { "--source" }, description = "Tester Group")
+        private List<String> source = new ArrayList<>();
         @Parameter(names = "--tool", description = "The specific tools to test", variableArity = true)
         private List<String> tools;
         @Parameter(names = "--help", description = "Prints help for enqueue", help = true)
