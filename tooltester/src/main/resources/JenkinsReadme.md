@@ -5,58 +5,66 @@ Last tested with ansible 2.2.1.0
 3.  Create a pipeline called PipelineTest
 4.  Copy the contents of resources/PipelineTest.groovy into the Pipeline Script textbox
 5.  Check the checkbox:  "This project is parameterized"
-6.  Create the String Parameters mentioned in the [constructParameterMap](https://github.com/ga4gh/dockstore-support/blob/develop/tooltester/src/main/java/io/dockstore/tooltester/client/cli/Client.java#L609) function
+6.  Create the String Parameters mentioned in the [constructParameterMap](https://github.com/ga4gh/dockstore-support/blob/develop/tooltester/src/main/java/io/dockstore/tooltester/client/cli/Client.java#L609) function. These string parameters are used to configure the Jenkins pipelines to run the correct tool/workflow, versions, etc.
 7.  Install ansible
+```
     sudo apt-get install software-properties-common
     sudo apt-add-repository ppa:ansible/ansible
     sudo apt-get update
     sudo apt-get install -y ansible
+```
 8. Add to /etc/ansible/hosts with the following:
+```
     [local]
     localhost
+```
 9.  Get the jenkinsPlaybook.yml from src/main/java/io.dockstore.tooltester/resources
 10.  Add jenkins to the docker group
-    sudo usermod -aG docker jenkins
+    `sudo usermod -aG docker jenkins`
 11.  Execute the playbook
-    ansible-playbook jenkinsPlaybook.yml
+    `ansible-playbook jenkinsPlaybook.yml`
 12.  Log in as jenkins
-    sudo -u jenkins -i
+    `sudo -u jenkins -i`
 13. Create an ssh keypair for jenkins
-    ssh-keygen -t rsa
+    `ssh-keygen -t rsa`
 14. .ssh/id_rsa.pub is your public key
-15. Check and see if dockstore command docker command is working correctly.
+15. Check and see if `dockstore` command docker command is working correctly.
 
 
 # Slave Setup:
 1. Install ansible
+```
     sudo apt-get install software-properties-common
     sudo apt-add-repository ppa:ansible/ansible
     sudo apt-get update
     sudo apt-get install -y ansible
+```
 2. Add to /etc/ansible/hosts with the following:
+```
     [local]
     localhost
+```
 3. Download jenkinsPlaybook.yml
 4. Add the jenkins user
-    sudo useradd -m jenkins
+    `sudo useradd -m jenkins`
 5. Make a .ssh directory
-    sudo -u jenkins mkdir /home/jenkins/.ssh
+    `sudo -u jenkins mkdir /home/jenkins/.ssh`
 6. Create and edit the authorized_keys file
-    sudo -u jenkins vim /home/jenkins/.ssh/authorized_keys
+    `sudo -u jenkins vim /home/jenkins/.ssh/authorized_keys`
 7. Execute the playbook
-    ansible-playbook jenkinsPlaybook.yml
+    `ansible-playbook jenkinsPlaybook.yml`
 8. Give add jenkins to docker group
-    sudo usermod -aG docker jenkins
+    `sudo usermod -aG docker jenkins`
 9. Put the master's public key into the authorized_keys file of jenkins
-10. Check and see if dockstore command and docker command is working correctly.
+10. Check and see if `dockstore` command and docker command is working correctly.
 
 # Running tooltester:
 1. Check .tooltester to see if the 'server-url' needs to be changed
 2. Modify the playbook on ubuntu@JenkinsMaster to have the right dockstore version
 3. Modify the apt and pip dependencies if needed
 4. Run the playbook on ubuntu@JenkinsMaster
-5. 'sudo -u jenkins -i' and then 'dockstore' to confirm the right version
+5. `sudo -u jenkins -i` and then `dockstore` to confirm the right version
 6. Copy the playbook on JenkinsMaster to the ubuntu@JenkinsSlaves
 7. Run the playbook on ubuntu@JenkinsSlaves
-8. 'sudo -u jenkins -i' and then 'dockstore' to confirm the right version
-9. Configure the PipelineTest's currentBuild.display name to the Dockstore version that's going to be ran.
+8. `sudo -u jenkins -i` and then `dockstore` to confirm the right version
+9. Configure the PipelineTest's `currentBuild.display` name to the Dockstore version that's going to be ran.
