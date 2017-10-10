@@ -4,7 +4,7 @@ package io.dockstore.tooltester.helper;
  * @author gluu
  * @since 18/09/17
  */
-public class GA4GHHelper {
+public class S3CacheHelper {
     public static String mapRepositoryToCache(String repository) {
         switch(repository) {
         case "briandoconnor/dockstore-workflow-md5sum":
