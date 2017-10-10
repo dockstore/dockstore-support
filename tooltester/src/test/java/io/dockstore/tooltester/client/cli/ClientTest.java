@@ -105,6 +105,17 @@ public class ClientTest {
     }
 
     /**
+     * Test enqueue with specific verified source
+     */
+    @Test
+    public void enqueueToolSource() {
+        String[] argv = { "enqueue", "--all", "--source", "Docktesters group" };
+        main(argv);
+        Assert.assertTrue(systemOutRule.getLog().isEmpty());
+    }
+
+
+    /**
      * Test enqueue with default options
      */
     @Test
