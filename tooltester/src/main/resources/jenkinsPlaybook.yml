@@ -29,12 +29,12 @@
       become: yes
       pip:
         name: setuptools
-        version: 34.2.0
+        version: 36.5.0
     - name: Install schema-salad
       become: yes
       pip:
         name: schema-salad
-        version: 2.2.20170222151604
+        version: 2.6.20170806163416
     - name: Install avro
       become: yes
       pip:
@@ -44,7 +44,7 @@
       become: yes
       pip:
         name: ruamel.yaml
-        version: 0.12.4
+        version: 0.14.12
     - name: Install html5lib
       become: yes
       pip:
@@ -53,7 +53,7 @@
       become: yes
       pip:
         name: cwltool
-        version: 1.0.20170217172322
+        version: 1.0.20170828135420
     - name: Install requests
       become: yes
       pip:
