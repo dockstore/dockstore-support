@@ -39,7 +39,7 @@ import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.JobWithDetails;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
-import io.dockstore.tooltester.helper.GA4GHHelper;
+import io.dockstore.tooltester.helper.S3CacheHelper;
 import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.TimeHelper;
@@ -691,7 +691,7 @@ public class Client {
             } catch (ApiException e) {
                 exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the workflows API", API_ERROR);
             }
-            String synapseCache = GA4GHHelper.mapRepositoryToCache(workflow.getPath());
+            String synapseCache = S3CacheHelper.mapRepositoryToCache(workflow.getPath());
             Map<String, String> parameter = constructParameterMap(url, tagName, "workflow", dockerfilePath,
                     parameterList.stream().collect(Collectors.joining(" ")), descriptorList.stream().collect(Collectors.joining(" ")), synapseCache);
             if (!pipelineTester.isRunning(name)) {
