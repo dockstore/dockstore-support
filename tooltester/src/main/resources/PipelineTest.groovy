@@ -1,6 +1,6 @@
-currentBuild.displayName = "1.2.10"
+currentBuild.displayName = "1.3.0-beta.1"
 def buildJob = [:]
-if ("tool".equalsIgnoreCase(params.Entrytool)) {
+if ("tool".equalsIgnoreCase(params.EntryType)) {
     buildJob["Build " + params.DockerfilePath] = transformIntoDockerfileStep()
 }
 def ParameterPaths = params.ParameterPath.split(' ')
@@ -20,6 +20,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
         node {
             ws {
                 sh 'rm -rf /mnt/output/*'
+                sh 'rm -rf /media/large_volume/output/*'
                 step([$class: 'WsCleanup'])
                 sh 'dockstore --version --script || true'
                 sh 'pip list'
@@ -30,7 +31,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                     if (synapseCache != "") {
                         sh 's3cmd get --skip-existing --recursive s3://dockstore/test_files/${SynapseCache}/'
                     }
-                    sh 'echo dockstore ${entryType} launch --local-entry ${descriptor} --json ${parameter} --script'
+                    sh 'echo dockstore ${entryType} launch --local-entry ${descriptor} --yaml ${parameter} --script'
                     FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --json $parameter --script | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
                     sh "mv $FILE $parameter"
                     archiveArtifacts artifacts: parameter
