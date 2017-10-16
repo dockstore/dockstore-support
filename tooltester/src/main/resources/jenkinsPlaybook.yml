@@ -59,6 +59,11 @@
       pip:
         name: requests
         version: 2.18.4
+    - name: Install aws cli
+      become: yes
+      pip:
+        name: awscli
+        version: 1.11.170
     - name: Download Dockstore
       become: yes
       get_url:
