@@ -43,7 +43,7 @@ public class ClientTest {
     public static void setUp() {
         OptionParser parser = new OptionParser();
         final OptionSet parsed = parser.parse("");
-        client = new Client(parsed);
+        client = new Client();
         AWSConfig.generateCredentials();
     }
 

@@ -41,6 +41,7 @@
         <slf4j.version>1.7.22</slf4j.version>
         <cwlavro.version>1.0.6</cwlavro.version>
         <jackson.version>2.7.6</jackson.version>
+        <aws.version>1.11.222</aws.version>
     </properties>
 
     <organization>
@@ -317,14 +318,14 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
-            <version>1.11.83</version>
+            <version>${aws.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-core -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-core</artifactId>
-            <version>1.11.83</version>
+            <version>${aws.version}</version>
         </dependency>
 
 

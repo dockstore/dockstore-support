@@ -1,20 +1,21 @@
 package io.dockstore.toolbackup.client.cli;
 
-import com.amazonaws.ClientConfiguration;
+import java.io.File;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.S3ClientOptions;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.transfer.ObjectMetadataProvider;
 import com.amazonaws.services.s3.transfer.TransferManager;
-
-import java.io.File;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 
 import static io.dockstore.toolbackup.client.cli.Client.COMMAND_ERROR;
 import static java.lang.System.out;
@@ -24,25 +25,18 @@ import static java.lang.System.out;
  */
 class S3Communicator {
     private TransferManager transferManager;
-    private AmazonS3Client s3Client;
+    private AmazonS3 s3Client;
 
     S3Communicator() {
-        s3Client = new AmazonS3Client(new ProfileCredentialsProvider().getCredentials());
-        s3Client.setEndpoint("http://localhost:8080");
-        s3Client.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).disableChunkedEncoding().build());
-
-        transferManager = new TransferManager(s3Client);
+        s3Client = AmazonS3ClientBuilder.standard().withCredentials(new ProfileCredentialsProvider())
+            .withPathStyleAccessEnabled(true).withChunkedEncodingDisabled(true).withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("http://localhost:8080","")).build();
+        transferManager = TransferManagerBuilder.standard().withS3Client(s3Client).build();
     }
 
     S3Communicator(String section, String endpoint) {
-        ClientConfiguration opts = new ClientConfiguration();
-        opts.setSignerOverride("S3SignerType");
-        s3Client = new AmazonS3Client(new ProfileCredentialsProvider(section).getCredentials(),  opts);
-
-        s3Client.setEndpoint(endpoint);
-        s3Client.setS3ClientOptions(S3ClientOptions.builder().build());
-
-        transferManager = new TransferManager(s3Client);
+        s3Client = AmazonS3ClientBuilder.standard().withCredentials(new ProfileCredentialsProvider(section))
+            .withPathStyleAccessEnabled(true).withChunkedEncodingDisabled(true).withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint,"")).build();
+        transferManager = TransferManagerBuilder.standard().withS3Client(s3Client).build();
     }
 
     //-----------------------Report-----------------------
@@ -61,7 +55,7 @@ class S3Communicator {
 
     //-----------------------Upload-----------------------
     boolean doesBucketExist(String bucketName) {
-        return s3Client.doesBucketExist(bucketName);
+        return s3Client.doesBucketExistV2(bucketName);
     }
 
     void createBucket(String bucketName) {
@@ -72,21 +66,12 @@ class S3Communicator {
 
     Map<String, Long> getKeysToSizes(String bucketName, String prefix) {
         createBucket(bucketName);
-
         List<S3ObjectSummary> objectSummaries = s3Client.listObjects(bucketName, prefix).getObjectSummaries();
-        Map<String, Long> keysToSizes = objectSummaries.stream().collect(Collectors.toMap(S3ObjectSummary::getKey, S3ObjectSummary::getSize));
-
-        return keysToSizes;
+        return objectSummaries.stream().collect(Collectors.toMap(S3ObjectSummary::getKey, S3ObjectSummary::getSize));
     }
 
      private static ObjectMetadataProvider encrypt() {
-        ObjectMetadataProvider objectMetadataProvider = new ObjectMetadataProvider() {
-            @Override
-            public void provideObjectMetadata(File file, ObjectMetadata objectMetadata) {
-                objectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-            }
-        };
-        return objectMetadataProvider;
+         return (file, objectMetadata) -> objectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
      }
 
     void uploadDirectory(String bucketName, String keyPrefix, String dirPath, List<File> files, boolean encrypt) {

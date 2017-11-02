@@ -43,16 +43,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static java.lang.System.out;
 
 public class Client {
     private static final Logger ROOT_LOGGER = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-    private final OptionSet options;
     private ContainersApi containersApi;
     private UsersApi usersApi;
     private GAGHApi ga4ghApi;
-    private boolean isAdmin = false;
     private String endpoint;
 
     public static final int GENERIC_ERROR = 1;          // General error, not yet described by an error type
@@ -71,10 +70,6 @@ public class Client {
     private Map<String, List<VersionDetail>> toolsToVersions;
     private HierarchicalINIConfiguration config;
 
-    public Client(OptionSet options) {
-        this.options = options;
-    }
-
     static {
         ROOT_LOGGER.setLevel(Level.WARN);
         stringTime = FormattedTimeGenerator.getFormattedTimeNow(TIME_NOW);
@@ -92,7 +87,7 @@ public class Client {
         final ArgumentAcceptingOptionSpec<Boolean> isTestMode = parser.accepts("test-mode-activate", "if true test mode is activated").withRequiredArg().ofType(Boolean.class);
 
         final OptionSet options = parser.parse(argv);
-        Client client = new Client(options);
+        Client client = new Client();
 
         String local = options.valueOf(localDir);
         String dirPath = Paths.get(local).toAbsolutePath().toString();
@@ -132,7 +127,7 @@ public class Client {
     private List<File> getModifiedFiles(String key, final Map<String, Long> keysToSizes, File file) {
         List<File> modifiedFiles = new ArrayList<>();
         for(Map.Entry<String, Long> entry: keysToSizes.entrySet()) {
-            if (key == entry.getKey()) {
+            if (Objects.equals(key, entry.getKey())) {
                 if (entry.getValue() != file.length()) {
                     modifiedFiles.add(file);
                 }
@@ -144,6 +139,7 @@ public class Client {
     private List<File> getFilesForUpload(String bucketName, String prefix, String baseDir, S3Communicator s3Communicator) {
         List<File> uploadList = new ArrayList<>();
         List<File> localFiles = (List<File>) FileUtils.listFiles(new File(baseDir), TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+
         Map<String, Long> keysToSizes = s3Communicator.getKeysToSizes(bucketName, prefix);
 
         for(File file : localFiles) {
@@ -165,7 +161,7 @@ public class Client {
     private void run(String baseDir, String bucketName, String keyPrefix, boolean isTestMode) throws UnknownHostException {
         // use swagger-generated classes to talk to dockstore
         setupClientEnvironment();
-        List<Tool> tools = null;
+        List<Tool> tools;
         if(isTestMode) {
             tools = getTestTool(BAMSTATS);
         } else {
@@ -173,21 +169,35 @@ public class Client {
         }
 
         final S3Communicator s3Communicator= new S3Communicator("dockstore", endpoint);
+
+
+        if (isTestMode) {
+            // do some calls for testing purposes to demo API compatibility
+            boolean bucketExist = s3Communicator.doesBucketExist(bucketName);
+            Map<String, Long> keysToSizes = s3Communicator.getKeysToSizes(bucketName, keyPrefix);
+            boolean b = bucketExist && keysToSizes.size() > 0;
+            System.out.println(b ? "API looks ok": "something weird is going on with the API");
+            assert(b);
+        }
         String reportDir = baseDir + File.separator + "report";
 
         // save Docker images to local
         saveToLocal(baseDir, reportDir, tools, new DockerCommunicator());
+        out.println("Finished saving Docker images to local drive");
         // just the Docker images
         List<File> forUpload = getFilesForUpload(bucketName, keyPrefix, baseDir, s3Communicator);
         long addedTotalInB = getFilesTotalSizeB(forUpload);
+        out.println("Calculated " + addedTotalInB + " for upload");
 
         // report
         long cloudTotalInB = s3Communicator.getCloudTotalInB(bucketName, keyPrefix);
         report(reportDir, addedTotalInB, cloudTotalInB);
 
+        out.println("Preparing for upload");
         // upload to cloud
         // NOTE: cannot invoke getFilesForUpload again as sometimes the report size may be exactly the same but the contents will be different
         forUpload.addAll(FileUtils.listFiles(new File(reportDir), new String[] { "html", "JSON", "json" }, false));
+
 
         // show all files to be uploaded to cloud
         // out.println("Files to be uploaded: " + Arrays.toString(forUpload.toArray()));
@@ -199,7 +209,7 @@ public class Client {
 
 
     //-----------------------Report-----------------------
-    public long getFilesTotalSizeB(List<File> forUpload) {
+    long getFilesTotalSizeB(List<File> forUpload) {
         long totalSize = 0;
         for (File file : forUpload) {
             totalSize += file.length();
@@ -228,7 +238,7 @@ public class Client {
     }
 
     //-----------------------Save to local-----------------------
-    public void saveDockerImage(String img, File file, DockerCommunicator dockerCommunicator) {
+    void saveDockerImage(String img, File file, DockerCommunicator dockerCommunicator) {
         try {
             FileUtils.copyInputStreamToFile(dockerCommunicator.saveDockerImage(img), file);
             out.println("Created new file: " + file);
@@ -239,7 +249,7 @@ public class Client {
 
     private VersionDetail findLocalVD(List<VersionDetail> versionsDetails, String version) {
         for(VersionDetail row : versionsDetails) {
-            if(row.getVersion().equals(version) && row.getPath() != "") {
+            if(row.getVersion().equals(version) && !Objects.equals(row.getPath(), "")) {
                 return row;
             }
         }
@@ -305,7 +315,7 @@ public class Client {
         }
     }
 
-    public void saveToLocal(String baseDir, String reportDir, final List<Tool> tools, DockerCommunicator dockerCommunicator) {
+    void saveToLocal(String baseDir, String reportDir, final List<Tool> tools, DockerCommunicator dockerCommunicator) {
         toolsToVersions = ReportGenerator.loadJSONMap(reportDir);
 
         for(Tool tool : tools)  {
@@ -338,7 +348,7 @@ public class Client {
     }
 
     //-----------------------Set up to connect to GA4GH API-----------------------
-    protected void setupClientEnvironment() {
+    void setupClientEnvironment() {
         String userHome = System.getProperty("user.home");
 
         String configFilePath = userHome + File.separator + ".toolbackup" + File.separator + "config.ini";
@@ -369,17 +379,10 @@ public class Client {
         this.usersApi = new UsersApi(defaultApiClient);
         this.ga4ghApi = new GAGHApi(defaultApiClient);
 
-        try {
-            if (this.usersApi.getApiClient() != null) {
-                this.isAdmin = this.usersApi.getUser().getIsAdmin();
-            }
-        } catch (ApiException e) {
-            this.isAdmin = false;
-        }
         defaultApiClient.setDebugging(ErrorExit.DEBUG.get());
     }
 
-    public ContainersApi getContainersApi() {
+    ContainersApi getContainersApi() {
         return containersApi;
     }
 }
