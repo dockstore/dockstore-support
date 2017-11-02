@@ -26,11 +26,7 @@ public class DownloaderTest {
     @Test
     public void download() throws Exception {
         S3Communicator s3Communicator = new S3Communicator();
-        try {
-            s3Communicator.createBucket(BUCKET);
-        } catch (Exception e){
-            // new S3 client seems to throw exceptions here
-        }
+        s3Communicator.createBucket(BUCKET);
         DirectoryGenerator.createDir(DIR);
 
         List<File> files = new ArrayList<>();

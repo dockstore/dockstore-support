@@ -1,15 +1,15 @@
 package io.dockstore.toolbackup.client.cli;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import io.dockstore.toolbackup.client.cli.common.AWSConfig;
 import io.dockstore.toolbackup.client.cli.common.DirCleaner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.BUCKET;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
@@ -33,12 +33,7 @@ public class S3CommunicatorTest {
 
         S_3_COMMUNICATOR = new S3Communicator();
 
-        try {
-            S_3_COMMUNICATOR.createBucket(BUCKET);
-        } catch (Exception e) {
-            // new client seems to throw exceptions here
-        }
-
+        S_3_COMMUNICATOR.createBucket(BUCKET);
     }
 
     @Test
