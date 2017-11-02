@@ -33,7 +33,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                         // sh 's3cmd get --skip-existing --recursive s3://dockstore/test_files/${SynapseCache}/'
                     }
                     sh 'echo dockstore ${entryType} launch --local-entry ${descriptor} --yaml ${parameter} --script'
-                    FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --json $parameter --script | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
+                    FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --yaml $parameter --script | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
                     sh "mv $FILE $parameter"
                     archiveArtifacts artifacts: parameter
                 }
@@ -53,7 +53,7 @@ def transformIntoDockerfileStep(){
                 sh 'git checkout ${Tag}'
                 LOCATION = sh (script: 'dirname "${DockerfilePath}"', returnStdout: true).trim()
                 dir(LOCATION){
-                    sh 'docker build .'
+                    sh 'docker build --no-cache .'
                 }
             }
         }
