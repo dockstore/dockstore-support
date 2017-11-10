@@ -1,0 +1,7 @@
+server-url = https://dockstore.org:8443
+token = ""
+jenkins-server-url = <your_jenkins_server_url>
+jenkins-username = <your_username>
+jenkins-password = <your_password>
+development = true
+
