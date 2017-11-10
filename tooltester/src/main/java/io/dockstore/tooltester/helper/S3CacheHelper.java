@@ -19,7 +19,7 @@ public class S3CacheHelper {
             return "ga4gh-dream/bcbio";
         case "ENCODE-DCC/pipeline-container/encode-mapping-cwl":
             return "ga4gh-dream/encode";
-        case "knowengplaceholder":
+        case "KnowEnG/cwl-gene-prioritization":
             return "ga4gh-dream/knoweng";
         default:
             return "";
