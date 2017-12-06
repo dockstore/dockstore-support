@@ -39,6 +39,7 @@ import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.JobWithDetails;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
+import io.dockstore.tooltester.helper.DockstoreConfigHelper;
 import io.dockstore.tooltester.helper.S3CacheHelper;
 import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
@@ -90,7 +91,8 @@ public class Client {
     private int count = 0;
     private HierarchicalINIConfiguration config;
     private PipelineTester pipelineTester;
-
+    private String runner;
+    private String url;
     Client() {
 
     }
@@ -367,6 +369,7 @@ public class Client {
             // If there's no configuration file, all properties will default to Travis ones.
             File configFile = new File(userHome + File.separator + ".tooltester" + File.separator + "config");
             this.config = new HierarchicalINIConfiguration(configFile);
+
         } catch (ConfigurationException e) {
             exceptionMessage(e, "", API_ERROR);
         }
@@ -374,6 +377,8 @@ public class Client {
         // pull out the variables from the config if it exists
         String token = config.getString("token", "");
         String serverUrl = config.getString("server-url", "https://www.dockstore.org:8443");
+        this.runner = this.config.getString("runner", "cwltool");
+        this.url = serverUrl;
 
         ApiClient defaultApiClient;
         defaultApiClient = Configuration.getDefaultApiClient();
@@ -628,6 +633,7 @@ public class Client {
         parameter.put("EntryType", entryType);
         parameter.put("DockerfilePath", dockerfilePath);
         parameter.put("SynapseCache", synapseCache);
+        parameter.put("Config", DockstoreConfigHelper.getConfig(this.url, this.runner));
         return parameter;
     }
 
@@ -689,11 +695,15 @@ public class Client {
                     descriptorList.add(descriptorPath);
                 });
             } catch (ApiException e) {
-                exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the workflows API", API_ERROR);
+                exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the workflows API for " + name, API_ERROR);
             }
             String synapseCache = S3CacheHelper.mapRepositoryToCache(workflow.getPath());
             Map<String, String> parameter = constructParameterMap(url, tagName, "workflow", dockerfilePath,
                     parameterList.stream().collect(Collectors.joining(" ")), descriptorList.stream().collect(Collectors.joining(" ")), synapseCache);
+            if (parameterList.size() == 0 || descriptorList.size() == 0) {
+                LOG.info("Skipping test, no descriptor or test parameter file found");
+                return false;
+            }
             if (!pipelineTester.isRunning(name)) {
                 pipelineTester.runTest(name, parameter);
             } else {
