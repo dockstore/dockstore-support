@@ -85,11 +85,4 @@
       become: yes
       apt:
         name: s3cmd
-    - name: Write dockstore config file
-      become: yes
-      become_user: jenkins
-      copy:
-        content: "token: test \nserver-url: https://staging.dockstore.org:8443"
-        dest: "{{jenkins_home.stdout}}/.dockstore/config"
-        mode: 0555
                                                                                                                                                                        35,7          Top

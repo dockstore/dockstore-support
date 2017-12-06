@@ -26,6 +26,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                 sh 'pip list'
                 sh 'dockstore plugin list --script || true'
                 sh 'git clone ${URL} target'
+                sh 'echo -e "${Config}" > ~/.dockstore/config'
                 dir('target') {
                     sh 'git checkout ${Tag}'
                     if (synapseCache != "") {
