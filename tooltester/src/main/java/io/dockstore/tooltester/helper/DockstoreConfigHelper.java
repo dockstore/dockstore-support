@@ -5,10 +5,6 @@ package io.dockstore.tooltester.helper;
  * @since 05/12/17
  */
 public class DockstoreConfigHelper {
-    public enum CWLRUNNER {
-        CWLTOOL,
-        RABIX
-    }
     private static String baseConfig(String url) {
         return "token: test \\nserver-url: " + url;
     }
@@ -20,15 +16,15 @@ public class DockstoreConfigHelper {
         return baseConfig(url) + "\\ncwlrunner: bunny";
     }
 
-    public static String getConfig(String url, CWLRUNNER runner) {
+    public static String getConfig(String url, String runner) {
         switch (runner) {
-        case CWLTOOL:
+        case "cwltool":
             return cwltoolConfig(url);
-        case RABIX:
+        case "bunny":
             return rabixConfig(url);
         default:
             ExceptionHandler.errorMessage("Unknown runner.", ExceptionHandler.CLIENT_ERROR);
         }
-        return null;
+        return cwltoolConfig(url);
     }
 }
