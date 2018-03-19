@@ -375,7 +375,7 @@ public class Client {
         }
 
         // pull out the variables from the config if it exists
-        String serverUrl = config.getString("server-url", "https://www.dockstore.org:8443");
+        String serverUrl = config.getString("server-url", "https://staging.dockstore.org:8443");
         this.runner = this.config.getString("runner", "cwltool");
         this.url = serverUrl;
 
