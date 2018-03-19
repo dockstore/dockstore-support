@@ -218,6 +218,7 @@
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
             <artifactId>jackson-jaxrs-base</artifactId>
             <version>${jackson.version}</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>de.vandermeer</groupId>

@@ -436,7 +436,7 @@ public class Client {
                 default:
                     break;
                 }
-                testParameterFiles = containersApi.getTestParameterFiles(containerId, tag, descriptorType.toString());
+                testParameterFiles = containersApi.getTestParameterFiles(containerId, descriptorType.toString(), tag);
                 for (SourceFile testParameterFile : testParameterFiles) {
                     testParameter = testParameterFile;
                     count++;
