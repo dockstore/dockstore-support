@@ -52,7 +52,7 @@ import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
 import io.swagger.client.api.ContainersApi;
-import io.swagger.client.api.GAGHApi;
+import io.swagger.client.api.Ga4GhApi;
 import io.swagger.client.api.WorkflowsApi;
 import io.swagger.client.model.DockstoreTool;
 import io.swagger.client.model.SourceFile;
@@ -85,7 +85,7 @@ public class Client {
     private static boolean testVerified = true;
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
-    private GAGHApi ga4ghApi;
+    private Ga4GhApi ga4ghApi;
     private StatusReport report;
     private FileReport fileReport;
     private int count = 0;
@@ -385,7 +385,7 @@ public class Client {
 
         this.containersApi = new ContainersApi(defaultApiClient);
         this.workflowsApi = new WorkflowsApi(defaultApiClient);
-        setGa4ghApi(new GAGHApi(defaultApiClient));
+        setGa4ghApi(new Ga4GhApi(defaultApiClient));
         defaultApiClient.setDebugging(DEBUG.get());
     }
 
@@ -479,7 +479,7 @@ public class Client {
                 } else {
                     int buildId = pipelineTester.getLastBuildId(suffix);
                     if (buildId == 0 || buildId == -1) {
-                        LOG.info("No build was ran");
+                        LOG.info("No build was ran for " + tool.getId());
                         continue;
                     }
                     PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(suffix);
@@ -578,12 +578,12 @@ public class Client {
      */
     List<Tool> getVerifiedTools() {
         List<Tool> verifiedTools = null;
-        GAGHApi ga4ghApi = getGa4ghApi();
+        Ga4GhApi ga4ghApi = getGa4ghApi();
         try {
             final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
-            verifiedTools = tools.parallelStream().filter(Tool::getVerified).collect(Collectors.toList());
+            verifiedTools = tools.parallelStream().filter(tool -> tool.isVerified()).collect(Collectors.toList());
             for (Tool tool : verifiedTools) {
-                tool.setVersions(tool.getVersions().parallelStream().filter(ToolVersion::getVerified).collect(Collectors.toList()));
+                tool.setVersions(tool.getVersions().parallelStream().filter(ToolVersion::isVerified).collect(Collectors.toList()));
             }
         } catch (ApiException e) {
             exceptionMessage(e, "", API_ERROR);
@@ -593,7 +593,7 @@ public class Client {
 
     private List<Tool> getTools(String toolname) {
         List<Tool> tools = new ArrayList<>();
-        GAGHApi ga4ghApi = getGa4ghApi();
+        Ga4GhApi ga4ghApi = getGa4ghApi();
         try {
             Tool tool = ga4ghApi.toolsIdGet(toolname);
             if (tool != null) {
@@ -644,22 +644,23 @@ public class Client {
      * @return boolean  Returns true
      */
     private boolean testWorkflow(Tool tool) {
+        boolean status = true;
         Workflow workflow = null;
         String toolId = tool.getId();
         String path = toolId.replace("#workflow/", "");
         try {
             workflow = workflowsApi.getPublishedWorkflowByPath(path);
         } catch (ApiException e) {
-            exceptionMessage(e, "Could not get published containers using the workflowsApi API", API_ERROR);
+            exceptionMessage(e, "Could not get " + path + " using the workflowsApi API", API_ERROR);
         }
         if (workflow == null) {
             return false;
         }
         List<WorkflowVersion> versions = workflow.getWorkflowVersions();
         if (testVerified) {
-            versions.removeIf(version -> !version.getVerified());
+            versions.removeIf(version -> !version.isVerified());
         }
-        List<WorkflowVersion> validVersions = versions.parallelStream().filter(version -> version.getValid()).collect(Collectors.toList());
+        List<WorkflowVersion> validVersions = versions.parallelStream().filter(version -> version.isValid()).collect(Collectors.toList());
         for (WorkflowVersion version : validVersions) {
             String url = workflow.getGitUrl();
             url = url != null ? url.replace("git@github.com:", "https://github.com/") : null;
@@ -699,8 +700,9 @@ public class Client {
             Map<String, String> parameter = constructParameterMap(url, tagName, "workflow", dockerfilePath,
                     parameterList.stream().collect(Collectors.joining(" ")), descriptorList.stream().collect(Collectors.joining(" ")), synapseCache);
             if (parameterList.size() == 0 || descriptorList.size() == 0) {
-                LOG.info("Skipping test, no descriptor or test parameter file found");
-                return false;
+                LOG.info("Skipping test, no descriptor or test parameter file found for " + toolId);
+                status = false;
+                continue;
             }
             if (!pipelineTester.isRunning(name)) {
                 pipelineTester.runTest(name, parameter);
@@ -708,7 +710,7 @@ public class Client {
                 LOG.info("Job " + name + " is already running");
             }
         }
-        return true;
+        return status;
     }
 
     private boolean testTool(Tool tool) {
@@ -805,7 +807,7 @@ public class Client {
                         continue;
                     }
                     String descriptorPath = descriptor.getPath().replaceFirst("^/", "");
-                    testParameterFiles = containersApi.getTestParameterFiles(containerId, tagName, descriptorType.toString());
+                    testParameterFiles = containersApi.getTestParameterFiles(containerId, descriptorType.toString(), tagName);
                     for (SourceFile testParameterFile : testParameterFiles) {
                         String parameterPath = testParameterFile.getPath();
                         parameterPath = parameterPath.replaceFirst("^/", "");
@@ -838,11 +840,11 @@ public class Client {
         return containersApi;
     }
 
-    private GAGHApi getGa4ghApi() {
+    private Ga4GhApi getGa4ghApi() {
         return ga4ghApi;
     }
 
-    private void setGa4ghApi(GAGHApi ga4ghApi) {
+    private void setGa4ghApi(Ga4GhApi ga4ghApi) {
         this.ga4ghApi = ga4ghApi;
     }
 
