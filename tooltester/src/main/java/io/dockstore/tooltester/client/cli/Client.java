@@ -375,14 +375,12 @@ public class Client {
         }
 
         // pull out the variables from the config if it exists
-        String token = config.getString("token", "");
         String serverUrl = config.getString("server-url", "https://www.dockstore.org:8443");
         this.runner = this.config.getString("runner", "cwltool");
         this.url = serverUrl;
 
         ApiClient defaultApiClient;
         defaultApiClient = Configuration.getDefaultApiClient();
-        defaultApiClient.addDefaultHeader("Authorization", "Bearer " + token);
         defaultApiClient.setBasePath(serverUrl);
 
         this.containersApi = new ContainersApi(defaultApiClient);
