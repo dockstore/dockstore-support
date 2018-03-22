@@ -64,6 +64,11 @@ Last tested with ansible 2.2.1.0
     `sudo usermod -aG docker jenkins`
 9. Put the master's public key into the authorized_keys file of jenkins
 10. Check and see if `dockstore` command and docker command is working correctly.
+Giving jenkins sudo access
+11. `sudo visudo`
+12. Append `jenkins ALL=(ALL) NOPASSWD: ALL`
+13. Give sudo access to jenkins
+    `sudo usermod -a -G sudo jenkins`
 
 # Running tooltester:
 1. Check .tooltester to see if the 'server-url' needs to be changed
