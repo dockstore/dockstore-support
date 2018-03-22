@@ -1,4 +1,4 @@
-currentBuild.displayName = "1.3.0-beta.1"
+currentBuild.displayName = "1.4.0-beta.1"
 def buildJob = [:]
 if ("tool".equalsIgnoreCase(params.EntryType)) {
     buildJob["Build " + params.DockerfilePath] = transformIntoDockerfileStep()
@@ -22,11 +22,13 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                 sh 'rm -rf /mnt/output/*'
                 sh 'rm -rf /media/large_volume/output/*'
                 step([$class: 'WsCleanup'])
+                sh "wget https://raw.githubusercontent.com/ga4gh/dockstore-support/feature/setRunners/tooltester/src/main/resources/${AnsiblePlaybook}.yml"
+                ansiblePlaybook playbook: '${AnsiblePlaybook}.yml', sudo: true, sudoUser: null
                 sh 'dockstore --version --script || true'
                 sh 'pip list'
                 sh 'dockstore plugin list --script || true'
                 sh 'git clone ${URL} target'
-                sh 'echo -e "${Config}" > ~/.dockstore/config'
+                sh 'echo -e ${Config} > ~/.dockstore/config'
                 dir('target') {
                     sh 'git checkout ${Tag}'
                     if (synapseCache != "") {
