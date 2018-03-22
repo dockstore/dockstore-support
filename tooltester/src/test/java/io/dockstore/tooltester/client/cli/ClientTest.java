@@ -130,7 +130,7 @@ public class ClientTest {
      */
     @Test
     public void createJenkinsTests() {
-        String[] argv = { "sync", "--execution", "jenkins", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
+        String[] argv = { "sync", "--execution", "jenkins"};
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
     }
@@ -140,8 +140,7 @@ public class ClientTest {
      */
     @Test
     public void createJenkinsTestsSource() {
-        String[] argv = { "sync", "--execution", "jenkins", "--source", "Docktesters group", "--api",
-                "https://www.dockstore.org:8443/api/ga4gh/v1" };
+        String[] argv = { "sync", "--execution", "jenkins", "--source", "Docktesters group"};
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
     }
@@ -151,8 +150,7 @@ public class ClientTest {
      */
     @Test
     public void createUnverifiedJenkinsTests() {
-        String[] argv = { "sync", "--execution", "jenkins", "--source", "Docktesters group", "--api",
-                "https://www.dockstore.org:8443/api/ga4gh/v1", "--unverified-tool", "quay.io/ucsc_cgl/dockstore_tool_adtex" };
+        String[] argv = { "sync", "--execution", "jenkins", "--source", "Docktesters group", "--unverified-tool", "quay.io/ucsc_cgl/dockstore_tool_adtex" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
     }

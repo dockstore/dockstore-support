@@ -167,9 +167,9 @@ public class Client {
                         jc.usage("sync");
                     } else {
                         if (commandSync.tool != null) {
-                            client.handleCreateTests(commandSync.api, commandSync.source, commandSync.execution, commandSync.tool);
+                            client.handleCreateTests(commandSync.source, commandSync.execution, commandSync.tool);
                         } else {
-                            client.handleCreateTests(commandSync.api, commandSync.source, commandSync.execution, null);
+                            client.handleCreateTests(commandSync.source, commandSync.execution, null);
                         }
                     }
                     break;
@@ -296,11 +296,10 @@ public class Client {
     /**
      * Creates or updates the tests. If tool is verified, will create tests for verified versions.  If tool is not verified, will create test for valid versions.
      *
-     * @param api       api to pull the tools from (currently not used because config file has it)
      * @param source    the testing group that verified the tools
      * @param execution the location to test the tools
      */
-    private void handleCreateTests(String api, List<String> source, String execution, String toolname) {
+    private void handleCreateTests(List<String> source, String execution, String toolname) {
         if (!execution.equals("jenkins")) {
             errorMessage("Can only execute on jenkins, no other location is currently supported.  Received " + execution, COMMAND_ERROR);
         }
@@ -861,8 +860,6 @@ public class Client {
         private String execution = "jenkins";
         @Parameter(names = { "--source" }, description = "Tester Group")
         private List<String> source = new ArrayList<>();
-        @Parameter(names = { "--api", "--dockstore-url" }, description = "dockstore install that we wish to test tools from")
-        private String api = "https://www.dockstore.org:8443/api/ga4gh/v1";
         @Parameter(names = "--help", description = "Prints help for main", help = true)
         private boolean help = false;
         @Parameter(names = "--unverified-tool", description = "Unverified tool to specifically test")
