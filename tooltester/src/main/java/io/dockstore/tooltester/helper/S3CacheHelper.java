@@ -7,19 +7,19 @@ package io.dockstore.tooltester.helper;
 public class S3CacheHelper {
     public static String mapRepositoryToCache(String repository) {
         switch(repository) {
-        case "briandoconnor/dockstore-workflow-md5sum":
+        case "github.com/briandoconnor/dockstore-workflow-md5sum":
             return "ga4gh-dream/md5sum";
-        case "dockstore/hello_world":
+        case "github.com/dockstore/hello_world":
             return "ga4gh-dream/hello_world";
-        case "Barski-lab/biowardrobe_chipseq_se":
+        case "github.com/Barski-lab/ga4gh_challenge":
             return "ga4gh-dream/biowardrobe";
-        case "NCI-GDC/gdc-dnaseq-cwl/GDC_DNASeq":
+        case "github.com/NCI-GDC/gdc-dnaseq-cwl/GDC_DNASeq":
             return "ga4gh-dream/gdc";
-        case "bcbio/bcbio_validation_workflows":
+        case "github.com/bcbio/bcbio_validation_workflows":
             return "ga4gh-dream/bcbio";
-        case "ENCODE-DCC/pipeline-container/encode-mapping-cwl":
+        case "github.com/ENCODE-DCC/pipeline-container/encode-mapping-cwl":
             return "ga4gh-dream/encode";
-        case "KnowEnG/cwl-gene-prioritization":
+        case "github.com/KnowEnG/cwl-gene-prioritization":
             return "ga4gh-dream/knoweng";
         default:
             return "";
