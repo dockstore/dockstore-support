@@ -826,6 +826,8 @@ public class Client {
             }
             parameter.put("ParameterPath", parameterStringBuilder.toString());
             parameter.put("DescriptorPath", descriptorStringBuilder.toString());
+            parameter.put("Config", DockstoreConfigHelper.getConfig(this.url, this.runner));
+
             if (!pipelineTester.isRunning(name)) {
                 pipelineTester.runTest(name, parameter);
             } else {
