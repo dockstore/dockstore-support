@@ -695,8 +695,8 @@ public class Client {
                             continue;
                         }
                     case "wdl":
-                        if (runner != "cromwell") {
-                            descriptor = workflowsApi.cwl(containerId, tagName);
+                        if (runner == "cromwell") {
+                            descriptor = workflowsApi.wdl(containerId, tagName);
                             break;
                         } else {
                             continue;

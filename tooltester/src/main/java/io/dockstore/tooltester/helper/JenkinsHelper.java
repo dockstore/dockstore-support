@@ -221,9 +221,7 @@ public abstract class JenkinsHelper {
         return map;
     }
 
-    public boolean isRunning(String suffix) {
-        String prefix = getPREFIX();
-        String name = prefix + "-" + suffix;
+    public boolean isRunning(String name) {
         try {
             JobWithDetails job = jenkins.getJob(name);
             Build build = job.getLastBuild();
