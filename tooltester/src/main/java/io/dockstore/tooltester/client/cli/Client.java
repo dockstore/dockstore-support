@@ -40,6 +40,7 @@ import com.offbytwo.jenkins.model.JobWithDetails;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
 import io.dockstore.tooltester.helper.DockstoreConfigHelper;
+import io.dockstore.tooltester.helper.GA4GHHelper;
 import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.S3CacheHelper;
@@ -167,8 +168,8 @@ public class Client {
                     if (commandSync.help) {
                         jc.usage("sync");
                     } else {
-                        if (commandSync.tool != null) {
-                            client.handleCreateTests(commandSync.source, commandSync.execution, commandSync.tool);
+                        if (commandSync.tools != null) {
+                            client.handleCreateTests(commandSync.source, commandSync.execution, commandSync.tools);
                         } else {
                             client.handleCreateTests(commandSync.source, commandSync.execution, null);
                         }
@@ -259,12 +260,10 @@ public class Client {
         try {
             setupClientEnvironment();
             setupTesters();
-            List<Tool> tools = getVerifiedTools();
+            List<String> sources = new ArrayList<>();
+            List<Tool> tools = GA4GHHelper.getTools(this.getGa4ghApi(), true, sources, toolNames);
             String prefix = TimeHelper.getDateFilePrefix();
             createResults(prefix + "Report.csv");
-            if (!toolNames.isEmpty()) {
-                tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
-            }
             for (Tool tool : tools) {
                 getToolTestResults(tool);
             }
@@ -300,23 +299,13 @@ public class Client {
      * @param source    the testing group that verified the tools
      * @param execution the location to test the tools
      */
-    private void handleCreateTests(List<String> source, String execution, String toolname) {
+    private void handleCreateTests(List<String> source, String execution, List<String> toolnames) {
         if (!execution.equals("jenkins")) {
             errorMessage("Can only execute on jenkins, no other location is currently supported.  Received " + execution, COMMAND_ERROR);
         }
         setupClientEnvironment();
         setupTesters();
-        List<Tool> tools;
-        if (toolname == null) {
-            if (!source.isEmpty()) {
-                tools = getVerifiedTools(source);
-            } else {
-                tools = getVerifiedTools();
-            }
-        } else {
-            tools = getTools(toolname);
-
-        }
+        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames);
         for (Tool tool : tools) {
             createToolTests(tool);
         }
@@ -328,23 +317,15 @@ public class Client {
      * @param toolNames
      * @param unverifiedTool
      */
-    private void handleRunTests(List<String> toolNames, String unverifiedTool, List<String> source) {
+    private void handleRunTests(List<String> toolNames, String unverifiedTool, List<String> sources) {
         setupClientEnvironment();
         setupTesters();
         List<Tool> tools;
         if (unverifiedTool != null) {
             testVerified = false;
-            tools = getTools(unverifiedTool);
+            tools = GA4GHHelper.getTools(getGa4ghApi(), false, sources, toolNames);
         } else {
-            if (!source.isEmpty()) {
-                tools = getVerifiedTools(source);
-            } else {
-                tools = getVerifiedTools();
-            }
-            if (toolNames != null) {
-                tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
-            }
-
+            tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames);
         }
         for (Tool tool : tools) {
             testTool(tool);
@@ -560,68 +541,6 @@ public class Client {
     //        JenkinsLog jenkinsLog = gson.fromJson(entity, JenkinsLog.class);
     //        return serverUrl + jenkinsLog.getConsoleUrl().replaceFirst("^/", "");
     //    }
-
-    /**
-     * This function checks if the any of the tool's verified source matches the filter
-     *
-     * @param filter          The list of verified sources that we're interested in
-     * @param verifiedSources The tool version's verified sources
-     * @return True if the one of the verified sources matches the filter
-     */
-    private boolean matchVerifiedSource(List<String> filter, String verifiedSources) {
-        return filter.stream().anyMatch(str -> str.trim().equals(verifiedSources));
-
-    }
-
-    /**
-     * Gets the list of verified tools
-     *
-     * @return The list of verified tools
-     */
-    List<Tool> getVerifiedTools() {
-        List<Tool> verifiedTools = null;
-        Ga4GhApi ga4ghApi = getGa4ghApi();
-        try {
-            final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
-            verifiedTools = tools.parallelStream().filter(tool -> tool.isVerified()).collect(Collectors.toList());
-            for (Tool tool : verifiedTools) {
-                tool.setVersions(tool.getVersions().parallelStream().filter(ToolVersion::isVerified).collect(Collectors.toList()));
-            }
-        } catch (ApiException e) {
-            exceptionMessage(e, "", API_ERROR);
-        }
-        return verifiedTools;
-    }
-
-    private List<Tool> getTools(String toolname) {
-        List<Tool> tools = new ArrayList<>();
-        Ga4GhApi ga4ghApi = getGa4ghApi();
-        try {
-            Tool tool = ga4ghApi.toolsIdGet(toolname);
-            if (tool != null) {
-                tools.add(tool);
-            }
-
-        } catch (ApiException e) {
-            exceptionMessage(e, "", API_ERROR);
-        }
-        return tools;
-    }
-
-    /**
-     * Gets the list of verified tools and applies filter to it
-     *
-     * @param verifiedSources Filter parameter to filter the verified sources
-     * @return The list of verified tools
-     */
-    List<Tool> getVerifiedTools(List<String> verifiedSources) {
-        List<Tool> verifiedTools = getVerifiedTools();
-        for (Tool tool : verifiedTools) {
-            tool.setVersions(tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource()))
-                    .collect(Collectors.toList()));
-        }
-        return verifiedTools;
-    }
 
     @SuppressWarnings("checkstyle:parameternumber")
     private Map<String, String> constructParameterMap(String url, String referenceName, String entryType, String dockerfilePath,
@@ -909,8 +828,8 @@ public class Client {
         private List<String> source = new ArrayList<>();
         @Parameter(names = "--help", description = "Prints help for main", help = true)
         private boolean help = false;
-        @Parameter(names = "--unverified-tool", description = "Unverified tool to specifically test")
-        private String tool;
+        @Parameter(names = "--unverified-tool", description = "Unverified tool to specifically test", variableArity = true)
+        private List<String> tools;
     }
 
     @Parameters(separators = "=", commandDescription = "Test verified tools on Jenkins.")
@@ -939,7 +858,7 @@ public class Client {
 
     @Parameters(separators = "=", commandDescription = "Reports the file sizes and checksum of a verified tool across all tested versions.")
     private static class CommandFileReport {
-        @Parameter(names = "--tool", description = "Specific tool to report", required = true)
+        @Parameter(names = "--tool", description = "Specific tool to report", required = true, variableArity = true)
         private String tool;
         @Parameter(names = "--help", description = "Prints help for file-report", help = true)
         private boolean help = false;
