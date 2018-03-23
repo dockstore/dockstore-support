@@ -22,7 +22,6 @@ public class DockstoreConfigHelper {
      * @param url       Server url (probably staging)
      * @param runner    The runner (cwltool, cwlrunner, cromwell, bunny, or toil)
      * @return          The config file for the specific runner and server url
-     * @throws IOException
      */
     public static String getConfig(String url, String runner) {
         try {
@@ -30,7 +29,7 @@ public class DockstoreConfigHelper {
             case "toil":
                 return baseConfig(url) + "\\n" + readFile(new File("src/main/resources/toil.config").getAbsolutePath(),
                         StandardCharsets.UTF_8);
-            case "cwlrunner":
+            case "cwl-runner":
                 return baseConfig(url) + "\\n" + readFile(new File("src/main/resources/cwlrunner.config").getAbsolutePath(),
                         StandardCharsets.UTF_8);
             case "cromwell":
@@ -55,12 +54,12 @@ public class DockstoreConfigHelper {
     /**
      * This converts a file to a string which can be appended to the base config file which will later be sent to Jenkins
      *
-     * @param path     Path of the config file
-     * @param encoding Encoding of the file
-     * @return
-     * @throws IOException
+     * @param path      Path of the config file
+     * @param encoding  Encoding of the file
+     * @return          The file contents as a string
+     * @throws IOException  When file can't be read
      */
-    static String readFile(String path, Charset encoding) throws IOException {
+    private static String readFile(String path, Charset encoding) throws IOException {
         byte[] encoded = Files.readAllBytes(Paths.get(path));
         return new String(encoded, encoding);
     }

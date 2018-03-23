@@ -47,8 +47,8 @@ public class DockstoreConfigHelperTest {
     @Test
     public void testCwlrunnerConfig() throws IOException {
         final String url = "https://staging.dockstore.org:8443";
-        String toilConfig = DockstoreConfigHelper.getConfig(url, "cwlrunner");
-        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: cwlrunner\n", toilConfig);
+        String toilConfig = DockstoreConfigHelper.getConfig(url, "cwl-runner");
+        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: cwl-runner\n", toilConfig);
     }
 
     @Test

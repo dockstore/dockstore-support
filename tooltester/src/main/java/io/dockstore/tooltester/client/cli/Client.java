@@ -393,30 +393,58 @@ public class Client {
         SourceFile testParameter;
         List<SourceFile> testParameterFiles;
         DockstoreTool dockstoreTool;
+        Workflow workflow;
         Long containerId;
-        dockstoreTool = containersApi.getPublishedContainerByToolPath(verifiedTool.getId());
-        containerId = dockstoreTool.getId();
-        for (ToolVersion version : verifiedTool.getVersions()) {
-            String tag = version.getName();
-            dockerfile = containersApi.dockerfile(containerId, tag);
-            for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
-                switch (descriptorType.toString()) {
-                case "CWL":
-                    descriptor = containersApi.cwl(containerId, tag);
-                    break;
-                case "WDL":
-                    descriptor = containersApi.wdl(containerId, tag);
-                    break;
-                default:
-                    break;
+        if (verifiedTool.getToolclass().getName().equals("Workflow")) {
+            workflow = workflowsApi.getPublishedWorkflowByPath(verifiedTool.getId().replace("#workflow/", ""));
+            containerId = workflow.getId();
+            for (ToolVersion version : verifiedTool.getVersions()) {
+                String tag = version.getName();
+                for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
+                    switch (descriptorType.toString()) {
+                    case "CWL":
+                        descriptor = workflowsApi.cwl(containerId, tag);
+                        break;
+                    case "WDL":
+                        descriptor = workflowsApi.wdl(containerId, tag);
+                        break;
+                    default:
+                        break;
+                    }
+                    testParameterFiles = workflowsApi.getTestParameterFiles(containerId, tag);
+                    for (SourceFile testParameterFile : testParameterFiles) {
+                        testParameter = testParameterFile;
+                        count++;
+                    }
                 }
-                testParameterFiles = containersApi.getTestParameterFiles(containerId, descriptorType.toString(), tag);
-                for (SourceFile testParameterFile : testParameterFiles) {
-                    testParameter = testParameterFile;
-                    count++;
+            }
+        } else {
+            dockstoreTool = containersApi.getPublishedContainerByToolPath(verifiedTool.getId());
+            containerId = dockstoreTool.getId();
+            for (ToolVersion version : verifiedTool.getVersions()) {
+                String tag = version.getName();
+                dockerfile = containersApi.dockerfile(containerId, tag);
+                for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
+                    switch (descriptorType.toString()) {
+                    case "CWL":
+                        descriptor = containersApi.cwl(containerId, tag);
+                        break;
+                    case "WDL":
+                        descriptor = containersApi.wdl(containerId, tag);
+                        break;
+                    default:
+                        break;
+                    }
+                    testParameterFiles = containersApi.getTestParameterFiles(containerId, descriptorType.toString(), tag);
+                    for (SourceFile testParameterFile : testParameterFiles) {
+                        testParameter = testParameterFile;
+                        count++;
+                    }
                 }
             }
         }
+
+
     }
 
     /**
@@ -428,7 +456,7 @@ public class Client {
         for (String runner : this.runner) {
             List<ToolVersion> toolVersions = tool.getVersions();
             for (ToolVersion toolversion : toolVersions) {
-                String name = buildName(PipelineTester.PREFIX, runner, toolversion.getId());
+                String name = buildName(runner, toolversion.getId());
                 pipelineTester.createTest(name);
             }
         }
@@ -447,13 +475,13 @@ public class Client {
                 if (toolversion != null) {
                     String id = toolversion.getId();
                     String tag = toolversion.getName();
-                    String name = buildName(PipelineTester.PREFIX, runner, id);
+                    String name = buildName(runner, id);
                     if (pipelineTester.getJenkinsJob(name) == null) {
                         LOG.info("Could not get job: " + name);
                     } else {
                         int buildId = pipelineTester.getLastBuildId(name);
                         if (buildId == 0 || buildId == -1) {
-                            LOG.info("No build was ran for " + tool.getId());
+                            LOG.info("No build was ran for " + name);
                             continue;
                         }
                         PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(name);
@@ -474,9 +502,9 @@ public class Client {
                                 String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
 
                                 String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
-                                String logURL = TinyUrl.getTinyUrl(serverUrl + nodeLogURI);
+                                String longURL = serverUrl + nodeLogURI;
+                                String logURL = TinyUrl.getTinyUrl(longURL);
                                 Gson gson = new Gson();
-                                result += " See " + logURL;
                                 PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
                                 for (PipelineStepImpl pipelineStep : pipelineSteps) {
                                     runtime += pipelineStep.getDurationInMillis();
@@ -498,7 +526,7 @@ public class Client {
                                     errorMessage("Could not parse start time " + date, CLIENT_ERROR);
                                 }
                                     List<String> record = Arrays
-                                            .asList(toolversion.getId(), date, tag, runner , pipelineNode.getDisplayName(), duration, result);
+                                            .asList(toolversion.getId(), date, tag, runner , pipelineNode.getDisplayName(), duration, result, logURL);
                                 report.printAndWriteLine(record);
                             } catch (NullPointerException e) {
                                 LOG.warn(e.getMessage());
@@ -593,18 +621,18 @@ public class Client {
                 String descriptorType = workflow.getDescriptorType();
                 List<SourceFile> testParameterFiles;
                 SourceFile descriptor;
-                String name = buildName(PipelineTester.PREFIX, runner, toolId + "-" + tagName);
+                String name = buildName(runner, toolId + "-" + tagName);
                 try {
                     switch (descriptorType) {
                     case "cwl":
-                        if (runner != "cromwell") {
+                        if (!runner.equals("cromwell")) {
                             descriptor = workflowsApi.cwl(containerId, tagName);
                             break;
                         } else {
                             continue;
                         }
                     case "wdl":
-                        if (runner == "cromwell") {
+                        if (runner.equals("cromwell")) {
                             descriptor = workflowsApi.wdl(containerId, tagName);
                             break;
                         } else {
@@ -629,20 +657,29 @@ public class Client {
                 Map<String, String> parameter = constructParameterMap(url, tagName, "workflow", dockerfilePath,
                         parameterList.stream().collect(Collectors.joining(" ")), descriptorList.stream().collect(Collectors.joining(" ")),
                         synapseCache, runner);
-                if (parameterList.size() == 0 || descriptorList.size() == 0) {
-                    LOG.info("Skipping test, no descriptor or test parameter file found for " + toolId);
+                if (!runTest(name, parameter)) {
                     status = false;
                     continue;
-                }
-                if (!pipelineTester.isRunning(name)) {
-                    pipelineTester.runTest(name, parameter);
-                } else {
-                    LOG.info("Job " + name + " is already running");
                 }
             }
         }
         return status;
 
+    }
+
+    private boolean runTest(String name, Map<String, String> parameter) {
+        String parameterPath = parameter.get("ParameterPath");
+        String descriptorPath = parameter.get("DescriptorPath");
+        if (parameterPath.length() == 0 || descriptorPath.length() == 0) {
+            LOG.debug("Skipping test, no descriptor or test parameter file found for " + name);
+            return false;
+        }
+        if (!pipelineTester.isRunning(name)) {
+            pipelineTester.runTest(name, parameter);
+        } else {
+            LOG.info("Job " + name + " is already running");
+        }
+        return true;
     }
 
     private boolean testTool(Tool tool) {
@@ -686,6 +723,7 @@ public class Client {
      * @return boolean  Returns true
      */
     private boolean testDockstoreTool(Tool tool) {
+        boolean status = true;
         for (String runner : this.runner) {
 
             DockstoreTool dockstoreTool = null;
@@ -725,14 +763,14 @@ public class Client {
                     for (ToolVersion.DescriptorTypeEnum descriptorType : toolversion.getDescriptorType()) {
                         switch (descriptorType.toString()) {
                         case "CWL":
-                            if (runner != "cromwell") {
+                            if (!runner.equals("cromwell")) {
                                 descriptor = containersApi.cwl(containerId, tagName);
                                 break;
                             } else {
                                 continue;
                             }
                         case "WDL":
-                            if (runner == "cromwell") {
+                            if (runner.equals("cromwell")) {
                                 descriptor = containersApi.wdl(containerId, tagName);
                                 break;
                             } else {
@@ -763,17 +801,14 @@ public class Client {
                 parameter = constructParameterMap(url, referenceName, "tool", dockerfilePath,
                 parameterStringBuilder.toString(), descriptorStringBuilder.toString(),
                         "", runner);
-                String name = buildName(PipelineTester.PREFIX, runner, id);
-                if (!pipelineTester.isRunning(name)) {
-
-                    pipelineTester.runTest(name, parameter);
-                } else {
-                    LOG.info("Job " + name + " is already running");
+                String name = buildName(runner, id);
+                if (!runTest(name, parameter)) {
+                    status = false;
+                    continue;
                 }
-
             }
         }
-        return true;
+        return status;
     }
 
     ContainersApi getContainersApi() {
@@ -791,12 +826,12 @@ public class Client {
     /**
      * Constructs the name of the Pipeline on Jenkins based on several properties
      *
-     * @param prefix        The prefix of all of Pipelines on Jenkins based off of a template
      * @param runner        The runner (cwltool, toil, cromwell, bunny)
      * @param ToolVersionId The ToolVersion ID, which is also equivalent to the Tool ID + version name
      * @return
      */
-    private String buildName(String prefix, String runner, String ToolVersionId) {
+    private String buildName(String runner, String ToolVersionId) {
+        String prefix = PipelineTester.PREFIX;
         String name = String.join("-", prefix, runner, ToolVersionId);
         name = JenkinsHelper.cleanSuffx(name);
         return name;

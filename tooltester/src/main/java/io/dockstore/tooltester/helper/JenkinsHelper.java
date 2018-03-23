@@ -63,8 +63,8 @@ public abstract class JenkinsHelper {
 
     public abstract String getPREFIX();
 
-    public PipelineNodeImpl[] getBlueOceanJenkinsPipeline(String suffix) {
-        String entity = getEntity("blue/rest/organizations/jenkins/pipelines/PipelineTest-" + suffix);
+    public PipelineNodeImpl[] getBlueOceanJenkinsPipeline(String name) {
+        String entity = getEntity("blue/rest/organizations/jenkins/pipelines/" + name);
         Gson gson = new Gson();
         PipelineImpl example = gson.fromJson(entity, PipelineImpl.class);
         String uri = example.getLatestRun().getLinks().getNodes().getHref();
@@ -232,9 +232,7 @@ public abstract class JenkinsHelper {
         }
     }
 
-    public List<Build> getAllBuilds(String suffix) {
-        String prefix = getPREFIX();
-        String name = prefix + "-" + suffix;
+    public List<Build> getAllBuilds(String name) {
         List<Build> builds = null;
         try {
             builds = jenkins.getJob(name).getAllBuilds();
@@ -244,9 +242,7 @@ public abstract class JenkinsHelper {
         return builds;
     }
 
-    public JobWithDetails getJenkinsJob(String suffix) {
-        String prefix = getPREFIX();
-        String name = prefix + "-" + suffix;
+    public JobWithDetails getJenkinsJob(String name) {
         JobWithDetails job = null;
         try {
             job = jenkins.getJob(name);
@@ -257,9 +253,7 @@ public abstract class JenkinsHelper {
         return job;
     }
 
-    public int getLastBuildId(String suffix) {
-        String prefix = getPREFIX();
-        String name = prefix + "-" + suffix;
+    public int getLastBuildId(String name) {
         int buildId = 0;
         try {
             JobWithDetails job = jenkins.getJob(name);

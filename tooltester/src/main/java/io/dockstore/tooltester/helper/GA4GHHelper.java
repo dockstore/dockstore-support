@@ -76,13 +76,13 @@ public class GA4GHHelper {
         if (verified) {
             tools = filterVerified(tools);
         }
-        if (!verifiedSources.isEmpty()) {
+        if (toolNames != null && !verifiedSources.isEmpty()) {
             for (Tool tool : tools) {
                 tool.setVersions(tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource()))
                         .collect(Collectors.toList()));
             }
         }
-        if (!toolNames.isEmpty()) {
+        if (toolNames != null && !toolNames.isEmpty()) {
             tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
         }
         return tools;

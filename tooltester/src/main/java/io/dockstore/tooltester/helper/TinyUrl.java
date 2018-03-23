@@ -19,7 +19,12 @@ public class TinyUrl {
         InputStream in = null;
         try {
             in = new URL(tinyUrlLookup).openStream();
-            return IOUtils.toString(in);
+            String tinyURL = IOUtils.toString(in);
+            if (tinyURL.equals("Error")) {
+                return longUrl;
+            } else {
+                return tinyURL;
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
