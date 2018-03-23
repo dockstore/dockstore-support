@@ -9,7 +9,7 @@ import java.util.List;
  */
 public class StatusReport extends Report {
     private static final List<String> HEADER = Arrays
-            .asList("Tool/Workflow ID", "DATE", "Version", "Location of Testing", "Action Performed", "Runtime", "Status of Test Files");
+            .asList("Tool/Workflow ID", "DATE", "Version", "Engine", "Action Performed", "Runtime", "Status of Test Files");
 
     public StatusReport(String name) {
         super(name);

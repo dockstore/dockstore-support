@@ -448,76 +448,74 @@ public class Client {
      * @param tool The tool to get the test results for
      */
     private void getToolTestResults(Tool tool) {
-        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-        List<ToolVersion> toolVersions = tool.getVersions();
-        for (ToolVersion toolversion : toolVersions) {
-            if (toolversion != null) {
-                String id = toolversion.getId();
-                String tag = toolversion.getName();
-
-                String suffix = id;
-                suffix = JenkinsHelper.cleanSuffx(suffix);
-                if (pipelineTester.getJenkinsJob(suffix) == null) {
-                    LOG.info("Could not get job: " + suffix);
-                } else {
-                    int buildId = pipelineTester.getLastBuildId(suffix);
-                    if (buildId == 0 || buildId == -1) {
-                        LOG.info("No build was ran for " + tool.getId());
-                        continue;
-                    }
-                    PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(suffix);
-
-                    for (PipelineNodeImpl pipelineNode : pipelineNodes) {
-                        try {
-                            // There's pretty much always going to be a parallel node that does not matter
-                            if (pipelineNode.getDisplayName().equals("Parallel") || pipelineNode.getDurationInMillis() < 0L) {
-                                continue;
-                            }
-                            String state = pipelineNode.getState();
-                            String result = pipelineNode.getResult();
-                            if (state.equals("RUNNING")) {
-                                result = "RUNNING";
-                            }
-                            Long runtime = 0L;
-
-                            String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
-
-                            String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
-                            String logURL = TinyUrl.getTinyUrl(serverUrl + nodeLogURI);
-                            Gson gson = new Gson();
-                            result += " See " + logURL;
-                            PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
-                            for (PipelineStepImpl pipelineStep : pipelineSteps) {
-                                runtime += pipelineStep.getDurationInMillis();
-                            }
-                            String date = pipelineNode.getStartTime();
-                            String duration;
-                            // Blue Ocean REST API does not know how long the job is running for
-                            // If it's still running, we get the duration since the start date
-                            // If it's finished running, we sum up the duration of each step
-                            if (state.equals("RUNNING")) {
-                                duration = TimeHelper.getDurationSinceDate(date);
-                            } else {
-                                duration = TimeHelper.durationToString(runtime);
-                            }
-
-                            try {
-                                date = TimeHelper.timeFormatConvert(date);
-                            } catch (ParseException e) {
-                                errorMessage("Could not parse start time " + date, CLIENT_ERROR);
-                            }
-
-                            List<String> record = Arrays
-                                    .asList(toolversion.getId(), date, tag, "Jenkins", pipelineNode.getDisplayName(), duration, result);
-                            report.printAndWriteLine(record);
-                        } catch (NullPointerException e) {
-                            LOG.warn(e.getMessage());
+        for (String runner: this.runner) {
+            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+            List<ToolVersion> toolVersions = tool.getVersions();
+            for (ToolVersion toolversion : toolVersions) {
+                if (toolversion != null) {
+                    String id = toolversion.getId();
+                    String tag = toolversion.getName();
+                    String name = buildName(PipelineTester.PREFIX, runner, id);
+                    if (pipelineTester.getJenkinsJob(name) == null) {
+                        LOG.info("Could not get job: " + name);
+                    } else {
+                        int buildId = pipelineTester.getLastBuildId(name);
+                        if (buildId == 0 || buildId == -1) {
+                            LOG.info("No build was ran for " + tool.getId());
+                            continue;
                         }
+                        PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(name);
 
+                        for (PipelineNodeImpl pipelineNode : pipelineNodes) {
+                            try {
+                                // There's pretty much always going to be a parallel node that does not matter
+                                if (pipelineNode.getDisplayName().equals("Parallel") || pipelineNode.getDurationInMillis() < 0L) {
+                                    continue;
+                                }
+                                String state = pipelineNode.getState();
+                                String result = pipelineNode.getResult();
+                                if (state.equals("RUNNING")) {
+                                    result = "RUNNING";
+                                }
+                                Long runtime = 0L;
+
+                                String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
+
+                                String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
+                                String logURL = TinyUrl.getTinyUrl(serverUrl + nodeLogURI);
+                                Gson gson = new Gson();
+                                result += " See " + logURL;
+                                PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
+                                for (PipelineStepImpl pipelineStep : pipelineSteps) {
+                                    runtime += pipelineStep.getDurationInMillis();
+                                }
+                                String date = pipelineNode.getStartTime();
+                                String duration;
+                                // Blue Ocean REST API does not know how long the job is running for
+                                // If it's still running, we get the duration since the start date
+                                // If it's finished running, we sum up the duration of each step
+                                if (state.equals("RUNNING")) {
+                                    duration = TimeHelper.getDurationSinceDate(date);
+                                } else {
+                                    duration = TimeHelper.durationToString(runtime);
+                                }
+
+                                try {
+                                    date = TimeHelper.timeFormatConvert(date);
+                                } catch (ParseException e) {
+                                    errorMessage("Could not parse start time " + date, CLIENT_ERROR);
+                                }
+                                    List<String> record = Arrays
+                                            .asList(toolversion.getId(), date, tag, runner , pipelineNode.getDisplayName(), duration, result);
+                                report.printAndWriteLine(record);
+                            } catch (NullPointerException e) {
+                                LOG.warn(e.getMessage());
+                            }
+                        }
                     }
+                } else {
+                    errorMessage("Tool version is null", COMMAND_ERROR);
                 }
-            } else {
-                errorMessage("Tool version is null", COMMAND_ERROR);
             }
         }
     }

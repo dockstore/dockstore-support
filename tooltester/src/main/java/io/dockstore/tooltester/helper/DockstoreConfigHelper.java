@@ -18,10 +18,10 @@ public class DockstoreConfigHelper {
 
     /**
      * Gets the config file of the runner in the form of a string to be sent to Jenkins
-     *
-     * @param url    Server url (probably staging)
-     * @param runner The runner (cwltool, cwlrunner, cromwell, bunny, or toil)
-     * @return
+     * The config file should be moved out of src/main/resources eventually and into the user's home directory
+     * @param url       Server url (probably staging)
+     * @param runner    The runner (cwltool, cwlrunner, cromwell, bunny, or toil)
+     * @return          The config file for the specific runner and server url
      * @throws IOException
      */
     public static String getConfig(String url, String runner) {
