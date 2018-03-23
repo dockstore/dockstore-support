@@ -168,11 +168,7 @@ public class Client {
                     if (commandSync.help) {
                         jc.usage("sync");
                     } else {
-                        if (commandSync.tools != null) {
-                            client.handleCreateTests(commandSync.source, commandSync.execution, commandSync.tools);
-                        } else {
-                            client.handleCreateTests(commandSync.source, commandSync.execution, null);
-                        }
+                            client.handleCreateTests(commandSync.source, commandSync.tools);
                     }
                     break;
                 default:
@@ -297,12 +293,8 @@ public class Client {
      * Creates or updates the tests. If tool is verified, will create tests for verified versions.  If tool is not verified, will create test for valid versions.
      *
      * @param source    the testing group that verified the tools
-     * @param execution the location to test the tools
      */
-    private void handleCreateTests(List<String> source, String execution, List<String> toolnames) {
-        if (!execution.equals("jenkins")) {
-            errorMessage("Can only execute on jenkins, no other location is currently supported.  Received " + execution, COMMAND_ERROR);
-        }
+    private void handleCreateTests(List<String> source, List<String> toolnames) {
         setupClientEnvironment();
         setupTesters();
         List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames);
@@ -820,8 +812,6 @@ public class Client {
 
     @Parameters(separators = "=", commandDescription = "Synchronizes with Jenkins to create tests for verified tools.")
     private static class CommandSync {
-        @Parameter(names = { "--execution", "--runtime-environment" }, description = "Location of Testing")
-        private String execution = "jenkins";
         @Parameter(names = { "--source" }, description = "Tester Group")
         private List<String> source = new ArrayList<>();
         @Parameter(names = "--help", description = "Prints help for main", help = true)
