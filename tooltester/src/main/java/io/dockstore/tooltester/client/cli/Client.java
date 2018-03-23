@@ -623,6 +623,7 @@ public class Client {
         return verifiedTools;
     }
 
+    @SuppressWarnings("checkstyle:parameternumber")
     private Map<String, String> constructParameterMap(String url, String referenceName, String entryType, String dockerfilePath,
             String parameterPath, String descriptorPath, String synapseCache, String runner) {
         Map<String, String> parameter = new HashMap<>();
@@ -856,7 +857,7 @@ public class Client {
                 parameter.put("ParameterPath", parameterStringBuilder.toString());
                 parameter.put("DescriptorPath", descriptorStringBuilder.toString());
                 parameter.put("Config", DockstoreConfigHelper.getConfig(this.url, runner));
-                String name = name = buildName(PipelineTester.PREFIX, runner, id);
+                String name = buildName(PipelineTester.PREFIX, runner, id);
                 if (!pipelineTester.isRunning(name)) {
 
                     pipelineTester.runTest(name, parameter);
