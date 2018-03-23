@@ -19,7 +19,6 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
 
         node {
             ws {
-                def playbook = ${AnsiblePlaybook}
                 sh 'rm -rf /mnt/output/*'
                 sh 'rm -rf /media/large_volume/output/*'
                 step([$class: 'WsCleanup'])
@@ -36,12 +35,15 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                         sh 'aws s3 --endpoint-url https://object.cancercollaboratory.org:9080 cp --recursive s3://dockstore/test_files/${SynapseCache}/ .'
                         // sh 's3cmd get --skip-existing --recursive s3://dockstore/test_files/${SynapseCache}/'
                     }
-                    sh 'echo dockstore ${entryType} launch --local-entry ${descriptor} --yaml ${parameter} --script'
-                    if (playbook == "toilPlaybook") {
+                    // Currently determining whether a file is yaml or json based on its file extension
+                    if (parameter.contains('.yml') || paramater.contains('.yaml')) {
+                        sh 'echo dockstore $(entryType) launch --local-entry $(descriptor) --yaml $(parameter) --script'
                         FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --yaml $parameter --script | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
                     } else {
+                        sh 'echo dockstore $(entryType) launch --local-entry $(descriptor) --json $(parameter) --script'
                         FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --yaml $parameter --script | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
                     }
+
                     sh "mv $FILE $parameter"
                     archiveArtifacts artifacts: parameter
                 }
