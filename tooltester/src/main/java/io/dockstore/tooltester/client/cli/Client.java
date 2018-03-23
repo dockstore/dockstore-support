@@ -699,7 +699,7 @@ public class Client {
             for (ToolVersion toolversion : toolVersions) {
                 String url = dockstoreTool != null ? dockstoreTool.getGitUrl() : null;
                 url = url != null ? url.replace("git@github.com:", "https://github.com/") : null;
-                parameter.put("URL", url);
+
 
                 String dockerfilePath = null;
                 assert dockstoreTool != null;
@@ -717,9 +717,6 @@ public class Client {
 
                 assert dockerfilePath != null;
                 dockerfilePath = dockerfilePath.replaceFirst("^/", "");
-                parameter.put("Tag", referenceName);
-                parameter.put("EntryType", "tool");
-                parameter.put("DockerfilePath", dockerfilePath);
                 StringBuilder descriptorStringBuilder = new StringBuilder();
                 StringBuilder parameterStringBuilder = new StringBuilder();
                 try {
@@ -763,9 +760,9 @@ public class Client {
                 } catch (ApiException e) {
                     exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the container API", API_ERROR);
                 }
-                parameter.put("ParameterPath", parameterStringBuilder.toString());
-                parameter.put("DescriptorPath", descriptorStringBuilder.toString());
-                parameter.put("Config", DockstoreConfigHelper.getConfig(this.url, runner));
+                parameter = constructParameterMap(url, referenceName, "tool", dockerfilePath,
+                parameterStringBuilder.toString(), descriptorStringBuilder.toString(),
+                        "", runner);
                 String name = buildName(PipelineTester.PREFIX, runner, id);
                 if (!pipelineTester.isRunning(name)) {
 
