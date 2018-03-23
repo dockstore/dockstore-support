@@ -1,5 +1,7 @@
 package io.dockstore.tooltester.helper;
 
+import java.io.IOException;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
@@ -18,14 +20,35 @@ public class DockstoreConfigHelperTest {
     public void testCwltoolConfig() {
         final String url = "https://staging.dockstore.org:8443";
         String cwltoolConfig = DockstoreConfigHelper.getConfig(url, "cwltool");
-        assertEquals(cwltoolConfig, "token: test \\nserver-url: https://staging.dockstore.org:8443");
+        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: cwltool\n", cwltoolConfig);
     }
 
     @Test
     public void testRabixConfig() {
         final String url = "https://staging.dockstore.org:8443";
         String rabixConfig = DockstoreConfigHelper.getConfig(url, "bunny");
-        assertEquals(rabixConfig, "token: test \\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: bunny");
+        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: bunny\n", rabixConfig);
+    }
+
+    @Test
+    public void testToilConfig() throws IOException {
+        final String url = "https://staging.dockstore.org:8443";
+        String toilConfig = DockstoreConfigHelper.getConfig(url, "toil");
+        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: toil\n", toilConfig);
+    }
+
+    @Test
+    public void testCromwellConfig() throws IOException {
+        final String url = "https://staging.dockstore.org:8443";
+        String toilConfig = DockstoreConfigHelper.getConfig(url, "cromwell");
+        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\n", toilConfig);
+    }
+
+    @Test
+    public void testCwlrunnerConfig() throws IOException {
+        final String url = "https://staging.dockstore.org:8443";
+        String toilConfig = DockstoreConfigHelper.getConfig(url, "cwlrunner");
+        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: cwlrunner\n", toilConfig);
     }
 
     @Test
