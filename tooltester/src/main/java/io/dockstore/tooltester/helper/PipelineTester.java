@@ -7,7 +7,7 @@ import org.apache.commons.configuration.HierarchicalINIConfiguration;
  * @since 20/01/17
  */
 public class PipelineTester extends JenkinsHelper {
-    private static final String PREFIX = "PipelineTest";
+    public static final String PREFIX = "PipelineTest";
 
     public PipelineTester(HierarchicalINIConfiguration config) {
         super(config);

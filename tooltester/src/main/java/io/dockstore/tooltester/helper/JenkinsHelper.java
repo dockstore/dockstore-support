@@ -91,7 +91,7 @@ public abstract class JenkinsHelper {
             exceptionMessage(e, "Could not connect to Jenkins server", IO_ERROR);
         }
     }
-    
+
     public String getEntity(String uri) {
         String entity = null;
         try {
@@ -133,13 +133,10 @@ public abstract class JenkinsHelper {
     /**
      * Creates a pipeline on Jenkins to test the parameter file
      *
-     * @param suffix The suffix of the test name
+     * @param name Name of the pipeline
      */
-
-    public void createTest(String suffix) {
-
-        String prefix = getPREFIX();
-        String name = prefix + "-" + suffix;
+    public void createTest(String name) {
+        String prefix = PipelineTester.PREFIX;
         JobWithDetails job = null;
         String jobxml = null;
         try {
@@ -168,12 +165,10 @@ public abstract class JenkinsHelper {
     /**
      * Run the already-made ParameterFileTest pipeline on Jenkins
      *
-     * @param suffix    Suffix of the test name
+     * @param name      Name of the pipeline
      * @param parameter Input parameter for the test
      */
-    public void runTest(String suffix, Map<String, String> parameter) {
-        String prefix = getPREFIX();
-        String name = prefix + "-" + suffix;
+    public void runTest(String name, Map<String, String> parameter) {
         JobWithDetails job;
         try {
             job = jenkins.getJob(name);
@@ -192,15 +187,13 @@ public abstract class JenkinsHelper {
     /**
      * Retrieves a single tool's test results
      *
-     * @param suffix The suffix of the test name
+     * @param name The suffix of the test name
      */
-    public Map<String, String> getTestResults(String suffix) {
-        String prefix = getPREFIX();
+    public Map<String, String> getTestResults(String name) {
+
         String status;
         JobWithDetails job;
-        String name;
         Map<String, String> map = new HashMap<>();
-        name = prefix + "-" + suffix;
 
         try {
             job = jenkins.getJob(name);
