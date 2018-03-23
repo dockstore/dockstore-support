@@ -687,11 +687,19 @@ public class Client {
                 try {
                     switch (descriptorType) {
                     case "cwl":
-                        descriptor = workflowsApi.cwl(containerId, tagName);
-                        break;
+                        if (runner != "cromwell") {
+                            descriptor = workflowsApi.cwl(containerId, tagName);
+                            break;
+                        } else {
+                            continue;
+                        }
                     case "wdl":
-                        descriptor = workflowsApi.wdl(containerId, tagName);
-                        break;
+                        if (runner != "cromwell") {
+                            descriptor = workflowsApi.cwl(containerId, tagName);
+                            break;
+                        } else {
+                            continue;
+                        }
                     default:
                         LOG.info("Unknown descriptor, skipping");
                         continue;
