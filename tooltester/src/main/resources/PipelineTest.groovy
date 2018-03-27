@@ -49,6 +49,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                     }
                 }
             }
+            cleanWs()
         }
 
     }
@@ -67,6 +68,7 @@ def transformIntoDockerfileStep(){
                     sh 'docker build --no-cache .'
                 }
             }
+            cleanWs()
         }
     }
 }
