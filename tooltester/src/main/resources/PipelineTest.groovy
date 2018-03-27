@@ -38,10 +38,10 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                     // Currently determining whether a file is yaml or json based on its file extension
                     if (parameter.contains('.yml') || parameter.contains('.yaml')) {
                         sh 'echo dockstore $(entryType) launch --local-entry $(descriptor) --yaml $(parameter) --script'
-                        FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --yaml $parameter --script | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
+                        FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --yaml $parameter --script | tee /dev/stderr | sed -n -e 's/^.*Saving copy of .* stdout to: //p'", returnStdout: true).trim()
                     } else {
                         sh 'echo dockstore $(entryType) launch --local-entry $(descriptor) --json $(parameter) --script'
-                        FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --yaml $parameter --script | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
+                        FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --yaml $parameter --script | tee /dev/stderr | sed -n -e 's/^.*Saving copy of .* stdout to: //p'", returnStdout: true).trim()
                     }
                     if (JOB_NAME.contains("cwltool") || JOB_NAME.contains("cwl-runner")) {
                         sh "mv $FILE $parameter"
