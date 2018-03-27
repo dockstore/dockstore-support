@@ -30,11 +30,6 @@
       pip:
         name: setuptools
         version: 36.5.0
-    - name: Install schema-salad
-      become: yes
-      pip:
-        name: schema-salad
-        version: 2.6.20170806163416
     - name: Install avro
       become: yes
       pip:
@@ -57,7 +52,12 @@
       become: yes
       pip:
         name: cwltool
-        version: 1.0.20180116213856
+        version: 1.0.20170828135420
+    - name: Install schema-salad
+      become: yes
+      pip:
+        name: schema-salad
+        version: 2.6.20170806163416
     - name: Install requests
       become: yes
       pip:
