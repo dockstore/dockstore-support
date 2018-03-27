@@ -72,11 +72,9 @@ Giving jenkins sudo access
 
 # Running tooltester:
 1. Check .tooltester to see if the 'server-url' needs to be changed
-2. Modify the playbook on ubuntu@JenkinsMaster to have the right dockstore version
-3. Modify the apt and pip dependencies if needed (i.e. Check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
-4. Run the playbook on ubuntu@JenkinsMaster
-5. `sudo -u jenkins -i` and then `dockstore` to confirm the right version
-6. Copy the playbook on JenkinsMaster to the ubuntu@JenkinsSlaves
-7. Run the playbook on ubuntu@JenkinsSlaves
-8. `sudo -u jenkins -i` and then `dockstore` to confirm the right version
-9. Configure the PipelineTest's `currentBuild.display` name to the Dockstore version that's going to be ran.
+2. Check .tooltester to see if the runners specified in it are correct.  An example config that runs all runners is:
+```
+runner = cromwell cwltool cwl-runner bunny
+```
+3. Modify the [cwltoolPlaybook](src/main/resources/cwltoolPlaybook.yml) to have the right dockstore version and apt/pip dependencies if needed (i.e. Check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
+4. Configure the PipelineTest's `currentBuild.display` name to the Dockstore version that's going to be ran.
