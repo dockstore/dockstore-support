@@ -43,9 +43,10 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                         sh 'echo dockstore $(entryType) launch --local-entry $(descriptor) --json $(parameter) --script'
                         FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --yaml $parameter --script | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
                     }
-
-                    sh "mv $FILE $parameter"
-                    archiveArtifacts artifacts: parameter
+                    if (JOB_NAME.contains("cwltool") || JOB_NAME.contains("cwl-runner")) {
+                        sh "mv $FILE $parameter"
+                        archiveArtifacts artifacts: parameter
+                    }
                 }
             }
         }
