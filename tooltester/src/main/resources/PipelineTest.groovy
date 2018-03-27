@@ -36,7 +36,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                         // sh 's3cmd get --skip-existing --recursive s3://dockstore/test_files/${SynapseCache}/'
                     }
                     // Currently determining whether a file is yaml or json based on its file extension
-                    if (parameter.contains('.yml') || paramater.contains('.yaml')) {
+                    if (parameter.contains('.yml') || parameter.contains('.yaml')) {
                         sh 'echo dockstore $(entryType) launch --local-entry $(descriptor) --yaml $(parameter) --script'
                         FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --yaml $parameter --script | tee /dev/stderr | sed -n -e 's/^.*Saving copy of cwltool stdout to: //p'", returnStdout: true).trim()
                     } else {
