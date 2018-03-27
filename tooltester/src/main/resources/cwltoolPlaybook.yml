@@ -49,6 +49,10 @@
       become: yes
       pip:
         name: html5lib
+    - name: Install cwl-runner
+      become: yes
+      pip:
+        name: cwl-runner
     - name: Install cwltool
       become: yes
       pip:
