@@ -72,14 +72,13 @@ public class ClientTest {
     }
 
     /**
-     * Test enqueue with no parameters which should print the help usage
+     * Test enqueue which should run all jobs
      */
     @Test
     public void enqueue() {
         String[] argv = { "enqueue" };
         main(argv);
-        Assert.assertTrue(systemOutRule.getLog().contains("Test verified tools on Jenkins."));
-
+        Assert.assertTrue(systemOutRule.getLog().isEmpty());
     }
 
     /**
@@ -93,17 +92,7 @@ public class ClientTest {
     }
 
     /**
-     * Test enqueue with option --all which should run all jobs
-     */
-    @Test
-    public void enqueueAll() {
-        String[] argv = { "enqueue", "--all" };
-        main(argv);
-        Assert.assertTrue(systemOutRule.getLog().isEmpty());
-    }
-
-    /**
-     * Test enqueue with default options
+     * Test enqueue with a specific tool
      */
     @Test
     public void enqueueTool() {
@@ -117,18 +106,7 @@ public class ClientTest {
      */
     @Test
     public void enqueueToolSource() {
-        String[] argv = { "enqueue", "--all", "--source", "Docktesters group" };
-        main(argv);
-        Assert.assertTrue(systemOutRule.getLog().isEmpty());
-    }
-
-
-    /**
-     * Test enqueue with default options
-     */
-    @Test
-    public void enqueueUnverifiedTool() {
-        String[] argv = { "enqueue", "--unverified-tool", "quay.io/ucsc_cgl/dockstore_tool_adtex" };
+        String[] argv = { "enqueue", "--source", "Docktesters group" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
     }
@@ -141,6 +119,16 @@ public class ClientTest {
         String[] argv = { "sync" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
+    }
+
+    /**
+     * Test sync with option --help which should display sync help
+     */
+    @Test
+    public void syncHelp() {
+        String[] argv = { "sync", "--help" };
+        main(argv);
+        Assert.assertTrue(systemOutRule.getLog().contains("Synchronizes with Jenkins to create tests for verified tools."));
     }
 
     /**
@@ -158,7 +146,7 @@ public class ClientTest {
      */
     @Test
     public void createUnverifiedJenkinsTests() {
-        String[] argv = { "sync", "--source", "Docktesters group", "--unverified-tool", "quay.io/ucsc_cgl/dockstore_tool_adtex" };
+        String[] argv = { "sync", "--source", "Docktesters group", "--tools", "quay.io/ucsc_cgl/dockstore_tool_adtex" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
     }
@@ -179,16 +167,6 @@ public class ClientTest {
     @Test
     public void report() {
         String[] argv = { "report" };
-        main(argv);
-        Assert.assertTrue(systemOutRule.getLog().contains("Report status of verified tools tested."));
-    }
-
-    /**
-     * This gets the report of all the tools
-     */
-    @Test
-    public void reportAll() {
-        String[] argv = { "report", "--all" };
         main(argv);
         assertReport();
     }

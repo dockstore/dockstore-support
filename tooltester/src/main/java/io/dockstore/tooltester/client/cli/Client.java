@@ -83,7 +83,6 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
  */
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
-    private static boolean testVerified = true;
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4GhApi ga4ghApi;
@@ -133,28 +132,14 @@ public class Client {
                     if (commandReport.help) {
                         jc.usage("report");
                     } else {
-                        if (commandReport.all || !commandReport.tools.isEmpty()) {
-                            client.handleReport(commandReport.tools);
-                        } else {
-                            LOG.warn("You must specify --all or --tool");
-                            jc.usage("report");
-                        }
+                        client.handleReport(commandReport.tools, commandEnqueue.source);
                     }
                     break;
                 case "enqueue":
                     if (commandEnqueue.help) {
                         jc.usage("enqueue");
                     } else {
-                        if (commandEnqueue.all) {
-                            client.handleRunTests(commandEnqueue.tools, commandEnqueue.unverifiedTool, commandEnqueue.source);
-                        } else {
-
-                            if (commandEnqueue.tools != null || commandEnqueue.unverifiedTool != null) {
-                                client.handleRunTests(commandEnqueue.tools, commandEnqueue.unverifiedTool, commandEnqueue.source);
-                            } else {
-                                jc.usage("enqueue");
-                            }
-                        }
+                        client.handleRunTests(commandEnqueue.tools, commandEnqueue.source);
                     }
                     break;
                 case "file-report":
@@ -168,7 +153,7 @@ public class Client {
                     if (commandSync.help) {
                         jc.usage("sync");
                     } else {
-                            client.handleCreateTests(commandSync.source, commandSync.tools);
+                        client.handleCreateTests(commandSync.tools, commandSync.source);
                     }
                     break;
                 default:
@@ -250,13 +235,13 @@ public class Client {
     /**
      * This function handles the report command
      *
-     * @param toolNames The tools passed in as arguments from the commmand line
+     * @param toolNames The tools passed in as arguments from the command line
+     * @param sources   The verified source to filter
      */
-    private void handleReport(List<String> toolNames) {
+    private void handleReport(List<String> toolNames, List<String> sources) {
         try {
             setupClientEnvironment();
             setupTesters();
-            List<String> sources = new ArrayList<>();
             List<Tool> tools = GA4GHHelper.getTools(this.getGa4ghApi(), true, sources, toolNames);
             String prefix = TimeHelper.getDateFilePrefix();
             createResults(prefix + "Report.csv");
@@ -293,8 +278,9 @@ public class Client {
      * Creates or updates the tests. If tool is verified, will create tests for verified versions.  If tool is not verified, will create test for valid versions.
      *
      * @param source    the testing group that verified the tools
+     * @param toolnames Tools to specifically test
      */
-    private void handleCreateTests(List<String> source, List<String> toolnames) {
+    private void handleCreateTests(List<String> toolnames, List<String> source) {
         setupClientEnvironment();
         setupTesters();
         List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames);
@@ -306,19 +292,13 @@ public class Client {
     /**
      * Runs tests that should've been created.  If tool is verified, it will run tests for verified versions.  If tool is not verified, it will run tests for valid versions.
      *
-     * @param toolNames
-     * @param unverifiedTool
+     * @param toolNames Tools to specifically test
+     * @param sources   Verified sources to filter by
      */
-    private void handleRunTests(List<String> toolNames, String unverifiedTool, List<String> sources) {
+    private void handleRunTests(List<String> toolNames, List<String> sources) {
         setupClientEnvironment();
         setupTesters();
-        List<Tool> tools;
-        if (unverifiedTool != null) {
-            testVerified = false;
-            tools = GA4GHHelper.getTools(getGa4ghApi(), false, sources, toolNames);
-        } else {
-            tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames);
-        }
+        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames);
         for (Tool tool : tools) {
             testTool(tool);
         }
@@ -350,7 +330,7 @@ public class Client {
 
         // pull out the variables from the config if it exists
         String serverUrl = config.getString("server-url", "https://staging.dockstore.org:8443");
-        this.runner = this.config.getString("runner", "cwltool").split(" ");
+        this.runner = this.config.getString("runner", "cwltool cwl-runner bunny toil cromwell").split(" ");
         this.url = serverUrl;
 
         ApiClient defaultApiClient;
@@ -444,7 +424,6 @@ public class Client {
             }
         }
 
-
     }
 
     /**
@@ -468,7 +447,7 @@ public class Client {
      * @param tool The tool to get the test results for
      */
     private void getToolTestResults(Tool tool) {
-        for (String runner: this.runner) {
+        for (String runner : this.runner) {
             String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
             List<ToolVersion> toolVersions = tool.getVersions();
             for (ToolVersion toolversion : toolVersions) {
@@ -525,8 +504,9 @@ public class Client {
                                 } catch (ParseException e) {
                                     errorMessage("Could not parse start time " + date, CLIENT_ERROR);
                                 }
-                                    List<String> record = Arrays
-                                            .asList(toolversion.getId(), date, tag, runner , pipelineNode.getDisplayName(), duration, result, logURL);
+                                List<String> record = Arrays
+                                        .asList(toolversion.getId(), date, tag, runner, pipelineNode.getDisplayName(), duration, result,
+                                                logURL);
                                 report.printAndWriteLine(record);
                             } catch (NullPointerException e) {
                                 LOG.warn(e.getMessage());
@@ -604,9 +584,6 @@ public class Client {
                 return false;
             }
             List<WorkflowVersion> versions = workflow.getWorkflowVersions();
-            if (testVerified) {
-                versions.removeIf(version -> !version.isVerified());
-            }
             List<WorkflowVersion> validVersions = versions.parallelStream().filter(version -> version.isValid())
                     .collect(Collectors.toList());
             for (WorkflowVersion version : validVersions) {
@@ -738,7 +715,6 @@ public class Client {
                 String url = dockstoreTool != null ? dockstoreTool.getGitUrl() : null;
                 url = url != null ? url.replace("git@github.com:", "https://github.com/") : null;
 
-
                 String dockerfilePath = null;
                 assert dockstoreTool != null;
                 Long containerId = dockstoreTool.getId();
@@ -798,9 +774,8 @@ public class Client {
                 } catch (ApiException e) {
                     exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the container API", API_ERROR);
                 }
-                parameter = constructParameterMap(url, referenceName, "tool", dockerfilePath,
-                parameterStringBuilder.toString(), descriptorStringBuilder.toString(),
-                        "", runner);
+                parameter = constructParameterMap(url, referenceName, "tool", dockerfilePath, parameterStringBuilder.toString(),
+                        descriptorStringBuilder.toString(), "", runner);
                 String name = buildName(runner, id);
                 if (!runTest(name, parameter)) {
                     status = false;
@@ -838,7 +813,7 @@ public class Client {
     }
 
     private static class CommandMain {
-        @Parameter(names = "--help", description = "Prints help for autotool", help = true)
+        @Parameter(names = "--help", description = "Prints help for tooltester", help = true)
         private boolean help = false;
     }
 
@@ -846,18 +821,14 @@ public class Client {
     private static class CommandSync {
         @Parameter(names = { "--source" }, description = "Tester Group")
         private List<String> source = new ArrayList<>();
-        @Parameter(names = "--help", description = "Prints help for main", help = true)
-        private boolean help = false;
-        @Parameter(names = "--unverified-tool", description = "Unverified tool to specifically test", variableArity = true)
+        @Parameter(names = "--tools", description = "The specific tools to sync", variableArity = true)
         private List<String> tools;
+        @Parameter(names = "--help", description = "Prints help for sync", help = true)
+        private boolean help = false;
     }
 
     @Parameters(separators = "=", commandDescription = "Test verified tools on Jenkins.")
     private static class CommandEnqueue {
-        @Parameter(names = "--unverified-tool", description = "Unverified tool to specifically test.")
-        public String unverifiedTool;
-        @Parameter(names = "--all", description = "Whether to test all tools or not")
-        private Boolean all = false;
         @Parameter(names = { "--source" }, description = "Tester Group")
         private List<String> source = new ArrayList<>();
         @Parameter(names = "--tool", description = "The specific tools to test", variableArity = true)
@@ -868,8 +839,8 @@ public class Client {
 
     @Parameters(separators = "=", commandDescription = "Report status of verified tools tested.")
     private static class CommandReport {
-        @Parameter(names = "--all", description = "Whether to report all tools or not")
-        private Boolean all = false;
+        @Parameter(names = { "--source" }, description = "Tester Group")
+        private List<String> source = new ArrayList<>();
         @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
         private List<String> tools = new ArrayList<>();
         @Parameter(names = "--help", description = "Prints help for report", help = true)
@@ -878,7 +849,7 @@ public class Client {
 
     @Parameters(separators = "=", commandDescription = "Reports the file sizes and checksum of a verified tool across all tested versions.")
     private static class CommandFileReport {
-        @Parameter(names = "--tool", description = "Specific tool to report", required = true, variableArity = true)
+        @Parameter(names = "--tool", description = "The specific tool to report", required = true)
         private String tool;
         @Parameter(names = "--help", description = "Prints help for file-report", help = true)
         private boolean help = false;
