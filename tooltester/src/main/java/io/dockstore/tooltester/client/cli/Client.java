@@ -653,7 +653,7 @@ public class Client {
                 } catch (ApiException e) {
                     exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the workflows API for " + name, API_ERROR);
                 }
-                String synapseCache = S3CacheHelper.mapRepositoryToCache(workflow.getPath());
+                String synapseCache = S3CacheHelper.mapRepositoryToCache(workflow.getFullWorkflowPath());
                 Map<String, String> parameter = constructParameterMap(url, tagName, "workflow", dockerfilePath,
                         parameterList.stream().collect(Collectors.joining(" ")), descriptorList.stream().collect(Collectors.joining(" ")),
                         synapseCache, runner);
