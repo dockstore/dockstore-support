@@ -40,9 +40,10 @@ import com.offbytwo.jenkins.model.JobWithDetails;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
 import io.dockstore.tooltester.helper.DockstoreConfigHelper;
-import io.dockstore.tooltester.helper.S3CacheHelper;
+import io.dockstore.tooltester.helper.GA4GHHelper;
 import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
+import io.dockstore.tooltester.helper.S3CacheHelper;
 import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.helper.TinyUrl;
 import io.dockstore.tooltester.jenkins.OutputFile;
@@ -82,7 +83,6 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
  */
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
-    private static boolean testVerified = true;
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4GhApi ga4ghApi;
@@ -91,8 +91,9 @@ public class Client {
     private int count = 0;
     private HierarchicalINIConfiguration config;
     private PipelineTester pipelineTester;
-    private String runner;
+    private String[] runner;
     private String url;
+
     Client() {
 
     }
@@ -131,28 +132,14 @@ public class Client {
                     if (commandReport.help) {
                         jc.usage("report");
                     } else {
-                        if (commandReport.all || !commandReport.tools.isEmpty()) {
-                            client.handleReport(commandReport.tools);
-                        } else {
-                            LOG.warn("You must specify --all or --tool");
-                            jc.usage("report");
-                        }
+                        client.handleReport(commandReport.tools, commandEnqueue.source);
                     }
                     break;
                 case "enqueue":
                     if (commandEnqueue.help) {
                         jc.usage("enqueue");
                     } else {
-                        if (commandEnqueue.all) {
-                            client.handleRunTests(commandEnqueue.tools, commandEnqueue.unverifiedTool, commandEnqueue.source);
-                        } else {
-
-                            if (commandEnqueue.tools != null || commandEnqueue.unverifiedTool != null) {
-                                client.handleRunTests(commandEnqueue.tools, commandEnqueue.unverifiedTool, commandEnqueue.source);
-                            } else {
-                                jc.usage("enqueue");
-                            }
-                        }
+                        client.handleRunTests(commandEnqueue.tools, commandEnqueue.source);
                     }
                     break;
                 case "file-report":
@@ -166,11 +153,7 @@ public class Client {
                     if (commandSync.help) {
                         jc.usage("sync");
                     } else {
-                        if (commandSync.tool != null) {
-                            client.handleCreateTests(commandSync.api, commandSync.source, commandSync.execution, commandSync.tool);
-                        } else {
-                            client.handleCreateTests(commandSync.api, commandSync.source, commandSync.execution, null);
-                        }
+                        client.handleCreateTests(commandSync.tools, commandSync.source);
                     }
                     break;
                 default:
@@ -252,18 +235,16 @@ public class Client {
     /**
      * This function handles the report command
      *
-     * @param toolNames The tools passed in as arguments from the commmand line
+     * @param toolNames The tools passed in as arguments from the command line
+     * @param sources   The verified source to filter
      */
-    private void handleReport(List<String> toolNames) {
+    private void handleReport(List<String> toolNames, List<String> sources) {
         try {
             setupClientEnvironment();
             setupTesters();
-            List<Tool> tools = getVerifiedTools();
+            List<Tool> tools = GA4GHHelper.getTools(this.getGa4ghApi(), true, sources, toolNames);
             String prefix = TimeHelper.getDateFilePrefix();
             createResults(prefix + "Report.csv");
-            if (!toolNames.isEmpty()) {
-                tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
-            }
             for (Tool tool : tools) {
                 getToolTestResults(tool);
             }
@@ -296,27 +277,13 @@ public class Client {
     /**
      * Creates or updates the tests. If tool is verified, will create tests for verified versions.  If tool is not verified, will create test for valid versions.
      *
-     * @param api       api to pull the tools from (currently not used because config file has it)
      * @param source    the testing group that verified the tools
-     * @param execution the location to test the tools
+     * @param toolnames Tools to specifically test
      */
-    private void handleCreateTests(String api, List<String> source, String execution, String toolname) {
-        if (!execution.equals("jenkins")) {
-            errorMessage("Can only execute on jenkins, no other location is currently supported.  Received " + execution, COMMAND_ERROR);
-        }
+    private void handleCreateTests(List<String> toolnames, List<String> source) {
         setupClientEnvironment();
         setupTesters();
-        List<Tool> tools;
-        if (toolname == null) {
-            if (!source.isEmpty()) {
-                tools = getVerifiedTools(source);
-            } else {
-                tools = getVerifiedTools();
-            }
-        } else {
-            tools = getTools(toolname);
-
-        }
+        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames);
         for (Tool tool : tools) {
             createToolTests(tool);
         }
@@ -324,27 +291,14 @@ public class Client {
 
     /**
      * Runs tests that should've been created.  If tool is verified, it will run tests for verified versions.  If tool is not verified, it will run tests for valid versions.
-     * @param toolNames
-     * @param unverifiedTool
+     *
+     * @param toolNames Tools to specifically test
+     * @param sources   Verified sources to filter by
      */
-    private void handleRunTests(List<String> toolNames, String unverifiedTool, List<String> source) {
+    private void handleRunTests(List<String> toolNames, List<String> sources) {
         setupClientEnvironment();
         setupTesters();
-        List<Tool> tools;
-        if (unverifiedTool != null) {
-            testVerified = false;
-            tools = getTools(unverifiedTool);
-        } else {
-            if (!source.isEmpty()) {
-                tools = getVerifiedTools(source);
-            } else {
-                tools = getVerifiedTools();
-            }
-            if (toolNames != null) {
-                tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
-            }
-
-        }
+        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames);
         for (Tool tool : tools) {
             testTool(tool);
         }
@@ -376,7 +330,7 @@ public class Client {
 
         // pull out the variables from the config if it exists
         String serverUrl = config.getString("server-url", "https://staging.dockstore.org:8443");
-        this.runner = this.config.getString("runner", "cwltool");
+        this.runner = this.config.getString("runner", "cwltool cwl-runner bunny toil cromwell").split(" ");
         this.url = serverUrl;
 
         ApiClient defaultApiClient;
@@ -419,30 +373,57 @@ public class Client {
         SourceFile testParameter;
         List<SourceFile> testParameterFiles;
         DockstoreTool dockstoreTool;
+        Workflow workflow;
         Long containerId;
-        dockstoreTool = containersApi.getPublishedContainerByToolPath(verifiedTool.getId());
-        containerId = dockstoreTool.getId();
-        for (ToolVersion version : verifiedTool.getVersions()) {
-            String tag = version.getName();
-            dockerfile = containersApi.dockerfile(containerId, tag);
-            for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
-                switch (descriptorType.toString()) {
-                case "CWL":
-                    descriptor = containersApi.cwl(containerId, tag);
-                    break;
-                case "WDL":
-                    descriptor = containersApi.wdl(containerId, tag);
-                    break;
-                default:
-                    break;
+        if (verifiedTool.getToolclass().getName().equals("Workflow")) {
+            workflow = workflowsApi.getPublishedWorkflowByPath(verifiedTool.getId().replace("#workflow/", ""));
+            containerId = workflow.getId();
+            for (ToolVersion version : verifiedTool.getVersions()) {
+                String tag = version.getName();
+                for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
+                    switch (descriptorType.toString()) {
+                    case "CWL":
+                        descriptor = workflowsApi.cwl(containerId, tag);
+                        break;
+                    case "WDL":
+                        descriptor = workflowsApi.wdl(containerId, tag);
+                        break;
+                    default:
+                        break;
+                    }
+                    testParameterFiles = workflowsApi.getTestParameterFiles(containerId, tag);
+                    for (SourceFile testParameterFile : testParameterFiles) {
+                        testParameter = testParameterFile;
+                        count++;
+                    }
                 }
-                testParameterFiles = containersApi.getTestParameterFiles(containerId, descriptorType.toString(), tag);
-                for (SourceFile testParameterFile : testParameterFiles) {
-                    testParameter = testParameterFile;
-                    count++;
+            }
+        } else {
+            dockstoreTool = containersApi.getPublishedContainerByToolPath(verifiedTool.getId());
+            containerId = dockstoreTool.getId();
+            for (ToolVersion version : verifiedTool.getVersions()) {
+                String tag = version.getName();
+                dockerfile = containersApi.dockerfile(containerId, tag);
+                for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
+                    switch (descriptorType.toString()) {
+                    case "CWL":
+                        descriptor = containersApi.cwl(containerId, tag);
+                        break;
+                    case "WDL":
+                        descriptor = containersApi.wdl(containerId, tag);
+                        break;
+                    default:
+                        break;
+                    }
+                    testParameterFiles = containersApi.getTestParameterFiles(containerId, descriptorType.toString(), tag);
+                    for (SourceFile testParameterFile : testParameterFiles) {
+                        testParameter = testParameterFile;
+                        count++;
+                    }
                 }
             }
         }
+
     }
 
     /**
@@ -451,11 +432,12 @@ public class Client {
      * @param tool The tool to create tests for
      */
     private void createToolTests(Tool tool) {
-        List<ToolVersion> toolVersions = tool.getVersions();
-        for (ToolVersion toolversion : toolVersions) {
-            String name = toolversion.getId();
-            name = JenkinsHelper.cleanSuffx(name);
-            pipelineTester.createTest(name);
+        for (String runner : this.runner) {
+            List<ToolVersion> toolVersions = tool.getVersions();
+            for (ToolVersion toolversion : toolVersions) {
+                String name = buildName(runner, toolversion.getId());
+                pipelineTester.createTest(name);
+            }
         }
     }
 
@@ -465,76 +447,75 @@ public class Client {
      * @param tool The tool to get the test results for
      */
     private void getToolTestResults(Tool tool) {
-        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-        List<ToolVersion> toolVersions = tool.getVersions();
-        for (ToolVersion toolversion : toolVersions) {
-            if (toolversion != null) {
-                String id = toolversion.getId();
-                String tag = toolversion.getName();
-
-                String suffix = id;
-                suffix = JenkinsHelper.cleanSuffx(suffix);
-                if (pipelineTester.getJenkinsJob(suffix) == null) {
-                    LOG.info("Could not get job: " + suffix);
-                } else {
-                    int buildId = pipelineTester.getLastBuildId(suffix);
-                    if (buildId == 0 || buildId == -1) {
-                        LOG.info("No build was ran for " + tool.getId());
-                        continue;
-                    }
-                    PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(suffix);
-
-                    for (PipelineNodeImpl pipelineNode : pipelineNodes) {
-                        try {
-                            // There's pretty much always going to be a parallel node that does not matter
-                            if (pipelineNode.getDisplayName().equals("Parallel") || pipelineNode.getDurationInMillis() < 0L) {
-                                continue;
-                            }
-                            String state = pipelineNode.getState();
-                            String result = pipelineNode.getResult();
-                            if (state.equals("RUNNING")) {
-                                result = "RUNNING";
-                            }
-                            Long runtime = 0L;
-
-                            String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
-
-                            String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
-                            String logURL = TinyUrl.getTinyUrl(serverUrl + nodeLogURI);
-                            Gson gson = new Gson();
-                            result += " See " + logURL;
-                            PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
-                            for (PipelineStepImpl pipelineStep : pipelineSteps) {
-                                runtime += pipelineStep.getDurationInMillis();
-                            }
-                            String date = pipelineNode.getStartTime();
-                            String duration;
-                            // Blue Ocean REST API does not know how long the job is running for
-                            // If it's still running, we get the duration since the start date
-                            // If it's finished running, we sum up the duration of each step
-                            if (state.equals("RUNNING")) {
-                                duration = TimeHelper.getDurationSinceDate(date);
-                            } else {
-                                duration = TimeHelper.durationToString(runtime);
-                            }
-
-                            try {
-                                date = TimeHelper.timeFormatConvert(date);
-                            } catch (ParseException e) {
-                                errorMessage("Could not parse start time " + date, CLIENT_ERROR);
-                            }
-
-                            List<String> record = Arrays
-                                    .asList(toolversion.getId(), date, tag, "Jenkins", pipelineNode.getDisplayName(), duration, result);
-                            report.printAndWriteLine(record);
-                        } catch (NullPointerException e) {
-                            LOG.warn(e.getMessage());
+        for (String runner : this.runner) {
+            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+            List<ToolVersion> toolVersions = tool.getVersions();
+            for (ToolVersion toolversion : toolVersions) {
+                if (toolversion != null) {
+                    String id = toolversion.getId();
+                    String tag = toolversion.getName();
+                    String name = buildName(runner, id);
+                    if (pipelineTester.getJenkinsJob(name) == null) {
+                        LOG.info("Could not get job: " + name);
+                    } else {
+                        int buildId = pipelineTester.getLastBuildId(name);
+                        if (buildId == 0 || buildId == -1) {
+                            LOG.info("No build was ran for " + name);
+                            continue;
                         }
+                        PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(name);
 
+                        for (PipelineNodeImpl pipelineNode : pipelineNodes) {
+                            try {
+                                // There's pretty much always going to be a parallel node that does not matter
+                                if (pipelineNode.getDisplayName().equals("Parallel") || pipelineNode.getDurationInMillis() < 0L) {
+                                    continue;
+                                }
+                                String state = pipelineNode.getState();
+                                String result = pipelineNode.getResult();
+                                if (state.equals("RUNNING")) {
+                                    result = "RUNNING";
+                                }
+                                Long runtime = 0L;
+
+                                String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
+
+                                String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
+                                String longURL = serverUrl + nodeLogURI;
+                                String logURL = TinyUrl.getTinyUrl(longURL);
+                                Gson gson = new Gson();
+                                PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
+                                for (PipelineStepImpl pipelineStep : pipelineSteps) {
+                                    runtime += pipelineStep.getDurationInMillis();
+                                }
+                                String date = pipelineNode.getStartTime();
+                                String duration;
+                                // Blue Ocean REST API does not know how long the job is running for
+                                // If it's still running, we get the duration since the start date
+                                // If it's finished running, we sum up the duration of each step
+                                if (state.equals("RUNNING")) {
+                                    duration = TimeHelper.getDurationSinceDate(date);
+                                } else {
+                                    duration = TimeHelper.durationToString(runtime);
+                                }
+
+                                try {
+                                    date = TimeHelper.timeFormatConvert(date);
+                                } catch (ParseException e) {
+                                    errorMessage("Could not parse start time " + date, CLIENT_ERROR);
+                                }
+                                List<String> record = Arrays
+                                        .asList(toolversion.getId(), date, tag, runner, pipelineNode.getDisplayName(), duration, result,
+                                                logURL);
+                                report.printAndWriteLine(record);
+                            } catch (NullPointerException e) {
+                                LOG.warn(e.getMessage());
+                            }
+                        }
                     }
+                } else {
+                    errorMessage("Tool version is null", COMMAND_ERROR);
                 }
-            } else {
-                errorMessage("Tool version is null", COMMAND_ERROR);
             }
         }
     }
@@ -559,70 +540,9 @@ public class Client {
     //        return serverUrl + jenkinsLog.getConsoleUrl().replaceFirst("^/", "");
     //    }
 
-    /**
-     * This function checks if the any of the tool's verified source matches the filter
-     *
-     * @param filter          The list of verified sources that we're interested in
-     * @param verifiedSources The tool version's verified sources
-     * @return True if the one of the verified sources matches the filter
-     */
-    private boolean matchVerifiedSource(List<String> filter, String verifiedSources) {
-        return filter.stream().anyMatch(str -> str.trim().equals(verifiedSources));
-
-    }
-
-    /**
-     * Gets the list of verified tools
-     *
-     * @return The list of verified tools
-     */
-    List<Tool> getVerifiedTools() {
-        List<Tool> verifiedTools = null;
-        Ga4GhApi ga4ghApi = getGa4ghApi();
-        try {
-            final List<Tool> tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
-            verifiedTools = tools.parallelStream().filter(tool -> tool.isVerified()).collect(Collectors.toList());
-            for (Tool tool : verifiedTools) {
-                tool.setVersions(tool.getVersions().parallelStream().filter(ToolVersion::isVerified).collect(Collectors.toList()));
-            }
-        } catch (ApiException e) {
-            exceptionMessage(e, "", API_ERROR);
-        }
-        return verifiedTools;
-    }
-
-    private List<Tool> getTools(String toolname) {
-        List<Tool> tools = new ArrayList<>();
-        Ga4GhApi ga4ghApi = getGa4ghApi();
-        try {
-            Tool tool = ga4ghApi.toolsIdGet(toolname);
-            if (tool != null) {
-                tools.add(tool);
-            }
-
-        } catch (ApiException e) {
-            exceptionMessage(e, "", API_ERROR);
-        }
-        return tools;
-    }
-
-    /**
-     * Gets the list of verified tools and applies filter to it
-     *
-     * @param verifiedSources Filter parameter to filter the verified sources
-     * @return The list of verified tools
-     */
-    List<Tool> getVerifiedTools(List<String> verifiedSources) {
-        List<Tool> verifiedTools = getVerifiedTools();
-        for (Tool tool : verifiedTools) {
-            tool.setVersions(tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource()))
-                    .collect(Collectors.toList()));
-        }
-        return verifiedTools;
-    }
-
+    @SuppressWarnings("checkstyle:parameternumber")
     private Map<String, String> constructParameterMap(String url, String referenceName, String entryType, String dockerfilePath,
-            String parameterPath, String descriptorPath, String synapseCache) {
+            String parameterPath, String descriptorPath, String synapseCache, String runner) {
         Map<String, String> parameter = new HashMap<>();
         parameter.put("URL", url);
         parameter.put("ParameterPath", parameterPath);
@@ -631,7 +551,12 @@ public class Client {
         parameter.put("EntryType", entryType);
         parameter.put("DockerfilePath", dockerfilePath);
         parameter.put("SynapseCache", synapseCache);
-        parameter.put("Config", DockstoreConfigHelper.getConfig(this.url, this.runner));
+        parameter.put("Config", DockstoreConfigHelper.getConfig(this.url, runner));
+        if (runner == "toil") {
+            parameter.put("AnsiblePlaybook", "toilPlaybook");
+        } else {
+            parameter.put("AnsiblePlaybook", "cwltoolPlaybook");
+        }
         return parameter;
     }
 
@@ -645,72 +570,93 @@ public class Client {
      */
     private boolean testWorkflow(Tool tool) {
         boolean status = true;
-        Workflow workflow = null;
-        String toolId = tool.getId();
-        String path = toolId.replace("#workflow/", "");
-        try {
-            workflow = workflowsApi.getPublishedWorkflowByPath(path);
-        } catch (ApiException e) {
-            exceptionMessage(e, "Could not get " + path + " using the workflowsApi API", API_ERROR);
-        }
-        if (workflow == null) {
-            return false;
-        }
-        List<WorkflowVersion> versions = workflow.getWorkflowVersions();
-        if (testVerified) {
-            versions.removeIf(version -> !version.isVerified());
-        }
-        List<WorkflowVersion> validVersions = versions.parallelStream().filter(version -> version.isValid()).collect(Collectors.toList());
-        for (WorkflowVersion version : validVersions) {
-            String url = workflow.getGitUrl();
-            url = url != null ? url.replace("git@github.com:", "https://github.com/") : null;
-            String dockerfilePath = "";
-            Long containerId = workflow.getId();
-            String tagName = version.getReference();
-            dockerfilePath = dockerfilePath.replaceFirst("^/", "");
-            String name = toolId + "-" + tagName;
-            name = JenkinsHelper.cleanSuffx(name);
-            List<String> descriptorList = new ArrayList<>();
-            List<String> parameterList = new ArrayList<>();
-            String descriptorType = workflow.getDescriptorType();
-            List<SourceFile> testParameterFiles;
-            SourceFile descriptor;
+        for (String runner : this.runner) {
+
+            Workflow workflow = null;
+            String toolId = tool.getId();
+            String path = toolId.replace("#workflow/", "");
             try {
-                switch (descriptorType) {
-                case "cwl":
-                    descriptor = workflowsApi.cwl(containerId, tagName);
-                    break;
-                case "wdl":
-                    descriptor = workflowsApi.wdl(containerId, tagName);
-                    break;
-                default:
-                    LOG.info("Unknown descriptor, skipping");
+                workflow = workflowsApi.getPublishedWorkflowByPath(path);
+            } catch (ApiException e) {
+                exceptionMessage(e, "Could not get " + path + " using the workflowsApi API", API_ERROR);
+            }
+            if (workflow == null) {
+                return false;
+            }
+            List<WorkflowVersion> versions = workflow.getWorkflowVersions();
+            List<WorkflowVersion> validVersions = versions.parallelStream().filter(version -> version.isValid())
+                    .collect(Collectors.toList());
+            for (WorkflowVersion version : validVersions) {
+                String url = workflow.getGitUrl();
+                url = url != null ? url.replace("git@github.com:", "https://github.com/") : null;
+                String dockerfilePath = "";
+                Long containerId = workflow.getId();
+                String tagName = version.getReference();
+                dockerfilePath = dockerfilePath.replaceFirst("^/", "");
+                List<String> descriptorList = new ArrayList<>();
+                List<String> parameterList = new ArrayList<>();
+                String descriptorType = workflow.getDescriptorType();
+                List<SourceFile> testParameterFiles;
+                SourceFile descriptor;
+                String name = buildName(runner, toolId + "-" + tagName);
+                try {
+                    switch (descriptorType) {
+                    case "cwl":
+                        if (!runner.equals("cromwell")) {
+                            descriptor = workflowsApi.cwl(containerId, tagName);
+                            break;
+                        } else {
+                            continue;
+                        }
+                    case "wdl":
+                        if (runner.equals("cromwell")) {
+                            descriptor = workflowsApi.wdl(containerId, tagName);
+                            break;
+                        } else {
+                            continue;
+                        }
+                    default:
+                        LOG.info("Unknown descriptor, skipping");
+                        continue;
+                    }
+                    String descriptorPath = descriptor.getPath().replaceFirst("^/", "");
+                    testParameterFiles = workflowsApi.getTestParameterFiles(containerId, tagName);
+                    testParameterFiles.stream().map(testParameterFile -> testParameterFile.getPath().replaceFirst("^/", ""))
+                            .forEach(parameterPath -> {
+                                parameterList.add(parameterPath);
+                                descriptorList.add(descriptorPath);
+                            });
+
+                } catch (ApiException e) {
+                    exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the workflows API for " + name, API_ERROR);
+                }
+                String synapseCache = S3CacheHelper.mapRepositoryToCache(workflow.getFullWorkflowPath());
+                Map<String, String> parameter = constructParameterMap(url, tagName, "workflow", dockerfilePath,
+                        parameterList.stream().collect(Collectors.joining(" ")), descriptorList.stream().collect(Collectors.joining(" ")),
+                        synapseCache, runner);
+                if (!runTest(name, parameter)) {
+                    status = false;
                     continue;
                 }
-                String descriptorPath = descriptor.getPath().replaceFirst("^/", "");
-                testParameterFiles = workflowsApi.getTestParameterFiles(containerId, tagName);
-                testParameterFiles.stream().map(testParameterFile -> testParameterFile.getPath().replaceFirst("^/", "")).forEach(parameterPath -> {
-                    parameterList.add(parameterPath);
-                    descriptorList.add(descriptorPath);
-                });
-            } catch (ApiException e) {
-                exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the workflows API for " + name, API_ERROR);
-            }
-            String synapseCache = S3CacheHelper.mapRepositoryToCache(workflow.getPath());
-            Map<String, String> parameter = constructParameterMap(url, tagName, "workflow", dockerfilePath,
-                    parameterList.stream().collect(Collectors.joining(" ")), descriptorList.stream().collect(Collectors.joining(" ")), synapseCache);
-            if (parameterList.size() == 0 || descriptorList.size() == 0) {
-                LOG.info("Skipping test, no descriptor or test parameter file found for " + toolId);
-                status = false;
-                continue;
-            }
-            if (!pipelineTester.isRunning(name)) {
-                pipelineTester.runTest(name, parameter);
-            } else {
-                LOG.info("Job " + name + " is already running");
             }
         }
         return status;
+
+    }
+
+    private boolean runTest(String name, Map<String, String> parameter) {
+        String parameterPath = parameter.get("ParameterPath");
+        String descriptorPath = parameter.get("DescriptorPath");
+        if (parameterPath.length() == 0 || descriptorPath.length() == 0) {
+            LOG.debug("Skipping test, no descriptor or test parameter file found for " + name);
+            return false;
+        }
+        if (!pipelineTester.isRunning(name)) {
+            pipelineTester.runTest(name, parameter);
+        } else {
+            LOG.info("Job " + name + " is already running");
+        }
+        return true;
     }
 
     private boolean testTool(Tool tool) {
@@ -754,86 +700,90 @@ public class Client {
      * @return boolean  Returns true
      */
     private boolean testDockstoreTool(Tool tool) {
-        DockstoreTool dockstoreTool = null;
-        try {
-            dockstoreTool = containersApi.getPublishedContainerByToolPath(tool.getId());
-        } catch (ApiException e) {
-            exceptionMessage(e, "Could not get published containers using the container API", API_ERROR);
-        }
-        Map<String, String> parameter = new HashMap<>();
-        List<ToolVersion> toolVersions = tool.getVersions();
-        for (ToolVersion toolversion : toolVersions) {
-            String url = dockstoreTool != null ? dockstoreTool.getGitUrl() : null;
-            url = url != null ? url.replace("git@github.com:", "https://github.com/") : null;
-            parameter.put("URL", url);
+        boolean status = true;
+        for (String runner : this.runner) {
 
-            String dockerfilePath = null;
-            assert dockstoreTool != null;
-            Long containerId = dockstoreTool.getId();
-            String id = toolversion.getId();
-            String tagName = toolversion.getName();
-            String referenceName = tagName;
-            List<Tag> tags = dockstoreTool.getTags();
-            for (Tag tag : tags) {
-                if (tag.getName().equals(tagName)) {
-                    referenceName = tag.getReference();
-                    dockerfilePath = tag.getDockerfilePath();
-                }
-            }
-
-            assert dockerfilePath != null;
-            dockerfilePath = dockerfilePath.replaceFirst("^/", "");
-            String name = id;
-            name = JenkinsHelper.cleanSuffx(name);
-            parameter.put("Tag", referenceName);
-            parameter.put("EntryType", "tool");
-            parameter.put("DockerfilePath", dockerfilePath);
-            StringBuilder descriptorStringBuilder = new StringBuilder();
-            StringBuilder parameterStringBuilder = new StringBuilder();
+            DockstoreTool dockstoreTool = null;
             try {
-                List<SourceFile> testParameterFiles;
-                SourceFile descriptor;
-                for (ToolVersion.DescriptorTypeEnum descriptorType : toolversion.getDescriptorType()) {
-                    switch (descriptorType.toString()) {
-                    case "CWL":
-                        descriptor = containersApi.cwl(containerId, tagName);
-
-                        break;
-                    case "WDL":
-                        descriptor = containersApi.wdl(containerId, tagName);
-                        break;
-                    default:
-                        LOG.info("Unknown descriptor, skipping");
-                        continue;
-                    }
-                    String descriptorPath = descriptor.getPath().replaceFirst("^/", "");
-                    testParameterFiles = containersApi.getTestParameterFiles(containerId, descriptorType.toString(), tagName);
-                    for (SourceFile testParameterFile : testParameterFiles) {
-                        String parameterPath = testParameterFile.getPath();
-                        parameterPath = parameterPath.replaceFirst("^/", "");
-                        if (!descriptorStringBuilder.toString().equals("")) {
-                            descriptorStringBuilder.append(" ");
-                            parameterStringBuilder.append(" ");
-
-                        }
-                        descriptorStringBuilder.append(descriptorPath);
-                        parameterStringBuilder.append(parameterPath);
-                    }
-
-                }
+                dockstoreTool = containersApi.getPublishedContainerByToolPath(tool.getId());
             } catch (ApiException e) {
-                exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the container API", API_ERROR);
+                exceptionMessage(e, "Could not get published containers using the container API", API_ERROR);
             }
-            parameter.put("ParameterPath", parameterStringBuilder.toString());
-            parameter.put("DescriptorPath", descriptorStringBuilder.toString());
-            if (!pipelineTester.isRunning(name)) {
-                pipelineTester.runTest(name, parameter);
-            } else {
-                LOG.info("Job " + name + " is already running");
-            }
+            Map<String, String> parameter = new HashMap<>();
+            List<ToolVersion> toolVersions = tool.getVersions();
+            for (ToolVersion toolversion : toolVersions) {
+                String url = dockstoreTool != null ? dockstoreTool.getGitUrl() : null;
+                url = url != null ? url.replace("git@github.com:", "https://github.com/") : null;
 
+                String dockerfilePath = null;
+                assert dockstoreTool != null;
+                Long containerId = dockstoreTool.getId();
+                String id = toolversion.getId();
+                String tagName = toolversion.getName();
+                String referenceName = tagName;
+                List<Tag> tags = dockstoreTool.getTags();
+                for (Tag tag : tags) {
+                    if (tag.getName().equals(tagName)) {
+                        referenceName = tag.getReference();
+                        dockerfilePath = tag.getDockerfilePath();
+                    }
+                }
+
+                assert dockerfilePath != null;
+                dockerfilePath = dockerfilePath.replaceFirst("^/", "");
+                StringBuilder descriptorStringBuilder = new StringBuilder();
+                StringBuilder parameterStringBuilder = new StringBuilder();
+                try {
+                    List<SourceFile> testParameterFiles;
+                    SourceFile descriptor;
+                    for (ToolVersion.DescriptorTypeEnum descriptorType : toolversion.getDescriptorType()) {
+                        switch (descriptorType.toString()) {
+                        case "CWL":
+                            if (!runner.equals("cromwell")) {
+                                descriptor = containersApi.cwl(containerId, tagName);
+                                break;
+                            } else {
+                                continue;
+                            }
+                        case "WDL":
+                            if (runner.equals("cromwell")) {
+                                descriptor = containersApi.wdl(containerId, tagName);
+                                break;
+                            } else {
+                                continue;
+                            }
+                        default:
+                            LOG.info("Unknown descriptor, skipping");
+                            continue;
+                        }
+                        String descriptorPath = descriptor.getPath().replaceFirst("^/", "");
+                        testParameterFiles = containersApi.getTestParameterFiles(containerId, descriptorType.toString(), tagName);
+                        for (SourceFile testParameterFile : testParameterFiles) {
+                            String parameterPath = testParameterFile.getPath();
+                            parameterPath = parameterPath.replaceFirst("^/", "");
+                            if (!descriptorStringBuilder.toString().equals("")) {
+                                descriptorStringBuilder.append(" ");
+                                parameterStringBuilder.append(" ");
+
+                            }
+                            descriptorStringBuilder.append(descriptorPath);
+                            parameterStringBuilder.append(parameterPath);
+                        }
+
+                    }
+                } catch (ApiException e) {
+                    exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the container API", API_ERROR);
+                }
+                parameter = constructParameterMap(url, referenceName, "tool", dockerfilePath, parameterStringBuilder.toString(),
+                        descriptorStringBuilder.toString(), "", runner);
+                String name = buildName(runner, id);
+                if (!runTest(name, parameter)) {
+                    status = false;
+                    continue;
+                }
+            }
         }
-        return true;
+        return status;
     }
 
     ContainersApi getContainersApi() {
@@ -848,31 +798,37 @@ public class Client {
         this.ga4ghApi = ga4ghApi;
     }
 
+    /**
+     * Constructs the name of the Pipeline on Jenkins based on several properties
+     *
+     * @param runner        The runner (cwltool, toil, cromwell, bunny)
+     * @param ToolVersionId The ToolVersion ID, which is also equivalent to the Tool ID + version name
+     * @return
+     */
+    private String buildName(String runner, String ToolVersionId) {
+        String prefix = PipelineTester.PREFIX;
+        String name = String.join("-", prefix, runner, ToolVersionId);
+        name = JenkinsHelper.cleanSuffx(name);
+        return name;
+    }
+
     private static class CommandMain {
-        @Parameter(names = "--help", description = "Prints help for autotool", help = true)
+        @Parameter(names = "--help", description = "Prints help for tooltester", help = true)
         private boolean help = false;
     }
 
     @Parameters(separators = "=", commandDescription = "Synchronizes with Jenkins to create tests for verified tools.")
     private static class CommandSync {
-        @Parameter(names = { "--execution", "--runtime-environment" }, description = "Location of Testing")
-        private String execution = "jenkins";
         @Parameter(names = { "--source" }, description = "Tester Group")
         private List<String> source = new ArrayList<>();
-        @Parameter(names = { "--api", "--dockstore-url" }, description = "dockstore install that we wish to test tools from")
-        private String api = "https://www.dockstore.org:8443/api/ga4gh/v1";
-        @Parameter(names = "--help", description = "Prints help for main", help = true)
+        @Parameter(names = "--tools", description = "The specific tools to sync", variableArity = true)
+        private List<String> tools;
+        @Parameter(names = "--help", description = "Prints help for sync", help = true)
         private boolean help = false;
-        @Parameter(names = "--unverified-tool", description = "Unverified tool to specifically test")
-        private String tool;
     }
 
     @Parameters(separators = "=", commandDescription = "Test verified tools on Jenkins.")
     private static class CommandEnqueue {
-        @Parameter(names = "--unverified-tool", description = "Unverified tool to specifically test.")
-        public String unverifiedTool;
-        @Parameter(names = "--all", description = "Whether to test all tools or not")
-        private Boolean all = false;
         @Parameter(names = { "--source" }, description = "Tester Group")
         private List<String> source = new ArrayList<>();
         @Parameter(names = "--tool", description = "The specific tools to test", variableArity = true)
@@ -883,8 +839,8 @@ public class Client {
 
     @Parameters(separators = "=", commandDescription = "Report status of verified tools tested.")
     private static class CommandReport {
-        @Parameter(names = "--all", description = "Whether to report all tools or not")
-        private Boolean all = false;
+        @Parameter(names = { "--source" }, description = "Tester Group")
+        private List<String> source = new ArrayList<>();
         @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
         private List<String> tools = new ArrayList<>();
         @Parameter(names = "--help", description = "Prints help for report", help = true)
@@ -893,7 +849,7 @@ public class Client {
 
     @Parameters(separators = "=", commandDescription = "Reports the file sizes and checksum of a verified tool across all tested versions.")
     private static class CommandFileReport {
-        @Parameter(names = "--tool", description = "Specific tool to report", required = true)
+        @Parameter(names = "--tool", description = "The specific tool to report", required = true)
         private String tool;
         @Parameter(names = "--help", description = "Prints help for file-report", help = true)
         private boolean help = false;

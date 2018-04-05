@@ -1,14 +1,21 @@
 package io.dockstore.tooltester.client.cli;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import com.beust.jcommander.ParameterException;
+import io.dockstore.tooltester.helper.GA4GHHelper;
 import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
+import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
+import io.swagger.client.Configuration;
+import io.swagger.client.api.ContainersApi;
+import io.swagger.client.api.Ga4GhApi;
+import io.swagger.client.api.WorkflowsApi;
 import io.swagger.client.model.Tool;
 import org.junit.Assert;
 import org.junit.Before;
@@ -19,6 +26,7 @@ import org.junit.contrib.java.lang.system.SystemOutRule;
 
 import static io.dockstore.tooltester.client.cli.Client.main;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.DEBUG;
 
 public class ClientTest {
     @Rule
@@ -64,14 +72,13 @@ public class ClientTest {
     }
 
     /**
-     * Test enqueue with no parameters which should print the help usage
+     * Test enqueue which should run all jobs
      */
     @Test
     public void enqueue() {
         String[] argv = { "enqueue" };
         main(argv);
-        Assert.assertTrue(systemOutRule.getLog().contains("Test verified tools on Jenkins."));
-
+        Assert.assertTrue(systemOutRule.getLog().isEmpty());
     }
 
     /**
@@ -85,17 +92,7 @@ public class ClientTest {
     }
 
     /**
-     * Test enqueue with option --all which should run all jobs
-     */
-    @Test
-    public void enqueueAll() {
-        String[] argv = { "enqueue", "--all" };
-        main(argv);
-        Assert.assertTrue(systemOutRule.getLog().isEmpty());
-    }
-
-    /**
-     * Test enqueue with default options
+     * Test enqueue with a specific tool
      */
     @Test
     public void enqueueTool() {
@@ -109,18 +106,7 @@ public class ClientTest {
      */
     @Test
     public void enqueueToolSource() {
-        String[] argv = { "enqueue", "--all", "--source", "Docktesters group" };
-        main(argv);
-        Assert.assertTrue(systemOutRule.getLog().isEmpty());
-    }
-
-
-    /**
-     * Test enqueue with default options
-     */
-    @Test
-    public void enqueueUnverifiedTool() {
-        String[] argv = { "enqueue", "--unverified-tool", "quay.io/ucsc_cgl/dockstore_tool_adtex" };
+        String[] argv = { "enqueue", "--source", "Docktesters group" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
     }
@@ -130,9 +116,19 @@ public class ClientTest {
      */
     @Test
     public void createJenkinsTests() {
-        String[] argv = { "sync", "--execution", "jenkins", "--api", "https://www.dockstore.org:8443/api/ga4gh/v1" };
+        String[] argv = { "sync" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
+    }
+
+    /**
+     * Test sync with option --help which should display sync help
+     */
+    @Test
+    public void syncHelp() {
+        String[] argv = { "sync", "--help" };
+        main(argv);
+        Assert.assertTrue(systemOutRule.getLog().contains("Synchronizes with Jenkins to create tests for verified tools."));
     }
 
     /**
@@ -140,8 +136,7 @@ public class ClientTest {
      */
     @Test
     public void createJenkinsTestsSource() {
-        String[] argv = { "sync", "--execution", "jenkins", "--source", "Docktesters group", "--api",
-                "https://www.dockstore.org:8443/api/ga4gh/v1" };
+        String[] argv = { "sync", "--source", "Docktesters group"};
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
     }
@@ -151,8 +146,7 @@ public class ClientTest {
      */
     @Test
     public void createUnverifiedJenkinsTests() {
-        String[] argv = { "sync", "--execution", "jenkins", "--source", "Docktesters group", "--api",
-                "https://www.dockstore.org:8443/api/ga4gh/v1", "--unverified-tool", "quay.io/ucsc_cgl/dockstore_tool_adtex" };
+        String[] argv = { "sync", "--source", "Docktesters group", "--tools", "quay.io/ucsc_cgl/dockstore_tool_adtex" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().isEmpty());
     }
@@ -173,16 +167,6 @@ public class ClientTest {
     @Test
     public void report() {
         String[] argv = { "report" };
-        main(argv);
-        Assert.assertTrue(systemOutRule.getLog().contains("Report status of verified tools tested."));
-    }
-
-    /**
-     * This gets the report of all the tools
-     */
-    @Test
-    public void reportAll() {
-        String[] argv = { "report", "--all" };
         main(argv);
         assertReport();
     }
@@ -213,7 +197,7 @@ public class ClientTest {
         Assert.assertTrue(systemOutRule.getLog().contains("Tool/Workflow ID"));
         Assert.assertTrue(systemOutRule.getLog().contains("DATE"));
         Assert.assertTrue(systemOutRule.getLog().contains("Version"));
-        Assert.assertTrue(systemOutRule.getLog().contains("Location of Testing"));
+        Assert.assertTrue(systemOutRule.getLog().contains("Engine"));
         Assert.assertTrue(systemOutRule.getLog().contains("Action Performed"));
         Assert.assertTrue(systemOutRule.getLog().contains("Runtime"));
         Assert.assertTrue(systemOutRule.getLog().contains("Status of Test Files"));
@@ -295,13 +279,24 @@ public class ClientTest {
         Assert.assertTrue(systemOutRule.getLog().contains("Usage: autotool [options] [command] [command options]"));
     }
 
+    private Ga4GhApi getGA4GHApiClient() {
+        ApiClient defaultApiClient;
+        defaultApiClient = Configuration.getDefaultApiClient();
+        defaultApiClient.setBasePath("https://staging.dockstore.org:8443");
+        Ga4GhApi ga4GhApi = new Ga4GhApi(defaultApiClient);
+        defaultApiClient.setDebugging(DEBUG.get());
+        return ga4GhApi;
+    }
+
     /**
      * Gets all the file combinations with any verified source.
      */
     @Test
     public void getVerifiedToolsTest() {
         int count;
-        List<Tool> verifiedTools = client.getVerifiedTools();
+        List<String> sources = new ArrayList<>();
+        List<String> toolnames = new ArrayList<>();
+        List<Tool> verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, sources, toolnames);
         for (Tool verifiedTool : verifiedTools) {
             try {
                 client.countNumberOfTests(verifiedTool);
@@ -319,8 +314,9 @@ public class ClientTest {
     @Test
     public void getVerifiedToolsWithFilterTest() {
         int count;
+        List<String> toolnames = new ArrayList<>();
         List<String> verifiedSources = Collections.singletonList("Docktesters group");
-        List<Tool> verifiedTools = client.getVerifiedTools(verifiedSources);
+        List<Tool> verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames);
         for (Tool verifiedTool : verifiedTools) {
             try {
                 client.countNumberOfTests(verifiedTool);
@@ -332,7 +328,7 @@ public class ClientTest {
         Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count != 0);
         client.setCount(0);
         verifiedSources = Arrays.asList("Docktesters group", "Another Group");
-        verifiedTools = client.getVerifiedTools(verifiedSources);
+        verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames);
         for (Tool verifiedTool : verifiedTools) {
             try {
                 client.countNumberOfTests(verifiedTool);
@@ -344,7 +340,7 @@ public class ClientTest {
         Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count != 0);
         client.setCount(0);
         verifiedSources = Collections.singletonList("Another Group");
-        verifiedTools = client.getVerifiedTools(verifiedSources);
+        verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames);
         for (Tool verifiedTool : verifiedTools) {
             try {
                 client.countNumberOfTests(verifiedTool);

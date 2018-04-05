@@ -30,11 +30,6 @@
       pip:
         name: setuptools
         version: 36.5.0
-    - name: Install schema-salad
-      become: yes
-      pip:
-        name: schema-salad
-        version: 2.6.20170806163416
     - name: Install avro
       become: yes
       pip:
@@ -49,11 +44,20 @@
       become: yes
       pip:
         name: html5lib
+    - name: Install cwl-runner
+      become: yes
+      pip:
+        name: cwl-runner
     - name: Install cwltool
       become: yes
       pip:
         name: cwltool
         version: 1.0.20170828135420
+    - name: Install schema-salad
+      become: yes
+      pip:
+        name: schema-salad
+        version: 2.6.20170806163416
     - name: Install requests
       become: yes
       pip:
@@ -67,7 +71,7 @@
     - name: Download Dockstore
       become: yes
       get_url:
-        url: https://github.com/ga4gh/dockstore/releases/download/1.2.10/dockstore
+        url: https://github.com/ga4gh/dockstore/releases/download/1.4.0-beta.3/dockstore
         dest: /usr/local/bin
         mode: a+rwx
     - name: echo $HOME
@@ -85,4 +89,3 @@
       become: yes
       apt:
         name: s3cmd
-                                                                                                                                                                       35,7          Top

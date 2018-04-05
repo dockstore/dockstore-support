@@ -17,6 +17,7 @@ public class S3CacheHelper {
             return "ga4gh-dream/gdc";
         case "github.com/bcbio/bcbio_validation_workflows":
             return "ga4gh-dream/bcbio";
+        case "github.com/ENCODE-DCC/pipeline-container/encode-mapping-wdl":
         case "github.com/ENCODE-DCC/pipeline-container/encode-mapping-cwl":
             return "ga4gh-dream/encode";
         case "github.com/KnowEnG/cwl-gene-prioritization":
