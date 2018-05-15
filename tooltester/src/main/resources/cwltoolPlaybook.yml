@@ -57,7 +57,7 @@
       become: yes
       pip:
         name: schema-salad
-        version: 2.6.20170806163416
+        version: 2.7.20180514132321
     - name: Install requests
       become: yes
       pip:
