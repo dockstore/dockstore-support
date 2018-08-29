@@ -40,7 +40,7 @@
         <junit-version>4.11</junit-version>
         <slf4j.version>1.7.21</slf4j.version>
         <cwlavro.version>1.0.6</cwlavro.version>
-        <jackson.version>2.9.3</jackson.version>
+        <jackson.version>2.9.5</jackson.version>
     </properties>
 
     <organization>
@@ -254,7 +254,7 @@
         <dependency>
             <groupId>io.dockstore</groupId>
             <artifactId>swagger-java-client</artifactId>
-            <version>1.4.0-beta.2</version>
+            <version>1.5.0-beta.2</version>
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
