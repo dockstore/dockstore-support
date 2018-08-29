@@ -23,6 +23,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.contrib.java.lang.system.SystemOutRule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import static io.dockstore.tooltester.client.cli.Client.main;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
@@ -41,14 +44,14 @@ public class ClientTest {
     public void initialize() {
         this.client = new Client();
         this.client.setupClientEnvironment();
-        Assert.assertTrue("client API could not start", client.getContainersApi() != null);
+        Assert.assertNotNull("client API could not start", client.getContainersApi());
     }
 
     @Test
     public void setupEnvironment() throws Exception {
         client = new Client();
         client.setupClientEnvironment();
-        Assert.assertTrue("client API could not start", client.getContainersApi() != null);
+        Assert.assertNotNull("client API could not start", client.getContainersApi());
     }
 
     /**
@@ -58,7 +61,7 @@ public class ClientTest {
     public void setupTesters() {
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
-        Assert.assertTrue("Jenkins server can not be reached", pipelineTester.getJenkins() != null);
+        Assert.assertNotNull("Jenkins server can not be reached", pipelineTester.getJenkins());
     }
 
     /**
@@ -225,8 +228,8 @@ public class ClientTest {
     public void testCleanSuffix() {
         final String testSuffix1 = "quay.io/pancancer/pcawg-bwa";
         final String testSuffix2 = "#workflow/pancancer/pcawg-bwa";
-        Assert.assertTrue(JenkinsHelper.cleanSuffx(testSuffix1).equals("quay.io-pancancer-pcawg-bwa"));
-        Assert.assertTrue(JenkinsHelper.cleanSuffx(testSuffix2).equals("-workflow-pancancer-pcawg-bwa"));
+        Assert.assertEquals("quay.io-pancancer-pcawg-bwa", JenkinsHelper.cleanSuffx(testSuffix1));
+        Assert.assertEquals("-workflow-pancancer-pcawg-bwa", JenkinsHelper.cleanSuffx(testSuffix2));
     }
 
     /**
@@ -282,7 +285,7 @@ public class ClientTest {
     private Ga4GhApi getGA4GHApiClient() {
         ApiClient defaultApiClient;
         defaultApiClient = Configuration.getDefaultApiClient();
-        defaultApiClient.setBasePath("https://staging.dockstore.org:8443");
+        defaultApiClient.setBasePath("https://staging.dockstore.org:443/api");
         Ga4GhApi ga4GhApi = new Ga4GhApi(defaultApiClient);
         defaultApiClient.setDebugging(DEBUG.get());
         return ga4GhApi;
@@ -305,7 +308,7 @@ public class ClientTest {
             }
         }
         count = client.getCount();
-        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files.  Got " + count, count != 0);
+        Assert.assertNotEquals("There is an incorrect number of dockerfile, descriptors, and test parameter files.", 0, count);
     }
 
     /**
@@ -325,7 +328,7 @@ public class ClientTest {
             }
         }
         count = client.getCount();
-        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count != 0);
+        Assert.assertNotEquals("There is an incorrect number of dockerfile, descriptors, and test parameter files.", 0, count);
         client.setCount(0);
         verifiedSources = Arrays.asList("Docktesters group", "Another Group");
         verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames);
@@ -337,7 +340,7 @@ public class ClientTest {
             }
         }
         count = client.getCount();
-        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count != 0);
+        Assert.assertNotEquals("There is an incorrect number of dockerfile, descriptors, and test parameter files.", 0, count);
         client.setCount(0);
         verifiedSources = Collections.singletonList("Another Group");
         verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames);
@@ -349,6 +352,6 @@ public class ClientTest {
             }
         }
         count = client.getCount();
-        Assert.assertTrue("There is an incorrect number of dockerfile, descriptors, and test parameter files. Got " + count, count == 0);
+        Assert.assertEquals("There is an incorrect number of dockerfile, descriptors, and test parameter files." + count, 0, count);
     }
 }
