@@ -9,7 +9,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -17,6 +21,13 @@ import static org.junit.Assert.assertTrue;
  * @since 24/01/17
  */
 public class JenkinsJobTest {
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+        protected void starting(Description description) {
+            System.out.println("Starting test: " + description.getMethodName());
+        }
+    };
+
     /**
      * This tests if a parameter file test can be created and ran.
      * Also tests if the test results can be attained and the console output file can be generated
@@ -29,14 +40,14 @@ public class JenkinsJobTest {
     public void initialize() {
         client = new Client();
         client.setupClientEnvironment();
-        Assert.assertTrue("client API could not start", client.getContainersApi() != null);
+        Assert.assertNotNull("client API could not start", client.getContainersApi());
     }
 
     @Test
     public void pipelineTestJobIT() {
         final String suffix = "id-tag";
         client.setupTesters();
-        Assert.assertTrue("Jenkins server can not be reached", client.getPipelineTester().getJenkins() != null);
+        Assert.assertNotNull("Jenkins server can not be reached", client.getPipelineTester().getJenkins());
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
         pipelineTester.createTest(suffix);
@@ -50,7 +61,7 @@ public class JenkinsJobTest {
 
         pipelineTester.runTest(suffix, map);
         String status = pipelineTester.getTestResults(suffix).get("status");
-        assertTrue("Status is not SUCCESS: " + status != null);
+        assertNotNull("Status is not SUCCESS: ", status);
         //        try {
         //            client.getJenkins().deleteJob("PipelineTest" + "-" + suffix, true);
         //        } catch (IOException e) {
@@ -63,7 +74,7 @@ public class JenkinsJobTest {
         exit.expectSystemExitWithStatus(10);
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
-        Assert.assertTrue("Jenkins server can not be reached", pipelineTester.getJenkins() != null);
+        Assert.assertNotNull("Jenkins server can not be reached", pipelineTester.getJenkins());
         pipelineTester.getTestResults("SuffixOfATestThatShouldNotExist");
     }
 }

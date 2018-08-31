@@ -52,12 +52,12 @@
       become: yes
       pip:
         name: cwltool
-        version: 1.0.20170828135420
+        version: 1.0.20180403145700
     - name: Install schema-salad
       become: yes
       pip:
         name: schema-salad
-        version: 2.6.20170806163416
+        version: 2.7.20180514132321
     - name: Install requests
       become: yes
       pip:

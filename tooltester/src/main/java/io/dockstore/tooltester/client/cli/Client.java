@@ -329,7 +329,7 @@ public class Client {
         }
 
         // pull out the variables from the config if it exists
-        String serverUrl = config.getString("server-url", "https://staging.dockstore.org:8443");
+        String serverUrl = config.getString("server-url", "https://staging.dockstore.org:443/api");
         this.runner = this.config.getString("runner", "cwltool cwl-runner bunny toil cromwell").split(" ");
         this.url = serverUrl;
 
@@ -584,9 +584,9 @@ public class Client {
                 return false;
             }
             List<WorkflowVersion> versions = workflow.getWorkflowVersions();
-            List<WorkflowVersion> validVersions = versions.parallelStream().filter(version -> version.isValid())
+            List<WorkflowVersion> verifiedVersions = versions.parallelStream().filter(version -> version.isVerified())
                     .collect(Collectors.toList());
-            for (WorkflowVersion version : validVersions) {
+            for (WorkflowVersion version : verifiedVersions) {
                 String url = workflow.getGitUrl();
                 url = url != null ? url.replace("git@github.com:", "https://github.com/") : null;
                 String dockerfilePath = "";

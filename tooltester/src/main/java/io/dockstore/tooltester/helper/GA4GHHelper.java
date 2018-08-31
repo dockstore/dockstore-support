@@ -26,7 +26,7 @@ public class GA4GHHelper {
     private static List<Tool> getAllTools(Ga4GhApi ga4GhApi) {
         List<Tool> tools = new ArrayList<>();
         try {
-            tools = ga4GhApi.toolsGet(null, null, null, null, null, null, null, null,null);
+            tools = ga4GhApi.toolsGet(null, null, null, null, null, null, null, null,null, null, null);
         } catch (ApiException e) {
             exceptionMessage(e, "Could not get all tools", API_ERROR);
         }
