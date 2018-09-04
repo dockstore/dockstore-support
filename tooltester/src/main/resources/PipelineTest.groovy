@@ -22,7 +22,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                 sh 'rm -rf /mnt/output/*'
                 sh 'rm -rf /media/large_volume/output/*'
                 step([$class: 'WsCleanup'])
-                sh "wget https://raw.githubusercontent.com/ga4gh/dockstore-support/feature/updateCWLTool/tooltester/src/main/resources/${AnsiblePlaybook}.yml"
+                sh "wget https://raw.githubusercontent.com/ga4gh/dockstore-support/feature/playbook/tooltester/src/main/resources/${AnsiblePlaybook}.yml"
                 ansiblePlaybook playbook: '${AnsiblePlaybook}.yml', sudo: true, sudoUser: null
                 sh 'dockstore --version --script || true'
                 sh 'pip list'
