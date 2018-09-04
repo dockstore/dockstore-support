@@ -76,5 +76,6 @@ Giving jenkins sudo access
 ```
 runner = cromwell cwltool cwl-runner bunny
 ```
-3. Modify the [cwltoolPlaybook](src/main/resources/cwltoolPlaybook.yml) to have the right dockstore version and apt/pip dependencies if needed (i.e. Check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
-4. Configure the PipelineTest's `currentBuild.display` name to the Dockstore version that's going to be ran.
+3. Modify the [cwltoolPlaybook](src/main/resources/cwltoolPlaybook.yml) and [toilPlaybook](src/main/resources/toilPlaybook.yml) to have the right dockstore version and apt/pip dependencies if needed (i.e. Check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
+4. Search all source files for the previously used Dockstore version and replace all occurrences with updated one.
+PipelineTest.groovy's `currentBuild.display` should've been changed, copy that to PipelineTest on Jenkins.

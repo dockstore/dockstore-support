@@ -1,4 +1,4 @@
-currentBuild.displayName = "1.5.0-alpha.0"
+currentBuild.displayName = "1.5.0-beta.5"
 def buildJob = [:]
 if ("tool".equalsIgnoreCase(params.EntryType)) {
     buildJob["Build " + params.DockerfilePath] = transformIntoDockerfileStep()
