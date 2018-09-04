@@ -552,9 +552,14 @@ public class Client {
         parameter.put("DockerfilePath", dockerfilePath);
         parameter.put("SynapseCache", synapseCache);
         parameter.put("Config", DockstoreConfigHelper.getConfig(this.url, runner));
-        if (runner == "toil") {
+        switch (runner) {
+        case "toil":
             parameter.put("AnsiblePlaybook", "toilPlaybook");
-        } else {
+            break;
+        case "cromwell":
+            parameter.put("AnsiblePlaybook", "cromwellPlaybook");
+            break;
+        default:
             parameter.put("AnsiblePlaybook", "cwltoolPlaybook");
         }
         return parameter;
