@@ -5,7 +5,7 @@
     - name: Install JDK
       become: yes
       apt:
-        name: default-jre
+        name: openjdk-8-jdk
     - name: Install python-pip
       become: yes
       apt:
