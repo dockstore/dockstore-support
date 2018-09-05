@@ -1,0 +1,91 @@
+- name: Jenkins slave requirements
+  hosts: local
+  connection: local
+  tasks:
+    - name: Install JDK
+      become: yes
+      apt:
+        name: openjdk-8-jdk
+    - name: Install python-pip
+      become: yes
+      apt:
+        name: python-pip
+    - name: Install https
+      become: yes
+      apt:
+        name: apt-transport-https
+    - name: Add docker repository and update apt cache
+      become: yes
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/{{ansible_distribution | lower }} {{ansible_distribution_release}} stable"
+        update_cache: yes
+        state: present
+    - name: Install docker
+      become: yes
+      apt:
+        name: docker-ce
+        allow_unauthenticated: yes
+    - name: Install setuptools
+      become: yes
+      pip:
+        name: setuptools
+        version: 36.5.0
+    - name: Install avro
+      become: yes
+      pip:
+        name: avro
+        version: 1.8.1
+    - name: Install ruamel.yaml
+      become: yes
+      pip:
+        name: ruamel.yaml
+        version: 0.14.12
+    - name: Install html5lib
+      become: yes
+      pip:
+        name: html5lib
+    - name: Install cwl-runner
+      become: yes
+      pip:
+        name: cwl-runner
+    - name: Install cwltool
+      become: yes
+      pip:
+        name: cwltool
+        version: 1.0.20180403145700
+    - name: Install schema-salad
+      become: yes
+      pip:
+        name: schema-salad
+        version: 2.7.20180514132321
+    - name: Install requests
+      become: yes
+      pip:
+        name: requests
+        version: 2.18.4
+    - name: Install aws cli
+      become: yes
+      pip:
+        name: awscli
+        version: 1.11.170
+    - name: Download Dockstore
+      become: yes
+      get_url:
+        url: https://github.com/ga4gh/dockstore/releases/download/1.5.0-beta.4/dockstore
+        dest: /usr/local/bin
+        mode: a+rwx
+    - name: echo $HOME
+      become: yes
+      become_user: jenkins
+      shell: "echo $HOME"
+      register: jenkins_home
+    - name: Create directory if it doesn't exist
+      become: yes
+      become_user: jenkins
+      file:
+        path: "{{jenkins_home.stdout}}/.dockstore"
+        state: directory
+    - name: Install s3cmd
+      become: yes
+      apt:
+        name: s3cmd
