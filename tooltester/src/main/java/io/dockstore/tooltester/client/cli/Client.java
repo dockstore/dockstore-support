@@ -93,6 +93,7 @@ public class Client {
     private PipelineTester pipelineTester;
     private String[] runner;
     private String url;
+    private String dockstoreVersion;
 
     Client() {
 
@@ -331,6 +332,7 @@ public class Client {
         // pull out the variables from the config if it exists
         String serverUrl = config.getString("server-url", "https://staging.dockstore.org:443/api");
         this.runner = this.config.getString("runner", "cwltool cwl-runner bunny toil cromwell").split(" ");
+        this.dockstoreVersion = config.getString("dockstore-version", "1.5.0-beta.5");
         this.url = serverUrl;
 
         ApiClient defaultApiClient;
@@ -552,6 +554,7 @@ public class Client {
         parameter.put("DockerfilePath", dockerfilePath);
         parameter.put("SynapseCache", synapseCache);
         parameter.put("Config", DockstoreConfigHelper.getConfig(this.url, runner));
+        parameter.put("DockstoreVersion", this.dockstoreVersion);
         if (runner == "toil") {
             parameter.put("AnsiblePlaybook", "toilPlaybook");
         } else {
