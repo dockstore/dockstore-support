@@ -331,7 +331,7 @@ public class Client {
 
         // pull out the variables from the config if it exists
         String serverUrl = config.getString("server-url", "https://staging.dockstore.org:443/api");
-        this.runner = this.config.getString("runner", "cwltool cwl-runner bunny toil cromwell").split(" ");
+        this.runner = this.config.getString("runner", "cwltool cwl-runner toil cromwell").split(" ");
         this.dockstoreVersion = config.getString("dockstore-version", "1.5.0-beta.5");
         this.url = serverUrl;
 
@@ -804,7 +804,7 @@ public class Client {
     /**
      * Constructs the name of the Pipeline on Jenkins based on several properties
      *
-     * @param runner        The runner (cwltool, toil, cromwell, bunny)
+     * @param runner        The runner (cwltool, toil, cromwell)
      * @param ToolVersionId The ToolVersion ID, which is also equivalent to the Tool ID + version name
      * @return
      */
