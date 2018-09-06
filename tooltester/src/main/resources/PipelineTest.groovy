@@ -1,3 +1,6 @@
+import java.nio.file.Path
+import java.nio.file.Paths
+
 currentBuild.displayName = "1.5.0-beta.5"
 def buildJob = [:]
 if ("tool".equalsIgnoreCase(params.EntryType)) {
@@ -22,7 +25,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                 sh 'rm -rf /mnt/output/*'
                 sh 'rm -rf /media/large_volume/output/*'
                 step([$class: 'WsCleanup'])
-                sh "wget https://raw.githubusercontent.com/ga4gh/dockstore-support/feature/updateCWLTool/tooltester/src/main/resources/${AnsiblePlaybook}.yml"
+                sh "wget https://raw.githubusercontent.com/ga4gh/dockstore-support/feature/playbook/tooltester/src/main/resources/${AnsiblePlaybook}.yml"
                 ansiblePlaybook playbook: '${AnsiblePlaybook}.yml', sudo: true, sudoUser: null
                 sh 'dockstore --version --script || true'
                 sh 'pip list'
@@ -35,15 +38,35 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                         sh 'aws s3 --endpoint-url https://object.cancercollaboratory.org:9080 cp --recursive s3://dockstore/test_files/${SynapseCache}/ .'
                         // sh 's3cmd get --skip-existing --recursive s3://dockstore/test_files/${SynapseCache}/'
                     }
-                    // Currently determining whether a file is yaml or json based on its file extension
+                    String fileType
+                    // Currently determining whether a file is yaml or json based on its file extension (soon to not matter)
                     if (parameter.contains('.yml') || parameter.contains('.yaml')) {
-                        sh "echo dockstore ${entryType} launch --local-entry ${descriptor} --yaml ${parameter} --script"
-                        FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --yaml $parameter --script | sed -n -e 's/^.*Saving copy of .* stdout to: //p'", returnStdout: true).trim()
+                        fileType = "yaml"
                     } else {
-                        sh "echo dockstore ${entryType} launch --local-entry ${descriptor} --json ${parameter} --script"
-                        FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --json $parameter --script | sed -n -e 's/^.*Saving copy of .* stdout to: //p'", returnStdout: true).trim()
+                        fileType = "json"
                     }
-                    if (JOB_NAME.contains("cwltool") || JOB_NAME.contains("cwl-runner")) {
+                    // cromwell resolves the files inside the test parameter file relative to current working directory
+                    // changing working directory to the test parameter file as a workaround
+                    if (JOB_NAME.contains("cromwell")) {
+                        String runParameter
+                        String runDescriptor
+                        String parameterParent = getParent(parameter)
+                        if (parameterParent != "null") {
+                            dir(parameterParent) {
+                                String relativeDescriptor = getRelativeDescriptorStringPath(parameterParent, descriptor)
+                                String relativeParameter = Paths.get(parameter).getFileName().toString()
+                                runParameter = relativeParameter
+                                runDescriptor = relativeDescriptor
+                                launchDockstoreWithCromwell(entryType, runDescriptor, runParameter, fileType)
+                            }
+                        } else {
+                            runParameter = parameter
+                            runDescriptor = descriptor
+                            launchDockstoreWithCromwell(entryType, runDescriptor, runParameter, fileType)
+                        }
+                    } else {
+                        sh "echo dockstore ${entryType} launch --local-entry ${descriptor} --${fileType} ${parameter} --script"
+                        FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --${fileType} $parameter --script | sed -n -e 's/^.*Saving copy of .* stdout to: //p'", returnStdout: true).trim()
                         sh "mv $FILE $parameter"
                         archiveArtifacts artifacts: parameter
                     }
@@ -51,8 +74,14 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
             }
             cleanWs()
         }
-
     }
+}
+
+// For some reason, what works for cwltool doesn't work for cromwell
+// When cromwell errors out, no logs are produced
+void launchDockstoreWithCromwell(String entryType, String runDescriptor, String runParameter, String fileType ) {
+    sh "echo dockstore ${entryType} launch --local-entry ${runDescriptor} --${fileType} ${runParameter} --script"
+    sh "set -o pipefail && dockstore $entryType launch --local-entry $runDescriptor --${fileType} $runParameter --script"
 }
 
 def transformIntoDockerfileStep(){
@@ -71,4 +100,16 @@ def transformIntoDockerfileStep(){
             cleanWs()
         }
     }
+}
+
+@NonCPS
+static String getRelativeDescriptorStringPath(String parameterString, String descriptorString) {
+    Path parameterPath = Paths.get(parameterString)
+    Path descriptorPath = Paths.get(descriptorString)
+    return parameterPath.relativize(descriptorPath).toString()
+}
+
+@NonCPS
+static String getParent(String stringPath) {
+    return Paths.get(stringPath).getParent().toString()
 }
