@@ -24,13 +24,6 @@ public class DockstoreConfigHelperTest {
     }
 
     @Test
-    public void testRabixConfig() {
-        final String url = "https://staging.dockstore.org:8443";
-        String rabixConfig = DockstoreConfigHelper.getConfig(url, "bunny");
-        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: bunny\n", rabixConfig);
-    }
-
-    @Test
     public void testToilConfig() throws IOException {
         final String url = "https://staging.dockstore.org:8443";
         String toilConfig = DockstoreConfigHelper.getConfig(url, "toil");
