@@ -1,5 +1,5 @@
 [![Coverage Status](https://coveralls.io/repos/github/ga4gh/dockstore-support/badge.svg?branch=develop)](https://coveralls.io/github/ga4gh/dockstore-support?branch=develop)
-[![Build Status](https://travis-ci.org/ga4gh/dockstore-support.svg?branch=develop)](https://travis-ci.org/ga4gh/dockstore-support)
+[![Build Status](https://travis-ci.org/ga4gh/dockstore-support.svg?branch=develop)](https://travis-ci.org/ga4gh/dockstore-support) [![Join the chat at https://gitter.im/ga4gh/dockstore-support](https://badges.gitter.im/ga4gh/dockstore-support.svg)](https://gitter.im/ga4gh/dockstore-support?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # dockstore-support
 
