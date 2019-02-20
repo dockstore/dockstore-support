@@ -25,6 +25,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
             ws {
                 sh 'rm -rf /mnt/output/*'
                 sh 'rm -rf /media/large_volume/output/*'
+                sh 'rm -rf ~/.dockstore'
                 step([$class: 'WsCleanup'])
                 sh "wget -O playbook.yml https://raw.githubusercontent.com/ga4gh/dockstore-support/feature/playbook/tooltester/src/main/resources/${AnsiblePlaybook}.yml"
                 ansiblePlaybook playbook: 'playbook.yml', sudo: true, sudoUser: null, extraVars: [version: '${DockstoreVersion}']
