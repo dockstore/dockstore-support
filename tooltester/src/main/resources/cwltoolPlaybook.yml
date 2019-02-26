@@ -25,44 +25,10 @@
       apt:
         name: docker-ce
         allow_unauthenticated: yes
-    - name: Install setuptools
+    - name: Install cwl pip deps
       become: yes
       pip:
-        name: setuptools
-        version: 36.5.0
-    - name: Install avro
-      become: yes
-      pip:
-        name: avro
-        version: 1.8.1
-    - name: Install ruamel.yaml
-      become: yes
-      pip:
-        name: ruamel.yaml
-        version: 0.14.12
-    - name: Install html5lib
-      become: yes
-      pip:
-        name: html5lib
-    - name: Install cwl-runner
-      become: yes
-      pip:
-        name: cwl-runner
-    - name: Install cwltool
-      become: yes
-      pip:
-        name: cwltool
-        version: 1.0.20180403145700
-    - name: Install schema-salad
-      become: yes
-      pip:
-        name: schema-salad
-        version: 2.7.20180514132321
-    - name: Install requests
-      become: yes
-      pip:
-        name: requests
-        version: 2.18.4
+        requirements: https://raw.githubusercontent.com/ga4gh/dockstore/f01f4a357a353b60ac2348c51fedd63966b759a1/dockstore-webservice/src/main/resources/requirements/1.6.0/requirements.txt
     - name: Install aws cli
       become: yes
       pip:
