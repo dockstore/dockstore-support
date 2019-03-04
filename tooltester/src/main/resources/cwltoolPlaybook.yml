@@ -37,7 +37,7 @@
     - name: Download Dockstore
       become: yes
       get_url:
-        url: https://github.com/agduncan94/hello-cwl/releases/download/1.0/dockstore
+        url: https://github.com/ga4gh/dockstore/releases/download/{{version}}/dockstore
         dest: /usr/local/bin
         mode: a+rwx
     - name: echo $HOME
@@ -51,16 +51,6 @@
       file:
         path: "{{jenkins_home.stdout}}/.dockstore"
         state: directory
-    - name: Ensure custom directory exists
-      file:
-        path: "{{jenkins_home.stdout}}/.m2/repository/io/dockstore/dockstore-client/1.6.0-alpha.7-SNAPSHOT"
-        recurse: yes
-        state: directory
-    - name: Copy custom jar
-      get_url:
-        url: https://github.com/agduncan94/hello-cwl/releases/download/1.0/dockstore-client-1.6.0-alpha.7-SNAPSHOT-shaded.jar
-        dest: "{{jenkins_home.stdout}}/.m2/repository/io/dockstore/dockstore-client/1.6.0-alpha.7-SNAPSHOT"
-        mode: a+rwx
     - name: Install s3cmd
       become: yes
       apt:
