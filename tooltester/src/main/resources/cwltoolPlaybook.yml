@@ -1,6 +1,6 @@
 - name: Jenkins slave requirements
-  hosts: local
-  connection: local
+  hosts: localhost
+  connection: localhost
   tasks:
     - name: Install JDK
       become: yes
@@ -23,6 +23,7 @@
     - name: Install docker
       become: yes
       apt:
+        update_cache: yes
         name: docker-ce
         allow_unauthenticated: yes
     - name: Install cwl pip deps
