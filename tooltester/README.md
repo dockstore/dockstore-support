@@ -15,15 +15,9 @@ Last tested with ansible 2.2.1.0
 6.  Create the String Parameters mentioned in the [constructParameterMap](https://github.com/ga4gh/dockstore-support/blob/develop/tooltester/src/main/java/io/dockstore/tooltester/client/cli/Client.java#L609) function. These string parameters are used to configure the Jenkins pipelines to run the correct tool/workflow, versions, etc.
 7.  Install ansible
 ```
-    sudo apt-get install software-properties-common
     sudo apt-add-repository ppa:ansible/ansible
     sudo apt-get update
     sudo apt-get install -y ansible
-```
-8. Add to /etc/ansible/hosts with the following:
-```
-    [local]
-    localhost
 ```
 9.  Get the jenkinsPlaybook.yml from src/main/java/io.dockstore.tooltester/resources
 10.  Add jenkins to the docker group
@@ -39,36 +33,20 @@ Last tested with ansible 2.2.1.0
 
 
 # Slave Setup:
-1. Install ansible
+1. Create a c2.large flavor Ubuntu 18.04 image on Collaboratory and give it the JenkinsMaster key pair
+2. Install ansible
 ```
-    sudo apt-get install software-properties-common
     sudo apt-add-repository ppa:ansible/ansible
-    sudo apt-get update
-    sudo apt-get install -y ansible
+    sudo apt update -yq
+    sudo apt install ansible -yq
 ```
-2. Add to /etc/ansible/hosts with the following:
-```
-    [local]
-    localhost
-```
-3. Download jenkinsPlaybook.yml
-4. Add the jenkins user
-    `sudo useradd -m jenkins`
-5. Make a .ssh directory
-    `sudo -u jenkins mkdir /home/jenkins/.ssh`
-6. Create and edit the authorized_keys file
-    `sudo -u jenkins vim /home/jenkins/.ssh/authorized_keys`
-7. Execute the playbook
-    `ansible-playbook jenkinsPlaybook.yml`
-8. Give add jenkins to docker group
-    `sudo usermod -aG docker jenkins`
-9. Put the master's public key into the authorized_keys file of jenkins
-10. Check and see if `dockstore` command and docker command is working correctly.
-Giving jenkins sudo access
-11. `sudo visudo`
-12. Append `jenkins ALL=(ALL) NOPASSWD: ALL`
-13. Give sudo access to jenkins
-    `sudo usermod -a -G sudo jenkins`
+3. Download an ansible playbook
+    `wget https://raw.githubusercontent.com/ga4gh/dockstore-support/feature/playbook/tooltester/src/main/resources/jenkinsSlavePlaybook.yml`
+4. Execute the playbook
+        `ansible-playbook jenkinsSlavePlaybook.yml`
+5. Remove password prompt by using `sudo visudo` and append `jenkins ALL=(ALL) NOPASSWD: ALL`
+6. Configure the aws cli using `sudo -u jenkins -i` and then `aws configure`. Use the credentials in the jenkins@jenkins-master's ~/.aws/credentials
+7. Configure slave on master Jenkin: Manage Jenkins => Manage Nodes => New Node => Permanent Agent => Remote root directory: /home/jenkins
 
 # Running tooltester:
 1. Check .tooltester/config to see if the 'server-url' needs to be changed
@@ -78,3 +56,4 @@ runner = cromwell cwltool cwl-runner
 ```
 3. Check .tooltester/config to see if dockstore-version needs to be changed
 4. Modify the [cwltoolPlaybook](src/main/resources/cwltoolPlaybook.yml) and [toilPlaybook](src/main/resources/toilPlaybook.yml) to have the right apt/pip dependencies if needed (i.e. Check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
+5. Check that the slave has enough disk space
