@@ -23,8 +23,6 @@ The general idea is to only have the `jenkins` user talk to each other, never us
 1. Check the checkbox:  "This project is parameterized"
 1. Create the String Parameters mentioned in the [constructParameterMap](https://github.com/ga4gh/dockstore-support/blob/develop/tooltester/src/main/java/io/dockstore/tooltester/client/cli/Client.java#L609) function. These string parameters are used to configure the Jenkins pipelines to run the correct tool/workflow, versions, etc.
 1. Change master node to not be used (0 executors)
-1. Log in as jenkins `sudo -u jenkins -i` and create a .ssh/id_rsa (use the same one as before, ask around for it)
-
 
 # Slave Setup:
 1. Create a c2.large flavor Ubuntu 18.04 image on Collaboratory and give it the JenkinsMaster2 key pair
@@ -41,6 +39,7 @@ The general idea is to only have the `jenkins` user talk to each other, never us
 1. Remove password prompt by using `sudo visudo` and append `jenkins ALL=(ALL) NOPASSWD: ALL`
 1. Configure the aws cli using `sudo -u jenkins -i` and then `aws configure`. Use the credentials in the jenkins@jenkins-master's ~/.aws/credentials
 1. Configure slave on master Jenkin: Manage Jenkins => Manage Nodes => New Node => Permanent Agent => Remote root directory: /home/jenkins
+1. If it's a new master, Add credentials (Kind: SSH Username with private key, Username: jenkins, private key: <same one as before, ask around for it>)
 1. Reduce executors to 1
 
 # Running tooltester:
