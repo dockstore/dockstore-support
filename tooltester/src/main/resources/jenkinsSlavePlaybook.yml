@@ -2,6 +2,10 @@
   hosts: localhost
   connection: localhost
   tasks:
+    - name: Install JDK
+      become: yes
+      apt:
+        name: openjdk-8-jdk
     - name: Install https
       become: yes
       apt:
