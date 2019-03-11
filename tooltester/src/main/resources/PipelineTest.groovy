@@ -22,12 +22,14 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
     return {
 
         node {
+            cleanWs()
             ws {
+                cleanWs()
                 sh 'rm -rf /mnt/output/*'
                 sh 'rm -rf /media/large_volume/output/*'
-                step([$class: 'WsCleanup'])
+                sh 'rm -rf ~/.dockstore'
                 sh "wget -O playbook.yml https://raw.githubusercontent.com/ga4gh/dockstore-support/feature/playbook/tooltester/src/main/resources/${AnsiblePlaybook}.yml"
-                ansiblePlaybook playbook: 'playbook.yml', sudo: true, sudoUser: null, extraVars: [version: '${AnsiblePlaybook}']
+                ansiblePlaybook playbook: 'playbook.yml', sudo: true, sudoUser: null, extraVars: [version: '${DockstoreVersion}']
                 sh 'dockstore --version --script || true'
                 sh 'pip list'
                 sh 'dockstore plugin list --script || true'
@@ -72,6 +74,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                         archiveArtifacts artifacts: parameter
                     }
                 }
+                cleanWs()
             }
             cleanWs()
         }
@@ -88,7 +91,9 @@ void launchDockstoreWithCromwell(String entryType, String runDescriptor, String 
 def transformIntoDockerfileStep(){
     return {
         node {
+            cleanWs()
             ws {
+                cleanWs()
                 step([$class: 'WsCleanup'])
                 sh 'docker version'
                 sh 'git clone ${URL} .'
@@ -97,6 +102,7 @@ def transformIntoDockerfileStep(){
                 dir(LOCATION){
                     sh 'docker build --no-cache .'
                 }
+                cleanWs()
             }
             cleanWs()
         }
