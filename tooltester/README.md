@@ -16,8 +16,8 @@ The general idea is to only have the `jenkins` user talk to each other, never us
     `ansible-playbook jenkinsPlaybook.yml`
 1. Log out and log back in
 1. Run the jenkins container
-    `docker run -u root --rm -d -p 8080:8080 -p 50000:50000 -v jenkins-data:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/blueocean`
-1. Follow the setup wizard and install the ansible plugin (may need to restart the docker container), then set shell executable to /bin/bash
+    `docker run -u root --rm -d -p 8080:8080 -p 50000:50000 -v jenkins-data:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/blueocean:1.13.1`
+1. Follow the setup wizard and install the version 1.0 ansible plugin (may need to restart the docker container), then set shell executable to `/bin/bash`
 1. Create a pipeline called PipelineTest
 1. Copy the contents of resources/PipelineTest.groovy into the Pipeline Script textbox
 1. Check the checkbox:  "This project is parameterized"
