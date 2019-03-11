@@ -1,0 +1,28 @@
+- name: Jenkins slave requirements
+  hosts: localhost
+  connection: localhost
+  tasks:
+    - name: Add an apt key
+      become: yes
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+    - name: Add docker repository and update apt cache
+      become: yes
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/{{ansible_distribution | lower }} {{ansible_distribution_release}} stable"
+        update_cache: yes
+        state: present
+    - name: Install docker
+      become: yes
+      apt:
+        update_cache: yes
+        name: docker-ce
+        allow_unauthenticated: yes
+    - name: Add user
+      become: yes
+      user:
+        name: ubuntu
+        shell: /bin/bash
+        groups: docker
+        append: yes
