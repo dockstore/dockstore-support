@@ -34,7 +34,7 @@ public class DockstoreConfigHelperTest {
     public void testCromwellConfig() throws IOException {
         final String url = "https://staging.dockstore.org:8443";
         String toilConfig = DockstoreConfigHelper.getConfig(url, "cromwell");
-        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\n", toilConfig);
+        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncromwell-version = 36\n", toilConfig);
     }
 
     @Test
