@@ -38,7 +38,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                 dir('target') {
                     sh 'git checkout ${Tag}'
                     if (synapseCache != "") {
-                        sh 'aws s3 --endpoint-url https://object.cancercollaboratory.org:9080 cp --recursive s3://dockstore/test_files/${SynapseCache}/ .'
+                        sh 'aws s3 --endpoint-url https://object.cancercollaboratory.org:9080 cp --recursive s3://dockstore/test_files/${SynapseCache}/ . --quiet'
                         // sh 's3cmd get --skip-existing --recursive s3://dockstore/test_files/${SynapseCache}/'
                     }
                     String fileType
