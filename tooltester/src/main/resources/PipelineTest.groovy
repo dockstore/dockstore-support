@@ -24,7 +24,6 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
         node {
             cleanWs()
             ws {
-                cleanWs()
                 sh 'rm -rf /mnt/output/*'
                 sh 'rm -rf /media/large_volume/output/*'
                 sh 'rm -rf ~/.dockstore'
@@ -74,9 +73,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                         archiveArtifacts artifacts: parameter
                     }
                 }
-                cleanWs()
             }
-            cleanWs()
         }
     }
 }
@@ -93,7 +90,6 @@ def transformIntoDockerfileStep(){
         node {
             cleanWs()
             ws {
-                cleanWs()
                 step([$class: 'WsCleanup'])
                 sh 'docker version'
                 sh 'git clone ${URL} .'
@@ -102,9 +98,7 @@ def transformIntoDockerfileStep(){
                 dir(LOCATION){
                     sh 'docker build --no-cache .'
                 }
-                cleanWs()
             }
-            cleanWs()
         }
     }
 }
