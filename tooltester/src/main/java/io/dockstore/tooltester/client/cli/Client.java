@@ -507,7 +507,7 @@ public class Client {
                                     errorMessage("Could not parse start time " + date, CLIENT_ERROR);
                                 }
                                 List<String> record = Arrays
-                                        .asList(toolversion.getId(), date, tag, runner, pipelineNode.getDisplayName(), duration, result,
+                                        .asList(date, toolversion.getId(), tag, runner, pipelineNode.getDisplayName(), result, duration,
                                                 logURL);
                                 report.printAndWriteLine(record);
                             } catch (NullPointerException e) {
