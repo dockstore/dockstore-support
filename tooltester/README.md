@@ -27,17 +27,7 @@ The general idea is to only have the `jenkins` user talk to each other, never us
 
 # Slave Setup:
 1. Create a c2.large flavor Ubuntu 18.04 image on Collaboratory and give it the JenkinsMaster2 key pair
-1. Install ansible
-```
-    sudo apt-add-repository ppa:ansible/ansible
-    sudo apt update -yq
-    sudo apt install ansible -yq
-```
-1. Download the Ansible playbook
-    `wget https://raw.githubusercontent.com/ga4gh/dockstore-support/feature/playbook/tooltester/src/main/resources/jenkinsSlavePlaybook.yml`
-1. Execute the playbook
-        `ansible-playbook jenkinsSlavePlaybook.yml`
-1. Remove password prompt `echo 'jenkins ALL=(ALL) NOPASSWD: ALL' | sudo EDITOR='tee -a' visudo`
+1. Run the setupSlave.sh script
 1. Configure the aws cli using `sudo -u jenkins -i` and then `aws configure`. Use the credentials in the jenkins@jenkins-master's ~/.aws/credentials
 1. Configure slave on master Jenkin: Manage Jenkins => Manage Nodes => New Node => Permanent Agent => Remote root directory: /home/jenkins
 1. If it's a new master, Add credentials (Kind: SSH Username with private key, Username: jenkins, private key: <same one as before, ask around for it>)
