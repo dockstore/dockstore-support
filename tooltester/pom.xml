@@ -25,7 +25,7 @@
 
     <name>tooltester</name>
     <description>A service for testing verified tools on Dockstore</description>
-    <url>https://github.com/ga4gh/dockstore-support</url>
+    <url>https://github.com/dockstore/dockstore-support</url>
 
     <prerequisites>
         <maven>3.2.3</maven>
@@ -35,7 +35,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <github.url>scm:git:git@github.com:ga4gh/dockstore-support.git</github.url>
+        <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
         <assertj.version>3.4.1</assertj.version>
         <junit-version>4.11</junit-version>
         <slf4j.version>1.7.21</slf4j.version>
