@@ -9,12 +9,13 @@ if ("tool".equalsIgnoreCase(params.EntryType)) {
 }
 def ParameterPaths = params.ParameterPath.split(' ')
 def DescriptorPaths = params.DescriptorPath.split(' ')
+def Commands = params.Commands.split('%20')
 for (int i = 0; i < ParameterPaths.length; i++) {
-    buildJob["Test " + ParameterPaths[i]] = transformIntoStep(params.URL, params.Tag, DescriptorPaths[i], ParameterPaths[i], params.EntryType, params.SynapseCache)
+    buildJob["Test " + ParameterPaths[i]] = transformIntoStep(params.URL, params.Tag, DescriptorPaths[i], ParameterPaths[i], params.EntryType, params.SynapseCache, Commands[i])
 }
 parallel buildJob
 
-def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) {
+def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache, command) {
     // We need to wrap what we return in a Groovy closure, or else it's invoked
     // when this method is called, not when we pass it to parallel.
     // To do this, you need to wrap the code below in { }, and either return
@@ -67,8 +68,8 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache) 
                             launchDockstoreWithCromwell(entryType, runDescriptor, runParameter, fileType)
                         }
                     } else {
-                        sh "echo dockstore ${entryType} launch --local-entry ${descriptor} --${fileType} ${parameter} --script"
-                        FILE = sh (script: "set -o pipefail && dockstore $entryType launch --local-entry $descriptor --${fileType} $parameter --script | sed -n -e 's/^.*Saving copy of .* stdout to: //p'", returnStdout: true).trim()
+                        sh "echo ${command}"
+                        FILE = sh (script: "set -o pipefail && $command | sed -n -e 's/^.*Saving copy of .* stdout to: //p'", returnStdout: true).trim()
                         sh "mv $FILE $parameter"
                         archiveArtifacts artifacts: parameter
                     }
