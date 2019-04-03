@@ -21,7 +21,6 @@ import com.offbytwo.jenkins.model.BuildResult;
 import com.offbytwo.jenkins.model.BuildWithDetails;
 import com.offbytwo.jenkins.model.Job;
 import com.offbytwo.jenkins.model.JobWithDetails;
-import io.dockstore.tooltester.blueOceanJsonObjects.Link;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.jenkins.CrumbJsonResult;

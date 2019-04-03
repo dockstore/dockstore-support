@@ -2,10 +2,17 @@ package io.dockstore.tooltester.helper;
 
 import java.util.ArrayList;
 
+import io.swagger.client.ApiException;
+import io.swagger.client.api.ContainersApi;
+import io.swagger.client.api.WorkflowsApi;
 import io.swagger.client.model.DockstoreTool;
 import io.swagger.client.model.Tag;
+import io.swagger.client.model.Tool;
 import io.swagger.client.model.Workflow;
 import io.swagger.client.model.WorkflowVersion;
+
+import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 
 /**
  * @author gluu
@@ -50,7 +57,42 @@ public final class DockstoreEntryHelper {
         return command;
     }
 
+    public static Workflow convertTRSToolToDockstoreEntry(Tool tool, WorkflowsApi workflowsApi) {
+        String toolId = tool.getId();
+        String path = toolId.replace("#workflow/", "");
+        try {
+            return workflowsApi.getPublishedWorkflowByPath(path);
+        } catch (ApiException e) {
+            exceptionMessage(e, "Could not get " + path + " using the workflowsApi API", API_ERROR);
+        }
+        return null;
+    }
 
+    public static DockstoreTool convertTRSToolToDockstoreEntry(Tool tool, ContainersApi containersApi) {
+        try {
+            return containersApi.getPublishedContainerByToolPath(tool.getId());
+        } catch (ApiException e) {
+            exceptionMessage(e, "Could not get published containers using the container API", API_ERROR);
+        }
+        return null;
+    }
 
+    /**
+     * Converts the "Clone with SSH" Git URL to the "Clone with HTTPS" Git URL so Jenkins can actually clone it
+     * @param gitSSHUrl     The "Clone with SSH" Git URL
+     * @return
+     */
+    public static String convertGitSSHUrlToGitHTTPSUrl(String gitSSHUrl) {
+        return gitSSHUrl != null ? gitSSHUrl.replace("git@github.com:", "https://github.com/") : null;
+    }
 
+    /**
+     * Removes the leading slash from the absolute path because it is absolute within the Git repository but not the
+     * Jenkins file system.  Jenkins will need a relative path.
+     * @param uncleanDockerfilePath
+     * @return
+     */
+    public static String convertDockstoreAbsolutePathToJenkinsRelativePath(String uncleanDockerfilePath) {
+        return uncleanDockerfilePath.replaceFirst("^/", "");
+    }
 }
