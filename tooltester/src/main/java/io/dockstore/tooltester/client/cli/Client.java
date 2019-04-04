@@ -37,6 +37,7 @@ import com.google.gson.reflect.TypeToken;
 import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.JobWithDetails;
+import io.dockstore.tooltester.BlackList;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
 import io.dockstore.tooltester.helper.DockstoreConfigHelper;
@@ -435,9 +436,15 @@ public class Client {
      * @param tool The tool to create tests for
      */
     private void createToolTests(Tool tool) {
+        String toolId = tool.getId();
         for (String runner : this.runner) {
             List<ToolVersion> toolVersions = tool.getVersions();
             for (ToolVersion toolversion : toolVersions) {
+                boolean blacklisted = BlackList.list.stream()
+                        .anyMatch(object -> object.getToolId().equals(toolId) && object.getToolVersionName().equals(toolversion.getName()));
+                if (blacklisted) {
+                    continue;
+                }
                 String name = buildName(runner, toolversion.getId());
                 pipelineTester.createTest(name);
             }
@@ -450,11 +457,17 @@ public class Client {
      * @param tool The tool to get the test results for
      */
     private void getToolTestResults(Tool tool) {
+        String toolId = tool.getId();
         for (String runner : this.runner) {
             String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
             List<ToolVersion> toolVersions = tool.getVersions();
             for (ToolVersion toolversion : toolVersions) {
                 if (toolversion != null) {
+                    boolean blacklisted = BlackList.list.stream()
+                            .anyMatch(object -> object.getToolId().equals(toolId) && object.getToolVersionName().equals(toolversion.getName()));
+                    if (blacklisted) {
+                        continue;
+                    }
                     String id = toolversion.getId();
                     String tag = toolversion.getName();
                     String name = buildName(runner, id);
@@ -586,6 +599,11 @@ public class Client {
             List<WorkflowVersion> verifiedVersions = workflow.getWorkflowVersions().stream().filter(version -> version.isVerified())
                     .collect(Collectors.toList());
             for (WorkflowVersion version : verifiedVersions) {
+                boolean blacklisted = BlackList.list.stream()
+                        .anyMatch(object -> object.getToolId().equals(toolId) && object.getToolVersionName().equals(version.getName()));
+                if (blacklisted) {
+                    continue;
+                }
                 List<String> commandsList = new ArrayList<>();
                 List<String> descriptorsList = new ArrayList<>();
                 List<String> parametersList = new ArrayList<>();
@@ -711,6 +729,11 @@ public class Client {
         for (String runner : this.runner) {
             List<Tag> verifiedTags = dockstoreTool.getTags().stream().filter(tag -> tag.isVerified()).collect(Collectors.toList());
             for (Tag tag : verifiedTags) {
+                boolean blacklisted = BlackList.list.stream()
+                        .anyMatch(object -> object.getToolId().equals(toolId) && object.getToolVersionName().equals(tag.getName()));
+                if (blacklisted) {
+                    continue;
+                }
                 List<String> commandsList = new ArrayList<>();
                 List<String> descriptorsList = new ArrayList<>();
                 List<String> parametersList = new ArrayList<>();
