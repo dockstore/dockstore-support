@@ -20,6 +20,7 @@ public class BlackList {
                 add(new BlackListObject("quay.io/pancancer/pcawg-sanger-cgp-workflow", "2.0.2", "/var/spool/cwl"));
                 add(new BlackListObject("quay.io/pancancer/pcawg-sanger-cgp-workflow", "2.0.3", "/var/spool/cwl"));
                 add(new BlackListObject("quay.io/pancancer/pcawg-bwa-mem-workflow", "2.6.8_1.2", "/var/spool/cwl"));
+                add(new BlackListObject("quay.io/pancancer/pcawg-bwa-mem-workflow", "checker", "/var/spool/cwl"));
                 add(new BlackListObject("quay.io/pancancer/pcawg-dkfz-workflow", "2.0.1_cwl1.0", "/var/spool/cwl"));
                 add(new BlackListObject("quay.io/pancancer/pcawg_delly_workflow", "2.0.0-cwl1.0", "/var/spool/cwl"));
                 add(new BlackListObject("quay.io/pancancer/pcawg_delly_workflow", "2.0.1-cwl1.0", "/var/spool/cwl"));
