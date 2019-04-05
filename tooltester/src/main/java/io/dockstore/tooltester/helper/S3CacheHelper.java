@@ -9,8 +9,8 @@ public class S3CacheHelper {
         switch(repository) {
         case "github.com/briandoconnor/dockstore-workflow-md5sum":
             return "ga4gh-dream/md5sum";
-        case "github.com/dockstore/hello_world":
-            return "ga4gh-dream/hello_world";
+//        case "github.com/dockstore/hello_world":
+//            return "ga4gh-dream/hello_world";
         case "github.com/Barski-lab/ga4gh_challenge":
             return "ga4gh-dream/biowardrobe";
         case "github.com/NCI-GDC/gdc-dnaseq-cwl/GDC_DNASeq":
