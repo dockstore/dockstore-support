@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.Models;
+package io.dockstore.tooltester.blacklist;
 
 /**
  * @author gluu

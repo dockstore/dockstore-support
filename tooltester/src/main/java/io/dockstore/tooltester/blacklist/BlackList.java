@@ -1,10 +1,8 @@
-package io.dockstore.tooltester;
+package io.dockstore.tooltester.blacklist;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import io.dockstore.tooltester.Models.BlackListObject;
 
 /**
  * These are Tool IDs and ToolVersion names that are known to always fail on the latest Dockstore CLI
@@ -12,7 +10,7 @@ import io.dockstore.tooltester.Models.BlackListObject;
  * @since 04/04/19
  */
 public class BlackList {
-    public static final List<BlackListObject> list = Collections.unmodifiableList(
+    public static final List<BlackListObject> BLACKLIST = Collections.unmodifiableList(
             new ArrayList<BlackListObject>() {{
                 add(new BlackListObject("#workflow/github.com/DataBiosphere/topmed-workflows/UM_variant_caller_wdl", "1.29.0",  "doesn't work"));
                 add(new BlackListObject("#workflow/github.com/DataBiosphere/topmed-workflows/UM_aligner_wdl", "1.29.0", "doesn't work"));
