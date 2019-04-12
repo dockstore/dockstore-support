@@ -30,5 +30,7 @@ public class BlackList {
                 add(new BlackListObject("#workflow/github.com/bcbio/bcbio_validation_workflows/wes-agha-test-arvados", "master", "doesn't work, master branch banned"));
                 add(new BlackListObject("#workflow/github.com/dockstore-testing/md5sum-checker", "develop", "input file not relative to parameter file, develop branch banned"));
                 add(new BlackListObject("#workflow/github.com/dockstore-testing/md5sum-checker/wdl", "develop", "input file not relative to parameter file, develop branch banned"));
+                add(new BlackListObject("#workflow/github.com/Barski-lab/ga4gh_challenge", "master", "master branch banned"));
+                add(new BlackListObject("#workflow/github.com/dockstore/hello_world", "master", "master branch banned"));
             }});
 }
