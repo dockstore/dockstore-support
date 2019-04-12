@@ -10,7 +10,19 @@ import java.util.List;
  * @since 04/04/19
  */
 public class BlackList {
-    public static final List<BlackListObject> BLACKLIST = Collections.unmodifiableList(
+    /**
+     * Determines whether an entry and its version has been blacklisted or not
+     * @param entryId   The entry's ID (e.g. #workflow/github.com/dockstore/hello_world)
+     * @param version   The entry's version name (e.g. master)
+     * @return
+     */
+    public static boolean isNotBlacklisted(String entryId, String version) {
+        boolean blacklisted = BlackList.BLACKLIST.stream()
+                .anyMatch(object -> object.getToolId().equals(entryId) && object.getToolVersionName().equals(version));
+        return blacklisted;
+    }
+
+    private static final List<BlackListObject> BLACKLIST = Collections.unmodifiableList(
             new ArrayList<BlackListObject>() {{
                 add(new BlackListObject("#workflow/github.com/DataBiosphere/topmed-workflows/UM_variant_caller_wdl", "1.29.0",  "doesn't work"));
                 add(new BlackListObject("#workflow/github.com/DataBiosphere/topmed-workflows/UM_aligner_wdl", "1.29.0", "doesn't work"));
