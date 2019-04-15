@@ -26,3 +26,8 @@
         shell: /bin/bash
         groups: docker
         append: yes
+    - name: Install aws cli
+      become: yes
+      apt:
+        name: awscli
+
