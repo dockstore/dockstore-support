@@ -67,7 +67,10 @@ public abstract class JenkinsHelper {
         String entity = getEntity("blue/rest/organizations/jenkins/pipelines/" + name);
         Gson gson = new Gson();
         PipelineImpl example = gson.fromJson(entity, PipelineImpl.class);
-        String uri = example.getLatestRun().getLinks().getNodes().getHref();
+        String uri = example.getLatestRun().getLinks().getSelf().getHref();
+        entity = getEntity(uri);
+        PipelineNodeImpl link = gson.fromJson(entity, PipelineNodeImpl.class);
+        uri = link.getLinks().getNodes().getHref();
         entity = getEntity(uri);
         return gson.fromJson(entity, PipelineNodeImpl[].class);
     }
