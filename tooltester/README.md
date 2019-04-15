@@ -4,26 +4,31 @@ The general idea is to only have the `jenkins` user talk to each other, never us
 
 # Master Setup:
 1. Create a c2.micro flavor Ubuntu 18.04 image on Collaboratory
-1. Install ansible
-```
-    sudo apt-add-repository ppa:ansible/ansible
-    sudo apt-get update
-    sudo apt-get install -y ansible
-```
-1. Download the Ansible playbook
-`wget https://raw.githubusercontent.com/ga4gh/dockstore-support/feature/playbook/tooltester/src/main/resources/jenkinsMasterPlaybook.yml`
-1.  Execute the playbook
-    `ansible-playbook jenkinsPlaybook.yml`
+1. Give it the security groups: Jenkins, All, Default
+1. Run the setupMaster.sh
 1. Log out and log back in
+
+Follow these steps if there is a backup
+
+---
+1. Configure the aws cli using `aws configure`. Ask around for the credentials (~/.aws/credentials)
+1. aws s3 --endpoint-url https://object.cancercollaboratory.org:9080 cp s3://dockstore/jenkinsMaster2/jenkins_home.tar.gz jenkins_home.tar.gz
+1. Extract with `tar xvzf jenkins_home.tar.gz` and then remove the far file
 1. Run the jenkins container
-    `docker run -u root --rm -d -p 8080:8080 -p 50000:50000 -v jenkins-data:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/blueocean:1.13.1`
-1. Follow the setup wizard and install the version 1.0 ansible plugin (may need to restart the docker container), then set shell executable to `/bin/bash`
+    `docker run -u root --rm -d -p 8080:8080 -p 50000:50000 -v $PWD/jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/blueocean:1.13.1`
+1. Make the .ssh directory and copy the id_rsa into it
+---
+
+Follow these setups if there is not a backup
+1. Run the jenkins container
+    `docker run -u root --rm -d -p 8080:8080 -p 50000:50000 -v $PWD/jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/blueocean:1.13.1`
 1. Create a pipeline called PipelineTest
 1. Copy the contents of resources/PipelineTest.groovy into the Pipeline Script textbox
 1. Check the checkbox:  "This project is parameterized"
 1. Create the String Parameters mentioned in the [constructParameterMap](https://github.com/ga4gh/dockstore-support/blob/develop/tooltester/src/main/java/io/dockstore/tooltester/client/cli/Client.java#L609) function. These string parameters are used to configure the Jenkins pipelines to run the correct tool/workflow, versions, etc.
 1. Make sure "Use Groovy Sandbox" is NOT checked
 1. Change master node to not be used (0 executors)
+1. Make the .ssh directory and copy the id_rsa into it
 
 # Slave Setup:
 1. Create a c2.large flavor Ubuntu 18.04 image on Collaboratory and give it the JenkinsMaster2 key pair
@@ -44,6 +49,13 @@ runner = cromwell cwltool cwl-runner
 1. Check that the slave has enough disk space, remove /tmp and ~/workspace/* (workspace `@tmp` folders aren't removed with cleanup plugin) if needed
 
 1. Run the ClientTest.createJenkinsTests (basically the sync commmand)
-2. Run the ClientTest.enqueue (basically the enqueue command)
-3. Wait until it finishes running and then run the ClientTest.report (basically the report command)
+1. Run the ClientTest.enqueue (basically the enqueue command)
+1. Wait until it finishes running and then run the ClientTest.report (basically the report command)
+
+# Master Backup
+1. Double check that aws is installed and has the correct credentials
+1. docker cp `$ID:/var/jenkins_home .` where ID is the container ID (eventually just use a volume instead)
+1. `tar cvzf jenkins_home.tar.gz jenkins_home`
+1. aws s3 --endpoint-url https://object.cancercollaboratory.org:9080 cp jenkins_home.tar.gz s3://dockstore/jenkinsMaster2/jenkins_home.tar.gz
+
 
