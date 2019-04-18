@@ -4,7 +4,7 @@ The general idea is to only have the `jenkins` user talk to each other, never us
 
 # Master Setup:
 1. Create a c2.micro flavor Ubuntu 18.04 image on Collaboratory
-1. Give it the security groups: Jenkins, All, Default
+1. Give it the security groups: Jenkins, Default
 1. Run the setupMaster.sh
 1. Log out and log back in
 
