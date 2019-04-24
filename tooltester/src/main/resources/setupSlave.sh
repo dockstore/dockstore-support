@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Can't actually run this entire script (there's interactive elements), but it gives a general idea what needs to be done to setup slave
 set -o errexit
 set -o pipefail
 set -o nounset
