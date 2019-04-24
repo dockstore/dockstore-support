@@ -19,7 +19,7 @@ public class BlackList {
     public static boolean isNotBlacklisted(String entryId, String version) {
         boolean blacklisted = BlackList.BLACKLIST.stream()
                 .anyMatch(object -> object.getToolId().equals(entryId) && object.getToolVersionName().equals(version));
-        return blacklisted;
+        return !blacklisted;
     }
 
     private static final List<BlackListObject> BLACKLIST = Collections.unmodifiableList(
