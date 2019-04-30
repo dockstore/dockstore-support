@@ -86,6 +86,15 @@ public class S3Client {
         }
     }
 
+    /**
+     * Create s3 object with metadata and upload it to s3
+     * @param toolId    The TRS ToolId
+     * @param versionName   The TRS ToolVersion name
+     * @param testFilePath  The file that was tested (test1.json, Dockerfile)
+     * @param runner    The runner used to test the file (cwltool, cromwell)
+     * @param logContent    The contents of the log file from ToolTester
+     * @param startTime     The start time (seconds since epoch) when the file was tested
+     */
     public void createObject(String toolId, String versionName, String testFilePath, String runner, String logContent, String startTime) {
         try {
             String key = generateKey(toolId, versionName, testFilePath, runner, startTime);
