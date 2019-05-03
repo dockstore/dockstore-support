@@ -507,7 +507,7 @@ public class Client {
                                     s3Client.createObject(toolId, tag, pipelineNode.getDisplayName(), runner, logContent, epochStartTime);
                                 }
                             } catch (NullPointerException e) {
-                                LOG.warn(e.getMessage());
+                                LOG.error(e.getMessage(), e);
                             }
                         }
                     }

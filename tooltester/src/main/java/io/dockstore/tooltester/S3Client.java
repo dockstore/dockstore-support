@@ -16,12 +16,15 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author gluu
  * @since 18/04/19
  */
 public class S3Client {
+    private static final Logger LOG = LoggerFactory.getLogger(S3Client.class);
     private static final int MAX_TOOL_ID_STRING_SEGMENTS = 5;
     private static final int TOOL_ID_REPOSITORY_INDEX = 3;
     private static final int TOOL_ID_TOOLNAME_INDEX = 4;
@@ -53,8 +56,7 @@ public class S3Client {
         List<String> pathList = new ArrayList<>();
         pathList.add(convertToolIdToPartialKey(toolId));
         pathList.add(URLEncoder.encode(versionName, StandardCharsets.UTF_8.toString()));
-        pathList.add(
-                URLEncoder.encode(testFilePath.replaceFirst("^Build ", "").replaceFirst("^Test ", ""), StandardCharsets.UTF_8.toString()));
+        pathList.add(URLEncoder.encode(testFilePath, StandardCharsets.UTF_8.toString()));
         pathList.add(URLEncoder.encode(runner, StandardCharsets.UTF_8.toString()));
         pathList.add(URLEncoder.encode(startTime + ".log", StandardCharsets.UTF_8.toString()));
         return String.join("/", pathList);
@@ -66,8 +68,8 @@ public class S3Client {
      * repository and optional toolname or workflowname must be encoded or else looking for logs of a specific tool without toolname (quay.io/dockstore/hello_world)
      * will return logs for the other ones with toolnames (quay.io/dockstore/hello_world/thing)
      *
-     * @param toolId TRS tool ID
-     * @return The key for s3
+     * @param toolId TRS tool ID    (ex. quay.io/pancancer/pcawg-bwa-mem-workflow/thing)
+     * @return The key for s3       (ex. tool/quay.io/pancancer/pcawg-bwa-mem-workflow%2Fthing)
      */
     protected static String convertToolIdToPartialKey(String toolId) throws UnsupportedEncodingException {
         if (toolId.startsWith("#workflow")) {
@@ -90,13 +92,14 @@ public class S3Client {
      * Create s3 object with metadata and upload it to s3
      * @param toolId    The TRS ToolId
      * @param versionName   The TRS ToolVersion name
-     * @param testFilePath  The file that was tested (test1.json, Dockerfile)
+     * @param buildName  The name of the build on Jenkins
      * @param runner    The runner used to test the file (cwltool, cromwell)
      * @param logContent    The contents of the log file from ToolTester
      * @param startTime     The start time (seconds since epoch) when the file was tested
      */
-    public void createObject(String toolId, String versionName, String testFilePath, String runner, String logContent, String startTime) {
+    public void createObject(String toolId, String versionName, String buildName, String runner, String logContent, String startTime) {
         try {
+            String testFilePath = buildNameToTestFilePath(buildName);
             String key = generateKey(toolId, versionName, testFilePath, runner, startTime);
             byte[] contentAsBytes = logContent.getBytes(StandardCharsets.UTF_8);
             ByteArrayInputStream contentsAsStream = new ByteArrayInputStream(contentAsBytes);
@@ -104,13 +107,24 @@ public class S3Client {
             metadata.setContentType(MediaType.TEXT_PLAIN);
             metadata.addUserMetadata("tool_id", toolId);
             metadata.addUserMetadata("version_name", versionName);
-            metadata.addUserMetadata("test_file_path", testFilePath.replaceFirst("^Build ", "").replaceFirst("^Test ", ""));
+            metadata.addUserMetadata("test_file_path", testFilePath);
             metadata.addUserMetadata("runner", runner);
             metadata.setContentLength(contentAsBytes.length);
             PutObjectRequest request = new PutObjectRequest(bucketName, key, contentsAsStream, metadata);
             s3.putObject(request);
         } catch (UnsupportedEncodingException e) {
-            System.out.println("Could not generate S3 URL: " + e.getMessage());
+            LOG.warn("Could not generate S3 URL: " + e.getMessage());
         }
+    }
+
+    /**
+     * All Jenkins builds that tests a parameter file was named "Build ..." for readability.
+     * All Jenkins builds that tests a Dockerfile was named "Test ..." for readability.
+     * Stripping the beginning part for readability
+     * @param buildName  The name of the Jenkins build ("Build Dockerfile", "Test test.json", etc)
+     * @return  The file path only
+     */
+    private String buildNameToTestFilePath(String buildName) {
+        return buildName.replaceFirst("^Build ", "").replaceFirst("^Test ", "");
     }
 }
