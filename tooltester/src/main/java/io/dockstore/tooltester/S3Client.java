@@ -16,6 +16,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import io.dockstore.tooltester.client.cli.ObjectMetadataEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,10 +106,10 @@ public class S3Client {
             ByteArrayInputStream contentsAsStream = new ByteArrayInputStream(contentAsBytes);
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentType(MediaType.TEXT_PLAIN);
-            metadata.addUserMetadata("tool_id", toolId);
-            metadata.addUserMetadata("version_name", versionName);
-            metadata.addUserMetadata("test_file_path", testFilePath);
-            metadata.addUserMetadata("runner", runner);
+            metadata.addUserMetadata(ObjectMetadataEnum.TOOL_ID.toString(), toolId);
+            metadata.addUserMetadata(ObjectMetadataEnum.VERSION_NAME.toString(), versionName);
+            metadata.addUserMetadata(ObjectMetadataEnum.TEST_FILE_PATH.toString(), testFilePath);
+            metadata.addUserMetadata(ObjectMetadataEnum.RUNNER.toString(), runner);
             metadata.setContentLength(contentAsBytes.length);
             PutObjectRequest request = new PutObjectRequest(bucketName, key, contentsAsStream, metadata);
             s3.putObject(request);

@@ -1,8 +1,9 @@
 package io.dockstore.tooltester.client.cli;
 
 /**
+ * TODO: Figure out how to share this between ToolTester and this
  * @author gluu
- * @since 23/04/19
+ * @since 24/04/19
  */
 public enum ObjectMetadataEnum {
     TOOL_ID("tool_id"),
