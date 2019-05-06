@@ -30,4 +30,12 @@ public class TimeHelperTest {
                 Objects.equals(time, "2017-02-22 15:36"));
     }
 
+    @Test
+    public void datetimeToEpoch() {
+        String startTime = "2019-04-05T15:21:44.219+0000";
+        String epochTimeString = TimeHelper.timeFormatToEpoch(startTime);
+        Assert.assertEquals("1554477704219", epochTimeString);
+    }
+
+
 }

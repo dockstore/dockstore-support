@@ -46,6 +46,21 @@ public class TimeHelper {
         }
     }
 
+    /**
+     * Converts the ISO string datetime to milliseconds since UTC epoch for easy file system storage
+     * @return
+     */
+    public static String timeFormatToEpoch(String datetime) {
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+        try {
+            Date date = df.parse(datetime);
+            long epoch = date.getTime();
+            return String.valueOf(epoch);
+        } catch (ParseException e) {
+            return "unknownTime";
+        }
+    }
+
     public static String timeFormatConvert(String time) throws ParseException {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSZ");
         Date result;

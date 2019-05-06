@@ -15,7 +15,6 @@
  */
 package io.dockstore.tooltester.client.cli;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
@@ -37,6 +36,8 @@ import com.google.gson.reflect.TypeToken;
 import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.JobWithDetails;
+import io.dockstore.tooltester.S3Client;
+import io.dockstore.tooltester.TooltesterConfig;
 import io.dockstore.tooltester.blacklist.BlackList;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
@@ -65,8 +66,6 @@ import io.swagger.client.model.ToolClass;
 import io.swagger.client.model.ToolVersion;
 import io.swagger.client.model.Workflow;
 import io.swagger.client.model.WorkflowVersion;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,11 +90,8 @@ public class Client {
     private StatusReport report;
     private FileReport fileReport;
     private int count = 0;
-    private HierarchicalINIConfiguration config;
     private PipelineTester pipelineTester;
-    private String[] runner;
-    private String url;
-    private String dockstoreVersion;
+    private TooltesterConfig tooltesterConfig;
 
     Client() {
 
@@ -316,30 +312,15 @@ public class Client {
     }
 
     void setupTesters() {
-        pipelineTester = new PipelineTester(config);
+        pipelineTester = new PipelineTester(tooltesterConfig.getConfig());
     }
 
     void setupClientEnvironment() {
-        String userHome = System.getProperty("user.home");
-        try {
-            // This is the config file for production use.
-            // If there's no configuration file, all properties will default to Travis ones.
-            File configFile = new File(userHome + File.separator + ".tooltester" + File.separator + "config");
-            this.config = new HierarchicalINIConfiguration(configFile);
-
-        } catch (ConfigurationException e) {
-            exceptionMessage(e, "", API_ERROR);
-        }
-
-        // pull out the variables from the config if it exists
-        String serverUrl = config.getString("server-url", "https://staging.dockstore.org:443/api");
-        this.runner = this.config.getString("runner", "cwltool cwl-runner toil cromwell").split(" ");
-        this.dockstoreVersion = config.getString("dockstore-version", "1.5.0-beta.5");
-        this.url = serverUrl;
-
+        TooltesterConfig tooltesterConfig = new TooltesterConfig();
+        this.tooltesterConfig = tooltesterConfig;
         ApiClient defaultApiClient;
         defaultApiClient = Configuration.getDefaultApiClient();
-        defaultApiClient.setBasePath(serverUrl);
+        defaultApiClient.setBasePath(tooltesterConfig.getServerUrl());
 
         this.containersApi = new ContainersApi(defaultApiClient);
         this.workflowsApi = new WorkflowsApi(defaultApiClient);
@@ -437,9 +418,10 @@ public class Client {
      */
     private void createToolTests(Tool tool) {
         String toolId = tool.getId();
-        for (String runner : this.runner) {
+        for (String runner : tooltesterConfig.getRunner()) {
             List<ToolVersion> toolVersions = tool.getVersions();
-            List<ToolVersion> notBlacklistedToolVersions = toolVersions.stream().filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName())).collect(Collectors.toList());
+            List<ToolVersion> notBlacklistedToolVersions = toolVersions.stream()
+                    .filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName())).collect(Collectors.toList());
             for (ToolVersion toolversion : notBlacklistedToolVersions) {
                 String name = buildName(runner, toolversion.getId());
                 pipelineTester.createTest(name);
@@ -454,10 +436,11 @@ public class Client {
      */
     private void getToolTestResults(Tool tool) {
         String toolId = tool.getId();
-        for (String runner : this.runner) {
-            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
+        for (String runner : tooltesterConfig.getRunner()) {
+            String jenkinsServerUrl = tooltesterConfig.getJenkinsServerUrl();
             List<ToolVersion> toolVersions = tool.getVersions();
-            List<ToolVersion> notBlacklistedToolVersions = toolVersions.stream().filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName())).collect(Collectors.toList());
+            List<ToolVersion> notBlacklistedToolVersions = toolVersions.stream()
+                    .filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName())).collect(Collectors.toList());
             for (ToolVersion toolversion : notBlacklistedToolVersions) {
                 if (toolversion != null) {
                     String id = toolversion.getId();
@@ -489,14 +472,17 @@ public class Client {
                                 String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
 
                                 String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
-                                String longURL = serverUrl + nodeLogURI;
+                                String longURL = jenkinsServerUrl + nodeLogURI;
                                 String logURL = TinyUrl.getTinyUrl(longURL);
+                                String logContent = pipelineTester.getEntity(nodeLogURI);
                                 Gson gson = new Gson();
                                 PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
                                 for (PipelineStepImpl pipelineStep : pipelineSteps) {
                                     runtime += pipelineStep.getDurationInMillis();
                                 }
+
                                 String date = pipelineNode.getStartTime();
+                                String epochStartTime = TimeHelper.timeFormatToEpoch(date);
                                 String duration;
                                 // Blue Ocean REST API does not know how long the job is running for
                                 // If it's still running, we get the duration since the start date
@@ -516,8 +502,12 @@ public class Client {
                                         .asList(date, toolversion.getId(), tag, runner, pipelineNode.getDisplayName(), result, duration,
                                                 logURL);
                                 report.printAndWriteLine(record);
+                                if (result.equals("SUCCESS")) {
+                                    S3Client s3Client = new S3Client();
+                                    s3Client.createObject(toolId, tag, pipelineNode.getDisplayName(), runner, logContent, epochStartTime);
+                                }
                             } catch (NullPointerException e) {
-                                LOG.warn(e.getMessage());
+                                LOG.error(e.getMessage(), e);
                             }
                         }
                     }
@@ -559,8 +549,8 @@ public class Client {
         parameter.put("EntryType", entryType);
         parameter.put("DockerfilePath", dockerfilePath);
         parameter.put("SynapseCache", synapseCache);
-        parameter.put("Config", DockstoreConfigHelper.getConfig(this.url, runner));
-        parameter.put("DockstoreVersion", this.dockstoreVersion);
+        parameter.put("Config", DockstoreConfigHelper.getConfig(tooltesterConfig.getServerUrl(), runner));
+        parameter.put("DockstoreVersion", this.tooltesterConfig.getDockstoreVersion());
         parameter.put("Commands", commands);
         if (runner == "toil") {
             parameter.put("AnsiblePlaybook", "toilPlaybook");
@@ -587,10 +577,11 @@ public class Client {
             return false;
         }
         Long entryId = workflow.getId();
-        for (String runner : this.runner) {
+        for (String runner : tooltesterConfig.getRunner()) {
             List<WorkflowVersion> verifiedVersions = workflow.getWorkflowVersions().stream().filter(version -> version.isVerified())
                     .collect(Collectors.toList());
-            List<WorkflowVersion> verifiedAndNotBlacklistedVersions = verifiedVersions.stream().filter(version -> BlackList.isNotBlacklisted(toolId, version.getName())).collect(Collectors.toList());
+            List<WorkflowVersion> verifiedAndNotBlacklistedVersions = verifiedVersions.stream()
+                    .filter(version -> BlackList.isNotBlacklisted(toolId, version.getName())).collect(Collectors.toList());
             for (WorkflowVersion version : verifiedAndNotBlacklistedVersions) {
                 List<String> commandsList = new ArrayList<>();
                 List<String> descriptorsList = new ArrayList<>();
@@ -623,13 +614,12 @@ public class Client {
                     }
                     String descriptorPath = DockstoreEntryHelper.convertDockstoreAbsolutePathToJenkinsRelativePath(descriptor.getPath());
                     testParameterFiles = workflowsApi.getTestParameterFiles(entryId, tagName);
-                    testParameterFiles.stream()
-                            .map(testParameterFile -> DockstoreEntryHelper.convertDockstoreAbsolutePathToJenkinsRelativePath(testParameterFile.getPath()))
-                            .forEach(parameterPath -> {
-                                parametersList.add(parameterPath);
-                                descriptorsList.add(descriptorPath);
-                                commandsList.add(DockstoreEntryHelper.generateLaunchEntryCommand(workflow, version, parameterPath));
-                            });
+                    testParameterFiles.stream().map(testParameterFile -> DockstoreEntryHelper
+                            .convertDockstoreAbsolutePathToJenkinsRelativePath(testParameterFile.getPath())).forEach(parameterPath -> {
+                        parametersList.add(parameterPath);
+                        descriptorsList.add(descriptorPath);
+                        commandsList.add(DockstoreEntryHelper.generateLaunchEntryCommand(workflow, version, parameterPath));
+                    });
 
                 } catch (ApiException e) {
                     exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the workflows API for " + name, API_ERROR);
@@ -714,15 +704,16 @@ public class Client {
             return false;
         }
         Long entryId = dockstoreTool.getId();
-        for (String runner : this.runner) {
+        for (String runner : tooltesterConfig.getRunner()) {
             List<Tag> verifiedTags = dockstoreTool.getTags().stream().filter(tag -> tag.isVerified()).collect(Collectors.toList());
-            List<Tag> verifiedAndNotBlacklistedVersions = verifiedTags.stream().filter(tag -> BlackList.isNotBlacklisted(toolId, tag.getName())).collect(Collectors.toList());
+            List<Tag> verifiedAndNotBlacklistedVersions = verifiedTags.stream()
+                    .filter(tag -> BlackList.isNotBlacklisted(toolId, tag.getName())).collect(Collectors.toList());
             for (Tag tag : verifiedAndNotBlacklistedVersions) {
                 List<String> commandsList = new ArrayList<>();
                 List<String> descriptorsList = new ArrayList<>();
                 List<String> parametersList = new ArrayList<>();
-                String dockerfilePath =
-                        tag.getDockerfilePath() != null ? DockstoreEntryHelper.convertDockstoreAbsolutePathToJenkinsRelativePath(tag.getDockerfilePath()) : null;
+                String dockerfilePath = tag.getDockerfilePath() != null ? DockstoreEntryHelper
+                        .convertDockstoreAbsolutePathToJenkinsRelativePath(tag.getDockerfilePath()) : null;
                 String tagName = tag.getName();
                 String referenceName = tag.getReference();
                 try {
@@ -748,15 +739,15 @@ public class Client {
                             LOG.info("Unknown descriptor, skipping");
                             continue;
                         }
-                        String descriptorPath = DockstoreEntryHelper.convertDockstoreAbsolutePathToJenkinsRelativePath(descriptor.getPath());
+                        String descriptorPath = DockstoreEntryHelper
+                                .convertDockstoreAbsolutePathToJenkinsRelativePath(descriptor.getPath());
                         testParameterFiles = containersApi.getTestParameterFiles(entryId, descriptorType, tagName);
-                        testParameterFiles.stream()
-                                .map(testParameterFile -> DockstoreEntryHelper.convertDockstoreAbsolutePathToJenkinsRelativePath(testParameterFile.getPath()))
-                                .forEach(parameterPath -> {
-                                    parametersList.add(parameterPath);
-                                    descriptorsList.add(descriptorPath);
-                                    commandsList.add(DockstoreEntryHelper.generateLaunchEntryCommand(dockstoreTool, tag, parameterPath));
-                            });
+                        testParameterFiles.stream().map(testParameterFile -> DockstoreEntryHelper
+                                .convertDockstoreAbsolutePathToJenkinsRelativePath(testParameterFile.getPath())).forEach(parameterPath -> {
+                            parametersList.add(parameterPath);
+                            descriptorsList.add(descriptorPath);
+                            commandsList.add(DockstoreEntryHelper.generateLaunchEntryCommand(dockstoreTool, tag, parameterPath));
+                        });
                     }
                 } catch (ApiException e) {
                     exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the container API", API_ERROR);
