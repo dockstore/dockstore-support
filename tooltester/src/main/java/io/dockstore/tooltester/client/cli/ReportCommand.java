@@ -37,11 +37,13 @@ final class ReportCommand {
     private PipelineTester pipelineTester;
     private TooltesterConfig tooltesterConfig;
     private Ga4GhApi ga4ghApi;
+    private String jenkinsServerUrl;
 
     ReportCommand() {
         tooltesterConfig = new TooltesterConfig();
         ga4ghApi = new Ga4GhApi(getApiClient(tooltesterConfig.getServerUrl()));
         pipelineTester = new PipelineTester(tooltesterConfig.getConfig());
+        jenkinsServerUrl = tooltesterConfig.getJenkinsServerUrl();
     }
 
     /**
@@ -55,7 +57,7 @@ final class ReportCommand {
      * @return The formatted duration of the Job ("6h 5m")
      */
     private static String getDuration(String state, String date, Long runtime) {
-        if (state.equals("RUNNING")) {
+        if (state.equals(StateEnum.RUNNING.name())) {
             return TimeHelper.getDurationSinceDate(date);
         } else {
             return TimeHelper.durationToString(runtime);
@@ -66,9 +68,7 @@ final class ReportCommand {
         List<Tool> tools = GA4GHHelper.getTools(ga4ghApi, true, sources, toolNames);
         String prefix = TimeHelper.getDateFilePrefix();
         StatusReport report = new StatusReport(prefix + "Report.csv");
-        for (Tool tool : tools) {
-            getToolTestResults(tool, report);
-        }
+        tools.forEach(tool -> getToolTestResults(tool, report));
         report.close();
     }
 
@@ -79,15 +79,10 @@ final class ReportCommand {
      */
     private void getToolTestResults(Tool tool, StatusReport report) {
         String toolId = tool.getId();
-        String jenkinsServerUrl = tooltesterConfig.getJenkinsServerUrl();
-        for (String runner : tooltesterConfig.getRunner()) {
-            List<ToolVersion> toolVersions = tool.getVersions();
-            List<ToolVersion> notBlacklistedToolVersions = toolVersions.stream()
-                    .filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName())).collect(Collectors.toList());
-            for (ToolVersion toolversion : notBlacklistedToolVersions) {
-                getToolVersionTestResults(toolversion, runner, jenkinsServerUrl, report, toolId);
-            }
-        }
+        String[] runners = tooltesterConfig.getRunner();
+        Arrays.stream(runners).forEach(
+                runner -> tool.getVersions().stream().filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName()))
+                        .forEach(toolVersion -> getToolVersionTestResults(toolVersion, runner, report, toolId)));
     }
 
     /**
@@ -95,11 +90,10 @@ final class ReportCommand {
      *
      * @param toolVersion      The tool version to get the results
      * @param runner           The runner ("cwltool", "cromwell", etc)
-     * @param jenkinsServerUrl The server url for Jenkins
      * @param report           The StatusReport object
      * @param toolId           The ID of the TRS Tool
      */
-    private void getToolVersionTestResults(ToolVersion toolVersion, String runner, String jenkinsServerUrl, StatusReport report,
+    private void getToolVersionTestResults(ToolVersion toolVersion, String runner, StatusReport report,
             String toolId) {
         if (toolVersion != null) {
             String toolVersionId = toolVersion.getId();
@@ -107,63 +101,60 @@ final class ReportCommand {
             String jenkinsJobName = buildName(runner, toolVersionId);
             if (pipelineTester.getJenkinsJob(jenkinsJobName) == null) {
                 LOG.info("Could not get job: " + jenkinsJobName);
-            } else {
-                int buildId = pipelineTester.getLastBuildId(jenkinsJobName);
-                if (buildId == 0 || buildId == -1) {
-                    LOG.info("No build was ran for " + jenkinsJobName);
-                    return;
-                }
-                PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(jenkinsJobName);
-
-                for (PipelineNodeImpl pipelineNode : pipelineNodes) {
-                    try {
-                        // There's pretty much always going to be a parallel node that does not matter
-                        if (pipelineNode.getDisplayName().equals("Parallel") || pipelineNode.getDurationInMillis() < 0L) {
-                            continue;
-                        }
-                        String state = pipelineNode.getState();
-                        String result = pipelineNode.getResult();
-                        if (state.equals("RUNNING")) {
-                            result = "RUNNING";
-                        }
-                        Long runtime = 0L;
-
-                        String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
-
-                        String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
-                        String longURL = jenkinsServerUrl + nodeLogURI;
-                        String logURL = TinyUrl.getTinyUrl(longURL);
-                        String logContent = pipelineTester.getEntity(nodeLogURI);
-                        Gson gson = new Gson();
-                        PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
-                        for (PipelineStepImpl pipelineStep : pipelineSteps) {
-                            runtime += pipelineStep.getDurationInMillis();
-                        }
-
-                        String date = pipelineNode.getStartTime();
-                        String epochStartTime = TimeHelper.timeFormatToEpoch(date);
-                        String duration = getDuration(state, date, runtime);
-
-                        try {
-                            date = TimeHelper.timeFormatConvert(date);
-                        } catch (ParseException e) {
-                            errorMessage("Could not parse start time " + date, CLIENT_ERROR);
-                        }
-                        List<String> record = Arrays
-                                .asList(date, toolVersion.getId(), tag, runner, pipelineNode.getDisplayName(), result, duration, logURL);
-                        report.printAndWriteLine(record);
-                        if (result.equals("SUCCESS")) {
-                            S3Client s3Client = new S3Client();
-                            s3Client.createObject(toolId, tag, pipelineNode.getDisplayName(), runner, logContent, epochStartTime);
-                        }
-                    } catch (NullPointerException e) {
-                        LOG.error(e.getMessage(), e);
-                    }
-                }
+                return;
             }
+            int buildId = pipelineTester.getLastBuildId(jenkinsJobName);
+            if (buildId == 0 || buildId == -1) {
+                LOG.info("No build was ran for " + jenkinsJobName);
+                return;
+            }
+            PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(jenkinsJobName);
+            // There's pretty much always going to be a "Parallel" node that does not matter
+            List<PipelineNodeImpl> filteredNodes = Arrays.stream(pipelineNodes)
+                    .filter(pipelineNode -> !pipelineNode.getDisplayName().equals("Parallel") && pipelineNode.getDurationInMillis() > 0L)
+                    .collect(Collectors.toList());
+
+            filteredNodes.forEach(pipelineNode -> {
+                try {
+                    String state = pipelineNode.getState();
+                    String result = pipelineNode.getResult();
+                    if (state.equals(StateEnum.RUNNING.name())) {
+                        result = state;
+                    }
+                    String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
+                    String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
+                    String longURL = jenkinsServerUrl + nodeLogURI;
+                    String logURL = TinyUrl.getTinyUrl(longURL);
+                    String logContent = pipelineTester.getEntity(nodeLogURI);
+                    Gson gson = new Gson();
+                    PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
+                    Long runtime = Arrays.stream(pipelineSteps).map(PipelineStepImpl::getDurationInMillis).mapToLong(Long::longValue).sum();
+                    String date = pipelineNode.getStartTime();
+                    String epochStartTime = TimeHelper.timeFormatToEpoch(date);
+                    String duration = getDuration(state, date, runtime);
+                    try {
+                        date = TimeHelper.timeFormatConvert(date);
+                    } catch (ParseException e) {
+                        errorMessage("Could not parse start time " + date, CLIENT_ERROR);
+                    }
+                    List<String> record = Arrays
+                            .asList(date, toolVersion.getId(), tag, runner, pipelineNode.getDisplayName(), result, duration, logURL);
+                    report.printAndWriteLine(record);
+                    if (result.equals(StateEnum.SUCCESS.name())) {
+                        S3Client s3Client = new S3Client();
+                        s3Client.createObject(toolId, tag, pipelineNode.getDisplayName(), runner, logContent, epochStartTime);
+                    }
+                } catch (NullPointerException e) {
+                    LOG.error(e.getMessage(), e);
+                }
+            });
         } else {
             errorMessage("Tool version is null", COMMAND_ERROR);
         }
+    }
+
+    public enum StateEnum {
+        SUCCESS, RUNNING, FAILURE
     }
 }
 
