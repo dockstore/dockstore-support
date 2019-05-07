@@ -34,6 +34,7 @@ import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
  */
 final class ReportCommand {
     private static final Logger LOG = LoggerFactory.getLogger(ReportCommand.class);
+    private static final boolean SEND_LOGS = true;
     private PipelineTester pipelineTester;
     private TooltesterConfig tooltesterConfig;
     private Ga4GhApi ga4ghApi;
@@ -140,9 +141,11 @@ final class ReportCommand {
                     List<String> record = Arrays
                             .asList(date, toolVersion.getId(), tag, runner, pipelineNode.getDisplayName(), result, duration, logURL);
                     report.printAndWriteLine(record);
-                    if (result.equals(StateEnum.SUCCESS.name())) {
-                        S3Client s3Client = new S3Client();
-                        s3Client.createObject(toolId, tag, pipelineNode.getDisplayName(), runner, logContent, epochStartTime);
+                    if (SEND_LOGS) {
+                        if (result.equals(StateEnum.SUCCESS.name())) {
+                            S3Client s3Client = new S3Client();
+                            s3Client.createObject(toolId, tag, pipelineNode.getDisplayName(), runner, logContent, epochStartTime);
+                        }
                     }
                 } catch (NullPointerException e) {
                     LOG.error(e.getMessage(), e);

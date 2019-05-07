@@ -80,7 +80,6 @@ public class Client {
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4GhApi ga4ghApi;
-    private StatusReport report;
     private FileReport fileReport;
     private int count = 0;
     private PipelineTester pipelineTester;
