@@ -89,9 +89,9 @@ final class ReportCommand {
     private void getToolTestResults(Tool tool, StatusReport report) {
         String toolId = tool.getId();
         String[] runners = tooltesterConfig.getRunner();
-        Arrays.stream(runners).forEach(
-                runner -> tool.getVersions().stream().filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName()))
-                        .forEach(toolVersion -> getToolVersionTestResults(toolVersion, runner, report, toolId)));
+        tool.getVersions().stream().filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName()))
+                        .forEach(toolVersion -> Arrays.stream(runners).forEach(
+                                runner -> getToolVersionTestResults(toolVersion, runner, report, toolId)));
     }
 
     /**
