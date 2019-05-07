@@ -45,7 +45,6 @@ import io.dockstore.tooltester.helper.S3CacheHelper;
 import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.report.FileReport;
-import io.dockstore.tooltester.report.StatusReport;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
@@ -223,7 +222,7 @@ public class Client {
         return pipelineTester;
     }
 
-    public static ApiClient getApiClient(String serverUrl) {
+    static ApiClient getApiClient(String serverUrl) {
         ApiClient apiClient = Configuration.getDefaultApiClient();
         apiClient.setBasePath(serverUrl);
         apiClient.setDebugging(DEBUG.get());
@@ -288,16 +287,11 @@ public class Client {
     }
 
     void setupClientEnvironment() {
-        TooltesterConfig tooltesterConfig = new TooltesterConfig();
-        this.tooltesterConfig = tooltesterConfig;
-        ApiClient defaultApiClient;
-        defaultApiClient = Configuration.getDefaultApiClient();
-        defaultApiClient.setBasePath(tooltesterConfig.getServerUrl());
-
+        this.tooltesterConfig = new TooltesterConfig();
+        ApiClient defaultApiClient = getApiClient(this.tooltesterConfig.getServerUrl());
         this.containersApi = new ContainersApi(defaultApiClient);
         this.workflowsApi = new WorkflowsApi(defaultApiClient);
         setGa4ghApi(new Ga4GhApi(defaultApiClient));
-        defaultApiClient.setDebugging(DEBUG.get());
     }
 
     private void finalizeFileReport() {
@@ -388,26 +382,6 @@ public class Client {
             }
         }
     }
-
-    //    private String getLog(Stage stage) {
-    //        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-    //        String entity = getEntity(stage.getLinks().getSelf().getHref());
-    //        Gson gson = new Gson();
-    //        Node node = gson.fromJson(entity, Node.class);
-    //        List<StageFlowNode> stageFlowNodes = node.getStageFlowNodes();
-    //        for (StageFlowNode stageFlowNode : stageFlowNodes) {
-    //            if (stageFlowNode.getStatus().equals("FAILED")) {
-    //                try {
-    //                    entity = getEntity(stageFlowNode.getLinks().getLog().getHref());
-    //                } catch (Exception e) {
-    //                    return node.getError().getMessage();
-    //                }
-    //                break;
-    //            }
-    //        }
-    //        JenkinsLog jenkinsLog = gson.fromJson(entity, JenkinsLog.class);
-    //        return serverUrl + jenkinsLog.getConsoleUrl().replaceFirst("^/", "");
-    //    }
 
     @SuppressWarnings("checkstyle:parameternumber")
     private Map<String, String> constructParameterMap(String url, String referenceName, String entryType, String dockerfilePath,

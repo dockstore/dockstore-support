@@ -40,6 +40,9 @@ final class ReportCommand {
     private Ga4GhApi ga4ghApi;
     private String jenkinsServerUrl;
 
+    /**
+     * Setup the Report command
+     */
     ReportCommand() {
         tooltesterConfig = new TooltesterConfig();
         ga4ghApi = new Ga4GhApi(getApiClient(tooltesterConfig.getServerUrl()));
@@ -65,6 +68,11 @@ final class ReportCommand {
         }
     }
 
+    /**
+     * The main function to report on previous ran tools
+     * @param toolNames List of specific tools to report on, otherwise reports on all of the verified ones by default
+     * @param sources   List of verified sources to report on, otherwise reports on all of them by default
+     */
     void report(List<String> toolNames, List<String> sources) {
         List<Tool> tools = GA4GHHelper.getTools(ga4ghApi, true, sources, toolNames);
         String prefix = TimeHelper.getDateFilePrefix();
@@ -156,6 +164,9 @@ final class ReportCommand {
         }
     }
 
+    /**
+     * State of the Jenkins Job
+     */
     public enum StateEnum {
         SUCCESS, RUNNING, FAILURE
     }
