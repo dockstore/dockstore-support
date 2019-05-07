@@ -1,9 +1,12 @@
 package io.dockstore.tooltester.helper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.dockstore.tooltester.CommandObject;
+import io.dockstore.tooltester.blacklist.BlackList;
 import io.swagger.client.ApiException;
 import io.swagger.client.api.Ga4GhApi;
 import io.swagger.client.model.Tool;
@@ -14,6 +17,7 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 
 /**
+ * A variety of helper methods to filter TRS Tool and TRS ToolVersion
  * @author gluu
  * @since 23/03/18
  */
@@ -86,5 +90,48 @@ public class GA4GHHelper {
             tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
         }
         return tools;
+    }
+
+    /**
+     * Determines whether the runner and descriptor type is compatible with each other
+     *
+     * @param runner             The runners available ("cwltool", "cwl-runner", "cromwell"
+     * @param descriptorTypeEnum The descriptor type of the ToolVersion
+     * @return Whether the runner can be used for the descriptor type
+     */
+    static boolean runnerSupportsDescriptorType(String runner, ToolVersion.DescriptorTypeEnum descriptorTypeEnum) {
+        switch (runner) {
+        case "cwltool":
+        case "cwl-runner":
+            return descriptorTypeEnum == ToolVersion.DescriptorTypeEnum.CWL;
+        case "cromwell":
+            return descriptorTypeEnum.equals(ToolVersion.DescriptorTypeEnum.WDL);
+        default:
+            return false;
+        }
+    }
+
+    /**
+     * Given a tool and the set of runners, this will give every valid combination of ToolId, ToolVersion, and runner with the following filters applied
+     * 1. The Tool and its ToolVersion is not blacklisted
+     * 2. The runner supports that version's descriptor types
+     * 3. The ToolVersion is verified
+     * TODO: Reuse this for all commands
+     * @param tool  The TRS Tool
+     * @param runners   The set of runners that ToolTester is supposed to take action on
+     * @return      The combination of ToolId, ToolVersion, and runner to take action on
+     */
+    public static List<CommandObject> getCommandObjects(Tool tool, String[] runners) {
+        String toolId = tool.getId();
+        List<CommandObject> commandObjects = new ArrayList<>();
+        tool.getVersions().stream().filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName()))
+                .filter(ToolVersion::isVerified)
+                .forEach(toolVersion -> Arrays.stream(runners).forEach(runner -> {
+                    if (toolVersion.getDescriptorType().stream()
+                            .anyMatch(descriptorTypeEnum -> runnerSupportsDescriptorType(runner, descriptorTypeEnum))) {
+                        commandObjects.add(new CommandObject(toolId, toolVersion, runner));
+                    }
+                }));
+        return commandObjects;
     }
 }
