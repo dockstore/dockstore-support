@@ -38,6 +38,7 @@ final class ReportCommand {
     private TooltesterConfig tooltesterConfig;
     private Ga4GhApi ga4ghApi;
     private String jenkinsServerUrl;
+    private S3Client s3Client;
 
     /**
      * Setup the Report command
@@ -47,6 +48,9 @@ final class ReportCommand {
         ga4ghApi = new Ga4GhApi(getApiClient(tooltesterConfig.getServerUrl()));
         pipelineTester = new PipelineTester(tooltesterConfig.getConfig());
         jenkinsServerUrl = tooltesterConfig.getJenkinsServerUrl();
+        if (SEND_LOGS) {
+            s3Client = new S3Client();
+        }
     }
 
     /**
@@ -112,7 +116,7 @@ final class ReportCommand {
         }
         int buildId = pipelineTester.getLastBuildId(jenkinsJobName);
         if (buildId == 0 || buildId == -1) {
-            LOG.info("No build was ran for " + jenkinsJobName);
+            LOG.info("No build was run for " + jenkinsJobName);
             return;
         }
         PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(jenkinsJobName);
@@ -149,7 +153,6 @@ final class ReportCommand {
                 report.printAndWriteLine(record);
                 if (SEND_LOGS) {
                     if (result.equals(StateEnum.SUCCESS.name())) {
-                        S3Client s3Client = new S3Client();
                         s3Client.createObject(toolId, tag, pipelineNode.getDisplayName(), runner, logContent, epochStartTime);
                     }
                 }

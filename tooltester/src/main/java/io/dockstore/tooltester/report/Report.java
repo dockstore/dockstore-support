@@ -42,7 +42,7 @@ public abstract class Report implements Closeable {
             } else {
                 LOG.info("Report directory already exists");
             }
-            File file = new File(String.join(File.separator, REPORT_DIRECTORY, name));
+            File file = new File(REPORT_DIRECTORY, name);
             this.writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), UTF_8));
         } catch (FileNotFoundException e) {
             exceptionMessage(e, "Cannot create new file", IO_ERROR);
