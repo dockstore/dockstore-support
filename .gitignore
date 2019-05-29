@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Reports directory
+tooltester/Reports
+
 #IDE
 .idea
 

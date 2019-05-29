@@ -15,6 +15,8 @@ import de.vandermeer.asciitable.v2.V2_AsciiTable;
 import de.vandermeer.asciitable.v2.render.V2_AsciiTableRenderer;
 import de.vandermeer.asciitable.v2.render.WidthLongestLine;
 import de.vandermeer.asciitable.v2.themes.V2_E_TableThemes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
@@ -25,16 +27,22 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * @since 23/01/17
  */
 public abstract class Report implements Closeable {
+    private static final Logger LOG = LoggerFactory.getLogger(Report.class);
     private static final CharSequence COMMA_SEPARATOR = ",";
     private BufferedWriter writer;
     private V2_AsciiTable at;
-
+    private static final String REPORT_DIRECTORY = "Reports";
     Report(String name) {
         at = new V2_AsciiTable();
         List<String> header = getHeader();
         try {
-
-            File file = new File(name);
+            boolean mkdirs = new File(REPORT_DIRECTORY).mkdirs();
+            if (mkdirs) {
+                LOG.info("Created new report directory");
+            } else {
+                LOG.info("Report directory already exists");
+            }
+            File file = new File(REPORT_DIRECTORY, name);
             this.writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), UTF_8));
         } catch (FileNotFoundException e) {
             exceptionMessage(e, "Cannot create new file", IO_ERROR);

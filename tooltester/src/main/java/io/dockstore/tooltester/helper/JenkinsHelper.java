@@ -134,6 +134,20 @@ public abstract class JenkinsHelper {
     }
 
     /**
+     * Constructs the name of the Pipeline on Jenkins based on several properties
+     *
+     * @param runner        The runner (cwltool, toil, cromwell)
+     * @param ToolVersionId The ToolVersion ID, which is also equivalent to the Tool ID + version name
+     * @return
+     */
+    public static String buildName(String runner, String ToolVersionId) {
+        String prefix = PipelineTester.PREFIX;
+        String name = String.join("-", prefix, runner, ToolVersionId);
+        name = JenkinsHelper.cleanSuffx(name);
+        return name;
+    }
+
+    /**
      * Creates a pipeline on Jenkins to test the parameter file
      *
      * @param name Name of the pipeline

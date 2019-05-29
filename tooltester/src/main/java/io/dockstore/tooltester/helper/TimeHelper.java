@@ -61,6 +61,12 @@ public class TimeHelper {
         }
     }
 
+    /**
+     *
+     * @param time Ex. 2019-04-05 15:21
+     * @return
+     * @throws ParseException
+     */
     public static String timeFormatConvert(String time) throws ParseException {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSZ");
         Date result;

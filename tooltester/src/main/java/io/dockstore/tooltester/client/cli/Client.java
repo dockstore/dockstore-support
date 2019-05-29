@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.net.URISyntaxException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,22 +35,16 @@ import com.google.gson.reflect.TypeToken;
 import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.JobWithDetails;
-import io.dockstore.tooltester.S3Client;
 import io.dockstore.tooltester.TooltesterConfig;
 import io.dockstore.tooltester.blacklist.BlackList;
-import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
-import io.dockstore.tooltester.blueOceanJsonObjects.PipelineStepImpl;
 import io.dockstore.tooltester.helper.DockstoreConfigHelper;
 import io.dockstore.tooltester.helper.DockstoreEntryHelper;
 import io.dockstore.tooltester.helper.GA4GHHelper;
-import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.S3CacheHelper;
 import io.dockstore.tooltester.helper.TimeHelper;
-import io.dockstore.tooltester.helper.TinyUrl;
 import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.report.FileReport;
-import io.dockstore.tooltester.report.StatusReport;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
@@ -71,13 +64,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.DEBUG;
 import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
 
 /**
  * Prototype for testing service
@@ -87,7 +79,6 @@ public class Client {
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4GhApi ga4ghApi;
-    private StatusReport report;
     private FileReport fileReport;
     private int count = 0;
     private PipelineTester pipelineTester;
@@ -231,6 +222,13 @@ public class Client {
         return pipelineTester;
     }
 
+    static ApiClient getApiClient(String serverUrl) {
+        ApiClient apiClient = Configuration.getDefaultApiClient();
+        apiClient.setBasePath(serverUrl);
+        apiClient.setDebugging(DEBUG.get());
+        return apiClient;
+    }
+
     /**
      * This function handles the report command
      *
@@ -239,39 +237,12 @@ public class Client {
      */
     private void handleReport(List<String> toolNames, List<String> sources) {
         try {
-            setupClientEnvironment();
-            setupTesters();
-            List<Tool> tools = GA4GHHelper.getTools(this.getGa4ghApi(), true, sources, toolNames);
-            String prefix = TimeHelper.getDateFilePrefix();
-            createResults(prefix + "Report.csv");
-            for (Tool tool : tools) {
-                getToolTestResults(tool);
-            }
-            finalizeResults();
+            ReportCommand reportCommand = new ReportCommand();
+            reportCommand.report(toolNames, sources);
         } catch (Exception e) {
             exceptionMessage(e, "Can't handle report", GENERIC_ERROR);
         }
     }
-
-    // Deprecated, using blue ocean instead
-    //    private JenkinsPipeline getJenkinsPipeline(String name, int buildId) {
-    //        JenkinsPipeline jenkinsPipeline = null;
-    //        try {
-    //            String crumb = getJenkinsCrumb();
-    //            String username = config.getString("jenkins-username", "travis");
-    //            String password = config.getString("jenkins-password", "travis");
-    //            String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-    //            HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
-    //            javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
-    //            String entity = client.target(serverUrl).path("job/" + name + "/" + buildId + "/wfapi/describe")
-    //                    .request(MediaType.TEXT_PLAIN_TYPE).header("crumbRequestField", crumb).get(String.class);
-    //            Gson gson = new Gson();
-    //            jenkinsPipeline = gson.fromJson(entity, JenkinsPipeline.class);
-    //        } catch (Exception e) {
-    //            LOG.warn("Could not get Jenkins build for: " + name);
-    //        }
-    //        return jenkinsPipeline;
-    //    }
 
     /**
      * Creates or updates the tests. If tool is verified, will create tests for verified versions.  If tool is not verified, will create test for valid versions.
@@ -316,31 +287,15 @@ public class Client {
     }
 
     void setupClientEnvironment() {
-        TooltesterConfig tooltesterConfig = new TooltesterConfig();
-        this.tooltesterConfig = tooltesterConfig;
-        ApiClient defaultApiClient;
-        defaultApiClient = Configuration.getDefaultApiClient();
-        defaultApiClient.setBasePath(tooltesterConfig.getServerUrl());
-
+        this.tooltesterConfig = new TooltesterConfig();
+        ApiClient defaultApiClient = getApiClient(this.tooltesterConfig.getServerUrl());
         this.containersApi = new ContainersApi(defaultApiClient);
         this.workflowsApi = new WorkflowsApi(defaultApiClient);
         setGa4ghApi(new Ga4GhApi(defaultApiClient));
-        defaultApiClient.setDebugging(DEBUG.get());
-    }
-
-    /**
-     * Finalize the results of testing
-     */
-    private void finalizeResults() {
-        report.close();
     }
 
     private void finalizeFileReport() {
         fileReport.close();
-    }
-
-    private void createResults(String name) {
-        report = new StatusReport(name);
     }
 
     private void createFileReport(String name) {
@@ -408,7 +363,6 @@ public class Client {
                 }
             }
         }
-
     }
 
     /**
@@ -428,115 +382,6 @@ public class Client {
             }
         }
     }
-
-    /**
-     * Creates the pipeline(s) on Jenkins to test a tool
-     *
-     * @param tool The tool to get the test results for
-     */
-    private void getToolTestResults(Tool tool) {
-        String toolId = tool.getId();
-        for (String runner : tooltesterConfig.getRunner()) {
-            String jenkinsServerUrl = tooltesterConfig.getJenkinsServerUrl();
-            List<ToolVersion> toolVersions = tool.getVersions();
-            List<ToolVersion> notBlacklistedToolVersions = toolVersions.stream()
-                    .filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName())).collect(Collectors.toList());
-            for (ToolVersion toolversion : notBlacklistedToolVersions) {
-                if (toolversion != null) {
-                    String id = toolversion.getId();
-                    String tag = toolversion.getName();
-                    String name = buildName(runner, id);
-                    if (pipelineTester.getJenkinsJob(name) == null) {
-                        LOG.info("Could not get job: " + name);
-                    } else {
-                        int buildId = pipelineTester.getLastBuildId(name);
-                        if (buildId == 0 || buildId == -1) {
-                            LOG.info("No build was ran for " + name);
-                            continue;
-                        }
-                        PipelineNodeImpl[] pipelineNodes = pipelineTester.getBlueOceanJenkinsPipeline(name);
-
-                        for (PipelineNodeImpl pipelineNode : pipelineNodes) {
-                            try {
-                                // There's pretty much always going to be a parallel node that does not matter
-                                if (pipelineNode.getDisplayName().equals("Parallel") || pipelineNode.getDurationInMillis() < 0L) {
-                                    continue;
-                                }
-                                String state = pipelineNode.getState();
-                                String result = pipelineNode.getResult();
-                                if (state.equals("RUNNING")) {
-                                    result = "RUNNING";
-                                }
-                                Long runtime = 0L;
-
-                                String entity = pipelineTester.getEntity(pipelineNode.getLinks().getSteps().getHref());
-
-                                String nodeLogURI = pipelineNode.getLinks().getSelf().getHref() + "log";
-                                String longURL = jenkinsServerUrl + nodeLogURI;
-                                String logURL = TinyUrl.getTinyUrl(longURL);
-                                String logContent = pipelineTester.getEntity(nodeLogURI);
-                                Gson gson = new Gson();
-                                PipelineStepImpl[] pipelineSteps = gson.fromJson(entity, PipelineStepImpl[].class);
-                                for (PipelineStepImpl pipelineStep : pipelineSteps) {
-                                    runtime += pipelineStep.getDurationInMillis();
-                                }
-
-                                String date = pipelineNode.getStartTime();
-                                String epochStartTime = TimeHelper.timeFormatToEpoch(date);
-                                String duration;
-                                // Blue Ocean REST API does not know how long the job is running for
-                                // If it's still running, we get the duration since the start date
-                                // If it's finished running, we sum up the duration of each step
-                                if (state.equals("RUNNING")) {
-                                    duration = TimeHelper.getDurationSinceDate(date);
-                                } else {
-                                    duration = TimeHelper.durationToString(runtime);
-                                }
-
-                                try {
-                                    date = TimeHelper.timeFormatConvert(date);
-                                } catch (ParseException e) {
-                                    errorMessage("Could not parse start time " + date, CLIENT_ERROR);
-                                }
-                                List<String> record = Arrays
-                                        .asList(date, toolversion.getId(), tag, runner, pipelineNode.getDisplayName(), result, duration,
-                                                logURL);
-                                report.printAndWriteLine(record);
-                                if (result.equals("SUCCESS")) {
-                                    S3Client s3Client = new S3Client();
-                                    s3Client.createObject(toolId, tag, pipelineNode.getDisplayName(), runner, logContent, epochStartTime);
-                                }
-                            } catch (NullPointerException e) {
-                                LOG.error(e.getMessage(), e);
-                            }
-                        }
-                    }
-                } else {
-                    errorMessage("Tool version is null", COMMAND_ERROR);
-                }
-            }
-        }
-    }
-
-    //    private String getLog(Stage stage) {
-    //        String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
-    //        String entity = getEntity(stage.getLinks().getSelf().getHref());
-    //        Gson gson = new Gson();
-    //        Node node = gson.fromJson(entity, Node.class);
-    //        List<StageFlowNode> stageFlowNodes = node.getStageFlowNodes();
-    //        for (StageFlowNode stageFlowNode : stageFlowNodes) {
-    //            if (stageFlowNode.getStatus().equals("FAILED")) {
-    //                try {
-    //                    entity = getEntity(stageFlowNode.getLinks().getLog().getHref());
-    //                } catch (Exception e) {
-    //                    return node.getError().getMessage();
-    //                }
-    //                break;
-    //            }
-    //        }
-    //        JenkinsLog jenkinsLog = gson.fromJson(entity, JenkinsLog.class);
-    //        return serverUrl + jenkinsLog.getConsoleUrl().replaceFirst("^/", "");
-    //    }
 
     @SuppressWarnings("checkstyle:parameternumber")
     private Map<String, String> constructParameterMap(String url, String referenceName, String entryType, String dockerfilePath,
@@ -777,20 +622,6 @@ public class Client {
 
     private void setGa4ghApi(Ga4GhApi ga4ghApi) {
         this.ga4ghApi = ga4ghApi;
-    }
-
-    /**
-     * Constructs the name of the Pipeline on Jenkins based on several properties
-     *
-     * @param runner        The runner (cwltool, toil, cromwell)
-     * @param ToolVersionId The ToolVersion ID, which is also equivalent to the Tool ID + version name
-     * @return
-     */
-    private String buildName(String runner, String ToolVersionId) {
-        String prefix = PipelineTester.PREFIX;
-        String name = String.join("-", prefix, runner, ToolVersionId);
-        name = JenkinsHelper.cleanSuffx(name);
-        return name;
     }
 
     private static class CommandMain {

@@ -34,8 +34,7 @@ public final class DockstoreEntryHelper {
         commandList.add(fileTypeFlag);
         commandList.add(parameterFilePath);
         commandList.add("--script");
-        String command = String.join(" ", commandList);
-        return command;
+        return String.join(" ", commandList);
     }
 
     public static String generateLaunchEntryCommand(DockstoreTool tool, Tag tag, String parameterFilePath) {
@@ -53,8 +52,7 @@ public final class DockstoreEntryHelper {
         commandList.add(fileTypeFlag);
         commandList.add(parameterFilePath);
         commandList.add("--script");
-        String command = String.join(" ", commandList);
-        return command;
+        return String.join(" ", commandList);
     }
 
     public static Workflow convertTRSToolToDockstoreEntry(Tool tool, WorkflowsApi workflowsApi) {
@@ -80,7 +78,7 @@ public final class DockstoreEntryHelper {
     /**
      * Converts the "Clone with SSH" Git URL to the "Clone with HTTPS" Git URL so Jenkins can actually clone it
      * @param gitSSHUrl     The "Clone with SSH" Git URL
-     * @return
+     * @return              The "Clone with HTTPS" Git URL
      */
     public static String convertGitSSHUrlToGitHTTPSUrl(String gitSSHUrl) {
         return gitSSHUrl != null ? gitSSHUrl.replace("git@github.com:", "https://github.com/") : null;
@@ -89,8 +87,8 @@ public final class DockstoreEntryHelper {
     /**
      * Removes the leading slash from the absolute path because it is absolute within the Git repository but not the
      * Jenkins file system.  Jenkins will need a relative path.
-     * @param uncleanDockerfilePath
-     * @return
+     * @param uncleanDockerfilePath     Example: "/Dockerfile"
+     * @return                          Example: "Dockerfile"
      */
     public static String convertDockstoreAbsolutePathToJenkinsRelativePath(String uncleanDockerfilePath) {
         return uncleanDockerfilePath.replaceFirst("^/", "");
