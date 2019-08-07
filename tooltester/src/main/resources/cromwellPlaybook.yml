@@ -2,26 +2,10 @@
   hosts: local
   connection: local
   tasks:
-    - name: Install add-apt-repostory
+    - name: Install JDK
       become: yes
-      apt: name=software-properties-common state=latest
-
-    - name: Add Oracle Java Repository
-      become: yes
-      apt_repository: repo='ppa:webupd8team/java'
-      ignore_errors: yes
-
-    - name: Accept Java 8 License
-      become: yes
-      debconf: name='oracle-java8-installer' question='shared/accepted-oracle-license-v1-1' value='true' vtype='select'
-
-    - name: Install Oracle Java 8
-      become: yes
-      apt: name={{item}} state=latest
-      with_items:
-        - oracle-java8-installer
-        - ca-certificates
-        - oracle-java8-set-default
+      apt:
+        name: openjdk-11-jdk
     - name: Install python-pip
       become: yes
       apt:
@@ -39,46 +23,9 @@
     - name: Install docker
       become: yes
       apt:
+        update_cache: yes
         name: docker-ce
         allow_unauthenticated: yes
-    - name: Install setuptools
-      become: yes
-      pip:
-        name: setuptools
-        version: 36.5.0
-    - name: Install avro
-      become: yes
-      pip:
-        name: avro
-        version: 1.8.1
-    - name: Install ruamel.yaml
-      become: yes
-      pip:
-        name: ruamel.yaml
-        version: 0.14.12
-    - name: Install html5lib
-      become: yes
-      pip:
-        name: html5lib
-    - name: Install cwl-runner
-      become: yes
-      pip:
-        name: cwl-runner
-    - name: Install cwltool
-      become: yes
-      pip:
-        name: cwltool
-        version: 1.0.20180403145700
-    - name: Install schema-salad
-      become: yes
-      pip:
-        name: schema-salad
-        version: 2.7.20180514132321
-    - name: Install requests
-      become: yes
-      pip:
-        name: requests
-        version: 2.18.4
     - name: Install aws cli
       become: yes
       pip:
