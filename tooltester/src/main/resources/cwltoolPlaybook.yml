@@ -29,7 +29,7 @@
     - name: Install cwl pip deps
       become: yes
       pip:
-        requirements: https://raw.githubusercontent.com/ga4gh/dockstore/f01f4a357a353b60ac2348c51fedd63966b759a1/dockstore-webservice/src/main/resources/requirements/1.6.0/requirements.txt
+        requirements: https://raw.githubusercontent.com/ga4gh/dockstore/develop/dockstore-webservice/src/main/resources/requirements/1.7.0/requirements.txt
     - name: Install aws cli
       become: yes
       pip:
