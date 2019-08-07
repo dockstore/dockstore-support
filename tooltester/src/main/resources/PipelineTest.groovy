@@ -30,7 +30,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache, 
                 sh 'rm -rf /media/large_volume/output/*'
                 sh 'rm -rf ~/.dockstore'
                 sh "wget -O playbook.yml https://raw.githubusercontent.com/ga4gh/dockstore-support/feature/playbook/tooltester/src/main/resources/${AnsiblePlaybook}.yml"
-                ansiblePlaybook playbook: 'playbook.yml', sudo: true, sudoUser: null, extraVars: [version: '${DockstoreVersion}']
+                ansiblePlaybook playbook: 'playbook.yml', extraVars: [version: '${DockstoreVersion}']
                 sh 'dockstore --version --script || true'
                 sh 'pip list'
                 sh 'dockstore plugin list --script || true'
