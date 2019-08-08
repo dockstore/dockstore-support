@@ -59,7 +59,7 @@ public final class DockstoreEntryHelper {
         String toolId = tool.getId();
         String path = toolId.replace("#workflow/", "");
         try {
-            return workflowsApi.getPublishedWorkflowByPath(path);
+            return workflowsApi.getPublishedWorkflowByPath(path, null);
         } catch (ApiException e) {
             exceptionMessage(e, "Could not get " + path + " using the workflowsApi API", API_ERROR);
         }
@@ -68,7 +68,7 @@ public final class DockstoreEntryHelper {
 
     public static DockstoreTool convertTRSToolToDockstoreEntry(Tool tool, ContainersApi containersApi) {
         try {
-            return containersApi.getPublishedContainerByToolPath(tool.getId());
+            return containersApi.getPublishedContainerByToolPath(tool.getId(), null);
         } catch (ApiException e) {
             exceptionMessage(e, "Could not get published containers using the container API", API_ERROR);
         }

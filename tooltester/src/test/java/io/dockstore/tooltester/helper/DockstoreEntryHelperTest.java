@@ -35,8 +35,8 @@ public class DockstoreEntryHelperTest {
     public void generateLaunchToolCommand() {
         // No tool name
         Long toolId = 1055L;
-        DockstoreTool dockstoreTool = containersApi.getPublishedContainer(toolId);
-        List<Tag> tags = dockstoreTool.getTags();
+        DockstoreTool dockstoreTool = containersApi.getPublishedContainer(toolId, null);
+        List<Tag> tags = dockstoreTool.getWorkflowVersions();
         Tag tag1 = tags.stream().filter(tag -> tag.getName().equals("1.0.4"))
                 .findFirst().get();
         String command = DockstoreEntryHelper.generateLaunchEntryCommand(dockstoreTool, tag1, "test.json");
@@ -47,7 +47,7 @@ public class DockstoreEntryHelperTest {
     public void generateLaunchWorkflowCommand() {
         // No workflow name
         Long workflowId = 1678L;
-        Workflow publishedWorkflow = workflowsApi.getPublishedWorkflow(workflowId);
+        Workflow publishedWorkflow = workflowsApi.getPublishedWorkflow(workflowId, null);
         List<WorkflowVersion> workflowVersions = publishedWorkflow.getWorkflowVersions();
         WorkflowVersion workflowVersion1 = workflowVersions.stream().filter(workflowVersion -> workflowVersion.getName().equals("1.4.0"))
                 .findFirst().get();
@@ -55,7 +55,7 @@ public class DockstoreEntryHelperTest {
         Assert.assertEquals("dockstore workflow launch --entry github.com/briandoconnor/dockstore-workflow-md5sum:1.4.0 --json test.json --script", command);
         // With workflow name
         workflowId = 5181L;
-        publishedWorkflow = workflowsApi.getPublishedWorkflow(workflowId);
+        publishedWorkflow = workflowsApi.getPublishedWorkflow(workflowId, null);
         workflowVersions = publishedWorkflow.getWorkflowVersions();
         workflowVersion1 = workflowVersions.stream().filter(workflowVersion -> workflowVersion.getName().equals("dockstore"))
                 .findFirst().get();

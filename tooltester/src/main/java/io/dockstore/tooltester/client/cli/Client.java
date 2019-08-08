@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -162,12 +163,12 @@ public class Client {
         createFileReport(prefix + "FileReport.csv");
         DockstoreTool dockstoreTool = null;
         try {
-            dockstoreTool = containersApi.getPublishedContainerByToolPath(toolName);
+            dockstoreTool = containersApi.getPublishedContainerByToolPath(toolName, null);
         } catch (ApiException e) {
             exceptionMessage(e, "Could not get container: " + toolName, API_ERROR);
         }
         assert dockstoreTool != null;
-        List<Tag> tags = dockstoreTool.getTags();
+        List<Tag> tags = dockstoreTool.getWorkflowVersions();
         for (Tag tag : tags) {
             String name = dockstoreTool.getPath();
             name = name.replaceAll("/", "-");
@@ -187,7 +188,7 @@ public class Client {
                     for (Artifact artifact : artifactList) {
                         try {
                             InputStream inputStream = build.details().downloadArtifact(artifact);
-                            String artifactString = IOUtils.toString(inputStream, "UTF-8");
+                            String artifactString = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
                             Gson gson = new Gson();
                             Type mapType = new TypeToken<Map<String, OutputFile>>() {
                             }.getType();
@@ -316,17 +317,15 @@ public class Client {
         Workflow workflow;
         Long containerId;
         if (verifiedTool.getToolclass().getName().equals("Workflow")) {
-            workflow = workflowsApi.getPublishedWorkflowByPath(verifiedTool.getId().replace("#workflow/", ""));
+            workflow = workflowsApi.getPublishedWorkflowByPath(verifiedTool.getId().replace("#workflow/", ""), null);
             containerId = workflow.getId();
             for (ToolVersion version : verifiedTool.getVersions()) {
                 String tag = version.getName();
                 for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
-                    switch (descriptorType.toString()) {
+                    switch (descriptorType.toString().toUpperCase()) {
                     case "CWL":
-                        descriptor = workflowsApi.cwl(containerId, tag);
-                        break;
                     case "WDL":
-                        descriptor = workflowsApi.wdl(containerId, tag);
+                        descriptor = workflowsApi.primaryDescriptor(containerId, tag, descriptorType.toString().toUpperCase());
                         break;
                     default:
                         break;
@@ -339,18 +338,16 @@ public class Client {
                 }
             }
         } else {
-            dockstoreTool = containersApi.getPublishedContainerByToolPath(verifiedTool.getId());
+            dockstoreTool = containersApi.getPublishedContainerByToolPath(verifiedTool.getId(), null);
             containerId = dockstoreTool.getId();
             for (ToolVersion version : verifiedTool.getVersions()) {
                 String tag = version.getName();
                 dockerfile = containersApi.dockerfile(containerId, tag);
                 for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
                     switch (descriptorType.toString()) {
-                    case "CWL":
-                        descriptor = containersApi.cwl(containerId, tag);
-                        break;
                     case "WDL":
-                        descriptor = containersApi.wdl(containerId, tag);
+                    case "CWL":
+                        descriptor = containersApi.primaryDescriptor(containerId, tag, descriptorType.toString().toUpperCase());
                         break;
                     default:
                         break;
@@ -433,22 +430,22 @@ public class Client {
                 List<String> parametersList = new ArrayList<>();
                 String dockerfilePath = "";
                 String tagName = version.getReference();
-                String descriptorType = workflow.getDescriptorType();
+                String descriptorType = workflow.getDescriptorType().toString().toUpperCase();
                 List<SourceFile> testParameterFiles;
                 SourceFile descriptor;
                 String name = buildName(runner, toolId + "-" + tagName);
                 try {
-                    switch (descriptorType) {
-                    case "cwl":
+                    switch (descriptorType.toUpperCase()) {
+                    case "CWL":
                         if (!runner.equals("cromwell")) {
-                            descriptor = workflowsApi.cwl(entryId, tagName);
+                            descriptor = workflowsApi.primaryDescriptor(entryId, tagName, descriptorType.toUpperCase());
                             break;
                         } else {
                             continue;
                         }
-                    case "wdl":
+                    case "WDL":
                         if (runner.equals("cromwell")) {
-                            descriptor = workflowsApi.wdl(entryId, tagName);
+                            descriptor = workflowsApi.primaryDescriptor(entryId, tagName, descriptorType.toUpperCase());
                             break;
                         } else {
                             continue;
@@ -550,7 +547,7 @@ public class Client {
         }
         Long entryId = dockstoreTool.getId();
         for (String runner : tooltesterConfig.getRunner()) {
-            List<Tag> verifiedTags = dockstoreTool.getTags().stream().filter(tag -> tag.isVerified()).collect(Collectors.toList());
+            List<Tag> verifiedTags = dockstoreTool.getWorkflowVersions().stream().filter(tag -> tag.isVerified()).collect(Collectors.toList());
             List<Tag> verifiedAndNotBlacklistedVersions = verifiedTags.stream()
                     .filter(tag -> BlackList.isNotBlacklisted(toolId, tag.getName())).collect(Collectors.toList());
             for (Tag tag : verifiedAndNotBlacklistedVersions) {
@@ -568,14 +565,14 @@ public class Client {
                         switch (descriptorType.toUpperCase()) {
                         case "CWL":
                             if (!runner.equals("cromwell")) {
-                                descriptor = containersApi.cwl(entryId, tagName);
+                                descriptor = containersApi.primaryDescriptor(entryId, tagName, descriptorType.toUpperCase());
                                 break;
                             } else {
                                 continue;
                             }
                         case "WDL":
                             if (runner.equals("cromwell")) {
-                                descriptor = containersApi.wdl(entryId, tagName);
+                                descriptor = containersApi.primaryDescriptor(entryId, tagName, descriptorType.toUpperCase());
                                 break;
                             } else {
                                 continue;
