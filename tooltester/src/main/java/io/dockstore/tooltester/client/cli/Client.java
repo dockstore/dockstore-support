@@ -81,7 +81,6 @@ public class Client {
     private WorkflowsApi workflowsApi;
     private Ga4GhApi ga4ghApi;
     private FileReport fileReport;
-    private int count = 0;
     private PipelineTester pipelineTester;
     private TooltesterConfig tooltesterConfig;
 
@@ -275,14 +274,6 @@ public class Client {
         }
     }
 
-    int getCount() {
-        return count;
-    }
-
-    void setCount(int count) {
-        this.count = count;
-    }
-
     void setupTesters() {
         pipelineTester = new PipelineTester(tooltesterConfig.getConfig());
     }
@@ -304,78 +295,20 @@ public class Client {
     }
 
     /**
-     * This function counts the number of tests that need to be created
-     *
-     * @param verifiedTool The verified tool
-     */
-    void countNumberOfTests(Tool verifiedTool) throws ApiException {
-        SourceFile dockerfile;
-        SourceFile descriptor;
-        SourceFile testParameter;
-        List<SourceFile> testParameterFiles;
-        DockstoreTool dockstoreTool;
-        Workflow workflow;
-        Long containerId;
-        if (verifiedTool.getToolclass().getName().equals("Workflow")) {
-            workflow = workflowsApi.getPublishedWorkflowByPath(verifiedTool.getId().replace("#workflow/", ""), null);
-            containerId = workflow.getId();
-            for (ToolVersion version : verifiedTool.getVersions()) {
-                String tag = version.getName();
-                for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
-                    switch (descriptorType.toString().toUpperCase()) {
-                    case "CWL":
-                    case "WDL":
-                        descriptor = workflowsApi.primaryDescriptor(containerId, tag, descriptorType.toString().toUpperCase());
-                        break;
-                    default:
-                        break;
-                    }
-                    testParameterFiles = workflowsApi.getTestParameterFiles(containerId, tag);
-                    for (SourceFile testParameterFile : testParameterFiles) {
-                        testParameter = testParameterFile;
-                        count++;
-                    }
-                }
-            }
-        } else {
-            dockstoreTool = containersApi.getPublishedContainerByToolPath(verifiedTool.getId(), null);
-            containerId = dockstoreTool.getId();
-            for (ToolVersion version : verifiedTool.getVersions()) {
-                String tag = version.getName();
-                dockerfile = containersApi.dockerfile(containerId, tag);
-                for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
-                    switch (descriptorType.toString()) {
-                    case "WDL":
-                    case "CWL":
-                        descriptor = containersApi.primaryDescriptor(containerId, tag, descriptorType.toString().toUpperCase());
-                        break;
-                    default:
-                        break;
-                    }
-                    testParameterFiles = containersApi.getTestParameterFiles(containerId, descriptorType.toString(), tag);
-                    for (SourceFile testParameterFile : testParameterFiles) {
-                        testParameter = testParameterFile;
-                        count++;
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * Creates the pipeline(s) on Jenkins to test a tool
      *
      * @param tool The tool to create tests for
      */
     private void createToolTests(Tool tool) {
         String toolId = tool.getId();
+        String jobTemplate = pipelineTester.getJenkinsJobTemplate();
         for (String runner : tooltesterConfig.getRunner()) {
             List<ToolVersion> toolVersions = tool.getVersions();
             List<ToolVersion> notBlacklistedToolVersions = toolVersions.stream()
                     .filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName())).collect(Collectors.toList());
             for (ToolVersion toolversion : notBlacklistedToolVersions) {
                 String name = buildName(runner, toolversion.getId());
-                pipelineTester.createTest(name);
+                pipelineTester.createTest(name, jobTemplate);
             }
         }
     }

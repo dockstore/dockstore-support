@@ -50,7 +50,8 @@ public class JenkinsJobTest {
         Assert.assertNotNull("Jenkins server can not be reached", client.getPipelineTester().getJenkins());
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
-        pipelineTester.createTest(suffix);
+        String jenkinsJobTemplate = pipelineTester.getJenkinsJobTemplate();
+        pipelineTester.createTest(suffix, jenkinsJobTemplate);
 
         Map<String, String> map = new HashMap<>();
         map.put("URL", "https://github.com/CancerCollaboratory/dockstore-tool-kallisto.git");
