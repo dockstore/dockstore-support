@@ -13,9 +13,7 @@ import io.dockstore.tooltester.helper.PipelineTester;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
-import io.swagger.client.api.ContainersApi;
 import io.swagger.client.api.Ga4GhApi;
-import io.swagger.client.api.WorkflowsApi;
 import io.swagger.client.model.Tool;
 import org.junit.Assert;
 import org.junit.Before;
@@ -23,9 +21,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.contrib.java.lang.system.SystemOutRule;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 
 import static io.dockstore.tooltester.client.cli.Client.main;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
@@ -299,7 +294,7 @@ public class ClientTest {
         int count;
         List<String> sources = new ArrayList<>();
         List<String> toolnames = new ArrayList<>();
-        List<Tool> verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, sources, toolnames);
+        List<Tool> verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, sources, toolnames, true);
         for (Tool verifiedTool : verifiedTools) {
             try {
                 client.countNumberOfTests(verifiedTool);
@@ -319,7 +314,7 @@ public class ClientTest {
         int count;
         List<String> toolnames = new ArrayList<>();
         List<String> verifiedSources = Collections.singletonList("Docktesters group");
-        List<Tool> verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames);
+        List<Tool> verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames, true);
         for (Tool verifiedTool : verifiedTools) {
             try {
                 client.countNumberOfTests(verifiedTool);
@@ -331,7 +326,7 @@ public class ClientTest {
         Assert.assertNotEquals("There is an incorrect number of dockerfile, descriptors, and test parameter files.", 0, count);
         client.setCount(0);
         verifiedSources = Arrays.asList("Docktesters group", "Another Group");
-        verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames);
+        verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames, true);
         for (Tool verifiedTool : verifiedTools) {
             try {
                 client.countNumberOfTests(verifiedTool);
@@ -343,7 +338,7 @@ public class ClientTest {
         Assert.assertNotEquals("There is an incorrect number of dockerfile, descriptors, and test parameter files.", 0, count);
         client.setCount(0);
         verifiedSources = Collections.singletonList("Another Group");
-        verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames);
+        verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames, true);
         for (Tool verifiedTool : verifiedTools) {
             try {
                 client.countNumberOfTests(verifiedTool);

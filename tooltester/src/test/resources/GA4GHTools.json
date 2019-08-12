@@ -1,0 +1,1751 @@
+[
+  {
+    "aliases": [],
+    "author": "",
+    "checker_url": "",
+    "contains": [],
+    "description": "",
+    "has_checker": false,
+    "id": "registry.hub.docker.com/lynnlangit/blastn-jupyter-docker",
+    "meta_version": "2019-02-15 04:10:59.003",
+    "organization": "lynnlangit",
+    "signed": false,
+    "toolclass": {
+      "description": "CommandLineTool",
+      "id": "0",
+      "name": "CommandLineTool"
+    },
+    "toolname": "blastn-jupyter-docker",
+    "url": "https://staging.dockstore.org/api/api/ga4gh/v2/tools/registry.hub.docker.com%2Flynnlangit%2Fblastn-jupyter-docker",
+    "verified": false,
+    "verified_source": "[]",
+    "versions": []
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FBarski-lab%2Fga4gh_challenge",
+    "id": "#workflow\/github.com\/Barski-lab\/ga4gh_challenge",
+    "aliases": [
+
+    ],
+    "organization": "Barski-lab",
+    "toolname": "ga4gh_challenge",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "Current workflow is used to run CHIP-Seq basic analysis with single-end input FASTQ file.\nIn outputs it returns coordinate sorted BAM file alongside with index BAI file, quality\nstatistics of the input FASTQ file, reads coverage in a form of BigWig file, peaks calling\ndata in a form of narrowPeak or broadPeak files.\n",
+    "author": "Unknown author",
+    "meta_version": "2017-06-21 15:57:50.547",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\",\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "master",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FBarski-lab%2Fga4gh_challenge\/versions\/master",
+        "id": "#workflow\/github.com\/Barski-lab\/ga4gh_challenge:master",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2018-08-13 21:00:18.0",
+        "verified": true,
+        "verified_source": ""
+      },
+      {
+        "name": "v0.0.3",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FBarski-lab%2Fga4gh_challenge\/versions\/v0.0.3",
+        "id": "#workflow\/github.com\/Barski-lab\/ga4gh_challenge:v0.0.3",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2018-08-13 21:00:18.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2FUM_variant_caller_wdl",
+    "id": "#workflow\/github.com\/DataBiosphere\/topmed-workflows\/UM_variant_caller_wdl",
+    "aliases": [
+
+    ],
+    "organization": "DataBiosphere",
+    "toolname": "topmed-workflows\/UM_variant_caller_wdl",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "This is the workflow WDL for U of Michigan's [TOPMed Freeze 3a Variant Calling Pipeline](https:\/\/github.com\/statgen\/topmed_freeze3_calling)",
+    "author": "Walt Shands",
+    "meta_version": "2018-04-23 23:33:57.426",
+    "contains": [
+
+    ],
+    "has_checker": true,
+    "checker_url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2Fchecker_UM_variant_caller_wdl",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.29.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2FUM_variant_caller_wdl\/versions\/1.29.0",
+        "id": "#workflow\/github.com\/DataBiosphere\/topmed-workflows\/UM_variant_caller_wdl:1.29.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "WDL"
+        ],
+        "containerfile": false,
+        "meta_version": "2018-09-28 04:46:10.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2Fchecker_UM_aligner_wdl",
+    "id": "#workflow\/github.com\/DataBiosphere\/topmed-workflows\/checker_UM_aligner_wdl",
+    "aliases": [
+
+    ],
+    "organization": "DataBiosphere",
+    "toolname": "topmed-workflows\/checker_UM_aligner_wdl",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "",
+    "meta_version": "2018-05-11 22:57:43.71",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.32.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2Fchecker_UM_aligner_wdl\/versions\/1.32.0",
+        "id": "#workflow\/github.com\/DataBiosphere\/topmed-workflows\/checker_UM_aligner_wdl:1.32.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "WDL"
+        ],
+        "containerfile": false,
+        "meta_version": "2019-03-11 23:10:28.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2FUM_aligner_wdl",
+    "id": "#workflow\/github.com\/DataBiosphere\/topmed-workflows\/UM_aligner_wdl",
+    "aliases": [
+
+    ],
+    "organization": "DataBiosphere",
+    "toolname": "topmed-workflows\/UM_aligner_wdl",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "This is the workflow WDL for the [TOPMed\/University of Michigan alignment pipeline](https:\/\/github.com\/statgen\/docker-alignment)",
+    "author": "Walt Shands",
+    "meta_version": "2018-05-11 22:57:43.71",
+    "contains": [
+
+    ],
+    "has_checker": true,
+    "checker_url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2Fchecker_UM_aligner_wdl",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.29.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2FUM_aligner_wdl\/versions\/1.29.0",
+        "id": "#workflow\/github.com\/DataBiosphere\/topmed-workflows\/UM_aligner_wdl:1.29.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "WDL"
+        ],
+        "containerfile": false,
+        "meta_version": "2018-09-28 04:46:10.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2FUM_aligner_cwl",
+    "id": "#workflow\/github.com\/DataBiosphere\/topmed-workflows\/UM_aligner_cwl",
+    "aliases": [
+
+    ],
+    "organization": "DataBiosphere",
+    "toolname": "topmed-workflows\/UM_aligner_cwl",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "A CWL wrapper of the TopMed alignment workflow described here: https:\/\/github.com\/statgen\/docker-alignment Tool Author: Hyun Min Kang (hmkang@umich.edu) and Adrian Tan (atks@umich.edu) Wrapper Author: Marko Zecevic (marko.zecevic@sbgenomics.com)",
+    "author": "Seven Bridges",
+    "meta_version": "2018-08-01 06:26:20.899",
+    "contains": [
+
+    ],
+    "has_checker": true,
+    "checker_url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2Fchecker_UM_aligner_cwl",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.31.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2FUM_aligner_cwl\/versions\/1.31.0",
+        "id": "#workflow\/github.com\/DataBiosphere\/topmed-workflows\/UM_aligner_cwl:1.31.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2018-10-01 00:35:11.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FENCODE-DCC%2Fpipeline-container%2Fencode-mapping-wdl",
+    "id": "#workflow\/github.com\/ENCODE-DCC\/pipeline-container\/encode-mapping-wdl",
+    "aliases": [
+
+    ],
+    "organization": "ENCODE-DCC",
+    "toolname": "pipeline-container\/encode-mapping-wdl",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "Unknown author",
+    "meta_version": "2017-07-10 19:19:35.949",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "v1.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FENCODE-DCC%2Fpipeline-container%2Fencode-mapping-wdl\/versions\/v1.0",
+        "id": "#workflow\/github.com\/ENCODE-DCC\/pipeline-container\/encode-mapping-wdl:v1.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "WDL"
+        ],
+        "containerfile": false,
+        "meta_version": "Wed Dec 31 19:00:00 EST 1969",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FENCODE-DCC%2Fpipeline-container%2Fencode-mapping-cwl",
+    "id": "#workflow\/github.com\/ENCODE-DCC\/pipeline-container\/encode-mapping-cwl",
+    "aliases": [
+
+    ],
+    "organization": "ENCODE-DCC",
+    "toolname": "pipeline-container\/encode-mapping-cwl",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "Unknown author",
+    "meta_version": "2017-07-24 16:57:29.49",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "v1.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FENCODE-DCC%2Fpipeline-container%2Fencode-mapping-cwl\/versions\/v1.0",
+        "id": "#workflow\/github.com\/ENCODE-DCC\/pipeline-container\/encode-mapping-cwl:v1.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "Wed Dec 31 19:00:00 EST 1969",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fga4gh-dream%2Fdockstore-tool-helloworld-checker",
+    "id": "quay.io\/ga4gh-dream\/dockstore-tool-helloworld-checker",
+    "aliases": [
+
+    ],
+    "organization": "ga4gh-dream",
+    "toolname": "dockstore-tool-helloworld-checker",
+    "toolclass": {
+      "id": "0",
+      "name": "CommandLineTool",
+      "description": "CommandLineTool"
+    },
+    "description": "",
+    "author": "James Eddy",
+    "meta_version": "2018-09-13 16:01:06.861",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.0.1",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fga4gh-dream%2Fdockstore-tool-helloworld-checker\/versions\/1.0.1",
+        "id": "quay.io\/ga4gh-dream\/dockstore-tool-helloworld-checker:1.0.1",
+        "image": "bcc056be2f85ac9cc65c7fc39a3d6c49dc1d32aebdcf9754de83c753da2a3ce7",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/ga4gh-dream\/dockstore-tool-helloworld-checker",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": true,
+        "meta_version": "2017-04-25 21:29:39.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fga4gh-dream%2Fdockstore-tool-helloworld",
+    "id": "quay.io\/ga4gh-dream\/dockstore-tool-helloworld",
+    "aliases": [
+
+    ],
+    "organization": "ga4gh-dream",
+    "toolname": "dockstore-tool-helloworld",
+    "toolclass": {
+      "id": "0",
+      "name": "CommandLineTool",
+      "description": "CommandLineTool"
+    },
+    "description": "",
+    "author": "James Eddy",
+    "meta_version": "2018-10-30 19:57:21.173",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.0.1",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fga4gh-dream%2Fdockstore-tool-helloworld\/versions\/1.0.1",
+        "id": "quay.io\/ga4gh-dream\/dockstore-tool-helloworld:1.0.1",
+        "image": "d681f503804d1331fab1e6a0bb08781a16998cc64886d103c55eb7b16fe3148e",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/ga4gh-dream\/dockstore-tool-helloworld",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": true,
+        "meta_version": "2017-04-25 21:29:02.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fga4gh-dream%2Fdockstore-tool-synapse-get",
+    "id": "quay.io\/ga4gh-dream\/dockstore-tool-synapse-get",
+    "aliases": [
+
+    ],
+    "organization": "ga4gh-dream",
+    "toolname": "dockstore-tool-synapse-get",
+    "toolclass": {
+      "id": "0",
+      "name": "CommandLineTool",
+      "description": "CommandLineTool"
+    },
+    "description": "",
+    "author": "James Eddy",
+    "meta_version": "2018-09-13 16:01:06.861",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.6.2.dev--2",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fga4gh-dream%2Fdockstore-tool-synapse-get\/versions\/1.6.2.dev--2",
+        "id": "quay.io\/ga4gh-dream\/dockstore-tool-synapse-get:1.6.2.dev--2",
+        "image": "7402798b4c2f91d98e0f4d1cd84c911881f31a4ca27b5a3cf59ac55626078fc1",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/ga4gh-dream\/dockstore-tool-synapse-get",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": true,
+        "meta_version": "2017-05-03 23:30:48.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fga4gh-dream%2Fdockstore-tool-synapse-submit",
+    "id": "quay.io\/ga4gh-dream\/dockstore-tool-synapse-submit",
+    "aliases": [
+
+    ],
+    "organization": "ga4gh-dream",
+    "toolname": "dockstore-tool-synapse-submit",
+    "toolclass": {
+      "id": "0",
+      "name": "CommandLineTool",
+      "description": "CommandLineTool"
+    },
+    "description": "[![Docker Repository on Quay.io](https:\/\/quay.io\/repository\/ga4gh-dream\/dockstore-tool-synapse-submit \"Docker Repository on Quay.io\")](https:\/\/quay.io\/thomasyu888\/dockstore-tool-synapse-submit)\nThe Synapse function to submit to an evaluation queue.\n",
+    "author": "Thomas V Yu",
+    "meta_version": "2018-09-13 16:01:06.861",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.7.1--1",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fga4gh-dream%2Fdockstore-tool-synapse-submit\/versions\/1.7.1--1",
+        "id": "quay.io\/ga4gh-dream\/dockstore-tool-synapse-submit:1.7.1--1",
+        "image": "6f93f8bb0bb76a63cf86bd3a8761a0eb3f394865e259d3033ac5ca02b89ee352",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/ga4gh-dream\/dockstore-tool-synapse-submit",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": true,
+        "meta_version": "2017-06-30 21:11:18.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FHumanCellAtlas%2Fskylab%2FHCA_SmartSeq2",
+    "id": "#workflow\/github.com\/HumanCellAtlas\/skylab\/HCA_SmartSeq2",
+    "aliases": [
+
+    ],
+    "organization": "HumanCellAtlas",
+    "toolname": "skylab\/HCA_SmartSeq2",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "Process SmartSeq2 scRNA-Seq data, include reads alignment, QC metrics collection, and gene expression quantitication",
+    "author": "",
+    "meta_version": "2018-03-14 16:25:10.479",
+    "contains": [
+
+    ],
+    "has_checker": true,
+    "checker_url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FHumanCellAtlas%2Fskylab%2FHCA_SmartSeq2_wdl_checker",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "dockstore",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FHumanCellAtlas%2Fskylab%2FHCA_SmartSeq2\/versions\/dockstore",
+        "id": "#workflow\/github.com\/HumanCellAtlas\/skylab\/HCA_SmartSeq2:dockstore",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "WDL"
+        ],
+        "containerfile": false,
+        "meta_version": "2018-06-26 22:19:42.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FHumanCellAtlas%2Fskylab%2FHCA_SmartSeq2_wdl_checker",
+    "id": "#workflow\/github.com\/HumanCellAtlas\/skylab\/HCA_SmartSeq2_wdl_checker",
+    "aliases": [
+
+    ],
+    "organization": "HumanCellAtlas",
+    "toolname": "skylab\/HCA_SmartSeq2_wdl_checker",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "",
+    "meta_version": "2018-03-14 16:25:10.479",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "dockstore",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FHumanCellAtlas%2Fskylab%2FHCA_SmartSeq2_wdl_checker\/versions\/dockstore",
+        "id": "#workflow\/github.com\/HumanCellAtlas\/skylab\/HCA_SmartSeq2_wdl_checker:dockstore",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "WDL"
+        ],
+        "containerfile": false,
+        "meta_version": "2018-06-26 22:19:42.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg-sanger-cgp-workflow",
+    "id": "quay.io\/pancancer\/pcawg-sanger-cgp-workflow",
+    "aliases": [
+
+    ],
+    "organization": "pancancer",
+    "toolname": "pcawg-sanger-cgp-workflow",
+    "toolclass": {
+      "id": "0",
+      "name": "CommandLineTool",
+      "description": "CommandLineTool"
+    },
+    "description": "PCAWG Sanger variant calling workflow is developed by Wellcome Trust Sanger Institute\n(http:\/\/www.sanger.ac.uk\/), it consists of software components calling somatic substitutions,\nindels and structural variants using uniformly aligned tumour \/ normal WGS sequences.\nThe workflow has been dockerized and packaged using CWL workflow language, the source code\nis available on GitHub at: https:\/\/github.com\/ICGC-TCGA-PanCancer\/CGP-Somatic-Docker.\n\n## Run the workflow with your own data\n\n### Prepare compute environment and install software packages\nThe workflow has been tested in Ubuntu 16.04 Linux environment with the following hardware and software settings.\n\n#### Hardware requirement (assuming X30 coverage whole genome sequence)\n- CPU core: 16\n- Memory: 64GB\n- Disk space: 1TB\n\n#### Software installation\n- Docker (1.12.6): follow instructions to install Docker https:\/\/docs.docker.com\/engine\/installation\n- CWL tool\n```\npip install cwltool==1.0.20180116213856\n```\n\n### Prepare input data\n#### Input aligned tumor \/ normal BAM files\n\nThe workflow uses a pair of aligned BAM files as input, one BAM for tumor, the other for normal,\nboth from the same donor. Here we assume file names are *tumor_sample.bam* and *normal_sample.bam*,\nand both files are under *bams* subfolder.\n\n#### Reference data files\n\nThe workflow also uses two precompiled reference files (*GRCh37d5_CGP_refBundle.tar.gz*,\n*GRCh37d5_battenberg.tar.gz*) as input, they can be downloaded from the\nICGC Data Portal under https:\/\/dcc.icgc.org\/releases\/PCAWG\/reference_data\/pcawg-sanger.\nWe assume the two reference files are downloaded and put under *reference* subfolder.\n\n#### Job JSON file for CWL\n\nFinally, we need to prepare a JSON file with input, reference and output files specified. Please replace\nthe *tumor* and *normal* parameters with your real BAM file names. Parameters for output are file name\nsuffixes, usually don't need to be changed.\n\nName the JSON file: *pcawg-sanger-variant-caller.job.json*\n```\n{\n  \"tumor\":\n  {\n    \"path\":\"bams\/tumor_sample.bam\",\n    \"class\":\"File\"\n  },\n  \"normal\":\n  {\n    \"path\":\"bams\/normal_sample.bam\",\n    \"class\":\"File\"\n  },\n  \"refFrom\":\n  {\n    \"path\":\"reference\/GRCh37d5_CGP_refBundle.tar.gz\",\n    \"class\":\"File\"\n  },\n  \"bbFrom\":\n  {\n    \"path\":\"reference\/GRCh37d5_battenberg.tar.gz\",\n    \"class\":\"File\"\n  },\n  \"somatic_snv_mnv_tar_gz\":\n  {\n    \"path\":\"somatic_snv_mnv_tar_gz\",\n    \"class\":\"File\"\n  },\n  \"somatic_cnv_tar_gz\":\n  {\n    \"path\":\"somatic_cnv_tar_gz\",\n    \"class\":\"File\"\n  },\n  \"somatic_sv_tar_gz\":\n  {\n    \"path\":\"somatic_sv_tar_gz\",\n    \"class\":\"File\"\n  },\n  \"somatic_indel_tar_gz\":\n  {\n    \"path\":\"somatic_indel_tar_gz\",\n    \"class\":\"File\"\n  },\n  \"somatic_imputeCounts_tar_gz\":\n  {\n    \"path\":\"somatic_imputeCounts_tar_gz\",\n    \"class\":\"File\"\n  },\n  \"somatic_genotype_tar_gz\":\n  {\n    \"path\":\"somatic_genotype_tar_gz\",\n    \"class\":\"File\"\n  },\n  \"somatic_verifyBamId_tar_gz\":\n  {\n    \"path\":\"somatic_verifyBamId_tar_gz\",\n    \"class\":\"File\"\n  }\n}\n```\n\n### Run the workflow\n#### Option 1: Run with CWL tool\n- Download CWL workflow definition file\n```\nwget -O pcawg-sanger-variant-caller.cwl \"https:\/\/raw.githubusercontent.com\/ICGC-TCGA-PanCancer\/CGP-Somatic-Docker\/2.0.3\/Dockstore.cwl\"\n```\n\n- Run `cwltool` to execute the workflow\n```\nnohup cwltool --debug --non-strict pcawg-sanger-variant-caller.cwl pcawg-sanger-variant-caller.job.json > pcawg-sanger-variant-caller.log 2>&1 &\n```\n\n#### Option 2: Run with the Dockstore CLI\nSee the *Launch with* section below for details.\n",
+    "author": "Keiran Raine",
+    "meta_version": "2019-05-23 19:01:49.872",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\",\"\",\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "2.0.2",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg-sanger-cgp-workflow\/versions\/2.0.2",
+        "id": "quay.io\/pancancer\/pcawg-sanger-cgp-workflow:2.0.2",
+        "image": "cff7a3368e0f96abe45b7874ddf9d0ec2bacce007d45cdcd1292f15cd88b9138",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/pancancer\/pcawg-sanger-cgp-workflow",
+        "descriptor_type": [
+          "CWL",
+          "WDL"
+        ],
+        "containerfile": true,
+        "meta_version": "2016-10-26 16:02:26.0",
+        "verified": true,
+        "verified_source": ""
+      },
+      {
+        "name": "2.0.3",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg-sanger-cgp-workflow\/versions\/2.0.3",
+        "id": "quay.io\/pancancer\/pcawg-sanger-cgp-workflow:2.0.3",
+        "image": "a43aad7d90a37ed3c38b603da3e35eaaa441fc0d13b51d8b2156d0b71ee37a00",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/pancancer\/pcawg-sanger-cgp-workflow",
+        "descriptor_type": [
+          "CWL",
+          "WDL"
+        ],
+        "containerfile": true,
+        "meta_version": "2016-12-01 01:01:41.0",
+        "verified": true,
+        "verified_source": ""
+      },
+      {
+        "name": "2.0.6",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg-sanger-cgp-workflow\/versions\/2.0.6",
+        "id": "quay.io\/pancancer\/pcawg-sanger-cgp-workflow:2.0.6",
+        "image": "7ff54a215c00c5f05b2f8ad68c6c758d173aee20b3225dfd9c6f53043ecae39f",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/pancancer\/pcawg-sanger-cgp-workflow",
+        "descriptor_type": [
+          "CWL",
+          "WDL"
+        ],
+        "containerfile": true,
+        "meta_version": "2019-03-19 20:01:59.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg-bwa-mem-workflow",
+    "id": "quay.io\/pancancer\/pcawg-bwa-mem-workflow",
+    "aliases": [
+
+    ],
+    "organization": "pancancer",
+    "toolname": "pcawg-bwa-mem-workflow",
+    "toolclass": {
+      "id": "0",
+      "name": "CommandLineTool",
+      "description": "CommandLineTool"
+    },
+    "description": "\nPCAWG uniform alignment workflow uses the popular short read aligner tool BWA MEM (https:\/\/github.com\/lh3\/bwa)\nwith BioBAMBAM (https:\/\/github.com\/gt1\/biobambam) for BAM sorting, merging and marking duplicate.\nThe alignment workflow has been dockerized and packaged using CWL workflow language, the source code\nis available on GitHub at: https:\/\/github.com\/ICGC-TCGA-PanCancer\/Seqware-BWA-Workflow.\n\n## Run the workflow with your own data\n### Prepare compute environment and install software packages\nThe workflow has been tested in Ubuntu 16.04 Linux environment with the following hardware\nand software settings.\n\n#### Hardware requirement (assuming 30X coverage whole genome sequence)\n- CPU core: 16\n- Memory: 64GB\n- Disk space: 1TB\n\n#### Software installation\n- Docker (1.12.6): follow instructions to install Docker https:\/\/docs.docker.com\/engine\/installation\n- CWL tool\n```\npip install cwltool==1.0.20180116213856\n```\n\n### Prepare input data\n#### Input unaligned BAM files\n\nThe workflow uses lane-level unaligned BAM files as input, one BAM per lane (aka read group).\nPlease ensure *@RG* field is populated properly in the BAM header, the following is a\nvalid *@RG* entry. *ID* field has to be unique among your dataset.\n```\n@RG\tID:WTSI:9399_7\tCN:WTSI\tPL:ILLUMINA\tPM:Illumina HiSeq 2000\tLB:WGS:WTSI:28085\tPI:453\tSM:f393ba16-9361-5df4-e040-11ac0d4844e8\tPU:WTSI:9399_7\tDT:2013-03-18T00:00:00+00:00\n```\nMultiple unaligned BAMs from the same sample (with same *SM* value) should be run together. *SM* is\nglobally unique UUID for the sample. Put the input BAM files in a subfolder. In this example,\nwe have two BAMs in a folder named *bams*.\n\n\n#### Reference genome sequence files\n\nThe reference genome files can be downloaded from the ICGC Data Portal at\nunder https:\/\/dcc.icgc.org\/releases\/PCAWG\/reference_data\/pcawg-bwa-mem. Please download all\nreference files and put them under a subfolder called *reference*.\n\n#### Job JSON file for CWL\n\nFinally, we need to prepare a JSON file with input, reference and output files specified. Please\nreplace the *reads* parameter with your real BAM file name.\n\nName the JSON file: *pcawg-bwa-mem-aligner.job.json*\n```\n{\n  \"reads\": [\n    {\n      \"path\":\"bams\/seq_from_normal_sample_A.lane_1.bam\",\n      \"class\":\"File\"\n    },\n    {\n      \"path\":\"bams\/seq_from_normal_sample_A.lane_2.bam\",\n      \"class\":\"File\"\n    }\n  ],\n  \"output_dir\": \"datastore\",\n  \"download_reference_files\": \"false\",\n  \"output_file_basename\": \"seq_from_normal_sample_A\",\n  \"reference_gz_amb\": {\n    \"path\": \"reference\/genome.fa.gz.64.amb\",\n    \"class\": \"File\"\n  },\n  \"reference_gz_sa\": {\n    \"path\": \"reference\/genome.fa.gz.64.sa\",\n    \"class\": \"File\"\n  },\n  \"reference_gz_pac\": {\n    \"path\": \"reference\/genome.fa.gz.64.pac\",\n    \"class\": \"File\"\n  },\n  \"reference_gz_ann\": {\n    \"path\": \"reference\/genome.fa.gz.64.ann\",\n    \"class\": \"File\"\n  },\n  \"reference_gz_bwt\": {\n    \"path\": \"reference\/genome.fa.gz.64.bwt\",\n    \"class\": \"File\"\n  },\n  \"reference_gz_fai\": {\n    \"path\": \"reference\/genome.fa.gz.fai\",\n    \"class\": \"File\"\n  },\n  \"reference_gz\": {\n    \"path\": \"reference\/genome.fa.gz\",\n    \"class\": \"File\"\n  }\n}\n```\n\n### Run the workflow\n#### Option 1: Run with CWL tool\n- Download CWL workflow definition file\n```\nwget -O pcawg-bwa-mem-aligner.cwl \"https:\/\/raw.githubusercontent.com\/ICGC-TCGA-PanCancer\/Seqware-BWA-Workflow\/2.6.8_1.3\/Dockstore.cwl\"\n```\n\n- Run *cwltool* to execute the workflow\n```\nnohup cwltool --debug --non-strict pcawg-bwa-mem-aligner.cwl pcawg-bwa-mem-aligner.job.json > pcawg-bwa-mem-aligner.log 2>&1 &\n```\n\n#### Option 2: Run with the Dockstore CLI\nSee the *Launch with* on the next tab for details\n",
+    "author": "Brian O'Connor",
+    "meta_version": "2019-04-12 15:30:02.47",
+    "contains": [
+
+    ],
+    "has_checker": true,
+    "checker_url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FICGC-TCGA-PanCancer%2FSeqware-BWA-Workflow%2F_cwl_checker",
+    "verified": true,
+    "verified_source": "[\"\",\"\",\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "2.6.8_1.2",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg-bwa-mem-workflow\/versions\/2.6.8_1.2",
+        "id": "quay.io\/pancancer\/pcawg-bwa-mem-workflow:2.6.8_1.2",
+        "image": "bcd4d170a42ea20bdb738623957251f29dbea5cf4a878e365e636993699a1cfc",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/pancancer\/pcawg-bwa-mem-workflow",
+        "descriptor_type": [
+          "CWL",
+          "WDL"
+        ],
+        "containerfile": true,
+        "meta_version": "2016-11-30 19:06:15.0",
+        "verified": true,
+        "verified_source": ""
+      },
+      {
+        "name": "2.7.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg-bwa-mem-workflow\/versions\/2.7.0",
+        "id": "quay.io\/pancancer\/pcawg-bwa-mem-workflow:2.7.0",
+        "image": "8d4e7659763cd14a7f7d16b41bc19f72789073ca54be9b24a745c089a5a3db3c",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/pancancer\/pcawg-bwa-mem-workflow",
+        "descriptor_type": [
+          "CWL",
+          "WDL"
+        ],
+        "containerfile": true,
+        "meta_version": "2019-04-04 17:38:36.0",
+        "verified": true,
+        "verified_source": ""
+      },
+      {
+        "name": "checker",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg-bwa-mem-workflow\/versions\/checker",
+        "id": "quay.io\/pancancer\/pcawg-bwa-mem-workflow:checker",
+        "image": "1bd37bff5fc95fa4abeedeb66d89e435d498063ba5d0e1d17b9e7ddf947c3483",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/pancancer\/pcawg-bwa-mem-workflow",
+        "descriptor_type": [
+          "CWL",
+          "WDL"
+        ],
+        "containerfile": true,
+        "meta_version": "2018-09-19 17:50:18.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg-dkfz-workflow",
+    "id": "quay.io\/pancancer\/pcawg-dkfz-workflow",
+    "aliases": [
+
+    ],
+    "organization": "pancancer",
+    "toolname": "pcawg-dkfz-workflow",
+    "toolclass": {
+      "id": "0",
+      "name": "CommandLineTool",
+      "description": "CommandLineTool"
+    },
+    "description": "PCAWG DKFZ variant calling workflow is developed by German Cancer Research Center\n(DKFZ, https:\/\/www.dkfz.de), it consists of software components calling somatic substitutions, indels\nand copy number variations using uniformly aligned tumor \/ normal WGS sequences. The workflow has been\ndockerized and packaged using CWL workflow language, the source code is available on\nGitHub at: https:\/\/github.com\/ICGC-TCGA-PanCancer\/dkfz_dockered_workflows.\n\nThis workflow has been tested using cwltool version *1.0.20180116213856*. Newer cwltool may not work.\n\n## Run the workflow with your own data\n\n### Prepare compute environment and install software packages\nThe workflow has been tested in Ubuntu 16.04 Linux environment with the following hardware and software\nsettings.\n\n#### Hardware requirement (assuming 30X coverage whole genome sequence)\n- CPU core: 16\n- Memory: 64GB\n- Disk space: 1TB\n\n#### Software installation\n- Docker (1.12.6): follow instructions to install Docker https:\/\/docs.docker.com\/engine\/installation\n- CWL tool\n```\npip install cwltool==1.0.20180116213856\n```\n\n### Prepare input data\n#### Input aligned tumor \/ normal BAM files\n\nThe workflow uses a pair of aligned BAM files as input, one BAM for tumor, the other for normal,\nboth from the same donor. Here we assume file names are *tumor_sample.bam* and *normal_sample.bam*,\nand are under *bams* subfolder.\n\n#### Dependent structural variant file\nThis is a file produced by EMBL (aka DELLY) structural variation calling workflow. Please follow instruction\n[here](https:\/\/dockstore.org\/containers\/quay.io\/pancancer\/pcawg_delly_workflow) to run EMBL workflow\nto get the *run_id.embl-delly.somatic.sv.bedpe.txt* file.\n\n#### Reference data file\n\nThe workflow also uses one precompiled reference file (*dkfz-workflow-dependencies_150318_0951.tar.gz*) as input,\nthey can be downloaded from the ICGC Data Portal under https:\/\/dcc.icgc.org\/releases\/PCAWG\/reference_data\/pcawg-dkfz.\nWe assume the reference file is under *reference* subfolder.\n\n#### Job JSON file for CWL\n\nFinally, we need to prepare a JSON file with input, reference and output files specified. Please replace\nthe *tumor* and *normal* parameters with your real BAM file names. Parameters for output are file name\nsuffixes, usually don't need to be changed.\n\nName the JSON file: *pcawg-dkfz-variant-caller.job.json*\n```\n{\n  \"run-id\": \"run_id\",\n  \"tumor-bam\": {\n    \"path\":\"bams\/tumor_sample.bam\",\n    \"class\":\"File\"\n  },\n  \"normal-bam\": {\n    \"path\":\"bams\/normal_sample.bam\",\n    \"class\":\"File\"\n  },\n  \"reference-gz\": {\n    \"path\": \"reference\/dkfz-workflow-dependencies_150318_0951.tar.gz\",\n    \"class\": \"File\"\n  },\n  \"delly-bedpe\":\n  {\n    \"path\":\"delly-bedpe\/run_id.embl-delly.somatic.sv.bedpe.txt\",\n    \"class\":\"File\"\n  },\n  \"germline_indel_vcf_gz\": {\n    \"path\": \"germline.indel.vcf.gz\",\n    \"class\": \"File\"\n  },\n  \"somatic_snv_mnv_vcf_gz\": {\n    \"path\": \"somatic.snv.mnv.vcf.gz\",\n    \"class\": \"File\"\n  },\n  \"germline_snv_mnv_vcf_gz\": {\n    \"path\": \"germline.snv.mnv.vcf.gz\",\n    \"class\": \"File\"\n  },\n  \"somatic_cnv_tar_gz\": {\n    \"path\": \"somatic.cnv.tar.gz\",\n    \"class\": \"File\"\n  },\n  \"somatic_cnv_vcf_gz\": {\n    \"path\": \"somatic.cnv.vcf.gz\",\n    \"class\": \"File\"\n  },\n  \"somatic_indel_tar_gz\": {\n    \"path\": \"somatic.indel.tar.gz\",\n    \"class\": \"File\"\n  },\n  \"somatic_snv_mnv_tar_gz\": {\n    \"path\": \"somatic.snv.mnv.tar.gz\",\n    \"class\": \"File\"\n  },\n  \"somatic_indel_vcf_gz\": {\n    \"path\": \"somatic.indel.vcf.gz\",\n    \"class\": \"File\"\n  }\n}\n```\n\n### Run the workflow\n#### Option 1: Run with CWL tool\n- Download CWL workflow definition file\n```\nwget -O pcawg-dkfz-variant-caller.cwl \"https:\/\/github.com\/ICGC-TCGA-PanCancer\/dkfz_dockered_workflows\/blob\/2.0.2_cwl1.0\/Dockstore.cwl\"\n```\n\n- Run `cwltool` to execute the workflow\n```\nnohup cwltool --debug --non-strict pcawg-dkfz-variant-caller.cwl pcawg-dkfz-variant-caller.job.json > pcawg-dkfz-variant-caller.log 2>&1 &\n```\n\n#### Option 2: Run with the Dockstore CLI\nSee the *Launch with* section below for details.\n",
+    "author": "Brian O'Connor",
+    "meta_version": "2019-05-23 18:49:05.611",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "2.0.1_cwl1.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg-dkfz-workflow\/versions\/2.0.1_cwl1.0",
+        "id": "quay.io\/pancancer\/pcawg-dkfz-workflow:2.0.1_cwl1.0",
+        "image": "95de878c8888fa9120bfa714e6eafd40b2f07d347a9cc67947890cbe48144a27",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/pancancer\/pcawg-dkfz-workflow",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": true,
+        "meta_version": "2016-12-01 16:15:37.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg_delly_workflow",
+    "id": "quay.io\/pancancer\/pcawg_delly_workflow",
+    "aliases": [
+
+    ],
+    "organization": "pancancer",
+    "toolname": "pcawg_delly_workflow",
+    "toolclass": {
+      "id": "0",
+      "name": "CommandLineTool",
+      "description": "CommandLineTool"
+    },
+    "description": "PCAWG EMBL variant calling workflow is developed by European Molecular Biology Laboratory at Heidelberg\n(EMBL, https:\/\/www.embl.de), it consists of software components calling structural\nvariants using uniformly aligned tumor \/ normal WGS sequences. The workflow has been dockerized and packaged\nusing CWL workflow language, the source code is available on GitHub at:\nhttps:\/\/github.com\/ICGC-TCGA-PanCancer\/pcawg_delly_workflow.\n\n\n## Run the workflow with your own data\n\n### Prepare compute environment and install software packages\nThe workflow has been tested in Ubuntu 16.04 Linux environment with the following hardware and software settings.\n\n#### Hardware requirement (assuming 30X coverage whole genome sequence)\n- CPU core: 16\n- Memory: 64GB\n- Disk space: 1TB\n\n#### Software installation\n- Docker (1.12.6): follow instructions to install Docker https:\/\/docs.docker.com\/engine\/installation\n- CWL tool\n```\npip install cwltool==1.0.20170217172322\n```\n\n### Prepare input data\n#### Input aligned tumor \/ normal BAM files\n\nThe workflow uses a pair of aligned BAM files as input, one BAM for tumor, the other for normal, both\nfrom the same donor. Here we assume file names are *tumor_sample.bam* and *normal_sample.bam*, and are\nunder *bams* subfolder.\n\n#### Reference data file\n\nThe workflow also uses one precompiled reference files as input, they can be downloaded from the ICGC Data\nPortal at https:\/\/dcc.icgc.org\/releases\/PCAWG\/reference_data\/pcawg-dkfz. We assume the reference file is\nunder *reference* subfolder.\n\n#### Job JSON file for CWL\n\nFinally, we need to prepare a JSON file with input, reference and output files specified. Please replace\nthe *tumor* and *normal* parameters with your real BAM file names. Parameters for output are file name\nsuffixes, usually don't need to be changed.\n\nName the JSON file: *pcawg-delly-sv-caller.job.json*\n```\n{\n  \"run-id\": \"run_id\",\n  \"tumor-bam\": {\n    \"path\":\"bams\/tumor_sample.bam\",\n    \"class\":\"File\"\n  },\n  \"normal-bam\": {\n    \"path\":\"bams\/normal_sample.bam\",\n    \"class\":\"File\"\n  },\n  \"reference-gz\": {\n    \"path\": \"https:\/\/dcc.icgc.org\/api\/v1\/download?fn=\/PCAWG\/reference_data\/pcawg-bwa-mem\/genome.fa.gz\",\n    \"class\": \"File\"\n  },\n  \"reference-gc\": {\n    \"path\": \"https:\/\/dcc.icgc.org\/api\/v1\/download?fn=\/PCAWG\/reference_data\/pcawg-delly\/hs37d5_1000GP.gc\",\n    \"class\": \"File\"\n  },\n  \"somatic_sv_vcf\": {\n    \"path\":\"delly.somatic.sv.vcf.gz\",\n    \"class\":\"File\"\n  },\n  \"somatic_bedpe\": {\n    \"path\":\"delly.somatic.sv.bedpe.txt\",\n    \"class\":\"File\"\n  },\n  \"cov\": {\n    \"path\":\"delly.sv.cov.tar.gz\",\n    \"class\":\"File\"\n  },\n  \"cov_plots\": {\n    \"path\":\"delly.sv.cov.plots.tar.gz\",\n    \"class\":\"File\"\n  },\n  \"germline_sv_vcf\": {\n    \"path\":\"delly.germline.sv.vcf.gz\",\n    \"class\":\"File\"\n  },\n  \"germline_bedpe\": {\n    \"path\":\"delly.germline.sv.bedpe.txt\",\n    \"class\":\"File\"\n  },\n  \"sv_log\": {\n    \"path\":\"delly.sv.log.tar.gz\",\n    \"class\":\"File\"\n  },\n  \"sv_timing\": {\n    \"path\":\"delly.sv.timing.json\",\n    \"class\":\"File\"\n  },\n  \"sv_qc\": {\n    \"path\":\"delly.sv.qc.json\",\n    \"class\":\"File\"\n  }\n}\n```\n\n### Run the workflow\n#### Option 1: Run with CWL tool\n- Download CWL workflow definition file\n```\nwget -O pcawg-delly-sv-caller.cwl \"https:\/\/raw.githubusercontent.com\/ICGC-TCGA-PanCancer\/pcawg_delly_workflow\/2.0.1-cwl1.0\/delly_docker\/Dockstore.cwl\"\n```\n\n- Run `cwltool` to execute the workflow\n```\nnohup cwltool --debug --non-strict pcawg-delly-sv-caller.cwl pcawg-delly-sv-caller.job.json > pcawg-delly-sv-caller.log 2>&1 &\n```\n\n#### Option 2: Run with the Dockstore CLI\nSee the *Launch with* section below for details.\n",
+    "author": "Brian O'Connor",
+    "meta_version": "2019-05-23 19:03:40.615",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\",\"\",\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "2.0.0-cwl1.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg_delly_workflow\/versions\/2.0.0-cwl1.0",
+        "id": "quay.io\/pancancer\/pcawg_delly_workflow:2.0.0-cwl1.0",
+        "image": "cbfbb82e5f3abc18cbcf7ea8cf689a08b7230b8fb59c7fe6dbd42f3193eabf83",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/pancancer\/pcawg_delly_workflow",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": true,
+        "meta_version": "2016-09-14 20:39:19.0",
+        "verified": true,
+        "verified_source": ""
+      },
+      {
+        "name": "2.0.1-cwl1.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg_delly_workflow\/versions\/2.0.1-cwl1.0",
+        "id": "quay.io\/pancancer\/pcawg_delly_workflow:2.0.1-cwl1.0",
+        "image": "a2a3dbbab00fa78436936c4f62392fe153994f4b2238c5176e822815481ab3ff",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/pancancer\/pcawg_delly_workflow",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": true,
+        "meta_version": "2016-12-01 19:54:34.0",
+        "verified": true,
+        "verified_source": ""
+      },
+      {
+        "name": "2.1.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fpancancer%2Fpcawg_delly_workflow\/versions\/2.1.0",
+        "id": "quay.io\/pancancer\/pcawg_delly_workflow:2.1.0",
+        "image": "fe9f255d4605b9a0e05663360eb00f4116d0d8f01709878ae985703596bcb8ab",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/pancancer\/pcawg_delly_workflow",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": true,
+        "meta_version": "2019-03-22 03:40:18.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fcblatti3%2Fkn_fetcher",
+    "id": "quay.io\/cblatti3\/kn_fetcher",
+    "aliases": [
+
+    ],
+    "organization": "cblatti3",
+    "toolname": "kn_fetcher",
+    "toolclass": {
+      "id": "0",
+      "name": "CommandLineTool",
+      "description": "CommandLineTool"
+    },
+    "description": "Retrieve appropriate subnetwork from KnowEnG Knowledge Network from AWS S3 storage",
+    "author": "Charles Blatti",
+    "meta_version": "2017-04-06 20:44:17.267",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "master",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fcblatti3%2Fkn_fetcher\/versions\/master",
+        "id": "quay.io\/cblatti3\/kn_fetcher:master",
+        "image": "b20e9225f069719316b039aa18861ac804d2cb78c21499c816a82acc0f69dc24",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/cblatti3\/kn_fetcher",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": true,
+        "meta_version": "2017-03-24 01:00:14.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FKnowEnG%2Fcwl-gene-prioritization",
+    "id": "#workflow\/github.com\/KnowEnG\/cwl-gene-prioritization",
+    "aliases": [
+
+    ],
+    "organization": "KnowEnG",
+    "toolname": "cwl-gene-prioritization",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "network-guided gene prioritization method implementation by KnowEnG that ranks gene measurements by their correlation to observed phenotypes",
+    "author": "Unknown author",
+    "meta_version": "2017-07-13 19:52:31.645",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "master",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FKnowEnG%2Fcwl-gene-prioritization\/versions\/master",
+        "id": "#workflow\/github.com\/KnowEnG\/cwl-gene-prioritization:master",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "Wed Dec 31 19:00:00 EST 1969",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FNCI-GDC%2Fgdc-dnaseq-cwl%2FGDC_DNASeq",
+    "id": "#workflow\/github.com\/NCI-GDC\/gdc-dnaseq-cwl\/GDC_DNASeq",
+    "aliases": [
+
+    ],
+    "organization": "NCI-GDC",
+    "toolname": "gdc-dnaseq-cwl\/GDC_DNASeq",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "Unknown author",
+    "meta_version": "2017-02-24 20:22:59.524",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "master",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FNCI-GDC%2Fgdc-dnaseq-cwl%2FGDC_DNASeq\/versions\/master",
+        "id": "#workflow\/github.com\/NCI-GDC\/gdc-dnaseq-cwl\/GDC_DNASeq:master",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2019-05-09 19:11:08.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fbcbio%2Fbcbio_validation_workflows",
+    "id": "#workflow\/github.com\/bcbio\/bcbio_validation_workflows",
+    "aliases": [
+
+    ],
+    "organization": "bcbio",
+    "toolname": "bcbio_validation_workflows",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "Unknown author",
+    "meta_version": "2017-04-06 14:16:46.078",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "master",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fbcbio%2Fbcbio_validation_workflows\/versions\/master",
+        "id": "#workflow\/github.com\/bcbio\/bcbio_validation_workflows:master",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "Wed Dec 31 19:00:00 EST 1969",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fbcbio%2Fbcbio_validation_workflows%2Fwes-agha-test-arvados",
+    "id": "#workflow\/github.com\/bcbio\/bcbio_validation_workflows\/wes-agha-test-arvados",
+    "aliases": [
+
+    ],
+    "organization": "bcbio",
+    "toolname": "bcbio_validation_workflows\/wes-agha-test-arvados",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "Unknown author",
+    "meta_version": "2018-09-27 14:09:53.172",
+    "contains": [
+
+    ],
+    "has_checker": true,
+    "checker_url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fbcbio%2Fbcbio_validation_workflows%2Fwes-agha-test-arvados_cwl_checker",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "master",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fbcbio%2Fbcbio_validation_workflows%2Fwes-agha-test-arvados\/versions\/master",
+        "id": "#workflow\/github.com\/bcbio\/bcbio_validation_workflows\/wes-agha-test-arvados:master",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2018-09-27 14:05:40.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fbriandoconnor%2Fdockstore-tool-md5sum",
+    "id": "quay.io\/briandoconnor\/dockstore-tool-md5sum",
+    "aliases": [
+
+    ],
+    "organization": "briandoconnor",
+    "toolname": "dockstore-tool-md5sum",
+    "toolclass": {
+      "id": "0",
+      "name": "CommandLineTool",
+      "description": "CommandLineTool"
+    },
+    "description": "[![Docker Repository on Quay.io](https:\/\/quay.io\/repository\/briandoconnor\/dockstore-tool-md5sum\/status \"Docker Repository on Quay.io\")](https:\/\/quay.io\/repository\/briandoconnor\/dockstore-tool-md5sum)\n[![Build Status](https:\/\/travis-ci.org\/briandoconnor\/dockstore-tool-md5sum.svg)](https:\/\/travis-ci.org\/briandoconnor\/dockstore-tool-md5sum)\nA very, very simple Docker container for the md5sum command. See the [README](https:\/\/github.com\/briandoconnor\/dockstore-tool-md5sum\/blob\/master\/README.md) for more information.",
+    "author": "Unknown author",
+    "meta_version": "2018-03-16 18:17:22.117",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\",\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.0.4",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fbriandoconnor%2Fdockstore-tool-md5sum\/versions\/1.0.4",
+        "id": "quay.io\/briandoconnor\/dockstore-tool-md5sum:1.0.4",
+        "image": "eee30a251e03ab043aaf7ba2f7d7096fd055159501296b3c6112112aab08dad3",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/briandoconnor\/dockstore-tool-md5sum",
+        "descriptor_type": [
+          "CWL",
+          "WDL"
+        ],
+        "containerfile": true,
+        "meta_version": "2017-07-23 15:48:41.0",
+        "verified": true,
+        "verified_source": ""
+      },
+      {
+        "name": "master",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fbriandoconnor%2Fdockstore-tool-md5sum\/versions\/master",
+        "id": "quay.io\/briandoconnor\/dockstore-tool-md5sum:master",
+        "image": "7f82fc51fa35d36bbd61297ee0c05170ab4ba67c969a9a66b28e5ed3c100034b",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/briandoconnor\/dockstore-tool-md5sum",
+        "descriptor_type": [
+          "CWL",
+          "WDL"
+        ],
+        "containerfile": true,
+        "meta_version": "2017-07-23 15:45:37.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fbriandoconnor%2Fdockstore-workflow-md5sum-tester",
+    "id": "quay.io\/briandoconnor\/dockstore-workflow-md5sum-tester",
+    "aliases": [
+
+    ],
+    "organization": "briandoconnor",
+    "toolname": "dockstore-workflow-md5sum-tester",
+    "toolclass": {
+      "id": "0",
+      "name": "CommandLineTool",
+      "description": "CommandLineTool"
+    },
+    "description": "[![Docker Repository on Quay.io](https:\/\/quay.io\/repository\/briandoconnor\/dockstore-tool-md5sum\/status \"Docker Repository on Quay.io\")](https:\/\/quay.io\/repository\/briandoconnor\/dockstore-tool-md5sum)\n[![Build Status](https:\/\/travis-ci.org\/briandoconnor\/dockstore-tool-md5sum.svg)](https:\/\/travis-ci.org\/briandoconnor\/dockstore-tool-md5sum)\nA very, very simple Docker container that checks the output of the https:\/\/github.com\/briandoconnor\/dockstore-workflow-md5sum workflow. This was used in the GA4GH\/DREAM Infrastructure Challenge Phase 2.  See the [README](https:\/\/github.com\/briandoconnor\/dockstore-workflow-md5sum-tester\/blob\/master\/README.md) for more information.",
+    "author": "Unknown author",
+    "meta_version": "2018-03-16 18:17:22.117",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.1.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fbriandoconnor%2Fdockstore-workflow-md5sum-tester\/versions\/1.1.0",
+        "id": "quay.io\/briandoconnor\/dockstore-workflow-md5sum-tester:1.1.0",
+        "image": "75e25725a1478e45786f44179f258c90e03ae7f61ae20c841da07bb5dc6132f3",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/briandoconnor\/dockstore-workflow-md5sum-tester",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": true,
+        "meta_version": "2017-07-09 19:06:04.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fbriandoconnor%2Fdockstore-workflow-md5sum%2Fdockstore-wdl-workflow-md5sum",
+    "id": "#workflow\/github.com\/briandoconnor\/dockstore-workflow-md5sum\/dockstore-wdl-workflow-md5sum",
+    "aliases": [
+
+    ],
+    "organization": "briandoconnor",
+    "toolname": "dockstore-workflow-md5sum\/dockstore-wdl-workflow-md5sum",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "",
+    "meta_version": "2017-07-09 19:32:30.616",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.2.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fbriandoconnor%2Fdockstore-workflow-md5sum%2Fdockstore-wdl-workflow-md5sum\/versions\/1.2.0",
+        "id": "#workflow\/github.com\/briandoconnor\/dockstore-workflow-md5sum\/dockstore-wdl-workflow-md5sum:1.2.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "WDL"
+        ],
+        "containerfile": false,
+        "meta_version": "2017-07-09 19:08:14.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fbriandoconnor%2Fdockstore-workflow-md5sum",
+    "id": "#workflow\/github.com\/briandoconnor\/dockstore-workflow-md5sum",
+    "aliases": [
+
+    ],
+    "organization": "briandoconnor",
+    "toolname": "dockstore-workflow-md5sum",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "Unknown author",
+    "meta_version": "2017-04-13 23:26:53.805",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\",\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.2.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fbriandoconnor%2Fdockstore-workflow-md5sum\/versions\/1.2.0",
+        "id": "#workflow\/github.com\/briandoconnor\/dockstore-workflow-md5sum:1.2.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2017-07-09 19:08:14.0",
+        "verified": true,
+        "verified_source": ""
+      },
+      {
+        "name": "1.4.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fbriandoconnor%2Fdockstore-workflow-md5sum\/versions\/1.4.0",
+        "id": "#workflow\/github.com\/briandoconnor\/dockstore-workflow-md5sum:1.4.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2017-10-25 23:25:41.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fwtsicgp%2Fdockstore-cgpmap",
+    "id": "quay.io\/wtsicgp\/dockstore-cgpmap",
+    "aliases": [
+
+    ],
+    "organization": "wtsicgp",
+    "toolname": "dockstore-cgpmap",
+    "toolclass": {
+      "id": "0",
+      "name": "CommandLineTool",
+      "description": "CommandLineTool"
+    },
+    "description": "Please use one of the new tools for v3+:\n\n  * [dockstore-cgpmap\/cgpmap-bamOut](https:\/\/dockstore.org\/containers\/quay.io%2Fwtsicgp%2Fdockstore-cgpmap%2Fcgpmap-bamOut)\n  * [dockstore-cgpmap\/cgpmap-cramOut](https:\/\/dockstore.org\/containers\/quay.io%2Fwtsicgp%2Fdockstore-cgpmap%2Fcgpmap-cramOut)\n\n![build_status](https:\/\/quay.io\/repository\/wtsicgp\/dockstore-cgpmap\/status)\nA Docker container for PCAP-core. See the [dockstore-cgpmap](https:\/\/github.com\/cancerit\/dockstore-cgpmap) website for more information.\n",
+    "author": "Keiran Raine",
+    "meta_version": "2018-11-27 18:32:20.97",
+    "contains": [
+
+    ],
+    "has_checker": true,
+    "checker_url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fcancerit%2Fdockstore-cgpmap%2F_cwl_checker",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "2.0.3",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/quay.io%2Fwtsicgp%2Fdockstore-cgpmap\/versions\/2.0.3",
+        "id": "quay.io\/wtsicgp\/dockstore-cgpmap:2.0.3",
+        "image": "b617af08c7be0017e200c6800f0d2ced542303394881d6f04e44a7e9e041296f",
+        "registry_url": "quay.io",
+        "image_name": "quay.io\/wtsicgp\/dockstore-cgpmap",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": true,
+        "meta_version": "2017-03-31 15:13:46.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore-testing%2Fmd5sum-checker",
+    "id": "#workflow\/github.com\/dockstore-testing\/md5sum-checker",
+    "aliases": [
+
+    ],
+    "organization": "dockstore-testing",
+    "toolname": "md5sum-checker",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "Unknown author",
+    "meta_version": "2018-04-06 01:30:40.675",
+    "contains": [
+
+    ],
+    "has_checker": true,
+    "checker_url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore-testing%2Fmd5sum-checker%2F_cwl_checker",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "develop",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore-testing%2Fmd5sum-checker\/versions\/develop",
+        "id": "#workflow\/github.com\/dockstore-testing\/md5sum-checker:develop",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2019-06-28 18:18:51.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore-testing%2Fmd5sum-checker%2Fwdl",
+    "id": "#workflow\/github.com\/dockstore-testing\/md5sum-checker\/wdl",
+    "aliases": [
+
+    ],
+    "organization": "dockstore-testing",
+    "toolname": "md5sum-checker\/wdl",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "",
+    "meta_version": "2018-04-09 17:57:40.385",
+    "contains": [
+
+    ],
+    "has_checker": true,
+    "checker_url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore-testing%2Fmd5sum-checker%2Fwdl_wdl_checker",
+    "verified": true,
+    "verified_source": "[\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "develop",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore-testing%2Fmd5sum-checker%2Fwdl\/versions\/develop",
+        "id": "#workflow\/github.com\/dockstore-testing\/md5sum-checker\/wdl:develop",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "WDL"
+        ],
+        "containerfile": false,
+        "meta_version": "2019-06-28 18:18:51.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore%2Fhello_world",
+    "id": "#workflow\/github.com\/dockstore\/hello_world",
+    "aliases": [
+
+    ],
+    "organization": "dockstore",
+    "toolname": "hello_world",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "Unknown author",
+    "meta_version": "2017-09-18 15:46:45.547",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": true,
+    "verified_source": "[\"\",\"\"]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "master",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore%2Fhello_world\/versions\/master",
+        "id": "#workflow\/github.com\/dockstore\/hello_world:master",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2019-04-05 14:57:46.0",
+        "verified": true,
+        "verified_source": ""
+      },
+      {
+        "name": "v1.0.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore%2Fhello_world\/versions\/v1.0.0",
+        "id": "#workflow\/github.com\/dockstore\/hello_world:v1.0.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2019-04-05 14:57:46.0",
+        "verified": true,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2Fchecker_UM_variant_caller_wdl",
+    "id": "#workflow\/github.com\/DataBiosphere\/topmed-workflows\/checker_UM_variant_caller_wdl",
+    "aliases": [
+
+    ],
+    "organization": "DataBiosphere",
+    "toolname": "topmed-workflows\/checker_UM_variant_caller_wdl",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "",
+    "meta_version": "2018-04-23 23:33:57.426",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": false,
+    "verified_source": "[]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.29.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2Fchecker_UM_variant_caller_wdl\/versions\/1.29.0",
+        "id": "#workflow\/github.com\/DataBiosphere\/topmed-workflows\/checker_UM_variant_caller_wdl:1.29.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "WDL"
+        ],
+        "containerfile": false,
+        "meta_version": "2018-09-28 04:46:10.0",
+        "verified": false,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2Fchecker_UM_aligner_cwl",
+    "id": "#workflow\/github.com\/DataBiosphere\/topmed-workflows\/checker_UM_aligner_cwl",
+    "aliases": [
+
+    ],
+    "organization": "DataBiosphere",
+    "toolname": "topmed-workflows\/checker_UM_aligner_cwl",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "Checker for the TopMed alignment workflow.",
+    "author": "Seven Bridges",
+    "meta_version": "2018-08-01 06:26:20.899",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": false,
+    "verified_source": "[]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "1.31.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FDataBiosphere%2Ftopmed-workflows%2Fchecker_UM_aligner_cwl\/versions\/1.31.0",
+        "id": "#workflow\/github.com\/DataBiosphere\/topmed-workflows\/checker_UM_aligner_cwl:1.31.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2018-10-01 00:35:11.0",
+        "verified": false,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FICGC-TCGA-PanCancer%2FSeqware-BWA-Workflow%2F_cwl_checker",
+    "id": "#workflow\/github.com\/ICGC-TCGA-PanCancer\/Seqware-BWA-Workflow\/_cwl_checker",
+    "aliases": [
+
+    ],
+    "organization": "ICGC-TCGA-PanCancer",
+    "toolname": "Seqware-BWA-Workflow\/_cwl_checker",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "Unknown author",
+    "meta_version": "2018-09-21 13:29:08.061",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": false,
+    "verified_source": "[]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "2.7.0",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FICGC-TCGA-PanCancer%2FSeqware-BWA-Workflow%2F_cwl_checker\/versions\/2.7.0",
+        "id": "#workflow\/github.com\/ICGC-TCGA-PanCancer\/Seqware-BWA-Workflow\/_cwl_checker:2.7.0",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2019-04-04 17:27:21.0",
+        "verified": false,
+        "verified_source": ""
+      },
+      {
+        "name": "checker",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2FICGC-TCGA-PanCancer%2FSeqware-BWA-Workflow%2F_cwl_checker\/versions\/checker",
+        "id": "#workflow\/github.com\/ICGC-TCGA-PanCancer\/Seqware-BWA-Workflow\/_cwl_checker:checker",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2018-09-19 17:39:54.0",
+        "verified": false,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fbcbio%2Fbcbio_validation_workflows%2Fwes-agha-test-arvados_cwl_checker",
+    "id": "#workflow\/github.com\/bcbio\/bcbio_validation_workflows\/wes-agha-test-arvados_cwl_checker",
+    "aliases": [
+
+    ],
+    "organization": "bcbio",
+    "toolname": "bcbio_validation_workflows\/wes-agha-test-arvados_cwl_checker",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "Unknown author",
+    "meta_version": "2018-09-27 14:09:53.172",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": false,
+    "verified_source": "[]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "master",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fbcbio%2Fbcbio_validation_workflows%2Fwes-agha-test-arvados_cwl_checker\/versions\/master",
+        "id": "#workflow\/github.com\/bcbio\/bcbio_validation_workflows\/wes-agha-test-arvados_cwl_checker:master",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2018-10-03 19:56:57.0",
+        "verified": false,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fcancerit%2Fdockstore-cgpmap%2F_cwl_checker",
+    "id": "#workflow\/github.com\/cancerit\/dockstore-cgpmap\/_cwl_checker",
+    "aliases": [
+
+    ],
+    "organization": "cancerit",
+    "toolname": "dockstore-cgpmap\/_cwl_checker",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "Please use one of the new tools for v3+:\n\n  * [dockstore-cgpmap\/cgpmap-bamOut](https:\/\/dockstore.org\/containers\/quay.io%2Fwtsicgp%2Fdockstore-cgpmap%2Fcgpmap-bamOut)\n  * [dockstore-cgpmap\/cgpmap-cramOut](https:\/\/dockstore.org\/containers\/quay.io%2Fwtsicgp%2Fdockstore-cgpmap%2Fcgpmap-cramOut)\n\n![build_status](https:\/\/quay.io\/repository\/wtsicgp\/dockstore-cgpmap\/status)\nA Docker container for PCAP-core. See the [dockstore-cgpmap](https:\/\/github.com\/cancerit\/dockstore-cgpmap) website for more information.\n",
+    "author": "Keiran Raine",
+    "meta_version": "2018-03-01 18:24:46.929",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": false,
+    "verified_source": "[]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "2.0.3",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fcancerit%2Fdockstore-cgpmap%2F_cwl_checker\/versions\/2.0.3",
+        "id": "#workflow\/github.com\/cancerit\/dockstore-cgpmap\/_cwl_checker:2.0.3",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2017-03-31 14:49:56.0",
+        "verified": false,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore-testing%2Fmd5sum-checker%2F_cwl_checker",
+    "id": "#workflow\/github.com\/dockstore-testing\/md5sum-checker\/_cwl_checker",
+    "aliases": [
+
+    ],
+    "organization": "dockstore-testing",
+    "toolname": "md5sum-checker\/_cwl_checker",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "This demonstrates how to wrap a \"real\" tool with a checker workflow that runs both the tool and a tool that performs verification of results\n",
+    "author": "Unknown author",
+    "meta_version": "2018-04-06 01:30:40.675",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": false,
+    "verified_source": "[]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "develop",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore-testing%2Fmd5sum-checker%2F_cwl_checker\/versions\/develop",
+        "id": "#workflow\/github.com\/dockstore-testing\/md5sum-checker\/_cwl_checker:develop",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "CWL"
+        ],
+        "containerfile": false,
+        "meta_version": "2019-06-28 18:18:51.0",
+        "verified": false,
+        "verified_source": ""
+      }
+    ]
+  },
+  {
+    "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore-testing%2Fmd5sum-checker%2Fwdl_wdl_checker",
+    "id": "#workflow\/github.com\/dockstore-testing\/md5sum-checker\/wdl_wdl_checker",
+    "aliases": [
+
+    ],
+    "organization": "dockstore-testing",
+    "toolname": "md5sum-checker\/wdl_wdl_checker",
+    "toolclass": {
+      "id": "1",
+      "name": "Workflow",
+      "description": "Workflow"
+    },
+    "description": "",
+    "author": "",
+    "meta_version": "2018-04-09 17:57:40.385",
+    "contains": [
+
+    ],
+    "has_checker": false,
+    "checker_url": "",
+    "verified": false,
+    "verified_source": "[]",
+    "signed": false,
+    "versions": [
+      {
+        "name": "develop",
+        "url": "http:\/\/10.11.8.92:8080\/api\/ga4gh\/v2\/tools\/%23workflow%2Fgithub.com%2Fdockstore-testing%2Fmd5sum-checker%2Fwdl_wdl_checker\/versions\/develop",
+        "id": "#workflow\/github.com\/dockstore-testing\/md5sum-checker\/wdl_wdl_checker:develop",
+        "image": "",
+        "registry_url": "",
+        "image_name": "",
+        "descriptor_type": [
+          "WDL"
+        ],
+        "containerfile": false,
+        "meta_version": "2019-06-28 18:18:51.0",
+        "verified": false,
+        "verified_source": ""
+      }
+    ]
+  }
+]

@@ -254,7 +254,7 @@ public class Client {
     private void handleCreateTests(List<String> toolnames, List<String> source) {
         setupClientEnvironment();
         setupTesters();
-        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames);
+        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames, true);
         for (Tool tool : tools) {
             createToolTests(tool);
         }
@@ -269,7 +269,7 @@ public class Client {
     private void handleRunTests(List<String> toolNames, List<String> sources) {
         setupClientEnvironment();
         setupTesters();
-        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames);
+        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames, true);
         for (Tool tool : tools) {
             testTool(tool);
         }
