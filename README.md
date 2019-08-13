@@ -1,5 +1,5 @@
 [![codecov](https://codecov.io/gh/dockstore/dockstore-support/branch/develop/graph/badge.svg)](https://codecov.io/gh/dockstore/dockstore-support)
-[![Build Status](https://travis-ci.org/ga4gh/dockstore-support.svg?branch=develop)](https://travis-ci.org/ga4gh/dockstore-support)
+[![Build Status](https://travis-ci.org/dockstore/dockstore-support.svg?branch=develop)](https://travis-ci.org/dockstore/dockstore-support)
 
 # dockstore-support
 
