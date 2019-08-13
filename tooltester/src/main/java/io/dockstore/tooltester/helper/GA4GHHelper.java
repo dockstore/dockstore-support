@@ -1,8 +1,11 @@
 package io.dockstore.tooltester.helper;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import io.dockstore.tooltester.CommandObject;
@@ -11,6 +14,8 @@ import io.swagger.client.ApiException;
 import io.swagger.client.api.Ga4GhApi;
 import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
@@ -22,6 +27,7 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
  * @since 23/03/18
  */
 public class GA4GHHelper {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GA4GHHelper.class);
     /**
      * Gets all tools from the GA4GH API
      * @param ga4GhApi  The GA4GH API
@@ -72,24 +78,82 @@ public class GA4GHHelper {
      * @param toolNames         The specific toolnames to retain
      * @return                  List of all tools after filters are applied
      */
-    public static List<Tool> getTools(Ga4GhApi ga4GhApi, boolean verified, List<String> verifiedSources, List<String> toolNames) {
-        List<Tool> tools =  getAllTools(ga4GhApi);
+    public static List<Tool> getTools(Ga4GhApi ga4GhApi, boolean verified, List<String> verifiedSources, List<String> toolNames,
+            boolean checker) {
+        List<Tool> allTools = getAllTools(ga4GhApi);
+        allTools = allTools.stream().filter(tool -> {
+            List<ToolVersion> versions = tool.getVersions();
+            return (versions != null && !versions.isEmpty());
+        }).collect(Collectors.toList());
+        return filterTools(allTools, verified, verifiedSources, toolNames, checker);
+
+    }
+
+    /**
+     * Given all the TRS tools, filter them base on the flags provided
+     *
+     * @param allTools        All the TRS tools
+     * @param verified        Whether to get only verified tools or not
+     * @param verifiedSources If getting verified tools only, whether to only get the ones that are specific to certain verified sources
+     * @param toolNames       If not null or empty, only return the tools with matching tool names
+     * @param checker         Whether to also get the corresponding checker workflow (all previous filters do not apply for this checker workflow)
+     * @return Filtered list of TRS tools
+     */
+    static List<Tool> filterTools(List<Tool> allTools, boolean verified, List<String> verifiedSources, List<String> toolNames,
+            boolean checker) {
+        List<Tool> filteredTools = allTools;
         if (!verified && !verifiedSources.isEmpty()) {
             ExceptionHandler.errorMessage("Searching for a unverified tool but have verified sources", CLIENT_ERROR);
         }
         if (verified) {
-            tools = filterVerified(tools);
+            filteredTools = filterVerified(allTools);
         }
         if (toolNames != null && !verifiedSources.isEmpty()) {
-            for (Tool tool : tools) {
-                tool.setVersions(tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource()))
-                        .collect(Collectors.toList()));
+            for (Tool tool : filteredTools) {
+                tool.setVersions(
+                        tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource()))
+                                .collect(Collectors.toList()));
             }
         }
         if (toolNames != null && !toolNames.isEmpty()) {
-            tools = tools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
+            filteredTools = filteredTools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
         }
-        return tools;
+        if (checker) {
+            addCheckerWorkflows(filteredTools, allTools);
+        }
+        return filteredTools;
+    }
+
+    /**
+     * Modifies filteredTools to also include its checkers
+     *
+     * @param filteredTools Previous list of tools that have been filtered already (by verification, etc)
+     * @param allTools      List of all GA4GH tools
+     */
+    private static void addCheckerWorkflows(List<Tool> filteredTools, List<Tool> allTools) {
+        List<Tool> filteredToolsWithChecker = filteredTools.stream().filter(Tool::isHasChecker).collect(Collectors.toList());
+
+        String segment = "api/ga4gh/v2/tools/";
+        filteredToolsWithChecker.forEach(tool -> {
+            String checkerUrl = tool.getCheckerUrl();
+            List<String> versionNames = tool.getVersions().stream().map(ToolVersion::getName).collect(Collectors.toList());
+            String checkerId;
+            checkerId = URLDecoder.decode(checkerUrl.substring(checkerUrl.indexOf(segment) + segment.length()), StandardCharsets.UTF_8);
+            if (filteredTools.stream().noneMatch(tool1 -> tool1.getId().equals(checkerId))) {
+                Optional<Tool> first = allTools.stream().filter(tool2 -> tool2.getId().equals(checkerId)).findFirst();
+                if (first.isPresent()) {
+                    Tool checkerToolWithAllVersions = first.get();
+                    checkerToolWithAllVersions.setVersions(checkerToolWithAllVersions.getVersions().stream()
+                            .filter(checkerToolVersions -> versionNames.contains(checkerToolVersions.getName()))
+                            .collect(Collectors.toList()));
+                    filteredTools.add(checkerToolWithAllVersions);
+                } else {
+                    LOGGER.error("There is supposed to be a published checker workflow from the TRS: " + checkerId);
+                }
+            } else {
+                LOGGER.info("Checker workflow was already added");
+            }
+        });
     }
 
     /**

@@ -147,30 +147,34 @@ public abstract class JenkinsHelper {
         return name;
     }
 
+    public String getJenkinsJobTemplate() {
+        String prefix = PipelineTester.PREFIX;
+        try {
+            return jenkins.getJobXml(prefix);
+        } catch (IOException e) {
+            errorMessage("Could not get Jenkins template job: " + prefix, COMMAND_ERROR);
+        }
+        return null;
+    }
+
     /**
      * Creates a pipeline on Jenkins to test the parameter file
      *
      * @param name Name of the pipeline
      */
-    public void createTest(String name) {
-        String prefix = PipelineTester.PREFIX;
+    public void createTest(String name, String jobTemplate) {
         JobWithDetails job = null;
-        String jobxml = null;
         try {
-            jobxml = jenkins.getJobXml(prefix);
-            if (jobxml == null) {
-                errorMessage("Could not get Jenkins template job: " + prefix, COMMAND_ERROR);
-            }
             job = jenkins.getJob(name);
         } catch (IOException e) {
             exceptionMessage(e, "Could not get Jenkins job: " + name, IO_ERROR);
         }
         try {
             if (job == null) {
-                jenkins.createJob(name, jobxml, true);
+                jenkins.createJob(name, jobTemplate, true);
                 LOG.info("Created Jenkins job: " + name);
             } else {
-                jenkins.updateJob(name, jobxml, true);
+                jenkins.updateJob(name, jobTemplate, true);
                 LOG.info("Updated Jenkins job: " + name);
             }
         } catch (IOException e) {

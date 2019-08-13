@@ -31,8 +31,8 @@ Follow these setups if there is not a backup
 1. Make the .ssh directory and copy the id_rsa into it
 
 # Slave Setup:
-1. Create a c2.large flavor Ubuntu 18.04 image on Collaboratory and give it the JenkinsMaster2 key pair
-1. Run the setupSlave.sh script
+1. Create a c2.large flavor Ubuntu 18.04  - latest image on Collaboratory and give it the JenkinsMaster2 key pair
+1. Run the setupSlave.sh script (in this repo) by ssh'ing to it from the master (by ssh'ing to master first)
 1. Configure the aws cli using `sudo -u jenkins -i` and then `aws configure`. Use the credentials in the jenkins@jenkins-master's ~/.aws/credentials
 1. Configure slave on master Jenkin: Manage Jenkins => Manage Nodes => New Node => Permanent Agent => Remote root directory: /home/jenkins
 1. If it's a new master, Add credentials (Kind: SSH Username with private key, Username: jenkins, private key: <same one as before, ask around for it>)
@@ -45,7 +45,7 @@ Follow these setups if there is not a backup
 runner = cromwell cwltool cwl-runner
 ```
 1. Check .tooltester/config to see if dockstore-version needs to be changed
-1. Modify the [cwltoolPlaybook](src/main/resources/cwltoolPlaybook.yml) and [toilPlaybook](src/main/resources/toilPlaybook.yml) to have the right apt/pip dependencies if needed (i.e. Check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
+1. Modify the [cwltoolPlaybook](src/main/resources/cwltoolPlaybook.yml) and [toilPlaybook](src/main/resources/toilPlaybook.yml) in the feature/playbook branch to have the right apt/pip dependencies if needed (i.e. check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
 1. Check that the slave has enough disk space, remove /tmp and ~/workspace/* (workspace `@tmp` folders aren't removed with cleanup plugin) if needed
 
 1. Run the ClientTest.createJenkinsTests (basically the sync commmand)

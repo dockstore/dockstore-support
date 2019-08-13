@@ -1,35 +1,19 @@
 package io.dockstore.tooltester.client.cli;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import com.beust.jcommander.ParameterException;
-import io.dockstore.tooltester.helper.GA4GHHelper;
 import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
-import io.swagger.client.ApiClient;
-import io.swagger.client.ApiException;
-import io.swagger.client.Configuration;
-import io.swagger.client.api.ContainersApi;
-import io.swagger.client.api.Ga4GhApi;
-import io.swagger.client.api.WorkflowsApi;
-import io.swagger.client.model.Tool;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.contrib.java.lang.system.SystemOutRule;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 
 import static io.dockstore.tooltester.client.cli.Client.main;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.DEBUG;
 
 public class ClientTest {
     @Rule
@@ -48,7 +32,7 @@ public class ClientTest {
     }
 
     @Test
-    public void setupEnvironment() throws Exception {
+    public void setupEnvironment() {
         client = new Client();
         client.setupClientEnvironment();
         Assert.assertNotNull("client API could not start", client.getContainersApi());
@@ -204,7 +188,7 @@ public class ClientTest {
         Assert.assertTrue(systemOutRule.getLog().contains("Action Performed"));
         Assert.assertTrue(systemOutRule.getLog().contains("Runtime"));
         Assert.assertTrue(systemOutRule.getLog().contains("Status of Test Files"));
-        Assert.assertTrue(!new File("tooltester/Report.csv").exists());
+        Assert.assertFalse(new File("tooltester/Report.csv").exists());
     }
 
     private void assertFileReport() {
@@ -214,7 +198,7 @@ public class ClientTest {
         Assert.assertTrue(systemOutRule.getLog().contains("CWL ID"));
         Assert.assertTrue(systemOutRule.getLog().contains("md5sum"));
         Assert.assertTrue(systemOutRule.getLog().contains("File Size"));
-        Assert.assertTrue(!new File("tooltester/FileReport.csv").exists());
+        Assert.assertFalse(new File("tooltester/FileReport.csv").exists());
     }
 
     @Test
@@ -280,78 +264,5 @@ public class ClientTest {
         String[] argv = { "--help" };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().contains("Usage: autotool [options] [command] [command options]"));
-    }
-
-    private Ga4GhApi getGA4GHApiClient() {
-        ApiClient defaultApiClient;
-        defaultApiClient = Configuration.getDefaultApiClient();
-        defaultApiClient.setBasePath("https://staging.dockstore.org:443/api");
-        Ga4GhApi ga4GhApi = new Ga4GhApi(defaultApiClient);
-        defaultApiClient.setDebugging(DEBUG.get());
-        return ga4GhApi;
-    }
-
-    /**
-     * Gets all the file combinations with any verified source.
-     */
-    @Test
-    public void getVerifiedToolsTest() {
-        int count;
-        List<String> sources = new ArrayList<>();
-        List<String> toolnames = new ArrayList<>();
-        List<Tool> verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, sources, toolnames);
-        for (Tool verifiedTool : verifiedTools) {
-            try {
-                client.countNumberOfTests(verifiedTool);
-            } catch (ApiException e) {
-                e.printStackTrace();
-            }
-        }
-        count = client.getCount();
-        Assert.assertNotEquals("There is an incorrect number of dockerfile, descriptors, and test parameter files.", 0, count);
-    }
-
-    /**
-     * Gets all the file combinations with specified sources.
-     */
-    @Test
-    public void getVerifiedToolsWithFilterTest() {
-        int count;
-        List<String> toolnames = new ArrayList<>();
-        List<String> verifiedSources = Collections.singletonList("Docktesters group");
-        List<Tool> verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames);
-        for (Tool verifiedTool : verifiedTools) {
-            try {
-                client.countNumberOfTests(verifiedTool);
-            } catch (ApiException e) {
-                e.printStackTrace();
-            }
-        }
-        count = client.getCount();
-        Assert.assertNotEquals("There is an incorrect number of dockerfile, descriptors, and test parameter files.", 0, count);
-        client.setCount(0);
-        verifiedSources = Arrays.asList("Docktesters group", "Another Group");
-        verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames);
-        for (Tool verifiedTool : verifiedTools) {
-            try {
-                client.countNumberOfTests(verifiedTool);
-            } catch (ApiException e) {
-                e.printStackTrace();
-            }
-        }
-        count = client.getCount();
-        Assert.assertNotEquals("There is an incorrect number of dockerfile, descriptors, and test parameter files.", 0, count);
-        client.setCount(0);
-        verifiedSources = Collections.singletonList("Another Group");
-        verifiedTools = GA4GHHelper.getTools(getGA4GHApiClient(), true, verifiedSources, toolnames);
-        for (Tool verifiedTool : verifiedTools) {
-            try {
-                client.countNumberOfTests(verifiedTool);
-            } catch (ApiException e) {
-                e.printStackTrace();
-            }
-        }
-        count = client.getCount();
-        Assert.assertEquals("There is an incorrect number of dockerfile, descriptors, and test parameter files." + count, 0, count);
     }
 }

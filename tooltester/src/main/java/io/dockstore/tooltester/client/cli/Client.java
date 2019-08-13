@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -80,7 +81,6 @@ public class Client {
     private WorkflowsApi workflowsApi;
     private Ga4GhApi ga4ghApi;
     private FileReport fileReport;
-    private int count = 0;
     private PipelineTester pipelineTester;
     private TooltesterConfig tooltesterConfig;
 
@@ -162,12 +162,12 @@ public class Client {
         createFileReport(prefix + "FileReport.csv");
         DockstoreTool dockstoreTool = null;
         try {
-            dockstoreTool = containersApi.getPublishedContainerByToolPath(toolName);
+            dockstoreTool = containersApi.getPublishedContainerByToolPath(toolName, null);
         } catch (ApiException e) {
             exceptionMessage(e, "Could not get container: " + toolName, API_ERROR);
         }
         assert dockstoreTool != null;
-        List<Tag> tags = dockstoreTool.getTags();
+        List<Tag> tags = dockstoreTool.getWorkflowVersions();
         for (Tag tag : tags) {
             String name = dockstoreTool.getPath();
             name = name.replaceAll("/", "-");
@@ -187,7 +187,7 @@ public class Client {
                     for (Artifact artifact : artifactList) {
                         try {
                             InputStream inputStream = build.details().downloadArtifact(artifact);
-                            String artifactString = IOUtils.toString(inputStream, "UTF-8");
+                            String artifactString = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
                             Gson gson = new Gson();
                             Type mapType = new TypeToken<Map<String, OutputFile>>() {
                             }.getType();
@@ -253,7 +253,7 @@ public class Client {
     private void handleCreateTests(List<String> toolnames, List<String> source) {
         setupClientEnvironment();
         setupTesters();
-        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames);
+        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames, true);
         for (Tool tool : tools) {
             createToolTests(tool);
         }
@@ -268,18 +268,10 @@ public class Client {
     private void handleRunTests(List<String> toolNames, List<String> sources) {
         setupClientEnvironment();
         setupTesters();
-        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames);
+        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames, true);
         for (Tool tool : tools) {
             testTool(tool);
         }
-    }
-
-    int getCount() {
-        return count;
-    }
-
-    void setCount(int count) {
-        this.count = count;
     }
 
     void setupTesters() {
@@ -303,82 +295,20 @@ public class Client {
     }
 
     /**
-     * This function counts the number of tests that need to be created
-     *
-     * @param verifiedTool The verified tool
-     */
-    void countNumberOfTests(Tool verifiedTool) throws ApiException {
-        SourceFile dockerfile;
-        SourceFile descriptor;
-        SourceFile testParameter;
-        List<SourceFile> testParameterFiles;
-        DockstoreTool dockstoreTool;
-        Workflow workflow;
-        Long containerId;
-        if (verifiedTool.getToolclass().getName().equals("Workflow")) {
-            workflow = workflowsApi.getPublishedWorkflowByPath(verifiedTool.getId().replace("#workflow/", ""));
-            containerId = workflow.getId();
-            for (ToolVersion version : verifiedTool.getVersions()) {
-                String tag = version.getName();
-                for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
-                    switch (descriptorType.toString()) {
-                    case "CWL":
-                        descriptor = workflowsApi.cwl(containerId, tag);
-                        break;
-                    case "WDL":
-                        descriptor = workflowsApi.wdl(containerId, tag);
-                        break;
-                    default:
-                        break;
-                    }
-                    testParameterFiles = workflowsApi.getTestParameterFiles(containerId, tag);
-                    for (SourceFile testParameterFile : testParameterFiles) {
-                        testParameter = testParameterFile;
-                        count++;
-                    }
-                }
-            }
-        } else {
-            dockstoreTool = containersApi.getPublishedContainerByToolPath(verifiedTool.getId());
-            containerId = dockstoreTool.getId();
-            for (ToolVersion version : verifiedTool.getVersions()) {
-                String tag = version.getName();
-                dockerfile = containersApi.dockerfile(containerId, tag);
-                for (ToolVersion.DescriptorTypeEnum descriptorType : version.getDescriptorType()) {
-                    switch (descriptorType.toString()) {
-                    case "CWL":
-                        descriptor = containersApi.cwl(containerId, tag);
-                        break;
-                    case "WDL":
-                        descriptor = containersApi.wdl(containerId, tag);
-                        break;
-                    default:
-                        break;
-                    }
-                    testParameterFiles = containersApi.getTestParameterFiles(containerId, descriptorType.toString(), tag);
-                    for (SourceFile testParameterFile : testParameterFiles) {
-                        testParameter = testParameterFile;
-                        count++;
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * Creates the pipeline(s) on Jenkins to test a tool
      *
      * @param tool The tool to create tests for
      */
     private void createToolTests(Tool tool) {
         String toolId = tool.getId();
+        String jobTemplate = pipelineTester.getJenkinsJobTemplate();
         for (String runner : tooltesterConfig.getRunner()) {
             List<ToolVersion> toolVersions = tool.getVersions();
             List<ToolVersion> notBlacklistedToolVersions = toolVersions.stream()
                     .filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName())).collect(Collectors.toList());
             for (ToolVersion toolversion : notBlacklistedToolVersions) {
                 String name = buildName(runner, toolversion.getId());
-                pipelineTester.createTest(name);
+                pipelineTester.createTest(name, jobTemplate);
             }
         }
     }
@@ -433,28 +363,14 @@ public class Client {
                 List<String> parametersList = new ArrayList<>();
                 String dockerfilePath = "";
                 String tagName = version.getReference();
-                String descriptorType = workflow.getDescriptorType();
+                Workflow.DescriptorTypeEnum descriptorType = workflow.getDescriptorType();
                 List<SourceFile> testParameterFiles;
                 SourceFile descriptor;
                 String name = buildName(runner, toolId + "-" + tagName);
                 try {
-                    switch (descriptorType) {
-                    case "cwl":
-                        if (!runner.equals("cromwell")) {
-                            descriptor = workflowsApi.cwl(entryId, tagName);
-                            break;
-                        } else {
-                            continue;
-                        }
-                    case "wdl":
-                        if (runner.equals("cromwell")) {
-                            descriptor = workflowsApi.wdl(entryId, tagName);
-                            break;
-                        } else {
-                            continue;
-                        }
-                    default:
-                        LOG.info("Unknown descriptor, skipping");
+                    if (compatibleRunner(runner, descriptorType.toString())) {
+                        descriptor = workflowsApi.primaryDescriptor(entryId, tagName, descriptorType.toString());
+                    } else {
                         continue;
                     }
                     String descriptorPath = DockstoreEntryHelper.convertDockstoreAbsolutePathToJenkinsRelativePath(descriptor.getPath());
@@ -483,6 +399,20 @@ public class Client {
             }
         }
         return status;
+    }
+
+    /**
+     * Checks whether the runner is compatible with the descriptor type
+     * @param runner    The runner ("cwltool", "cwlrunner", "cromwell")
+     * @param descriptorType    The descriptor type in upper case ("CWL", "WDL", "NFL")
+     * @return  Whether the runner is compatible with the descriptor type or not
+     */
+    private boolean compatibleRunner(String runner, String descriptorType) {
+        // Run CWL on anything except Cromwell
+        boolean cwlOnAnythingExceptCromwell = !runner.equals("cromwell") && descriptorType.equals(Workflow.DescriptorTypeEnum.CWL.toString());
+        // Run WDL on Cromwell only
+        boolean wdlOnOnlyCromwell = runner.equals("cromwell") && descriptorType.equals(Workflow.DescriptorTypeEnum.WDL.toString());
+        return cwlOnAnythingExceptCromwell || wdlOnOnlyCromwell;
     }
 
     private boolean runTest(String name, Map<String, String> parameter) {
@@ -550,7 +480,7 @@ public class Client {
         }
         Long entryId = dockstoreTool.getId();
         for (String runner : tooltesterConfig.getRunner()) {
-            List<Tag> verifiedTags = dockstoreTool.getTags().stream().filter(tag -> tag.isVerified()).collect(Collectors.toList());
+            List<Tag> verifiedTags = dockstoreTool.getWorkflowVersions().stream().filter(tag -> tag.isVerified()).collect(Collectors.toList());
             List<Tag> verifiedAndNotBlacklistedVersions = verifiedTags.stream()
                     .filter(tag -> BlackList.isNotBlacklisted(toolId, tag.getName())).collect(Collectors.toList());
             for (Tag tag : verifiedAndNotBlacklistedVersions) {
@@ -565,23 +495,9 @@ public class Client {
                     List<SourceFile> testParameterFiles;
                     SourceFile descriptor;
                     for (String descriptorType : dockstoreTool.getDescriptorType()) {
-                        switch (descriptorType.toUpperCase()) {
-                        case "CWL":
-                            if (!runner.equals("cromwell")) {
-                                descriptor = containersApi.cwl(entryId, tagName);
-                                break;
-                            } else {
-                                continue;
-                            }
-                        case "WDL":
-                            if (runner.equals("cromwell")) {
-                                descriptor = containersApi.wdl(entryId, tagName);
-                                break;
-                            } else {
-                                continue;
-                            }
-                        default:
-                            LOG.info("Unknown descriptor, skipping");
+                        if (compatibleRunner(runner, descriptorType.toUpperCase())) {
+                            descriptor = containersApi.primaryDescriptor(entryId, tagName, descriptorType.toUpperCase());
+                        } else {
                             continue;
                         }
                         String descriptorPath = DockstoreEntryHelper

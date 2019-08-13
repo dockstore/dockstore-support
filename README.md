@@ -1,5 +1,5 @@
-[![Coverage Status](https://coveralls.io/repos/github/ga4gh/dockstore-support/badge.svg?branch=develop)](https://coveralls.io/github/ga4gh/dockstore-support?branch=develop)
-[![Build Status](https://travis-ci.org/ga4gh/dockstore-support.svg?branch=develop)](https://travis-ci.org/ga4gh/dockstore-support)
+[![codecov](https://codecov.io/gh/dockstore/dockstore-support/branch/develop/graph/badge.svg)](https://codecov.io/gh/dockstore/dockstore-support)
+[![Build Status](https://travis-ci.org/dockstore/dockstore-support.svg?branch=develop)](https://travis-ci.org/dockstore/dockstore-support)
 
 # dockstore-support
 
