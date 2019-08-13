@@ -409,10 +409,10 @@ public class Client {
      */
     private boolean compatibleRunner(String runner, String descriptorType) {
         // Run CWL on anything except Cromwell
-        boolean CWLOnAnythingExceptCromwell = !runner.equals("cromwell") && descriptorType.equals(Workflow.DescriptorTypeEnum.CWL.toString());
+        boolean cwlOnAnythingExceptCromwell = !runner.equals("cromwell") && descriptorType.equals(Workflow.DescriptorTypeEnum.CWL.toString());
         // Run WDL on Cromwell only
-        boolean WDLOnOnlyCromwell = runner.equals("cromwell") && descriptorType.equals(Workflow.DescriptorTypeEnum.WDL.toString());
-        return CWLOnAnythingExceptCromwell || WDLOnOnlyCromwell;
+        boolean wdlOnOnlyCromwell = runner.equals("cromwell") && descriptorType.equals(Workflow.DescriptorTypeEnum.WDL.toString());
+        return cwlOnAnythingExceptCromwell || wdlOnOnlyCromwell;
     }
 
     private boolean runTest(String name, Map<String, String> parameter) {

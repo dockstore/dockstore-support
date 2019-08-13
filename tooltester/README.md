@@ -45,7 +45,7 @@ Follow these setups if there is not a backup
 runner = cromwell cwltool cwl-runner
 ```
 1. Check .tooltester/config to see if dockstore-version needs to be changed
-1. Modify the [cwltoolPlaybook](src/main/resources/cwltoolPlaybook.yml) and [toilPlaybook](src/main/resources/toilPlaybook.yml) in the feature/playbook branch to have the right apt/pip dependencies if needed (i.e. Check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
+1. Modify the [cwltoolPlaybook](src/main/resources/cwltoolPlaybook.yml) and [toilPlaybook](src/main/resources/toilPlaybook.yml) in the feature/playbook branch to have the right apt/pip dependencies if needed (i.e. check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
 1. Check that the slave has enough disk space, remove /tmp and ~/workspace/* (workspace `@tmp` folders aren't removed with cleanup plugin) if needed
 
 1. Run the ClientTest.createJenkinsTests (basically the sync commmand)
