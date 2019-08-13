@@ -363,28 +363,14 @@ public class Client {
                 List<String> parametersList = new ArrayList<>();
                 String dockerfilePath = "";
                 String tagName = version.getReference();
-                String descriptorType = workflow.getDescriptorType().toString().toUpperCase();
+                Workflow.DescriptorTypeEnum descriptorType = workflow.getDescriptorType();
                 List<SourceFile> testParameterFiles;
                 SourceFile descriptor;
                 String name = buildName(runner, toolId + "-" + tagName);
                 try {
-                    switch (descriptorType.toUpperCase()) {
-                    case "CWL":
-                        if (!runner.equals("cromwell")) {
-                            descriptor = workflowsApi.primaryDescriptor(entryId, tagName, descriptorType.toUpperCase());
-                            break;
-                        } else {
-                            continue;
-                        }
-                    case "WDL":
-                        if (runner.equals("cromwell")) {
-                            descriptor = workflowsApi.primaryDescriptor(entryId, tagName, descriptorType.toUpperCase());
-                            break;
-                        } else {
-                            continue;
-                        }
-                    default:
-                        LOG.info("Unknown descriptor, skipping");
+                    if (compatibleRunner(runner, descriptorType.toString())) {
+                        descriptor = workflowsApi.primaryDescriptor(entryId, tagName, descriptorType.toString());
+                    } else {
                         continue;
                     }
                     String descriptorPath = DockstoreEntryHelper.convertDockstoreAbsolutePathToJenkinsRelativePath(descriptor.getPath());
@@ -413,6 +399,20 @@ public class Client {
             }
         }
         return status;
+    }
+
+    /**
+     * Checks whether the runner is compatible with the descriptor type
+     * @param runner    The runner ("cwltool", "cwlrunner", "cromwell")
+     * @param descriptorType    The descriptor type in upper case ("CWL", "WDL", "NFL")
+     * @return  Whether the runner is compatible with the descriptor type or not
+     */
+    private boolean compatibleRunner(String runner, String descriptorType) {
+        // Run CWL on anything except Cromwell
+        boolean CWLOnAnythingExceptCromwell = !runner.equals("cromwell") && descriptorType.equals(Workflow.DescriptorTypeEnum.CWL.toString());
+        // Run WDL on Cromwell only
+        boolean WDLOnOnlyCromwell = runner.equals("cromwell") && descriptorType.equals(Workflow.DescriptorTypeEnum.WDL.toString());
+        return CWLOnAnythingExceptCromwell || WDLOnOnlyCromwell;
     }
 
     private boolean runTest(String name, Map<String, String> parameter) {
@@ -495,23 +495,9 @@ public class Client {
                     List<SourceFile> testParameterFiles;
                     SourceFile descriptor;
                     for (String descriptorType : dockstoreTool.getDescriptorType()) {
-                        switch (descriptorType.toUpperCase()) {
-                        case "CWL":
-                            if (!runner.equals("cromwell")) {
-                                descriptor = containersApi.primaryDescriptor(entryId, tagName, descriptorType.toUpperCase());
-                                break;
-                            } else {
-                                continue;
-                            }
-                        case "WDL":
-                            if (runner.equals("cromwell")) {
-                                descriptor = containersApi.primaryDescriptor(entryId, tagName, descriptorType.toUpperCase());
-                                break;
-                            } else {
-                                continue;
-                            }
-                        default:
-                            LOG.info("Unknown descriptor, skipping");
+                        if (compatibleRunner(runner, descriptorType.toUpperCase())) {
+                            descriptor = containersApi.primaryDescriptor(entryId, tagName, descriptorType.toUpperCase());
+                        } else {
                             continue;
                         }
                         String descriptorPath = DockstoreEntryHelper
