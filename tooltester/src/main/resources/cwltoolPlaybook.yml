@@ -9,7 +9,7 @@
     - name: Install python-pip
       become: yes
       apt:
-        name: python-pip
+        name: python3-pip
     - name: Install https
       become: yes
       apt:
@@ -29,12 +29,14 @@
     - name: Install cwl pip deps
       become: yes
       pip:
-        requirements: https://raw.githubusercontent.com/ga4gh/dockstore/develop/dockstore-webservice/src/main/resources/requirements/1.7.0/requirements.txt
+        requirements: https://raw.githubusercontent.com/ga4gh/dockstore/develop/dockstore-webservice/src/main/resources/requirements/1.7.0/requirements3.txt
+        executable: pip3
     - name: Install aws cli
       become: yes
       pip:
         name: awscli
         version: 1.11.170
+        executable: pip3
     - name: Download Dockstore
       become: yes
       get_url:

@@ -31,6 +31,7 @@
       pip:
         name: awscli
         version: 1.11.170
+        executable: pip3
     - name: Download Dockstore
       become: yes
       get_url:

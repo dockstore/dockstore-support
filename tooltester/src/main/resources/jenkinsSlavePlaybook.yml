@@ -30,12 +30,13 @@
     - name: Install python-pip
       become: yes
       apt:
-        name: python-pip
+        name: python3-pip
     - name: Install aws cli
       become: yes
       pip:
         name: awscli
         version: 1.11.170
+        executable: pip3
     - name: Add jenkins user
       become: yes
       user:
