@@ -2,10 +2,14 @@ Last tested with ansible 2.2.1.0
 
 The general idea is to only have the `jenkins` user talk to each other, never using the `ubuntu` user
 
+Also for simplicity, always SSH into the jump server directly to get to the master and slaves.
 # Master Setup:
-1. Create a c2.micro flavor Ubuntu 18.04 image on Collaboratory
-1. Give it the security groups: Jenkins, Default
-1. Run the setupMaster.sh
+1. Login to Collaboratory (https://console.cancercollaboratory.org/)
+1. Launch a new instance with the following properties
+    1. Flavour - c2.micro
+    1. Source - Ubuntu 18.04 image
+    1. Security groups - Jenkins, Default
+1. SSH into jump and from there SSH into master. Run the setupMaster.sh in master (download from this repository)
 1. Log out and log back in
 
 Follow these steps if there is a backup
@@ -31,20 +35,35 @@ Follow these setups if there is not a backup
 1. Make the .ssh directory and copy the id_rsa into it
 
 # Slave Setup:
-1. Create a c2.large flavor Ubuntu 18.04  - latest image on Collaboratory and give it the JenkinsMaster2 key pair
-1. Run the setupSlave.sh script (in this repo) by ssh'ing to it from the master (by ssh'ing to master first)
+1. Login to Collaboratory (https://console.cancercollaboratory.org/)
+1. Launch a new instance with the following properties
+    1. Flavour - c2.large
+    1. Source - Ubuntu 18.04 image
+    1. Key Pair - JenkinsMaster2
+1. SSH into jump and from there SSH into the slave. Run the setupSlave.sh in master (download from this repository)
 1. Configure the aws cli using `sudo -u jenkins -i` and then `aws configure`. Use the credentials in the jenkins@jenkins-master's ~/.aws/credentials
-1. Configure slave on master Jenkin: Manage Jenkins => Manage Nodes => New Node => Permanent Agent => Remote root directory: /home/jenkins
+1. Configure slave on master Jenkin (<floating-ip>:8080): Manage Jenkins => Manage Nodes => New Node => Permanent Agent => Remote root directory: /home/jenkins
 1. If it's a new master, Add credentials (Kind: SSH Username with private key, Username: jenkins, private key: <same one as before, ask around for it>)
+1. If it's not a new master and there are already invalid nodes, configure and set the IP address then save.
 1. Reduce executors to 1
 
 # Running tooltester:
-1. Check .tooltester/config to see if the 'server-url' needs to be changed
-1. Check .tooltester/config to see if the runners specified in it are correct.  An example config that runs all runners is:
+A sample config file is shown below. This one will run tool tester with staging and dockstore-version 1.7.0-beta.6.
+
+Ensure that these fields are filled out correctly.
+
 ```
 runner = cromwell cwltool cwl-runner
+
+server-url = https://staging.dockstore.org/api
+jenkins-server-url = http://<find-on-collab>:8080/
+jenkins-username = <username>
+jenkins-password = <password>
+development = true
+dockstore-version = 1.7.0-beta.6
+
 ```
-1. Check .tooltester/config to see if dockstore-version needs to be changed
+1. Fill in ~/.tooltester/config with the appropriate values
 1. Modify the [cwltoolPlaybook](src/main/resources/cwltoolPlaybook.yml) and [toilPlaybook](src/main/resources/toilPlaybook.yml) in the feature/playbook branch to have the right apt/pip dependencies if needed (i.e. check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
 1. Check that the slave has enough disk space, remove /tmp and ~/workspace/* (workspace `@tmp` folders aren't removed with cleanup plugin) if needed
 
