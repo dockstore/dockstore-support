@@ -1,15 +1,16 @@
 Last tested with ansible 2.2.1.0
 
-The general idea is to only have the `jenkins` user talk to each other, never using the `ubuntu` user
+The general idea is to only have the `jenkins` user talk to each other, never using the `ubuntu` user.
 
 Also for simplicity, always SSH into the jump server directly to get to the master and slaves.
+
 # Master Setup:
-1. Login to Collaboratory (https://console.cancercollaboratory.org/)
+1. Login to [Collaboratory console](https://console.cancercollaboratory.org/)
 1. Launch a new instance with the following properties
     1. Flavour - c2.micro
     1. Source - Ubuntu 18.04 image
     1. Security groups - Jenkins, Default
-1. SSH into jump and from there SSH into master. Run the setupMaster.sh in master (download from this repository)
+1. SSH into jump server and from there SSH into master. Run the setupMaster.sh in master (download from this repository)
 1. Log out and log back in
 
 Follow these steps if there is a backup
@@ -35,7 +36,7 @@ Follow these setups if there is not a backup
 1. Make the .ssh directory and copy the id_rsa into it
 
 # Slave Setup:
-1. Login to Collaboratory (https://console.cancercollaboratory.org/)
+1. Login to [Collaboratory console](https://console.cancercollaboratory.org/)
 1. Launch a new instance with the following properties
     1. Flavour - c2.large
     1. Source - Ubuntu 18.04 image
