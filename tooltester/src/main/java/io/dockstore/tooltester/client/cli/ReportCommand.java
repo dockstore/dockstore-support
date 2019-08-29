@@ -153,7 +153,11 @@ final class ReportCommand {
                 report.printAndWriteLine(record);
                 if (SEND_LOGS) {
                     if (result.equals(StateEnum.SUCCESS.name())) {
-                        s3Client.createObject(toolId, tag, pipelineNode.getDisplayName(), runner, logContent, epochStartTime);
+                        try {
+                            s3Client.createObject(toolId, tag, pipelineNode.getDisplayName(), runner, logContent, epochStartTime);
+                        } catch (Exception e) {
+                            LOG.error("Could not send logs to s3");
+                        }
                     }
                 }
             } catch (NullPointerException e) {
