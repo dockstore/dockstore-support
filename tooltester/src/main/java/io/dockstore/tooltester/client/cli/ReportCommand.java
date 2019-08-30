@@ -156,7 +156,7 @@ final class ReportCommand {
                         try {
                             s3Client.createObject(toolId, tag, pipelineNode.getDisplayName(), runner, logContent, epochStartTime);
                         } catch (Exception e) {
-                            LOG.error("Could not send logs to s3");
+                            LOG.error("Could not send logs to s3", e);
                         }
                     }
                 }
