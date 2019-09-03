@@ -44,6 +44,11 @@
         shell: /bin/bash
         groups: docker, sudo
         append: yes
+    - name: Create /mnt/output directory
+      file:
+        path: /mnt/output
+        state: directory
+        mode: '0777'
     - name: Set authorized keys taken from url
       become: yes
       authorized_key:
