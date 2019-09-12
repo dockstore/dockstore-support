@@ -45,6 +45,7 @@
         groups: docker, sudo
         append: yes
     - name: Create /mnt/output directory
+      become: yes
       file:
         path: /mnt/output
         state: directory
