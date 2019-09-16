@@ -77,7 +77,7 @@ final class ReportCommand {
      * @param sources   List of verified sources to report on, otherwise reports on all of them by default
      */
     void report(List<String> toolNames, List<String> sources) {
-        List<Tool> tools = GA4GHHelper.getTools(ga4ghApi, true, sources, toolNames, true);
+        List<Tool> tools = GA4GHHelper.getTools(ga4ghApi, true, sources, toolNames, true, true);
         String prefix = TimeHelper.getDateFilePrefix();
         StatusReport report = new StatusReport(prefix + "Report.csv");
         tools.forEach(tool -> getToolTestResults(tool, report));

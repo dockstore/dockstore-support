@@ -79,13 +79,13 @@ public class GA4GHHelper {
      * @return                  List of all tools after filters are applied
      */
     public static List<Tool> getTools(Ga4GhApi ga4GhApi, boolean verified, List<String> verifiedSources, List<String> toolNames,
-            boolean checker) {
+            boolean checker, boolean blacklist) {
         List<Tool> allTools = getAllTools(ga4GhApi);
         allTools = allTools.stream().filter(tool -> {
             List<ToolVersion> versions = tool.getVersions();
             return (versions != null && !versions.isEmpty());
         }).collect(Collectors.toList());
-        return filterTools(allTools, verified, verifiedSources, toolNames, checker);
+        return filterTools(allTools, verified, verifiedSources, toolNames, checker, blacklist);
 
     }
 
@@ -97,10 +97,11 @@ public class GA4GHHelper {
      * @param verifiedSources If getting verified tools only, whether to only get the ones that are specific to certain verified sources
      * @param toolNames       If not null or empty, only return the tools with matching tool names
      * @param checker         Whether to also get the corresponding checker workflow (all previous filters do not apply for this checker workflow)
+     * @param blacklist       Whether to filter out blacklisted tool versions or not
      * @return Filtered list of TRS tools
      */
     static List<Tool> filterTools(List<Tool> allTools, boolean verified, List<String> verifiedSources, List<String> toolNames,
-            boolean checker) {
+            boolean checker, boolean blacklist) {
         List<Tool> filteredTools = allTools;
         if (!verified && !verifiedSources.isEmpty()) {
             ExceptionHandler.errorMessage("Searching for a unverified tool but have verified sources", CLIENT_ERROR);
@@ -117,6 +118,10 @@ public class GA4GHHelper {
         }
         if (toolNames != null && !toolNames.isEmpty()) {
             filteredTools = filteredTools.parallelStream().filter(t -> toolNames.contains(t.getId())).collect(Collectors.toList());
+        }
+        if (blacklist) {
+            filteredTools.forEach(tool -> tool.setVersions(tool.getVersions().stream().filter(version -> BlackList.isNotBlacklisted(tool.getId(), version.getName()))
+                    .collect(Collectors.toList())));
         }
         if (checker) {
             addCheckerWorkflows(filteredTools, allTools);
