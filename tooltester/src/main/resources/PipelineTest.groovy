@@ -32,7 +32,7 @@ def transformIntoStep(url, tag, descriptor, parameter, entryType, synapseCache, 
                 sh "wget -O playbook.yml https://raw.githubusercontent.com/ga4gh/dockstore-support/feature/playbook/tooltester/src/main/resources/${AnsiblePlaybook}.yml"
                 ansiblePlaybook playbook: 'playbook.yml', extraVars: [version: '${DockstoreVersion}']
                 sh 'dockstore --version --script || true'
-                sh 'pip list'
+                sh 'pip3 list'
                 sh 'dockstore plugin list --script || true'
                 sh 'git clone ${URL} target'
                 sh 'echo -e ${Config} > ~/.dockstore/config'
