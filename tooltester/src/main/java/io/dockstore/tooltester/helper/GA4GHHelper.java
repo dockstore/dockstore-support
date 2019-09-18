@@ -81,10 +81,6 @@ public class GA4GHHelper {
     public static List<Tool> getTools(Ga4GhApi ga4GhApi, boolean verified, List<String> verifiedSources, List<String> toolNames,
             boolean checker, boolean blacklist) {
         List<Tool> allTools = getAllTools(ga4GhApi);
-        allTools = allTools.stream().filter(tool -> {
-            List<ToolVersion> versions = tool.getVersions();
-            return (versions != null && !versions.isEmpty());
-        }).collect(Collectors.toList());
         return filterTools(allTools, verified, verifiedSources, toolNames, checker, blacklist);
 
     }
@@ -126,6 +122,10 @@ public class GA4GHHelper {
         if (checker) {
             addCheckerWorkflows(filteredTools, allTools);
         }
+        filteredTools = filteredTools.stream().filter(tool -> {
+            List<ToolVersion> versions = tool.getVersions();
+            return (versions != null && !versions.isEmpty());
+        }).collect(Collectors.toList());
         return filteredTools;
     }
 
@@ -193,8 +193,7 @@ public class GA4GHHelper {
     public static List<CommandObject> getCommandObjects(Tool tool, String[] runners) {
         String toolId = tool.getId();
         List<CommandObject> commandObjects = new ArrayList<>();
-        tool.getVersions().stream().filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName()))
-                .filter(ToolVersion::isVerified)
+        tool.getVersions().stream()
                 .forEach(toolVersion -> Arrays.stream(runners).forEach(runner -> {
                     if (toolVersion.getDescriptorType().stream()
                             .anyMatch(descriptorTypeEnum -> runnerSupportsDescriptorType(runner, descriptorTypeEnum))) {

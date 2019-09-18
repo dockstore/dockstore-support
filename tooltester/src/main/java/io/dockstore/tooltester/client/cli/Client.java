@@ -25,7 +25,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
@@ -348,14 +350,15 @@ public class Client {
         String toolId = tool.getId();
         Workflow workflow = DockstoreEntryHelper.convertTRSToolToDockstoreEntry(tool, workflowsApi);
         String url = DockstoreEntryHelper.convertGitSSHUrlToGitHTTPSUrl(workflow.getGitUrl());
+        List<String> versionsToRun = tool.getVersions().stream().map(ToolVersion::getName).collect(Collectors.toList());
         if (url == null) {
             return false;
         }
         Long entryId = workflow.getId();
         for (String runner : tooltesterConfig.getRunner()) {
-            List<WorkflowVersion> verifiedAndNotBlacklistedVersions = workflow.getWorkflowVersions().stream()
-                    .filter(version -> BlackList.isNotBlacklisted(toolId, version.getName())).collect(Collectors.toList());
-            for (WorkflowVersion version : verifiedAndNotBlacklistedVersions) {
+            List<WorkflowVersion> matchingVersions = workflow.getWorkflowVersions().stream()
+                    .filter(version -> versionsToRun.contains(version.getName())).collect(Collectors.toList());
+            for (WorkflowVersion version : matchingVersions) {
                 List<String> commandsList = new ArrayList<>();
                 List<String> descriptorsList = new ArrayList<>();
                 List<String> parametersList = new ArrayList<>();
@@ -473,14 +476,15 @@ public class Client {
         String toolId = tool.getId();
         DockstoreTool dockstoreTool = DockstoreEntryHelper.convertTRSToolToDockstoreEntry(tool, containersApi);
         String url = DockstoreEntryHelper.convertGitSSHUrlToGitHTTPSUrl(dockstoreTool.getGitUrl());
+        List<String> versionsToRun = tool.getVersions().stream().map(ToolVersion::getName).collect(Collectors.toList());
         if (url == null) {
             return false;
         }
         Long entryId = dockstoreTool.getId();
         for (String runner : tooltesterConfig.getRunner()) {
-            List<Tag> verifiedAndNotBlacklistedVersions = dockstoreTool.getWorkflowVersions().stream()
-                    .filter(tag -> BlackList.isNotBlacklisted(toolId, tag.getName())).collect(Collectors.toList());
-            for (Tag tag : verifiedAndNotBlacklistedVersions) {
+            List<Tag> matchingVersions = dockstoreTool.getWorkflowVersions().stream()
+                    .filter(version -> versionsToRun.contains(version.getName())).collect(Collectors.toList());
+            for (Tag tag : matchingVersions) {
                 List<String> commandsList = new ArrayList<>();
                 List<String> descriptorsList = new ArrayList<>();
                 List<String> parametersList = new ArrayList<>();
