@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
 import org.junit.Assert;
@@ -43,11 +45,11 @@ public class GA4GHHelperTest {
         String json = resourceFilePathToString();
         List<Tool> allTools = Arrays.asList(objectMapper.readValue(json, Tool[].class));
         List<Tool> filteredTools1 = GA4GHHelper.filterTools(allTools, false, new ArrayList<>(), new ArrayList<>(), true, true);
-        Assert.assertEquals(38, filteredTools1.size());
+        Assert.assertEquals(27, filteredTools1.size());
         List<Tool> filteredTools2 = GA4GHHelper.filterTools(allTools, true, new ArrayList<>(), new ArrayList<>(), false, true);
-        Assert.assertEquals(30, filteredTools2.size());
+        Assert.assertEquals(20, filteredTools2.size());
         List<Tool> filteredTools = GA4GHHelper.filterTools(allTools, true, new ArrayList<>(), new ArrayList<>(), true, true);
-        Assert.assertEquals(37, filteredTools.size());
+        Assert.assertEquals(22, filteredTools.size());
     }
 
     private String resourceFilePathToString() throws IOException, URISyntaxException {
