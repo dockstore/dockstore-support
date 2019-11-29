@@ -253,7 +253,7 @@ public class Client {
     private void handleCreateTests(List<String> toolnames, List<String> source) {
         setupClientEnvironment();
         setupTesters();
-        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames, true);
+        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames, true, true);
         for (Tool tool : tools) {
             createToolTests(tool);
         }
@@ -268,7 +268,7 @@ public class Client {
     private void handleRunTests(List<String> toolNames, List<String> sources) {
         setupClientEnvironment();
         setupTesters();
-        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames, true);
+        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames, true, true);
         for (Tool tool : tools) {
             testTool(tool);
         }
@@ -348,16 +348,15 @@ public class Client {
         String toolId = tool.getId();
         Workflow workflow = DockstoreEntryHelper.convertTRSToolToDockstoreEntry(tool, workflowsApi);
         String url = DockstoreEntryHelper.convertGitSSHUrlToGitHTTPSUrl(workflow.getGitUrl());
+        List<String> versionsToRun = tool.getVersions().stream().map(ToolVersion::getName).collect(Collectors.toList());
         if (url == null) {
             return false;
         }
         Long entryId = workflow.getId();
         for (String runner : tooltesterConfig.getRunner()) {
-            List<WorkflowVersion> verifiedVersions = workflow.getWorkflowVersions().stream().filter(version -> version.isVerified())
-                    .collect(Collectors.toList());
-            List<WorkflowVersion> verifiedAndNotBlacklistedVersions = verifiedVersions.stream()
-                    .filter(version -> BlackList.isNotBlacklisted(toolId, version.getName())).collect(Collectors.toList());
-            for (WorkflowVersion version : verifiedAndNotBlacklistedVersions) {
+            List<WorkflowVersion> matchingVersions = workflow.getWorkflowVersions().stream()
+                    .filter(version -> versionsToRun.contains(version.getName())).collect(Collectors.toList());
+            for (WorkflowVersion version : matchingVersions) {
                 List<String> commandsList = new ArrayList<>();
                 List<String> descriptorsList = new ArrayList<>();
                 List<String> parametersList = new ArrayList<>();
@@ -475,15 +474,15 @@ public class Client {
         String toolId = tool.getId();
         DockstoreTool dockstoreTool = DockstoreEntryHelper.convertTRSToolToDockstoreEntry(tool, containersApi);
         String url = DockstoreEntryHelper.convertGitSSHUrlToGitHTTPSUrl(dockstoreTool.getGitUrl());
+        List<String> versionsToRun = tool.getVersions().stream().map(ToolVersion::getName).collect(Collectors.toList());
         if (url == null) {
             return false;
         }
         Long entryId = dockstoreTool.getId();
         for (String runner : tooltesterConfig.getRunner()) {
-            List<Tag> verifiedTags = dockstoreTool.getWorkflowVersions().stream().filter(tag -> tag.isVerified()).collect(Collectors.toList());
-            List<Tag> verifiedAndNotBlacklistedVersions = verifiedTags.stream()
-                    .filter(tag -> BlackList.isNotBlacklisted(toolId, tag.getName())).collect(Collectors.toList());
-            for (Tag tag : verifiedAndNotBlacklistedVersions) {
+            List<Tag> matchingVersions = dockstoreTool.getWorkflowVersions().stream()
+                    .filter(version -> versionsToRun.contains(version.getName())).collect(Collectors.toList());
+            for (Tag tag : matchingVersions) {
                 List<String> commandsList = new ArrayList<>();
                 List<String> descriptorsList = new ArrayList<>();
                 List<String> parametersList = new ArrayList<>();
