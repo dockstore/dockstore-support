@@ -71,7 +71,7 @@ dockstore-version = 1.7.0-beta.6
 
 1. Run the ClientTest.createJenkinsTests (basically the sync commmand)
 1. Run the ClientTest.enqueue (basically the enqueue command)
-1. Wait until it finishes running and then run the ClientTest.report (basically the report command)
+1. Wait until it finishes running. Check that your S3 credentials work (using aws cli) and then run the ClientTest.report (basically the report command)
 
 # Master Backup
 1. Double check that aws is installed and has the correct credentials
