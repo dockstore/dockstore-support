@@ -41,7 +41,7 @@ Follow these setups if there is not a backup
     1. Flavour - c2.large
     1. Source - Ubuntu 18.04 image
     1. Key Pair - JenkinsMaster2
-1. SSH into jump and from there SSH into the master and then to slave. Run the setupSlave.sh in the master branch (download from this repository)
+1. SSH into the jump server and from there SSH into the master and then to slave. Run the setupSlave.sh in the master branch (download from this repository)
 1. Configure the aws cli using `sudo -u jenkins -i` and then `aws configure`. Use the credentials in the jenkins@jenkins-master's ~/.aws/credentials
 1. Configure slave on master Jenkin (<floating-ip>:8080): Manage Jenkins => Manage Nodes => New Node => Permanent Agent => Remote root directory: /home/jenkins
 1. If it's a new master, Add credentials (Kind: SSH Username with private key, Username: jenkins, private key: <same one as before, ask around for it>)
