@@ -20,7 +20,7 @@ Follow these steps if there is a backup
 1. aws s3 --endpoint-url https://object.cancercollaboratory.org:9080 cp s3://dockstore/jenkinsMaster2/jenkins_home.tar.gz jenkins_home.tar.gz
 1. Extract with `tar xvzf jenkins_home.tar.gz` and then remove the far file
 1. Run the jenkins container
-    `docker run -u root --rm -d -p 8080:8080 -p 50000:50000 -v $PWD/jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/blueocean:1.13.1`
+    `docker run --restart=always -u root -d -p 8080:8080 -p 50000:50000 -v $PWD/jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/blueocean:1.13.1`
 1. Make the .ssh directory and copy the id_rsa into it
 ---
 
@@ -41,7 +41,7 @@ Follow these setups if there is not a backup
     1. Flavour - c2.large
     1. Source - Ubuntu 18.04 image
     1. Key Pair - JenkinsMaster2
-1. SSH into jump and from there SSH into the slave. Run the setupSlave.sh in master (download from this repository)
+1. SSH into the jump server and from there SSH into the master and then to slave. Run the setupSlave.sh in the master branch (download from this repository)
 1. Configure the aws cli using `sudo -u jenkins -i` and then `aws configure`. Use the credentials in the jenkins@jenkins-master's ~/.aws/credentials
 1. Configure slave on master Jenkin (<floating-ip>:8080): Manage Jenkins => Manage Nodes => New Node => Permanent Agent => Remote root directory: /home/jenkins
 1. If it's a new master, Add credentials (Kind: SSH Username with private key, Username: jenkins, private key: <same one as before, ask around for it>)
@@ -71,7 +71,7 @@ dockstore-version = 1.7.0-beta.6
 
 1. Run the ClientTest.createJenkinsTests (basically the sync commmand)
 1. Run the ClientTest.enqueue (basically the enqueue command)
-1. Wait until it finishes running and then run the ClientTest.report (basically the report command)
+1. Wait until it finishes running. Check that your S3 credentials work (using aws cli) and then run the ClientTest.report (basically the report command)
 
 # Master Backup
 1. Double check that aws is installed and has the correct credentials

@@ -59,7 +59,7 @@ public final class DockstoreEntryHelper {
         String toolId = tool.getId();
         String path = toolId.replace("#workflow/", "");
         try {
-            return workflowsApi.getPublishedWorkflowByPath(path, null);
+            return workflowsApi.getPublishedWorkflowByPath(path, null, false);
         } catch (ApiException e) {
             exceptionMessage(e, "Could not get " + path + " using the workflowsApi API", API_ERROR);
         }
