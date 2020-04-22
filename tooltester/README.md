@@ -41,12 +41,19 @@ Follow these setups if there is not a backup
     1. Flavour - c2.large
     1. Source - Ubuntu 18.04 image
     1. Key Pair - JenkinsMaster2
-1. SSH into the jump server and from there SSH into the master and then to slave. Run the setupSlave.sh in the master branch (download from this repository)
+1. SSH into the jump server and from there SSH into the master and then to slave. Run the setupSlave.sh in the develop branch (download from this repository)
 1. Configure the aws cli using `sudo -u jenkins -i` and then `aws configure`. Use the credentials in the jenkins@jenkins-master's ~/.aws/credentials
-1. Configure slave on master Jenkin (<floating-ip>:8080): Manage Jenkins => Manage Nodes => New Node => Permanent Agent => Remote root directory: /home/jenkins
+1. Configure slave on master Jenkin (<floating-ip>:8080):
+    1. Manage Jenkins => Manage Nodes => New Node
+        1. Type in the name for the node and select permanent agent. Click Ok.
+        1. \# of executors - 1
+        1. Remote root directory - /home/jenkins
 1. If it's a new master, Add credentials (Kind: SSH Username with private key, Username: jenkins, private key: <same one as before, ask around for it>)
 1. If it's not a new master and there are already invalid nodes, configure and set the IP address then save.
-1. Reduce executors to 1
+    1. Host - <ip-address-slave>
+    1. Credentials - Jenkins
+    1. Host Key Verification Strategy - Non verifying Verification Strategy
+1. When in doubt, look at configuration of existing nodes.
 
 # Running tooltester:
 A sample config file is shown below. This one will run tool tester with staging and dockstore-version 1.7.0-beta.6.
@@ -68,10 +75,11 @@ dockstore-version = 1.7.0-beta.6
     1. In particular, ensure that `server-url`, `runners`, and `dockstore-version` are properly set
 1. Modify the [cwltoolPlaybook](src/main/resources/cwltoolPlaybook.yml) and [toilPlaybook](src/main/resources/toilPlaybook.yml) in the feature/playbook branch to have the right apt/pip dependencies if needed (i.e. check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
 1. Check that the slave has enough disk space, remove /tmp and ~/workspace/* (workspace `@tmp` folders aren't removed with cleanup plugin) if needed
-
+1. Open in Intellij: Import project -> pom.xml as project
 1. Run the ClientTest.createJenkinsTests (basically the sync commmand)
 1. Run the ClientTest.enqueue (basically the enqueue command)
 1. Wait until it finishes running. Check that your S3 credentials work (using aws cli) and then run the ClientTest.report (basically the report command)
+    1. You can view running jobs at <master-floating-ip>:8080
 
 # Master Backup
 1. Double check that aws is installed and has the correct credentials
