@@ -54,13 +54,13 @@ public class DockstoreEntryHelperTest {
         String command = DockstoreEntryHelper.generateLaunchEntryCommand(publishedWorkflow, workflowVersion1, "test.json");
         Assert.assertEquals("dockstore workflow launch --entry github.com/briandoconnor/dockstore-workflow-md5sum:1.4.0 --json test.json --script", command);
         // With workflow name
-        workflowId = 5181L;
+        workflowId = 4818L;
         publishedWorkflow = workflowsApi.getPublishedWorkflow(workflowId, null);
         workflowVersions = publishedWorkflow.getWorkflowVersions();
-        workflowVersion1 = workflowVersions.stream().filter(workflowVersion -> workflowVersion.getName().equals("dockstore"))
+        workflowVersion1 = workflowVersions.stream().filter(workflowVersion -> workflowVersion.getName().equals("1.0.0"))
                 .findFirst().get();
         command = DockstoreEntryHelper.generateLaunchEntryCommand(publishedWorkflow, workflowVersion1, "test.yaml");
-        Assert.assertEquals("dockstore workflow launch --entry github.com/HumanCellAtlas/skylab/HCA_SmartSeq2:dockstore --yaml test.yaml --script", command);
+        Assert.assertEquals("dockstore workflow launch --entry github.com/ICGC-TCGA-PanCancer/pcawg-snv-indel-annotation:1.0.0 --yaml test.yaml --script", command);
     }
 
     @Test
