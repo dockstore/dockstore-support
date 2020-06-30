@@ -58,7 +58,7 @@ Follow these setups if there is not a backup
 # Running tooltester:
 A sample config file is shown below. This one will run tool tester with staging and dockstore-version 1.7.0-beta.6.
 
-Ensure that these fields are filled out correctly.
+Ensure that these fields are filled out correctly. Note that the dockstore-version below is for the Dockstore CLI version (not webservice)
 
 ```
 runner = cromwell cwltool cwl-runner
@@ -71,7 +71,7 @@ development = true
 dockstore-version = 1.7.0-beta.6
 
 ```
-1. Tooltester will try to find the CLI based on the dockstore-version above, ensure it's available at https://github.com/dockstore/dockstore/releases/download/{{dockstore-version}}/dockstore
+1. Tooltester will try to find the CLI based on the dockstore-version above, ensure it's available at https://github.com/dockstore/dockstore-cli/releases/download/{{dockstore-version}}/dockstore
 1. On your local machine, fill in ~/.tooltester/config with the appropriate values
     1. In particular, ensure that `server-url`, `runners`, and `dockstore-version` are properly set
 1. Clone https://github.com/dockstore/dockstore-support.git. Open in Intellij: Import project -> pom.xml as project
