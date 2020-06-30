@@ -28,7 +28,7 @@
     - name: Download Dockstore
       become: yes
       get_url:
-        url: https://github.com/ga4gh/dockstore/releases/download/{{version}}/dockstore
+        url: https://github.com/dockstore/dockstore-cli/releases/download/{{version}}/dockstore
         dest: /usr/local/bin
         mode: a+rwx
     - name: echo $HOME
