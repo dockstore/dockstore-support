@@ -81,7 +81,7 @@ dockstore-version = 1.7.0-beta.6
 1. Run the ClientTest.createJenkinsTests by pressing the green run button (basically the sync commmand)
 1. Run the ClientTest.enqueue by pressing the green run button (basically the enqueue command)
 1. Wait until it finishes running.
-1. io/dockstore/tooltester/client/cli/ReportCommand.java has a SEND_LOGS boolean.  ICheck that your S3 credentials work (using aws cli) if sending logs to S3. Otherwise, change the boolean to false.
+1. io/dockstore/tooltester/client/cli/ReportCommand.java has a SEND_LOGS boolean.  Check that your S3 credentials work (using aws cli) if sending logs to S3. Otherwise, change the boolean to false.
 1. Run the ClientTest.report (basically the report command)
     1. You can view running jobs at {master-floating-ip}:8080
 
