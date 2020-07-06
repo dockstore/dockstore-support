@@ -58,7 +58,7 @@ Follow these setups if there is not a backup
 # Running tooltester:
 A sample config file is shown below. This one will run tool tester with staging and dockstore-version 1.7.0-beta.6.
 
-Ensure that these fields are filled out correctly.
+Ensure that these fields are filled out correctly. Note that the dockstore-version below is for the Dockstore CLI version (not webservice)
 
 ```
 runner = cromwell cwltool cwl-runner
@@ -71,14 +71,18 @@ development = true
 dockstore-version = 1.7.0-beta.6
 
 ```
+1. Tooltester will try to find the CLI based on the dockstore-version above, ensure it's available at https://github.com/dockstore/dockstore-cli/releases/download/{{dockstore-version}}/dockstore
 1. On your local machine, fill in ~/.tooltester/config with the appropriate values
     1. In particular, ensure that `server-url`, `runners`, and `dockstore-version` are properly set
 1. Clone https://github.com/dockstore/dockstore-support.git. Open in Intellij: Import project -> pom.xml as project
+1. In the resources directory, modify the 4 config files as needed.
 1. Optional: Modify the [cwltoolPlaybook](src/main/resources/cwltoolPlaybook.yml) and [toilPlaybook](src/main/resources/toilPlaybook.yml) in the feature/playbook branch to have the right apt/pip dependencies if needed (i.e. check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
 1. IMPORTANT: Check that the slave has enough disk space, remove /tmp and /home/jenkins/workspace/* (workspace `@tmp` folders aren't removed with cleanup plugin) if needed
 1. Run the ClientTest.createJenkinsTests by pressing the green run button (basically the sync commmand)
 1. Run the ClientTest.enqueue by pressing the green run button (basically the enqueue command)
-1. Wait until it finishes running. Check that your S3 credentials work (using aws cli) and then run the ClientTest.report (basically the report command)
+1. Wait until it finishes running.
+1. io/dockstore/tooltester/client/cli/ReportCommand.java has a SEND_LOGS boolean.  Check that your S3 credentials work (using aws cli) if sending logs to S3. Otherwise, change the boolean to false.
+1. Run the ClientTest.report (basically the report command)
     1. You can view running jobs at {master-floating-ip}:8080
 
 # Master Backup

@@ -6,6 +6,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 /**
  * @author gluu
@@ -24,19 +25,20 @@ public class DockstoreConfigHelper {
      * @return          The config file for the specific runner and server url
      */
     public static String getConfig(String url, String runner) {
+        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
         try {
             switch (runner) {
             case "toil":
-                return baseConfig(url) + "\\n" + readFile(new File("src/main/resources/toil.config").getAbsolutePath(),
+                return baseConfig(url) + "\\n" + readFile(new File(Objects.requireNonNull(classLoader.getResource("toil.config")).getFile()).getAbsolutePath(),
                         StandardCharsets.UTF_8);
             case "cwl-runner":
-                return baseConfig(url) + "\\n" + readFile(new File("src/main/resources/cwlrunner.config").getAbsolutePath(),
+                return baseConfig(url) + "\\n" + readFile(new File(Objects.requireNonNull(classLoader.getResource("cwlrunner.config")).getFile()).getAbsolutePath(),
                         StandardCharsets.UTF_8);
             case "cromwell":
-                return baseConfig(url) + "\\n" + readFile(new File("src/main/resources/cromwell.config").getAbsolutePath(),
+                return baseConfig(url) + "\\n" + readFile(new File(Objects.requireNonNull(classLoader.getResource("cromwell.config")).getFile()).getAbsolutePath(),
                         StandardCharsets.UTF_8);
             case "cwltool":
-                return baseConfig(url) + "\\n" + readFile(new File("src/main/resources/cwltool.config").getAbsolutePath(),
+                return baseConfig(url) + "\\n" + readFile(new File(Objects.requireNonNull(classLoader.getResource("cwltool.config")).getFile()).getAbsolutePath(),
                         StandardCharsets.UTF_8);
             default:
                 ExceptionHandler.errorMessage("Unknown runner.", ExceptionHandler.CLIENT_ERROR);

@@ -130,7 +130,7 @@ public class GA4GHHelper {
     }
 
     /**
-     * Modifies filteredTools to also include its checkers
+     * Modifies filteredTools to also include its checkers (regardless of whether they're verified or not)
      *
      * @param filteredTools Previous list of tools that have been filtered already (by verification, etc)
      * @param allTools      List of all GA4GH tools
