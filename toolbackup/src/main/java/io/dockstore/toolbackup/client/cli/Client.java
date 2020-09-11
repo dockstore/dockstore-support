@@ -31,11 +31,16 @@ import joptsimple.OptionSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.Writer;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.OutputStreamWriter;
+import java.io.FileOutputStream;
 import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -71,6 +76,8 @@ public class Client {
     private Map<String, List<VersionDetail>> toolsToVersions;
     private HierarchicalINIConfiguration config;
 
+    public long totalImageSize = 0;
+
     public Client(OptionSet options) {
         this.options = options;
     }
@@ -80,7 +87,7 @@ public class Client {
         stringTime = FormattedTimeGenerator.getFormattedTimeNow(TIME_NOW);
     }
 
-    public static void main(String[] argv) {
+    public static void main(String[] argv) throws IOException {
         out.println("Back-up script started: " + stringTime);
 
         out.println(Arrays.toString(argv));
@@ -162,7 +169,7 @@ public class Client {
         return uploadList;
     }
 
-    private void run(String baseDir, String bucketName, String keyPrefix, boolean isTestMode) throws UnknownHostException {
+    private void run(String baseDir, String bucketName, String keyPrefix, boolean isTestMode) throws IOException {
         // use swagger-generated classes to talk to dockstore
         setupClientEnvironment();
         List<Tool> tools = null;
@@ -174,26 +181,9 @@ public class Client {
 
         final S3Communicator s3Communicator= new S3Communicator("dockstore", endpoint);
         String reportDir = baseDir + File.separator + "report";
-
-        // save Docker images to local
         saveToLocal(baseDir, reportDir, tools, new DockerCommunicator());
-        // just the Docker images
-        List<File> forUpload = getFilesForUpload(bucketName, keyPrefix, baseDir, s3Communicator);
-        long addedTotalInB = getFilesTotalSizeB(forUpload);
 
-        // report
-        long cloudTotalInB = s3Communicator.getCloudTotalInB(bucketName, keyPrefix);
-        report(reportDir, addedTotalInB, cloudTotalInB);
-
-        // upload to cloud
-        // NOTE: cannot invoke getFilesForUpload again as sometimes the report size may be exactly the same but the contents will be different
-        forUpload.addAll(FileUtils.listFiles(new File(reportDir), new String[] { "html", "JSON", "json" }, false));
-
-        // show all files to be uploaded to cloud
-        // out.println("Files to be uploaded: " + Arrays.toString(forUpload.toArray()));
-
-        s3Communicator.uploadDirectory(bucketName, keyPrefix, baseDir, forUpload, true);
-
+        System.out.println("The total image size of all docker images is: " + totalImageSize);
         s3Communicator.shutDown();
     }
 
@@ -255,63 +245,61 @@ public class Client {
         return null;
     }
 
-    private void update(ToolVersion version, String dirPath, List<VersionDetail> versionsDetails, String img, DockerCommunicator dockerCommunicator) {
+    private void update(ToolVersion version, String dirPath, List<VersionDetail> versionsDetails, String img, DockerCommunicator dockerCommunicator) throws IOException {
         String versionId = version.getId();
+        String versionName = version.getName();
+        String dockstoreUrl = version.getUrl();
         String versionTag = versionId.substring(versionId.lastIndexOf(":") + 1);
         String metaVersion = version.getMetaVersion();
         VersionDetail before;
 
-        if(dockerCommunicator.pullDockerImage(img)) {
-            // docker img valid
-            long dockerSize = dockerCommunicator.getImageSize(img);
-            File imgFile = new File(dirPath + File.separator + versionTag + ".tar");
+        String[] versionIdSegments = versionId.split("/");
 
-            // check if the script had encountered this image before
-            before = findLocalVD(versionsDetails, versionTag);
+        ProcessBuilder curlProcessBuilder = new ProcessBuilder();
+        ProcessBuilder bashProcessBuilder = new ProcessBuilder();
+        try {
+            String url = "https://hub.docker.com/v2/repositories/" + versionIdSegments[1] + "/" + versionIdSegments[2].split(":")[0] + "/tags?page_size=100";
+            curlProcessBuilder.command("curl", "-s", "GET", url);
+            Process curlProcess = curlProcessBuilder.start();
+            String results = IOUtils.toString(curlProcess.getInputStream(), "UTF-8").replace("\n", "").replace("\r", "");
 
-            // image had not changed from the last encounter
-            if(before != null && before.getDockerSize() == dockerCommunicator.getImageSize(img)) {
-                out.println(img + " did not change");
-                before.addTime(stringTime);
+            bashProcessBuilder.command("/bin/sh", "-c", "echo '" + results + "' | jq -r '.results[] | select(.name == \"" + versionName + "\") | .images[0].size'");
 
-                long fileSize = imgFile.length();
-                // image not yet saved in local
-                if(!imgFile.isFile() || fileSize != before.getFileSize()) {
-                    out.println("However, a local file must be created for " + img);
-                    saveDockerImage(img, imgFile, dockerCommunicator);
-                }
+            Process bashProcess = bashProcessBuilder.start();
+            String size = IOUtils.toString(bashProcess.getInputStream(), "UTF-8").trim();
+            if(size.equals("")) {
+                File file = new File("<Insert-csv-path-here>");
+                Writer w = new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8");
+                PrintWriter pw = new PrintWriter(w);
+                pw.println(url + "," + versionName + "," + dockstoreUrl);
+                pw.flush();
+                pw.close();
             } else {
-                // new version of image
-                saveDockerImage(img, imgFile, dockerCommunicator);
-
-                if(before != null) {
-                    out.println(img + " had changed");
-                    before.setPath("");
-                }
-
-                versionsDetails.add(new VersionDetail(versionTag, metaVersion, dockerSize, imgFile.length(), stringTime, true, imgFile.getAbsolutePath()));
+                totalImageSize = totalImageSize + Long.parseLong(size);
+                File file = new File("<Insert-csv-path-here>");
+                Writer w = new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8");
+                PrintWriter pw = new PrintWriter(w);
+                pw.println(url + "," + versionName + "," + dockstoreUrl + "," + size);
+                pw.flush();
+                pw.close();
             }
-
-            dockerCommunicator.removeDockerImage(img);
-
-        } else {
-            // non-existent image
-            before = findInvalidVD(versionsDetails, versionTag);
-            if(before != null) {
-                before.addTime(stringTime);
-            } else {
-                versionsDetails.add(new VersionDetail(versionTag, metaVersion, 0, 0, stringTime, false, ""));
-            }
+            curlProcess.destroy();
+            bashProcess.destroy();
+        } catch(Exception e) {
+            System.out.println(e);
+            return;
         }
     }
 
-    public void saveToLocal(String baseDir, String reportDir, final List<Tool> tools, DockerCommunicator dockerCommunicator) {
+    public void saveToLocal(String baseDir, String reportDir, final List<Tool> tools, DockerCommunicator dockerCommunicator) throws IOException {
         toolsToVersions = ReportGenerator.loadJSONMap(reportDir);
 
         for(Tool tool : tools)  {
+            //System.out.println(tools)
             String toolName = tool.getToolname();
             String dirPath = baseDir + File.separator + tool.getId();
-            DirectoryGenerator.createDir(dirPath);
+            //System.out.println(toolName);
+            //DirectoryGenerator.createDir(dirPath);
             if(toolName == null) {
                 continue;
             }
@@ -324,14 +312,16 @@ public class Client {
             }
 
             List<ToolVersion> versions = tool.getVersions();
+//            System.out.println(versions);
             for(ToolVersion version : versions) {
                 String img = version.getImage();
-                if(img == null) {
-                    continue;
+                if(img == null || !version.getId().contains("registry.hub.docker")) {
+                    break;
                 }
+//                System.out.println(img);
                 update(version, dirPath, versionsDetails, img, dockerCommunicator);
             }
-            toolsToVersions.put(toolName, versionsDetails);
+            //toolsToVersions.put(toolName, versionsDetails);
         }
         dockerCommunicator.closeDocker();
         out.println("Closed docker client");

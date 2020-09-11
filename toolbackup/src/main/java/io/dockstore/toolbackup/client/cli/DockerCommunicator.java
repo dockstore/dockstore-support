@@ -12,7 +12,7 @@ import static com.spotify.docker.client.DefaultDockerClient.fromEnv;
 import static io.dockstore.toolbackup.client.cli.Client.CONNECTION_ERROR;
 import static io.dockstore.toolbackup.client.cli.Client.GENERIC_ERROR;
 import static io.dockstore.toolbackup.client.cli.Client.IO_ERROR;
-import static java.lang.System.err;
+//import static java.lang.System.err;
 import static java.lang.System.out;
 
 /**
@@ -33,6 +33,7 @@ class DockerCommunicator {
         try {
             return dockerClient.inspectImage(img).size();
         } catch (DockerException e) {
+            System.out.println(e);
             throw new RuntimeException("Could not inspect: " + img + " because of docker");
         } catch (InterruptedException e) {
             throw new RuntimeException("Could not inspect: " + img + " as it was interrupted");
@@ -46,7 +47,7 @@ class DockerCommunicator {
             out.println("Pulled image: " + img);
         } catch (DockerException e) {
             pulled = false;
-            err.println("Unable to pull: " + img + ". It might not exist.");
+            //err.println("Unable to pull: " + img + ". It might not exist.");
         } catch (InterruptedException e) {
             throw new RuntimeException("Could not copy: " + img + " to file");
         }
