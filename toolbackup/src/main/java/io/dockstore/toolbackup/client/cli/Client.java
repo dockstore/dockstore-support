@@ -17,14 +17,20 @@ package io.dockstore.toolbackup.client.cli;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
 import io.swagger.client.api.ContainersApi;
-import io.swagger.client.api.GAGHApi;
+import io.swagger.client.api.Ga4GhApi;
 import io.swagger.client.api.UsersApi;
+import io.swagger.client.api.WorkflowsApi;
 import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
+import io.swagger.client.model.Workflow;
+import io.swagger.client.model.WorkflowVersion;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -55,8 +61,9 @@ public class Client {
     private static final Logger ROOT_LOGGER = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
     private final OptionSet options;
     private ContainersApi containersApi;
+    private WorkflowsApi workflowsApi;
     private UsersApi usersApi;
-    private GAGHApi ga4ghApi;
+    private Ga4GhApi ga4ghApi;
     private boolean isAdmin = false;
     private String endpoint;
 
@@ -77,6 +84,7 @@ public class Client {
     private HierarchicalINIConfiguration config;
 
     public long totalImageSize = 0;
+    private List<String> countedImages = new ArrayList<>();
 
     public Client(OptionSet options) {
         this.options = options;
@@ -119,12 +127,43 @@ public class Client {
     private List<Tool> getTools() {
         List<Tool> tools = null;
         try {
-            tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
+            tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null, null, null);
         } catch (ApiException e) {
             ErrorExit.exceptionMessage(e, "Could not retrieve dockstore tools", API_ERROR);
         }
         return tools;
     }
+
+    private List<Workflow> getWorkflows() {
+        List<Workflow> workflows = null;
+        try {
+            workflows = workflowsApi.allPublishedWorkflows(null, null, null, null, null, null);
+        } catch (ApiException e) {
+            ErrorExit.exceptionMessage(e, "Could not retrieve dockstore workflows", API_ERROR);
+        }
+        return workflows;
+    }
+
+    private String getTools(Long workflowID, Long workflowVersionID) {
+        String tools = null;
+        try {
+            System.out.println(workflowID + " " + workflowVersionID);
+            tools = workflowsApi.getTableToolContent(workflowID, workflowVersionID);
+        } catch (ApiException e) {
+            ErrorExit.exceptionMessage(e, "Could not retrieve dockstore tools", API_ERROR);
+        }
+        return tools;
+    }
+
+    private List<JsonElement> stringToJSONList(String JSONstring) {
+        List<JsonElement> objectList = new ArrayList<>();
+        JsonArray objectArray = new JsonParser().parse(JSONstring).getAsJsonArray();
+        for (int iterator = 0; iterator < objectArray.size(); iterator++) {
+            objectList.add(objectArray.get(iterator));
+        }
+        return objectList;
+    }
+
 
     private List<Tool> getTestTool(String id) {
         List<Tool> tools = new ArrayList<>();
@@ -173,16 +212,29 @@ public class Client {
         // use swagger-generated classes to talk to dockstore
         setupClientEnvironment();
         List<Tool> tools = null;
+        List<JsonElement> workflowVersionTools = null;
+        List<Workflow> workflows = null;
+        Long id = Long.valueOf(6915);
+        Long id2 = Long.valueOf(17876);
+
         if(isTestMode) {
             tools = getTestTool(BAMSTATS);
         } else {
             tools = getTools();
+            for (Workflow workflow : getWorkflows()) {
+                for (WorkflowVersion version: workflow.getWorkflowVersions()) {
+                    workflowVersionTools = stringToJSONList(getTools(workflow.getId(), version.getId()));
+                    getWorkflowDockerHubImagesSize(workflowVersionTools);
+                }
+            }
+//            workflowVersionTools = stringToJSONList(getTools(id, id2));
+//            getWorkflowDockerHubImagesSize(workflowVersionTools);
         }
 
         final S3Communicator s3Communicator= new S3Communicator("dockstore", endpoint);
         String reportDir = baseDir + File.separator + "report";
         saveToLocal(baseDir, reportDir, tools, new DockerCommunicator());
-
+//
         System.out.println("The total image size of all docker images is: " + totalImageSize);
         s3Communicator.shutDown();
     }
@@ -245,49 +297,120 @@ public class Client {
         return null;
     }
 
-    private void update(ToolVersion version, String dirPath, List<VersionDetail> versionsDetails, String img, DockerCommunicator dockerCommunicator) throws IOException {
+    private void getWorkflowDockerHubImagesSize(List<JsonElement> workflowVersionTools) {
+        for (JsonElement workflowTool : workflowVersionTools) {
+            String dockerHubImage = workflowTool.getAsJsonObject().get("docker").getAsString();
+            String dockerHubImageRepoLink = workflowTool.getAsJsonObject().get("link").getAsString();
+            if (!dockerHubImageRepoLink.contains("https://hub.docker.com") || countedImages.contains(dockerHubImage)) {
+                break;
+            }
+            countedImages.add(dockerHubImage);
+            String[] dockerHubImageURLSegments = dockerHubImage.split(":");
+            String apiRequest = "https://hub.docker.com/v2/repositories/" + dockerHubImageURLSegments[0] + "/tags?page_size=100";
+            getDockerHubImageSize(apiRequest, dockerHubImageURLSegments[1], "unavailable");
+        }
+    }
+
+    private void getToolDockerHubImageSize(ToolVersion version) {
         String versionId = version.getId();
         String versionName = version.getName();
         String dockstoreUrl = version.getUrl();
-        String versionTag = versionId.substring(versionId.lastIndexOf(":") + 1);
-        String metaVersion = version.getMetaVersion();
-        VersionDetail before;
+        String dockerHubImage = versionId.split("registry.hub.docker.com/")[1];
 
-        String[] versionIdSegments = versionId.split("/");
+        if (!version.getId().contains("registry.hub.docker") || countedImages.contains(dockerHubImage)) {
+            return;
+        }
+        countedImages.add(dockerHubImage);
+        String[] dockerHubImageURLSegments = versionId.split("/");
 
-        ProcessBuilder curlProcessBuilder = new ProcessBuilder();
-        ProcessBuilder bashProcessBuilder = new ProcessBuilder();
+        String apiRequest = "https://hub.docker.com/v2/repositories/" + dockerHubImageURLSegments[1] + "/" + dockerHubImageURLSegments[2].split(":")[0] + "/tags?page_size=100";
+        getDockerHubImageSize(apiRequest, versionName, dockstoreUrl);
+    }
+
+    private void getDockerHubImageSize(String apiRequest, String imageTag, String dockstoreURL) {
         try {
-            String url = "https://hub.docker.com/v2/repositories/" + versionIdSegments[1] + "/" + versionIdSegments[2].split(":")[0] + "/tags?page_size=100";
-            curlProcessBuilder.command("curl", "-s", "GET", url);
+            ProcessBuilder curlProcessBuilder = new ProcessBuilder();
+            ProcessBuilder bashProcessBuilder = new ProcessBuilder();
+
+            curlProcessBuilder.command("curl", "-s", "GET", apiRequest);
             Process curlProcess = curlProcessBuilder.start();
             String results = IOUtils.toString(curlProcess.getInputStream(), "UTF-8").replace("\n", "").replace("\r", "");
-
-            bashProcessBuilder.command("/bin/sh", "-c", "echo '" + results + "' | jq -r '.results[] | select(.name == \"" + versionName + "\") | .images[0].size'");
-
+            bashProcessBuilder.command("/bin/sh", "-c", "echo '" + results + "' | jq -r '.results[] | select(.name == \"" + imageTag + "\") | .images[0].size'");
             Process bashProcess = bashProcessBuilder.start();
-            String size = IOUtils.toString(bashProcess.getInputStream(), "UTF-8").trim();
-            if(size.equals("")) {
-                File file = new File("<Insert-csv-path-here>");
+            String dockerHubImageSize = IOUtils.toString(bashProcess.getInputStream(), "UTF-8").trim();
+
+            if(dockerHubImageSize.equals("")) {
+                File file = new File("/Users/Andy/Desktop/marked_images.csv");
                 Writer w = new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8");
                 PrintWriter pw = new PrintWriter(w);
-                pw.println(url + "," + versionName + "," + dockstoreUrl);
+                pw.println(apiRequest + "," + imageTag + "," + dockstoreURL);
                 pw.flush();
                 pw.close();
             } else {
-                totalImageSize = totalImageSize + Long.parseLong(size);
-                File file = new File("<Insert-csv-path-here>");
+                totalImageSize = totalImageSize + Long.parseLong(dockerHubImageSize);
+                File file = new File("/Users/Andy/Desktop/images.csv");
                 Writer w = new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8");
                 PrintWriter pw = new PrintWriter(w);
-                pw.println(url + "," + versionName + "," + dockstoreUrl + "," + size);
+                pw.println(apiRequest + "," + imageTag + "," + dockstoreURL + "," + dockerHubImageSize);
                 pw.flush();
                 pw.close();
             }
             curlProcess.destroy();
             bashProcess.destroy();
-        } catch(Exception e) {
+
+        } catch (Exception e) {
             System.out.println(e);
             return;
+        }
+    }
+
+    private void update(ToolVersion version, String dirPath, List<VersionDetail> versionsDetails, String img, DockerCommunicator dockerCommunicator) throws IOException {
+        String versionId = version.getId();
+        String versionTag = versionId.substring(versionId.lastIndexOf(":") + 1);
+        String metaVersion = version.getMetaVersion();
+        VersionDetail before;
+
+        if(dockerCommunicator.pullDockerImage(img)) {
+            // docker img valid
+            long dockerSize = dockerCommunicator.getImageSize(img);
+            File imgFile = new File(dirPath + File.separator + versionTag + ".tar");
+
+            // check if the script had encountered this image before
+            before = findLocalVD(versionsDetails, versionTag);
+
+            // image had not changed from the last encounter
+            if(before != null && before.getDockerSize() == dockerCommunicator.getImageSize(img)) {
+                out.println(img + " did not change");
+                before.addTime(stringTime);
+
+                long fileSize = imgFile.length();
+                // image not yet saved in local
+                if(!imgFile.isFile() || fileSize != before.getFileSize()) {
+                    out.println("However, a local file must be created for " + img);
+                    saveDockerImage(img, imgFile, dockerCommunicator);
+                }
+            } else {
+                // new version of image
+                saveDockerImage(img, imgFile, dockerCommunicator);
+
+                if(before != null) {
+                    out.println(img + " had changed");
+                    before.setPath("");
+                }
+
+                versionsDetails.add(new VersionDetail(versionTag, metaVersion, dockerSize, imgFile.length(), stringTime, true, imgFile.getAbsolutePath()));
+            }
+
+            dockerCommunicator.removeDockerImage(img);
+
+        } else {
+            // non-existent image
+            before = findInvalidVD(versionsDetails, versionTag);
+            if(before != null) {
+                before.addTime(stringTime);
+            } else {
+                versionsDetails.add(new VersionDetail(versionTag, metaVersion, 0, 0, stringTime, false, ""));
+            }
         }
     }
 
@@ -295,10 +418,8 @@ public class Client {
         toolsToVersions = ReportGenerator.loadJSONMap(reportDir);
 
         for(Tool tool : tools)  {
-            //System.out.println(tools)
             String toolName = tool.getToolname();
             String dirPath = baseDir + File.separator + tool.getId();
-            //System.out.println(toolName);
             //DirectoryGenerator.createDir(dirPath);
             if(toolName == null) {
                 continue;
@@ -312,14 +433,10 @@ public class Client {
             }
 
             List<ToolVersion> versions = tool.getVersions();
-//            System.out.println(versions);
             for(ToolVersion version : versions) {
                 String img = version.getImage();
-                if(img == null || !version.getId().contains("registry.hub.docker")) {
-                    break;
-                }
-//                System.out.println(img);
-                update(version, dirPath, versionsDetails, img, dockerCommunicator);
+//                getToolDockerHubImageSize(version);
+//                update(version, dirPath, versionsDetails, img, dockerCommunicator);
             }
             //toolsToVersions.put(toolName, versionsDetails);
         }
@@ -356,12 +473,13 @@ public class Client {
         defaultApiClient.setBasePath(serverUrl);
 
         this.containersApi = new ContainersApi(defaultApiClient);
+        this.workflowsApi = new WorkflowsApi(defaultApiClient);
         this.usersApi = new UsersApi(defaultApiClient);
-        this.ga4ghApi = new GAGHApi(defaultApiClient);
+        this.ga4ghApi = new Ga4GhApi(defaultApiClient);
 
         try {
             if (this.usersApi.getApiClient() != null) {
-                this.isAdmin = this.usersApi.getUser().getIsAdmin();
+                this.isAdmin = this.usersApi.getUser().isIsAdmin();
             }
         } catch (ApiException e) {
             this.isAdmin = false;

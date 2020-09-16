@@ -271,9 +271,9 @@
 	-->
         <module name="IllegalInstantiation"/>
         <module name="InnerAssignment"/>
-        <module name="MagicNumber">
-		<property name="ignoreHashCodeMethod" value="true"/>
-	</module>
+<!--        <module name="MagicNumber">-->
+<!--		    <property name="ignoreHashCodeMethod" value="true"/>-->
+<!--	    </module>-->
         <module name="MissingSwitchDefault"/>
         <!-- broken by maven-checkstyle-plugin 2.16
         <module name="RedundantThrows"/>
