@@ -144,24 +144,29 @@ public class Client {
         return workflows;
     }
 
-    private String getTools(Long workflowID, Long workflowVersionID) {
+    private String getWorkflowTools(Long workflowID, Long workflowVersionID) {
         String tools = null;
         try {
             System.out.println(workflowID + " " + workflowVersionID);
             tools = workflowsApi.getTableToolContent(workflowID, workflowVersionID);
         } catch (ApiException e) {
-            ErrorExit.exceptionMessage(e, "Could not retrieve dockstore tools", API_ERROR);
+            System.out.println(e);
+            logGetWorkflowFail("/Users/Andy/Desktop/failedToRetrieveWorkflowTools.csv", workflowID + "," + workflowVersionID);
         }
         return tools;
     }
 
     private List<JsonElement> stringToJSONList(String JSONstring) {
-        List<JsonElement> objectList = new ArrayList<>();
-        JsonArray objectArray = new JsonParser().parse(JSONstring).getAsJsonArray();
-        for (int iterator = 0; iterator < objectArray.size(); iterator++) {
-            objectList.add(objectArray.get(iterator));
+        if (JSONstring == null) {
+            return null;
+        } else {
+            List<JsonElement> objectList = new ArrayList<>();
+            JsonArray objectArray = new JsonParser().parse(JSONstring).getAsJsonArray();
+            for (int iterator = 0; iterator < objectArray.size(); iterator++) {
+                objectList.add(objectArray.get(iterator));
+            }
+            return objectList;
         }
-        return objectList;
     }
 
 
@@ -223,8 +228,10 @@ public class Client {
             tools = getTools();
             for (Workflow workflow : getWorkflows()) {
                 for (WorkflowVersion version: workflow.getWorkflowVersions()) {
-                    workflowVersionTools = stringToJSONList(getTools(workflow.getId(), version.getId()));
-                    getWorkflowDockerHubImagesSize(workflowVersionTools);
+                    workflowVersionTools = stringToJSONList(getWorkflowTools(workflow.getId(), version.getId()));
+                    if (workflowVersionTools != null) {
+                        getWorkflowDockerHubImagesSize(workflowVersionTools);
+                    }
                 }
             }
 //            workflowVersionTools = stringToJSONList(getTools(id, id2));
@@ -233,8 +240,7 @@ public class Client {
 
         final S3Communicator s3Communicator= new S3Communicator("dockstore", endpoint);
         String reportDir = baseDir + File.separator + "report";
-        saveToLocal(baseDir, reportDir, tools, new DockerCommunicator());
-//
+//        saveToLocal(baseDir, reportDir, tools, new DockerCommunicator());
         System.out.println("The total image size of all docker images is: " + totalImageSize);
         s3Communicator.shutDown();
     }
@@ -307,7 +313,12 @@ public class Client {
             countedImages.add(dockerHubImage);
             String[] dockerHubImageURLSegments = dockerHubImage.split(":");
             String apiRequest = "https://hub.docker.com/v2/repositories/" + dockerHubImageURLSegments[0] + "/tags?page_size=100";
-            getDockerHubImageSize(apiRequest, dockerHubImageURLSegments[1], "unavailable");
+
+            if (dockerHubImageURLSegments.length == 1) {
+                logGetWorkflowFail("/Users/Andy/Desktop/failedToGetTag.csv", dockerHubImage);
+            } else {
+                getDockerHubImageSize(apiRequest, dockerHubImageURLSegments[1], "unavailable");
+            }
         }
     }
 
@@ -351,6 +362,7 @@ public class Client {
                 File file = new File("/Users/Andy/Desktop/images.csv");
                 Writer w = new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8");
                 PrintWriter pw = new PrintWriter(w);
+                System.out.println(dockerHubImageSize);
                 pw.println(apiRequest + "," + imageTag + "," + dockstoreURL + "," + dockerHubImageSize);
                 pw.flush();
                 pw.close();
@@ -361,6 +373,19 @@ public class Client {
         } catch (Exception e) {
             System.out.println(e);
             return;
+        }
+    }
+
+    private void logGetWorkflowFail(String filepath, String data) {
+        try {
+            File file = new File(filepath);
+            Writer w = new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8");
+            PrintWriter pw = new PrintWriter(w);
+            pw.println(data);
+            pw.flush();
+            pw.close();
+        } catch (Exception e) {
+            System.out.println(e);
         }
     }
 
@@ -459,7 +484,7 @@ public class Client {
 
         // pull out the variables from the config
         String token = config.getString("token", "");
-        String serverUrl = config.getString("server-url", "https://www.dockstore.org:8443");
+        String serverUrl = config.getString("server-url", "https://dev.dockstore.net/api");
 
         try {
             endpoint = config.getString("endpoint");
