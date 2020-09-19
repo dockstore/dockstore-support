@@ -50,10 +50,7 @@ import java.io.FileOutputStream;
 import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static java.lang.System.out;
 
@@ -84,7 +81,13 @@ public class Client {
     private HierarchicalINIConfiguration config;
 
     public long totalImageSize = 0;
-    private List<String> countedImages = new ArrayList<>();
+    public long missingWorkflowToolsCounter = 0;
+    public long parsedWorkflowToolCounter = 0;
+    public long parsedToolCounter = 0;
+    public long parsedNonDupeWorkflowToolCounter = 0;
+    public long parsedNonDupeToolCounter = 0;
+
+    private Map<String, ArrayList<String>> countedImages = new HashMap<>();
 
     public Client(OptionSet options) {
         this.options = options;
@@ -151,7 +154,8 @@ public class Client {
             tools = workflowsApi.getTableToolContent(workflowID, workflowVersionID);
         } catch (ApiException e) {
             System.out.println(e);
-            logGetWorkflowFail("/Users/Andy/Desktop/failedToRetrieveWorkflowTools.csv", workflowID + "," + workflowVersionID);
+            logGetWorkflowFail("/Users/Andy/Desktop/failedToRetrieveWorkflowTools.csv", workflowID + "," + workflowVersionID + "\n" + e);
+            return "failed to retrieve workflow tools";
         }
         return tools;
     }
@@ -219,8 +223,8 @@ public class Client {
         List<Tool> tools = null;
         List<JsonElement> workflowVersionTools = null;
         List<Workflow> workflows = null;
-        Long id = Long.valueOf(6915);
-        Long id2 = Long.valueOf(17876);
+        Long id = Long.valueOf(13027);
+        Long id2 = Long.valueOf(33800);
 
         if(isTestMode) {
             tools = getTestTool(BAMSTATS);
@@ -228,20 +232,40 @@ public class Client {
             tools = getTools();
             for (Workflow workflow : getWorkflows()) {
                 for (WorkflowVersion version: workflow.getWorkflowVersions()) {
-                    workflowVersionTools = stringToJSONList(getWorkflowTools(workflow.getId(), version.getId()));
-                    if (workflowVersionTools != null) {
-                        getWorkflowDockerHubImagesSize(workflowVersionTools);
+                    String trsID = "#Workflow/" + workflow.getFullWorkflowPath();
+                    String workflowVersionToolsJSONString = getWorkflowTools((workflow.getId()), version.getId());
+                    //Sort out the errors first
+                    if (workflowVersionToolsJSONString == null) {
+                        missingWorkflowToolsCounter++;
+                        System.out.println("Empty Get Tools Response: " + workflow.getId() + " " + version.getId());
+                        logGetWorkflowFail("/Users/Andy/Desktop/getToolsEmptyResponse.csv", workflow.getId() + "," + version.getId() + "," + trsID);
+                        continue;
+                    } else if (workflowVersionToolsJSONString.equals("failed to retrieve workflow tools")) {
+                        continue;
+                    }
+
+                    workflowVersionTools = stringToJSONList(workflowVersionToolsJSONString);
+                    if (workflowVersionTools.size() == 0) {
+                        System.out.println("Workflow Version With No Tools: workflows/" + workflow.getId() + "/tools/" + version.getId());
+                        logGetWorkflowFail("/Users/Andy/Desktop/noToolsForWorkflowVersion.csv", "workflows/" + workflow.getId() + "/tools/" + version.getId());
+                    } else {
+                        getWorkflowDockerHubImagesSize(workflowVersionTools, trsID);
                     }
                 }
             }
-//            workflowVersionTools = stringToJSONList(getTools(id, id2));
+//            workflowVersionTools = stringToJSONList(getWorkflowTools(id, id2));
 //            getWorkflowDockerHubImagesSize(workflowVersionTools);
         }
 
         final S3Communicator s3Communicator= new S3Communicator("dockstore", endpoint);
         String reportDir = baseDir + File.separator + "report";
-//        saveToLocal(baseDir, reportDir, tools, new DockerCommunicator());
+        saveToLocal(baseDir, reportDir, tools, new DockerCommunicator());
         System.out.println("The total image size of all docker images is: " + totalImageSize);
+        System.out.println("The total number of workflow versions missing tools is: " + missingWorkflowToolsCounter);
+        System.out.println("The total number of workflow tools parsed is: " + parsedWorkflowToolCounter);
+        System.out.println("The total number of non duplicate workflow tools parsed is: " + parsedNonDupeWorkflowToolCounter);
+        System.out.println("The total number of tools parsed is: " + parsedToolCounter);
+        System.out.println("The total number of non duplicate tools parsed is: " + parsedNonDupeToolCounter);
         s3Communicator.shutDown();
     }
 
@@ -303,21 +327,31 @@ public class Client {
         return null;
     }
 
-    private void getWorkflowDockerHubImagesSize(List<JsonElement> workflowVersionTools) {
+    private void getWorkflowDockerHubImagesSize(List<JsonElement> workflowVersionTools, String trsID) {
         for (JsonElement workflowTool : workflowVersionTools) {
             String dockerHubImage = workflowTool.getAsJsonObject().get("docker").getAsString();
             String dockerHubImageRepoLink = workflowTool.getAsJsonObject().get("link").getAsString();
-            if (!dockerHubImageRepoLink.contains("https://hub.docker.com") || countedImages.contains(dockerHubImage)) {
-                break;
+            parsedWorkflowToolCounter++;
+            if (!dockerHubImageRepoLink.contains("https://hub.docker.com")) {
+                System.out.println("Non DockerHub Image: " + dockerHubImage);
+                logGetWorkflowFail("/Users/Andy/Desktop/nonDockerHubImage.csv", dockerHubImage + " " + dockerHubImageRepoLink);
+                continue;
+            } else if (countedImages.containsKey(dockerHubImage)) {
+                System.out.println("Repeated Image: " + dockerHubImage);
+                countedImages.get(dockerHubImage).add(trsID);
+                continue;
             }
-            countedImages.add(dockerHubImage);
+
+            countedImages.put(dockerHubImage, new ArrayList<>());
+            parsedNonDupeWorkflowToolCounter++;
             String[] dockerHubImageURLSegments = dockerHubImage.split(":");
-            String apiRequest = "https://hub.docker.com/v2/repositories/" + dockerHubImageURLSegments[0] + "/tags?page_size=100";
 
             if (dockerHubImageURLSegments.length == 1) {
+                System.out.println("Image with no tags: " + dockerHubImage);
                 logGetWorkflowFail("/Users/Andy/Desktop/failedToGetTag.csv", dockerHubImage);
             } else {
-                getDockerHubImageSize(apiRequest, dockerHubImageURLSegments[1], "unavailable");
+                System.out.println("Attempting to get image size: " + dockerHubImage);
+                getDockerHubImageSize(dockerHubImageURLSegments[0], dockerHubImageURLSegments[1], trsID);
             }
         }
     }
@@ -326,23 +360,29 @@ public class Client {
         String versionId = version.getId();
         String versionName = version.getName();
         String dockstoreUrl = version.getUrl();
+        System.out.println(versionId);
         String dockerHubImage = versionId.split("registry.hub.docker.com/")[1];
 
-        if (!version.getId().contains("registry.hub.docker") || countedImages.contains(dockerHubImage)) {
+        parsedToolCounter++;
+        if (countedImages.containsKey(dockerHubImage)) {
+            System.out.println("Repeated Image Or Non DockerHub Image: " + dockerHubImage);
+            logGetWorkflowFail("/Users/Andy/Desktop/repeatedTools.csv", dockerHubImage + " " + versionId);
             return;
         }
-        countedImages.add(dockerHubImage);
+        parsedNonDupeToolCounter++;
+        countedImages.put(dockerHubImage, new ArrayList<>());
         String[] dockerHubImageURLSegments = versionId.split("/");
+        String imagePath = dockerHubImageURLSegments[1] + "/" + dockerHubImageURLSegments[2].split(":")[0];
 
-        String apiRequest = "https://hub.docker.com/v2/repositories/" + dockerHubImageURLSegments[1] + "/" + dockerHubImageURLSegments[2].split(":")[0] + "/tags?page_size=100";
-        getDockerHubImageSize(apiRequest, versionName, dockstoreUrl);
+        getDockerHubImageSize(imagePath, versionName, dockstoreUrl);
     }
 
-    private void getDockerHubImageSize(String apiRequest, String imageTag, String dockstoreURL) {
+    private void getDockerHubImageSize(String imagePath, String imageTag, String trsID) {
         try {
             ProcessBuilder curlProcessBuilder = new ProcessBuilder();
             ProcessBuilder bashProcessBuilder = new ProcessBuilder();
 
+            String apiRequest = "https://hub.docker.com/v2/repositories/" + imagePath + "/tags?page_size=100";
             curlProcessBuilder.command("curl", "-s", "GET", apiRequest);
             Process curlProcess = curlProcessBuilder.start();
             String results = IOUtils.toString(curlProcess.getInputStream(), "UTF-8").replace("\n", "").replace("\r", "");
@@ -354,7 +394,7 @@ public class Client {
                 File file = new File("/Users/Andy/Desktop/marked_images.csv");
                 Writer w = new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8");
                 PrintWriter pw = new PrintWriter(w);
-                pw.println(apiRequest + "," + imageTag + "," + dockstoreURL);
+                pw.println(imagePath + "," + imageTag + "," + trsID);
                 pw.flush();
                 pw.close();
             } else {
@@ -363,7 +403,7 @@ public class Client {
                 Writer w = new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8");
                 PrintWriter pw = new PrintWriter(w);
                 System.out.println(dockerHubImageSize);
-                pw.println(apiRequest + "," + imageTag + "," + dockstoreURL + "," + dockerHubImageSize);
+                pw.println(imagePath + "," + imageTag + "," + trsID + "," + dockerHubImageSize);
                 pw.flush();
                 pw.close();
             }
@@ -460,7 +500,9 @@ public class Client {
             List<ToolVersion> versions = tool.getVersions();
             for(ToolVersion version : versions) {
                 String img = version.getImage();
-//                getToolDockerHubImageSize(version);
+                if (version.getId().contains("registry.hub.docker")) {
+                    getToolDockerHubImageSize(version);
+                }
 //                update(version, dirPath, versionsDetails, img, dockerCommunicator);
             }
             //toolsToVersions.put(toolName, versionsDetails);
@@ -484,7 +526,8 @@ public class Client {
 
         // pull out the variables from the config
         String token = config.getString("token", "");
-        String serverUrl = config.getString("server-url", "https://dev.dockstore.net/api");
+        String serverUrl = config.getString("server-url", "http://localhost:4200/api");
+        System.out.println(serverUrl);
 
         try {
             endpoint = config.getString("endpoint");
