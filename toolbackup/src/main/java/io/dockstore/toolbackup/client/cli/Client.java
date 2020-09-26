@@ -55,7 +55,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Collections;
 
 import static java.lang.System.out;
 
@@ -85,16 +84,23 @@ public class Client {
     private Map<String, List<VersionDetail>> toolsToVersions;
     private HierarchicalINIConfiguration config;
 
-    public long totalImageSize = 0;
-    public long missingWorkflowToolsCounter = 0;
-    public long parsedWorkflowToolCounter = 0;
-    public long parsedToolCounter = 0;
-    public long parsedNonDupeWorkflowToolCounter = 0;
-    public long parsedNonDupeToolCounter = 0;
+    public long totalToolVersionImageSize        = 0;
+    public long totalWorkflowVersionImageSize    = 0;
+    public long checkerWorkflowCounter           = 0;
+    public long publishedWorkflowsCounter        = 0;
+    public long toolCounter                      = 0;
+    public long publishedWorkflowVersionsCounter = 0;
+    public long toolVersionCounter               = 0;
+    public long workflowImagesNonEmptyObjCounter = 0;
+    public long workflowImagesEmptyObjectCounter = 0;
+    public long workflowImages204ResponseCounter = 0;
+    public long workflowImages500ResponseCounter = 0;
+    public long nonDockerHubImageRefCounter      = 0;
+    public long dockerHubImageRefCounter         = 0;
+    public long parsedToolCounter                = 0;
+    public long parsedNonDupeToolCounter         = 0;
 
     private Map<String, DockerHubImageDetail> dockerHubImagesMap = new HashMap<>();
-
-    private Map<String, ArrayList<String>> countedImages = new HashMap<>();
 
     public Client(OptionSet options) {
         this.options = options;
@@ -144,10 +150,10 @@ public class Client {
         return tools;
     }
 
-    private List<Workflow> getWorkflows() {
+    private List<Workflow> getWorkflows(String offset) {
         List<Workflow> workflows = null;
         try {
-            workflows = workflowsApi.allPublishedWorkflows(null, null, null, null, null, null);
+            workflows = workflowsApi.allPublishedWorkflows(offset, null, null, null, null, null);
         } catch (ApiException e) {
             ErrorExit.exceptionMessage(e, "Could not retrieve dockstore workflows", API_ERROR);
         }
@@ -161,8 +167,19 @@ public class Client {
             tools = workflowsApi.getTableToolContent(workflowID, workflowVersionID);
         } catch (ApiException e) {
             System.out.println(e);
+            workflowImages500ResponseCounter++;
             logData("/Users/Andy/Desktop/failedToRetrieveWorkflowTools.csv", "/workflows" + workflowID + "/tools/" + workflowVersionID + "&" + trsID + "&" + e);
             return "failed to retrieve workflow tools";
+        }
+        return tools;
+    }
+
+    private List<Tool> getTestTool(String id) {
+        List<Tool> tools = new ArrayList<>();
+        try {
+            tools.add(ga4ghApi.toolsIdGet(id));
+        } catch (ApiException e) {
+            ErrorExit.exceptionMessage(e, "Could not retrieve dockstore tool: " + id, API_ERROR);
         }
         return tools;
     }
@@ -178,17 +195,6 @@ public class Client {
             }
             return objectList;
         }
-    }
-
-
-    private List<Tool> getTestTool(String id) {
-        List<Tool> tools = new ArrayList<>();
-        try {
-            tools.add(ga4ghApi.toolsIdGet(id));
-        } catch (ApiException e) {
-            ErrorExit.exceptionMessage(e, "Could not retrieve dockstore tool: " + id, API_ERROR);
-        }
-        return tools;
     }
 
     private List<File> getModifiedFiles(String key, final Map<String, Long> keysToSizes, File file) {
@@ -227,54 +233,72 @@ public class Client {
     private void run(String baseDir, String bucketName, String keyPrefix, boolean isTestMode) throws IOException {
         // use swagger-generated classes to talk to dockstore
         setupClientEnvironment();
+        String offset = "0";
         List<Tool> tools = null;
+        List<Workflow> workflows = getWorkflows(offset);
         List<JsonElement> workflowVersionTools = null;
-        List<Workflow> workflows = null;
-        Long id = Long.valueOf(13027);
-        Long id2 = Long.valueOf(33800);
 
         if(isTestMode) {
             tools = getTestTool(BAMSTATS);
         } else {
             tools = getTools();
-            for (Workflow workflow : getWorkflows()) {
-                for (WorkflowVersion version: workflow.getWorkflowVersions()) {
-                    String trsID = "#workflow/" + workflow.getFullWorkflowPath();
-                    String workflowVersionToolsJSONString = getWorkflowTools((workflow.getId()), version.getId() , trsID);
-                    //Sort out the errors first
-                    if (workflowVersionToolsJSONString == null) {
-                        missingWorkflowToolsCounter++;
-                        System.out.println("Empty Get Tools Response: " + workflow.getId() + " " + version.getId());
-                        logData("/Users/Andy/Desktop/getToolsEmptyResponse.csv", "workflows/" + workflow.getId() + "/tools/" + version.getId() + "," + trsID);
-                        continue;
-                    } else if (workflowVersionToolsJSONString.equals("failed to retrieve workflow tools")) {
+            while(!workflows.isEmpty()) {
+                for (Workflow workflow : workflows) {
+                    if (workflow.isIsChecker()) {
+                        checkerWorkflowCounter++;
                         continue;
                     }
+                    publishedWorkflowsCounter++;
+                    for (WorkflowVersion version : workflow.getWorkflowVersions()) {
+                        publishedWorkflowVersionsCounter++;
+                        String trsID = "#workflow/" + workflow.getFullWorkflowPath();
+                        String workflowVersionToolsJSONString = getWorkflowTools((workflow.getId()), version.getId(), trsID);
+                        //Sort out the errors first
+                        if (workflowVersionToolsJSONString == null) {
+                            workflowImages204ResponseCounter++;
+                            System.out.println("Empty Get Tools Response: " + workflow.getId() + " " + version.getId());
+                            logData("/Users/Andy/Desktop/getToolsEmptyResponse.csv", "workflows/" + workflow.getId() + "/tools/" + version.getId() + "&" + trsID + "&" + version.getName());
+                            continue;
+                        } else if (workflowVersionToolsJSONString.equals("failed to retrieve workflow tools")) {
+                            continue;
+                        }
 
-                    workflowVersionTools = stringToJSONList(workflowVersionToolsJSONString);
-                    if (workflowVersionTools.size() == 0) {
-                        System.out.println("Workflow Version With No Tools: workflows/" + workflow.getId() + "/tools/" + version.getId());
-                        logData("/Users/Andy/Desktop/noToolsForWorkflowVersion.csv", "workflows/" + workflow.getId() + "/tools/" + version.getId() + "," + trsID);
-                    } else {
-                        getWorkflowDockerHubImagesSize(workflowVersionTools, trsID);
+                        workflowVersionTools = stringToJSONList(workflowVersionToolsJSONString);
+                        if (workflowVersionTools.size() == 0) {
+                            workflowImagesEmptyObjectCounter++;
+                            System.out.println("Workflow Version With No Tools: workflows/" + workflow.getId() + "/tools/" + version.getId());
+                            logData("/Users/Andy/Desktop/noToolsForWorkflowVersion.csv", "workflows/" + workflow.getId() + "/tools/" + version.getId() + "&" + trsID + "&" + version.getName());
+                        } else {
+                            workflowImagesNonEmptyObjCounter++;
+                            getWorkflowDockerHubImagesSize(workflowVersionTools, trsID);
+                        }
                     }
                 }
+                offset = Long.toString(Long.parseLong(offset) + 100);
+                workflows = getWorkflows(offset);
             }
-//            workflowVersionTools = stringToJSONList(getWorkflowTools(id, id2));
-//            getWorkflowDockerHubImagesSize(workflowVersionTools);
         }
-
-        logImagesData(dockerHubImagesMap);
 
         final S3Communicator s3Communicator= new S3Communicator("dockstore", endpoint);
         String reportDir = baseDir + File.separator + "report";
         saveToLocal(baseDir, reportDir, tools, new DockerCommunicator());
-        System.out.println("The total image size of all docker images is: " + totalImageSize);
-        System.out.println("The total number of workflow versions missing tools is: " + missingWorkflowToolsCounter);
-        System.out.println("The total number of workflow tools parsed is: " + parsedWorkflowToolCounter);
-        System.out.println("The total number of non duplicate workflow tools parsed is: " + parsedNonDupeWorkflowToolCounter);
-        System.out.println("The total number of tools parsed is: " + parsedToolCounter);
-        System.out.println("The total number of non duplicate tools parsed is: " + parsedNonDupeToolCounter);
+        logImagesData(dockerHubImagesMap);
+        System.out.println("The total image size of all docker images is: " + (totalToolVersionImageSize + totalWorkflowVersionImageSize));
+        System.out.println("The total image size of all workflow images is: " + totalWorkflowVersionImageSize);
+        System.out.println("The total image size of all Dockstore tool images is: " + totalToolVersionImageSize);
+        System.out.println("The total number of published workflows is: " + publishedWorkflowsCounter);
+        System.out.println("The total number of checker workflows is: " + checkerWorkflowCounter);
+        System.out.println("The total number of published workflow versions is: " + publishedWorkflowVersionsCounter);
+        System.out.println("The total number of workflow versions returning 500 is: " + workflowImages500ResponseCounter);
+        System.out.println("The total number of workflow versions returning 204 is: " + workflowImages204ResponseCounter);
+        System.out.println("The total number of workflow versions returning an empty JSON object is: " + workflowImagesEmptyObjectCounter);
+        System.out.println("The total number of workflow versions returning a non-empty JSON object is: " + workflowImagesNonEmptyObjCounter);
+        System.out.println("The total number of DockerHub images referenced is: " + dockerHubImageRefCounter);
+        System.out.println("The total number of non-DockerHub images referenced is: " + nonDockerHubImageRefCounter);
+        System.out.println("The total number of Dockstore tools is: " + toolCounter);
+        System.out.println("The total number of Dockstore tool versions is: " + toolVersionCounter);
+        System.out.println("The total number of Dockstore tools with DockerHub images is: " + parsedToolCounter);
+        System.out.println("The total number of non duplicate Dockstore tools with DockerHub images is: " + parsedNonDupeToolCounter);
         s3Communicator.shutDown();
     }
 
@@ -340,32 +364,42 @@ public class Client {
         for (JsonElement workflowTool : workflowVersionTools) {
             String dockerHubImage = workflowTool.getAsJsonObject().get("docker").getAsString();
             String dockerHubImageRepoLink = workflowTool.getAsJsonObject().get("link").getAsString();
-            parsedWorkflowToolCounter++;
-            if (!dockerHubImage.contains("https://hub.docker.com")) {
+            if (dockerHubImage.split("/").length  != 2) {
+                nonDockerHubImageRefCounter++;
                 System.out.println("Non DockerHub Image: " + dockerHubImage);
-                logData("/Users/Andy/Desktop/nonDockerHubImage.csv", dockerHubImage + " " + dockerHubImageRepoLink);
+                if (dockerHubImageRepoLink.contains("https://hub.docker.com/_/")) {
+                    dockerHubImageRepoLink = "";
+                }
+                logData("/Users/Andy/Desktop/nonDockerHubImage.csv", dockerHubImage + "&" + dockerHubImageRepoLink + "&" + trsID);
                 continue;
             } else if (dockerHubImagesMap.containsKey(dockerHubImage)) {
                 System.out.println("Repeated Image: " + dockerHubImage);
-                dockerHubImagesMap.get(dockerHubImage).appendToRepetitionList(trsID);
+                if (dockerHubImagesMap.get(dockerHubImage) != null) {
+                    dockerHubImagesMap.get(dockerHubImage).appendToRepetitionList(trsID);
+                }
                 continue;
             }
 
-            String[] dockerHubImageURLSegments = dockerHubImage.split(":");
-            dockerHubImagesMap.put(dockerHubImage, new DockerHubImageDetail(
-                    dockerHubImageURLSegments[0],
-                    dockerHubImageURLSegments[1],
-                    trsID,
-                    new ArrayList<>()));
-            parsedNonDupeWorkflowToolCounter++;
+            String[] dockerHubImageURLSegments;
+            if (dockerHubImage.contains("@sha256")) {
+                dockerHubImageURLSegments = dockerHubImage.split("@");
+            } else {
+                dockerHubImageURLSegments = dockerHubImage.split(":");
+            }
 
             if (dockerHubImageURLSegments.length == 1) {
                 System.out.println("Image with no tags: " + dockerHubImage);
-                logData("/Users/Andy/Desktop/failedToGetTag.csv", trsID + "&" + dockerHubImage);
+                logData("/Users/Andy/Desktop/failedToGetTag.csv", trsID + "&" + dockerHubImageURLSegments[0]);
+                dockerHubImagesMap.put(dockerHubImage, null);
             } else {
                 System.out.println("Attempting to get image size: " + dockerHubImage);
-
-                getDockerHubImageSize(dockerHubImagesMap.get(dockerHubImage));
+                dockerHubImageRefCounter++;
+                dockerHubImagesMap.put(dockerHubImage, new DockerHubImageDetail(
+                        dockerHubImageURLSegments[0],
+                        dockerHubImageURLSegments[1],
+                        trsID,
+                        new ArrayList<>()));
+                setDockerHubImageData(dockerHubImagesMap.get(dockerHubImage), "Workflow");
             }
         }
     }
@@ -388,12 +422,26 @@ public class Client {
         String[] dockerHubImageURLSegments = versionId.split("/");
         String imagePath = dockerHubImageURLSegments[1] + "/" + dockerHubImageURLSegments[2].split(":")[0];
         dockerHubImagesMap.put(dockerHubImage, new DockerHubImageDetail(imagePath, versionName, trsID, new ArrayList<>()));
-        getDockerHubImageSize(dockerHubImagesMap.get(dockerHubImage));
+        setDockerHubImageData(dockerHubImagesMap.get(dockerHubImage), "Tool");
     }
 
-    private void getDockerHubImageSize(DockerHubImageDetail image) {
+    private void setDockerHubImageData(DockerHubImageDetail image, String source) {
+        String dockerHubImageSize = getDockerHubImageSize(image);
+        if(dockerHubImageSize.equals("")) {
+            image.setData(image.getImagePath() + "&" + image.getImageTag() + "&" + image.getSelfTrsID(), true);
+        } else {
+            if (source.equals("Workflow")) {
+                totalWorkflowVersionImageSize += Long.parseLong(dockerHubImageSize);
+            } else {
+                totalToolVersionImageSize += Long.parseLong(dockerHubImageSize);
+            }
+            image.setImageSize(Long.parseLong(dockerHubImageSize));
+            image.setData(image.getImagePath() + "&" + image.getImageTag() + "&" + image.getSelfTrsID() + "&" + image.getImageSize(), false);
+        }
+    }
+
+    private String getDockerHubImageSize(DockerHubImageDetail image) {
         try {
-            Boolean failedToRetrieveImage = false;
             ProcessBuilder curlProcessBuilder = new ProcessBuilder();
             ProcessBuilder bashProcessBuilder = new ProcessBuilder();
 
@@ -403,30 +451,33 @@ public class Client {
             String results = IOUtils.toString(curlProcess.getInputStream(), "UTF-8").replace("\n", "").replace("\r", "");
             bashProcessBuilder.command("/bin/sh", "-c", "echo '" + results + "' | jq -r '.results[] | select(.name == \"" + image.getImageTag() + "\") | .images[0].size'");
             Process bashProcess = bashProcessBuilder.start();
-            String dockerHubImageSize = IOUtils.toString(bashProcess.getInputStream(), "UTF-8").trim();
-
-            if(dockerHubImageSize.equals("")) {
-                failedToRetrieveImage = true;
-            }
-            image.setData(image.getImagePath() + "&" + image.getImageTag() + "&" + image.getSelfTrsID(), failedToRetrieveImage);
 
             curlProcess.destroy();
             bashProcess.destroy();
+            return IOUtils.toString(bashProcess.getInputStream(), "UTF-8").trim();
         } catch (Exception e) {
             System.out.println(e);
-            return;
+            return "";
         }
     }
 
     private void logImagesData(Map<String, DockerHubImageDetail> imageMap) {
         String outputFilePath;
         for (DockerHubImageDetail image: imageMap.values()) {
+            if (image == null) {
+                continue;
+            }
             if (image.getRetrieveStatus()) {
                 outputFilePath = "/Users/Andy/Desktop/marked_images.csv";
             } else {
                 outputFilePath = "/Users/Andy/Desktop/images.csv";
             }
-            logData(outputFilePath, image.getDataToWrite() + "&" + image.getTrsIdsRepeatingImage());
+            System.out.println("Writing data: " + image.getDataToWrite() + "&" + image.getTrsIdsRepeatingImage());
+            logData(outputFilePath, image.getDataToWrite() + "&" + image.getTrsIdsRepeatingImage().toString()
+                    .replace("[", "")
+                    .replace("]", "")
+                    .trim()
+            );
         }
     }
 
@@ -439,7 +490,7 @@ public class Client {
             pw.flush();
             pw.close();
         } catch (Exception e) {
-            System.out.println(e);
+            System.out.println("Error: " + e);
         }
     }
 
@@ -497,6 +548,10 @@ public class Client {
         toolsToVersions = ReportGenerator.loadJSONMap(reportDir);
 
         for(Tool tool : tools)  {
+            if (tool.getId().contains("#workflow")) {
+                continue;
+            }
+            toolCounter++;
             String toolName = tool.getToolname();
             String dirPath = baseDir + File.separator + tool.getId();
             //DirectoryGenerator.createDir(dirPath);
@@ -513,13 +568,17 @@ public class Client {
 
             List<ToolVersion> versions = tool.getVersions();
             for(ToolVersion version : versions) {
+                toolVersionCounter++;
                 String img = version.getImage();
-                if (version.getId().contains("registry.hub.docker")) {
-                    getToolDockerHubImageSize(version);
+                if (!version.getId().contains("registry.hub.docker")) {
+                    nonDockerHubImageRefCounter++;
+                    continue;
                 }
+                dockerHubImageRefCounter++;
+                getToolDockerHubImageSize(version);
 //                update(version, dirPath, versionsDetails, img, dockerCommunicator);
             }
-            //toolsToVersions.put(toolName, versionsDetails);
+//            toolsToVersions.put(toolName, versionsDetails);
         }
         dockerCommunicator.closeDocker();
         out.println("Closed docker client");

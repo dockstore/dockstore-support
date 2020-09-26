@@ -6,6 +6,7 @@ public class DockerHubImageDetail {
     private final String imagePath;
     private final String imageTag;
     private final String selfTrsID;
+    private Long imageSize;
     private List<String> trsIdsRepeatingImage;
 
     private String dataToWrite;
@@ -18,24 +19,44 @@ public class DockerHubImageDetail {
         this.trsIdsRepeatingImage = trsIdsRepeatingImage;
     }
 
-    public String getImagePath() { return this.imagePath; }
+    public String getImagePath() {
+        return imagePath;
+    }
 
-    public String getImageTag() { return this.imageTag; }
+    public String getImageTag() {
+        return imageTag;
+    }
 
-    public String getSelfTrsID() { return this.selfTrsID; }
+    public Long getImageSize() {
+        return imageSize;
+    }
 
-    public List<String> getTrsIdsRepeatingImage() { return this.trsIdsRepeatingImage; }
+    public String getSelfTrsID() {
+        return selfTrsID;
+    }
 
-    public String getDataToWrite() { return this.dataToWrite; }
+    public List<String> getTrsIdsRepeatingImage() {
+        return trsIdsRepeatingImage;
+    }
 
-    public Boolean getRetrieveStatus() { return this.failedToRetrieve; }
+    public String getDataToWrite() {
+        return dataToWrite;
+    }
+
+    public Boolean getRetrieveStatus() {
+        return failedToRetrieve;
+    }
 
     public void appendToRepetitionList(String trsID) {
         getTrsIdsRepeatingImage().add(trsID);
     }
 
-    public void setData(String data, Boolean failedToRetrieve) {
-        this.dataToWrite = data;
-        this.failedToRetrieve = failedToRetrieve;
+    public void setImageSize(Long size) {
+        imageSize = size;
+    }
+
+    public void setData(String data, Boolean failedRetrieveStatus) {
+        dataToWrite = data;
+        failedToRetrieve = failedRetrieveStatus;
     }
 }
