@@ -149,10 +149,5 @@ in relative path of the script. The generated csv files are:
    * https://dockstore.org/workflows/github.com/nf-core/hlatyping:1.1.2?tab=tools
    
    You can see that there is a version attached at the end of the `docker` path.
-   
-# Setting up AWS credentials
-
-You do not need AWS credentials for this script, but on the off-chance
-that you need
 
 
