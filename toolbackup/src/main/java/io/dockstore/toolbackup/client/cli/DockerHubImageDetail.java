@@ -6,17 +6,23 @@ public class DockerHubImageDetail {
     private final String imagePath;
     private final String imageTag;
     private final String selfTrsID;
+    private final String imagePathSelector;
     private Long imageSize;
     private List<String> trsIdsRepeatingImage;
 
     private String dataToWrite;
     public boolean failedToRetrieve;
 
-    DockerHubImageDetail(String imagePath, String imageTag, String selfTrsID, List<String> trsIdsRepeatingImage) {
+    DockerHubImageDetail(String imagePathSelector, String imagePath, String imageTag, String selfTrsID, List<String> trsIdsRepeatingImage) {
+        this.imagePathSelector = imagePathSelector;
         this.imagePath = imagePath;
         this.imageTag = imageTag;
         this.selfTrsID = selfTrsID;
         this.trsIdsRepeatingImage = trsIdsRepeatingImage;
+    }
+
+    public String getImagePathSelector() {
+        return imagePathSelector;
     }
 
     public String getImagePath() {
