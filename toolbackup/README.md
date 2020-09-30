@@ -16,9 +16,14 @@ You must also provide an endpoint in `~/.toolbackup/config.ini`
 
 ```
 token = XXX
-server-url = https://dockstore.org:8443
+server-url = http://localhost:4200/api
 endpoint = XXX
 ```
+
+You also need to start up your local webservice as well as the UI since this
+script runs against the data on your local machine. Ensure that you have the
+most up-to-date Postgres data by doing a data dump in the respective Slack
+channel.
 
 You do not need to AWS Credentials as this script does not require it.
 However, if by chance that you need to modify this script to utilize
