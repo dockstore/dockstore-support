@@ -13,7 +13,7 @@ public class TinyUrlTest {
     public void getTinyUrl() throws Exception {
         String originalURL = "https://www.google.ca";
         String tinyUrl = TinyUrl.getTinyUrl(originalURL);
-        assertTrue(tinyUrl.equals("http://tinyurl.com/d4gfaxc") || tinyUrl.equals(originalURL));
+        assertTrue(tinyUrl.equals("https://tinyurl.com/d4gfaxc") || tinyUrl.equals(originalURL));
     }
 
 }
