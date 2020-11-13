@@ -17,7 +17,7 @@
     - name: Install cwl pip deps
       become: yes
       pip:
-        requirements: https://raw.githubusercontent.com/ga4gh/dockstore/develop/dockstore-webservice/src/main/resources/requirements/1.7.0/requirements3.txt
+        requirements: https://dev.dockstore.net/api/metadata/runner_dependencies?client_version=1.10.0&python_version=3&runner=cwltool&output=text
         executable: pip3
     - name: Install aws cli
       become: yes
