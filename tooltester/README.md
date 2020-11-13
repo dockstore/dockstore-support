@@ -41,21 +41,28 @@ Follow these setups if there is not a backup
     1. Flavour - c2.large
     1. Source - Ubuntu 18.04 image
     1. Key Pair - JenkinsMaster2 (may need to ask someone on the team for this)
-1. SSH into the jump server and from there SSH into the master and then to slave. Clone this repository, checkout the develop branch, and run the setupSlave.sh.
+1. SSH into the jump server and from there SSH into the master and then to slave. 
+1. wget https://raw.githubusercontent.com/dockstore/dockstore-support/develop/tooltester/src/main/resources/setupSlave.sh
+1. bash setupSlave.sh
 1. Configure the aws cli using `sudo -u jenkins -i` and then `aws configure`. Use the credentials in the jenkins@jenkins-master's ~/.aws/credentials
-1. Configure slave on master Jenkin ({master-floating-ip}:8080):
-    1. Manage Jenkins => Manage Nodes => New Node ({master-floating-ip}:8080/computer/new)
-        1. Type in the name for the node and select permanent agent. Click Ok.
-        1. \# of executors - 1
-        1. Remote root directory - /home/jenkins
-1. If it's a new master, Add credentials (Kind: SSH Username with private key, Username: jenkins, private key: <same one as before, ask around for it>)
-1. If it's not a new master and there are already invalid nodes, configure and set the IP address then save.
-    1. Host - {ip-address-slave}
-    1. Credentials - Jenkins
-    1. Host Key Verification Strategy - Non verifying Verification Strategy
-1. When in doubt, look at configuration of existing nodes.
+1. Configure slave on master Jenkin: 
+    1. Go to ({master-floating-ip}:8080 (you may need to configure security group)
+    1. Log in with your jenkins credentials (ask around for it if you don't have it)
+    1. Manage Jenkins => Manage Nodes
+        1. If there are no nodes (because it's a new master or another reason):
+            1. => New Node ({master-floating-ip}:8080/computer/new)
+            1. Type in the name for the node and select permanent agent. Click Ok.
+            1. Fill in the \# of executors (the amount of Jenkins slaves spun up already)
+            1. Remote root directory - /home/jenkins
+            1. Host - {ip-address-slave}
+            1. If it's a new master, add credentials (Kind: SSH Username with private key, Username: jenkins, private key: <same one as before, ask around for it>)
+            1. Credentials - Jenkins
+            1. Host Key Verification Strategy - Non verifying Verification Strategy
+        1. If it's not a new master and there are already nodes, configure and set the host to the new Jenkins slave IP address then save.
 
 # Running tooltester:
+1. On your local machine, fill in ~/.tooltester/config with the appropriate values
+    1. In particular, ensure that `server-url`, `runners`, and `dockstore-version` are properly set
 A sample config file is shown below. This one will run tool tester with staging and dockstore-version 1.7.0-beta.6.
 
 Ensure that these fields are filled out correctly. Note that the dockstore-version below is for the Dockstore CLI version (not webservice)
@@ -72,15 +79,16 @@ dockstore-version = 1.7.0-beta.6
 
 ```
 1. Tooltester will try to find the CLI based on the dockstore-version above, ensure it's available at https://github.com/dockstore/dockstore-cli/releases/download/{{dockstore-version}}/dockstore
-1. On your local machine, fill in ~/.tooltester/config with the appropriate values
-    1. In particular, ensure that `server-url`, `runners`, and `dockstore-version` are properly set
 1. Clone https://github.com/dockstore/dockstore-support.git. Open in Intellij: Import project -> pom.xml as project
-1. In the resources directory, modify the 4 config files as needed.
-1. Optional: Modify the [cwltoolPlaybook](src/main/resources/cwltoolPlaybook.yml) and [toilPlaybook](src/main/resources/toilPlaybook.yml) in the feature/playbook branch to have the right apt/pip dependencies if needed (i.e. check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
-1. IMPORTANT: Check that the slave has enough disk space, remove /tmp and /home/jenkins/workspace/* (workspace `@tmp` folders aren't removed with cleanup plugin) if needed
+1. In the resources directory, modify the 4 config files (cromwell.config, cwlrunner.config, cwltool.config, toil.config),as needed.
+1. Optional: Modify the [cwltoolPlaybook](https://github.com/dockstore/dockstore-support/blob/feature/playbook/tooltester/src/main/resources/cwltoolPlaybook.yml) and [toilPlaybook](https://github.com/dockstore/dockstore-support/blob/feature/playbook/tooltester/src/main/resources/toilPlaybook.yml) in the feature/playbook branch to have the right apt/pip dependencies if needed (i.e. check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
+1. Optional: Modify the [cromwellPlaybook](https://github.com/dockstore/dockstore-support/blob/feature/playbook/tooltester/src/main/resources/cromwellPlaybook.yml) in the feature/playbook branch (though it's unlikely to change because the Dockstore CLI takes care of versioning)
+1. If there are significant breaking changes in the webservice, tooltester may not be able to retrieve tools. In that case code changes may be required.
+1. IMPORTANT: If using old slave, check that the slave has enough disk space, remove /tmp and /home/jenkins/workspace/* (workspace `@tmp` folders aren't removed with cleanup plugin) if needed
 1. Run the ClientTest.createJenkinsTests by pressing the green run button (basically the sync commmand)
 1. Run the ClientTest.enqueue by pressing the green run button (basically the enqueue command)
-1. Wait until it finishes running.
+1. Immediately check up on Jenkins master and see if there's jobs running and not instantly failing. Code/config changes may be required if failing.
+1. Wait until it finishes running (may take 10 hours, check Jenkins master).
 1. io/dockstore/tooltester/client/cli/ReportCommand.java has a SEND_LOGS boolean.  Check that your S3 credentials work (using aws cli) if sending logs to S3. Otherwise, change the boolean to false.
 1. Run the ClientTest.report (basically the report command)
     1. You can view running jobs at {master-floating-ip}:8080
