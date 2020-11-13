@@ -19,13 +19,13 @@ Follow these steps if there is a backup
 1. Configure the aws cli using `aws configure`. Ask around for the credentials (~/.aws/credentials)
 1. aws s3 --endpoint-url https://object.cancercollaboratory.org:9080 cp s3://dockstore/jenkinsMaster2/jenkins_home.tar.gz jenkins_home.tar.gz
 1. Extract with `tar xvzf jenkins_home.tar.gz` and then remove the far file
-1. Run the jenkins container
+1. Run the Jenkins container
     `docker run --restart=always -u root -d -p 8080:8080 -p 50000:50000 -v $PWD/jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/blueocean:1.13.1`
 1. Make the .ssh directory and copy the id_rsa into it
 ---
 
 Follow these setups if there is not a backup
-1. Run the jenkins container
+1. Run the Jenkins container
     `docker run -u root --rm -d -p 8080:8080 -p 50000:50000 -v $PWD/jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/blueocean:1.13.1`
 1. Create a pipeline called PipelineTest
 1. Copy the contents of resources/PipelineTest.groovy into the Pipeline Script textbox
@@ -47,7 +47,7 @@ Follow these setups if there is not a backup
 1. Configure the aws cli using `sudo -u jenkins -i` and then `aws configure`. Use the credentials in the jenkins@jenkins-master's ~/.aws/credentials
 1. Configure slave on master Jenkin: 
     1. Go to ({master-floating-ip}:8080 (you may need to configure security group)
-    1. Log in with your jenkins credentials (ask around for it if you don't have it)
+    1. Log in with your Jenkins credentials (ask around for it if you don't have it)
     1. Manage Jenkins => Manage Nodes
         1. If there are no nodes (because it's a new master or another reason):
             1. => New Node ({master-floating-ip}:8080/computer/new)
@@ -87,8 +87,8 @@ dockstore-version = 1.7.0-beta.6
 1. IMPORTANT: If using old slave, check that the slave has enough disk space, remove /tmp and /home/jenkins/workspace/* (workspace `@tmp` folders aren't removed with cleanup plugin) if needed
 1. Run the ClientTest.createJenkinsTests by pressing the green run button (basically the sync commmand)
 1. Run the ClientTest.enqueue by pressing the green run button (basically the enqueue command)
-1. Immediately check up on Jenkins master and see if there's jobs running and not instantly failing. Code/config changes may be required if failing.
-1. Wait until it finishes running (may take 10 hours, check Jenkins master).
+1. Immediately check up on Jenkins master and see if there are jobs running and not instantly failing. Code/config changes may be required if everything is failing.
+1. Wait until it finishes running (may take 10 hours, check Jenkins master for status).
 1. io/dockstore/tooltester/client/cli/ReportCommand.java has a SEND_LOGS boolean.  Check that your S3 credentials work (using aws cli) if sending logs to S3. Otherwise, change the boolean to false.
 1. Run the ClientTest.report (basically the report command)
     1. You can view running jobs at {master-floating-ip}:8080
