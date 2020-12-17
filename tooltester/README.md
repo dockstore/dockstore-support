@@ -21,7 +21,7 @@ After the Dockstore release, ToolTester should be run again on the actual produc
 no surprises and everything should be successful. This time however, the reports should be uploaded to s3 so that
 the actual production release is shown to the users in the logs.
 
-PS: There is currently no set verification process. The number of verified entry versions that ToolTester is getting
+PS: There is currently no set verification process. The number of verified entry versions that ToolTester runs is getting
 shorter and shorter because of more and more versions are getting blacklisted but none are added.
 
 # General info
