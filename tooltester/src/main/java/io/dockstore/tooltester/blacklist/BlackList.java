@@ -46,6 +46,8 @@ public class BlackList {
                     new BlackListObject("#workflow/github.com/Barski-lab/ga4gh_challenge", "master", "master branch banned"),
                     new BlackListObject("#workflow/github.com/dockstore/hello_world", "master", "master branch banned"),
                     new BlackListObject("#workflow/github.com/dockstore/hello_world", "master", "master branch banned"),
+                    new BlackListObject("quay.io/pancancer/pcawg-sanger-cgp-workflow", "2.0.6", "Duplicate metadata keys incompatible with new schema-salad"),
+                    new BlackListObject("#workflow/github.com/Barski-lab/ga4gh_challenge", "v0.0.3", "Just doesn't work with new cwltool"),
                     new BlackListObject("#workflow/github.com/dockstore/hello_world/_cwl_checker:v1.0.0", "v1.0.0",
                             "not actually a checker workflow"));
 }
