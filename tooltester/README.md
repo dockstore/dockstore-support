@@ -11,11 +11,11 @@ Once ToolTester is done running, the results are checked. If there is no new fai
 release as normal. Otherwise, identify the issue. 
 - If it's a problem with the entry because it does not support a new
 version of cwltool, changes should be made to the entry so that it does support it if possible. 
-- If there is
-an issue with Dockstore, then changes should be made to Dockstore prior to the actual release. The 
-non-working entry versions should then be added to the BlackList.java to prevent ToolTester from running
-entry versions that are known to fail. A new alpha/beta Dockstore should then be created and ToolTester should be 
-repeated until there are no issues with Dockstore.
+- If there is an issue with Dockstore, then changes should be made to Dockstore prior to the actual release.
+  A new alpha/beta Dockstore should then be created and ToolTester should be repeated until there are no issues with Dockstore.
+  
+The non-working entry versions should then be added to the BlackList.java to prevent ToolTester from running entry 
+  versions that are known to fail.
 
 After the Dockstore release, ToolTester should be run again on the actual production release. There should be
 no surprises and everything should be successful. This time however, the reports should be uploaded to s3 so that
