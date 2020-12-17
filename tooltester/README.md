@@ -1,8 +1,34 @@
 Last tested with ansible 2.2.1.0
 
+# How is ToolTester used?
+
+Right before every major or minor release, ToolTester (without s3 report upload) is run with a Dockstore CLI and Dockstore web service that is
+as close as possible to the actual release. For example, if 1.10.0 is about to be created and pushed to production
+then ToolTester will use something like 1.10.0-beta.7 (usually on staging). This will test all our previously verified entries to see if
+it still works with the changes made since the last time it was run.
+
+Once ToolTester is done running, the results are checked. If there is no new failing entry, then proceed with the
+release as normal. Otherwise, identify the issue. 
+- If it's a problem with the entry because it does not support a new
+version of cwltool, changes should be made to the entry so that it does support it if possible. 
+- If there is
+an issue with Dockstore, then changes should be made to Dockstore prior to the actual release. The 
+non-working entry versions should then be added to the BlackList.java to prevent ToolTester from running
+entry versions that are known to fail. A new alpha/beta Dockstore should then be created and ToolTester should be 
+repeated until there are no issues with Dockstore.
+
+After the Dockstore release, ToolTester should be run again on the actual production release. There should be
+no surprises and everything should be successful. This time however, the reports should be uploaded to s3 so that
+the actual production release is shown to the users in the logs.
+
+PS: There is currently no set verification process. The number of verified entry versions that ToolTester is getting
+shorter and shorter because of more and more versions are getting blacklisted but none are added.
+
+# General info
+
 The general idea is to only have the `jenkins` user talk to each other, never using the `ubuntu` user.
 
-Also for simplicity, always SSH into the jump server directly to get to the master and slaves.
+For simplicity, always SSH into the jump server directly to get to the master and slaves.
 
 # Master Setup:
 1. Login to [Collaboratory console](https://console.cancercollaboratory.org/)
