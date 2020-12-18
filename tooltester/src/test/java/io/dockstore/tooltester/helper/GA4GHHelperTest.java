@@ -45,11 +45,11 @@ public class GA4GHHelperTest {
         String json = resourceFilePathToString();
         List<Tool> allTools = Arrays.asList(objectMapper.readValue(json, Tool[].class));
         List<Tool> filteredTools1 = GA4GHHelper.filterTools(allTools, false, new ArrayList<>(), new ArrayList<>(), true, true);
-        Assert.assertEquals(27, filteredTools1.size());
+        Assert.assertEquals(25, filteredTools1.size());
         List<Tool> filteredTools2 = GA4GHHelper.filterTools(allTools, true, new ArrayList<>(), new ArrayList<>(), false, true);
-        Assert.assertEquals(20, filteredTools2.size());
+        Assert.assertEquals(18, filteredTools2.size());
         List<Tool> filteredTools = GA4GHHelper.filterTools(allTools, true, new ArrayList<>(), new ArrayList<>(), true, true);
-        Assert.assertEquals(22, filteredTools.size());
+        Assert.assertEquals(20, filteredTools.size());
     }
 
     private String resourceFilePathToString() throws IOException, URISyntaxException {
