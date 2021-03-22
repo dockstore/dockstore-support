@@ -40,7 +40,7 @@
         <junit-version>4.11</junit-version>
         <slf4j.version>1.7.21</slf4j.version>
         <cwlavro.version>1.0.6</cwlavro.version>
-        <jackson.version>2.10.1</jackson.version>
+        <jackson.version>2.12.2</jackson.version>
         <aws.version>1.11.86</aws.version>
     </properties>
 
