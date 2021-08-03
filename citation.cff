@@ -81,18 +81,3 @@ license: "Apache 2.0"
 message: "If you use this software, please cite it in general using this paper, particularly for Dockstore 1.10 and above"
 repository-code: "https://github.com/dockstore/dockstore"
 title: "The Dockstore: enhancing a community platform for sharing reproducible and accessible computational protocols "
-
-references:
-  - type: article
-    scope: "Cite this paper to reference Dockstore up to version 1.9"
-    title: "The Dockstore: enabling modular, community-focused sharing of Docker-based genomics tools and workflows"
-    year: 2017-01-18
-    journal: F1000Research
-    volume: "6"
-    issue: "52"
-    doi: "10.12688/f1000research.10137.1"
-  - type: software-code
-    scope: "Cite Zenodo when citing the source code"
-    title: "dockstore/dockstore"
-    doi: "10.5281/zenodo.592056"
-    version: "1.11"
