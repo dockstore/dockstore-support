@@ -44,5 +44,6 @@ cat <<EOT >> Dockstore.json
 }
 EOT
 
+echo "On Mac, required 5GB memory allocated to Docker"
 dockstore tool launch --entry quay.io/collaboratory/dockstore-tool-bamstats:1.25-6_1.0 --json Dockstore.json
 
