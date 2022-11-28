@@ -1,0 +1,97 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.dockstore</groupId>
+  <artifactId>jira_automation</artifactId>
+  <version>${revision}${changelist}</version>
+  <packaging>jar</packaging>
+  <name>jira_automation</name>
+  <description>JIRA automation parent POM</description>
+  <url>https://github.com/dockstore/dockstore-support</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
+
+    <!-- the following properties set sane defaults when no revision properties are set from the command-line -->
+    <revision>1.0</revision>
+    <changelist>.0-SNAPSHOT</changelist>
+
+    <!--
+    The following properties are mostly used in the plugins section
+    as the versions for the dependency section are provided
+    in the Dockstore projects BOM, unless specifically overridden
+    in the dependency section
+    -->
+    <swagger-annotations-version>1.6.5</swagger-annotations-version>
+    <openapi-annotations-version>2.1.13</openapi-annotations-version>
+    <dockstore-core.version>1.14.0-alpha.2</dockstore-core.version>
+  </properties>
+
+  <organization>
+    <name>Dockstore</name>
+    <url>https://www.dockstore.org/</url>
+  </organization>
+
+  <repositories>
+    <repository>
+      <id>artifacts.oicr.on.ca.ca-snapshots</id>
+      <url>https://artifacts.oicr.on.ca/artifactory/collab-snapshot</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>artifacts.oicr.on.ca</id>
+      <name>artifacts.oicr.on.ca</name>
+      <url>https://artifacts.oicr.on.ca/artifactory/collab-release</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>apache-releases</id>
+      <name>Apache Releases repository</name>
+      <url>https://repository.apache.org/content/repositories/releases/</url>
+    </repository>
+  </repositories>
+
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.dockstore</groupId>
+        <artifactId>bom-internal</artifactId>
+        <type>pom</type>
+        <version>${dockstore-core.version}</version>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.kohsuke</groupId>
+      <artifactId>github-api</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.10.1</version>
+        <configuration>
+          <release>17</release>
+          <showDeprecation>true</showDeprecation>
+          <forceJavacCompilerUse>true</forceJavacCompilerUse>
+        </configuration>
+      </plugin>
+    </plugins>
+
+  </build>
+</project>
