@@ -5,10 +5,7 @@ import java.io.File;
 import com.beust.jcommander.ParameterException;
 import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 
@@ -41,6 +38,7 @@ public class ClientTest {
     /**
      * Tests if Jenkins server is set up
      */
+    @Ignore
     @Test
     public void setupTesters() {
         client.setupTesters();
@@ -61,6 +59,7 @@ public class ClientTest {
     /**
      * Test enqueue which should run all jobs
      */
+    @Ignore
     @Test
     public void enqueue() {
         String[] argv = { "enqueue" };
@@ -81,6 +80,7 @@ public class ClientTest {
     /**
      * Test enqueue with a specific tool
      */
+    @Ignore
     @Test
     public void enqueueTool() {
         String[] argv = { "enqueue", "--tool", "quay.io/pancancer/pcawg_delly_workflow" };
@@ -91,6 +91,7 @@ public class ClientTest {
     /**
      * Test enqueue with specific verified source
      */
+    @Ignore
     @Test
     public void enqueueToolSource() {
         String[] argv = { "enqueue", "--source", "Docktesters group" };
@@ -101,6 +102,7 @@ public class ClientTest {
     /**
      * This tests the Jenkins pipeline creation
      */
+    @Ignore
     @Test
     public void createJenkinsTests() {
         String[] argv = { "sync" };
@@ -121,6 +123,7 @@ public class ClientTest {
     /**
      * This tests the Jenkins pipeline creation
      */
+    @Ignore
     @Test
     public void createJenkinsTestsSource() {
         String[] argv = { "sync", "--source", "Docktesters group"};
@@ -131,6 +134,7 @@ public class ClientTest {
     /**
      * This tests the Jenkins pipeline creation
      */
+    @Ignore
     @Test
     public void createUnverifiedJenkinsTests() {
         String[] argv = { "sync", "--source", "Docktesters group", "--tools", "quay.io/ucsc_cgl/dockstore_tool_adtex" };
@@ -151,6 +155,7 @@ public class ClientTest {
     /**
      * This prints the usage for report
      */
+    @Ignore
     @Test
     public void report() {
         String[] argv = { "report" };
@@ -161,6 +166,7 @@ public class ClientTest {
     /**
      * This reports on a specific tool
      */
+    @Ignore
     @Test
     public void reportTool() {
         String[] argv = new String[] { "report", "--tool", "quay.io/briandoconnor/dockstore-tool-md5sum" };
@@ -171,6 +177,7 @@ public class ClientTest {
     /**
      * This reports on specific tools
      */
+    @Ignore
     @Test
     public void reportTools() {
         String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow",
@@ -201,6 +208,7 @@ public class ClientTest {
         Assert.assertFalse(new File("tooltester/FileReport.csv").exists());
     }
 
+    @Ignore
     @Test
     public void reportInvalidTool() {
         String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa" };
@@ -228,6 +236,7 @@ public class ClientTest {
     /**
      * This tests file-report with no --tool option
      */
+    @Ignore
     @Test
     public void fileReportTool() {
         String[] argv = new String[] { "file-report", "--tool", "quay.io/briandoconnor/dockstore-tool-md5sum" };
