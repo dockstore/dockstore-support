@@ -115,33 +115,36 @@ public class Client {
         if (commandMain.help) {
             jc.usage();
         } else {
-
             if (jc.getParsedCommand() != null) {
                 switch (jc.getParsedCommand()) {
                 case "report":
                     if (commandReport.help) {
-                        jc.usage("report");
+//                        jc.usage("report");
+                        System.out.println("D");
                     } else {
                         client.handleReport(commandReport.tools, commandEnqueue.source);
                     }
                     break;
                 case "enqueue":
                     if (commandEnqueue.help) {
-                        jc.usage("enqueue");
+//                        jc.usage("enqueue");
+                        System.out.println("A");
                     } else {
                         client.handleRunTests(commandEnqueue.tools, commandEnqueue.source);
                     }
                     break;
                 case "file-report":
                     if (commandFileReport.help) {
-                        jc.usage("file-report");
+//                        jc.usage("file-report");
+                        System.out.println("B");
                     } else {
                         client.handleFileReport(commandFileReport.tool);
                     }
                     break;
                 case "sync":
                     if (commandSync.help) {
-                        jc.usage("sync");
+//                        jc.usage("sync");
+                        System.out.println("C");
                     } else {
                         client.handleCreateTests(commandSync.tools, commandSync.source);
                     }
