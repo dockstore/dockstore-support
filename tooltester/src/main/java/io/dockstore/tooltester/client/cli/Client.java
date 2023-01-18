@@ -64,6 +64,7 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.dockstore.tooltester.client.cli.JCommanderUtility.printJCommanderHelp;
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.DEBUG;
@@ -115,42 +116,39 @@ public class Client {
         if (commandMain.help) {
             jc.usage();
         } else {
+
             if (jc.getParsedCommand() != null) {
                 switch (jc.getParsedCommand()) {
-                case "report":
-                    if (commandReport.help) {
-//                        jc.usage("report");
-                        System.out.println("D");
-                    } else {
-                        client.handleReport(commandReport.tools, commandEnqueue.source);
-                    }
-                    break;
-                case "enqueue":
-                    if (commandEnqueue.help) {
-//                        jc.usage("enqueue");
-                        System.out.println("A");
-                    } else {
-                        client.handleRunTests(commandEnqueue.tools, commandEnqueue.source);
-                    }
-                    break;
-                case "file-report":
-                    if (commandFileReport.help) {
-//                        jc.usage("file-report");
-                        System.out.println("B");
-                    } else {
-                        client.handleFileReport(commandFileReport.tool);
-                    }
-                    break;
-                case "sync":
-                    if (commandSync.help) {
-//                        jc.usage("sync");
-                        System.out.println("C");
-                    } else {
-                        client.handleCreateTests(commandSync.tools, commandSync.source);
-                    }
-                    break;
-                default:
-                    jc.usage();
+                    case "report":
+                        if (commandReport.help) {
+                            printJCommanderHelp(jc, "autotool", "report");
+                        } else {
+                            client.handleReport(commandReport.tools, commandEnqueue.source);
+                        }
+                        break;
+                    case "enqueue":
+                        if (commandEnqueue.help) {
+                            printJCommanderHelp(jc, "autotool", "enqueue");
+                        } else {
+                            client.handleRunTests(commandEnqueue.tools, commandEnqueue.source);
+                        }
+                        break;
+                    case "file-report":
+                        if (commandFileReport.help) {
+                            printJCommanderHelp(jc, "autotool", "file-report");
+                        } else {
+                            client.handleFileReport(commandFileReport.tool);
+                        }
+                        break;
+                    case "sync":
+                        if (commandSync.help) {
+                            printJCommanderHelp(jc, "autotool", "sync");
+                        } else {
+                            client.handleCreateTests(commandSync.tools, commandSync.source);
+                        }
+                        break;
+                    default:
+                        jc.usage();
                 }
             } else {
                 jc.usage();
@@ -318,7 +316,7 @@ public class Client {
 
     @SuppressWarnings("checkstyle:parameternumber")
     private Map<String, String> constructParameterMap(String url, String referenceName, String entryType, String dockerfilePath,
-            String parameterPath, String descriptorPath, String synapseCache, String runner, String commands) {
+                                                      String parameterPath, String descriptorPath, String synapseCache, String runner, String commands) {
         Map<String, String> parameter = new HashMap<>();
         parameter.put("URL", url);
         parameter.put("ParameterPath", parameterPath);
@@ -444,15 +442,15 @@ public class Client {
                 return false;
             } else {
                 switch (name) {
-                case "CommandLineTool":
-                    testDockstoreTool(tool);
-                    break;
-                case "Workflow":
-                    testWorkflow(tool);
-                    break;
-                default:
-                    LOG.error("Unrecognized toolclass name.  Expected 'CommandLineTool' or 'Workflow'.  Got " + name);
-                    return false;
+                    case "CommandLineTool":
+                        testDockstoreTool(tool);
+                        break;
+                    case "Workflow":
+                        testWorkflow(tool);
+                        break;
+                    default:
+                        LOG.error("Unrecognized toolclass name.  Expected 'CommandLineTool' or 'Workflow'.  Got " + name);
+                        return false;
                 }
             }
         }
