@@ -319,7 +319,7 @@ public class Client {
 
     @SuppressWarnings("checkstyle:parameternumber")
     private Map<String, String> constructParameterMap(String url, String referenceName, String entryType, String dockerfilePath,
-                                                      String parameterPath, String descriptorPath, String synapseCache, String runner, String commands) {
+            String parameterPath, String descriptorPath, String synapseCache, String runner, String commands) {
         Map<String, String> parameter = new HashMap<>();
         parameter.put("URL", url);
         parameter.put("ParameterPath", parameterPath);
