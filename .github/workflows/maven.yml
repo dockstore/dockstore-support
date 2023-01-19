@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Cache
-        uses: actions/cache@v2.1.3
+        uses: actions/cache@v3
         with:
           # A list of files, directories, and wildcard patterns to cache and restore
           path: ~/.m2/repository
@@ -34,9 +34,9 @@ jobs:
           docker run -d --net travisnet --ip 172.18.0.22 quay.io/garyluu/jenkins
           # Sleep for 20 seconds while jenkins loads
           sleep 20
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up JDK 17
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v3
         with:
           java-version: 17
       - name: Build with Maven
