@@ -445,15 +445,15 @@ public class Client {
                 return false;
             } else {
                 switch (name) {
-                    case "CommandLineTool":
-                        testDockstoreTool(tool);
-                        break;
-                    case "Workflow":
-                        testWorkflow(tool);
-                        break;
-                    default:
-                        LOG.error("Unrecognized toolclass name.  Expected 'CommandLineTool' or 'Workflow'.  Got " + name);
-                        return false;
+                case "CommandLineTool":
+                    testDockstoreTool(tool);
+                    break;
+                case "Workflow":
+                    testWorkflow(tool);
+                    break;
+                default:
+                    LOG.error("Unrecognized toolclass name.  Expected 'CommandLineTool' or 'Workflow'.  Got " + name);
+                    return false;
                 }
             }
         }
