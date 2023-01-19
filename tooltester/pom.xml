@@ -40,6 +40,7 @@
         <slf4j.version>1.7.36</slf4j.version>
         <jackson.version>2.13.4</jackson.version>
         <aws.version>1.11.86</aws.version>
+        <dockstore.core.version>1.13.1</dockstore.core.version>
     </properties>
 
     <organization>
@@ -117,7 +118,7 @@
                 <groupId>io.dockstore</groupId>
                 <artifactId>bom-internal</artifactId>
                 <type>pom</type>
-                <version>1.13.1</version>
+                <version>${dockstore.core.version}</version>
                 <scope>import</scope>
             </dependency>
             <!--  cwl management -->
@@ -268,7 +269,7 @@
         <dependency>
             <groupId>io.dockstore</groupId>
             <artifactId>swagger-java-client</artifactId>
-            <version>1.13.1</version>
+            <version>${dockstore.core.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>jakarta.activation</groupId>
