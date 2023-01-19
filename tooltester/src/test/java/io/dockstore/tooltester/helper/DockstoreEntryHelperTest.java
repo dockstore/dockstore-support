@@ -19,7 +19,6 @@ import org.junit.Test;
  * @author gluu
  * @since 03/04/19
  */
-@Ignore
 public class DockstoreEntryHelperTest {
     // This actually uses the real Dockstore staging server
     private static final String serverUrl = "https://staging.dockstore.org/api";
@@ -33,7 +32,6 @@ public class DockstoreEntryHelperTest {
         containersApi = new ContainersApi(defaultApiClient);
     }
 
-    @Ignore
     @Test
     // Should not be ignored
     public void generateLaunchToolCommand() {
@@ -67,7 +65,7 @@ public class DockstoreEntryHelperTest {
         Assert.assertEquals("dockstore workflow launch --entry github.com/ICGC-TCGA-PanCancer/pcawg-snv-indel-annotation:1.0.0 --yaml test.yaml --script", command);
     }
 
-    @Ignore
+
     @Test
     // Should not be ignored
     public void convertTRSToolToDockstoreTool() {
@@ -77,7 +75,7 @@ public class DockstoreEntryHelperTest {
         Assert.assertNotNull(dockstoreTool);
     }
 
-    @Test
+    @Test    @Ignore
     public void convertTRSToolToWorkflow() {
         Tool tool = new Tool();
         tool.setId("#workflow/github.com/briandoconnor/dockstore-workflow-md5sum");
