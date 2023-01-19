@@ -175,7 +175,6 @@
                 <version>${jackson.version}</version>
             </dependency>
 
-<!--            CHECK-->
             <dependency>
                 <groupId>xml-apis</groupId>
                 <artifactId>xml-apis</artifactId>
@@ -233,7 +232,6 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
-<!--            CHECK-->
             <groupId>de.vandermeer</groupId>
             <artifactId>asciitable</artifactId>
             <version>0.2.5</version>
@@ -249,7 +247,6 @@
             <!--<version>3.0.6</version>-->
         <!--</dependency>-->
         <dependency>
-<!--            CHECK-->
             <groupId>javax.ws.rs</groupId>
             <artifactId>javax.ws.rs-api</artifactId>
             <version>2.0.1</version>
@@ -293,7 +290,6 @@
         </dependency>
 
         <dependency>
-<!--            CHECK-->
             <groupId>commons-configuration</groupId>
             <artifactId>commons-configuration</artifactId>
             <version>1.10</version>
@@ -332,7 +328,6 @@
 
         <!-- https://mvnrepository.com/artifact/junit/junit -->
         <dependency>
-<!--            CHECK-->
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
@@ -360,27 +355,23 @@
 
         <!-- For AWS integration START -->
         <dependency>
-<!--            CHECK-->
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
             <version>${aws.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
-<!--            CHECK-->
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-core</artifactId>
             <version>${aws.version}</version>
         </dependency>
         <dependency>
-<!--            CHECK-->
             <groupId>javax.activation</groupId>
             <artifactId>activation</artifactId>
             <version>1.1.1</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
-<!--            CHECK-->
             <groupId>javax.xml.bind</groupId>
             <artifactId>jaxb-api</artifactId>
             <version>2.2.11</version>
