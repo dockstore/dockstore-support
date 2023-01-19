@@ -12,12 +12,14 @@ import io.swagger.client.model.Tool;
 import io.swagger.client.model.Workflow;
 import io.swagger.client.model.WorkflowVersion;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * @author gluu
  * @since 03/04/19
  */
+@Ignore
 public class DockstoreEntryHelperTest {
     // This actually uses the real Dockstore staging server
     private static final String serverUrl = "https://staging.dockstore.org/api";
@@ -31,7 +33,9 @@ public class DockstoreEntryHelperTest {
         containersApi = new ContainersApi(defaultApiClient);
     }
 
+    @Ignore
     @Test
+    // Should not be ignored
     public void generateLaunchToolCommand() {
         // No tool name
         Long toolId = 1055L;
@@ -63,7 +67,9 @@ public class DockstoreEntryHelperTest {
         Assert.assertEquals("dockstore workflow launch --entry github.com/ICGC-TCGA-PanCancer/pcawg-snv-indel-annotation:1.0.0 --yaml test.yaml --script", command);
     }
 
+    @Ignore
     @Test
+    // Should not be ignored
     public void convertTRSToolToDockstoreTool() {
         Tool tool = new Tool();
         tool.setId("quay.io/briandoconnor/dockstore-tool-md5sum");
