@@ -108,11 +108,8 @@ public class Client {
         jc.addCommand("enqueue", commandEnqueue);
         jc.addCommand("file-report", commandFileReport);
         jc.addCommand("sync", commandSync);
-        System.out.println("A");
         try {
-            System.out.println("A");
             jc.parse(argv);
-            System.out.println("C");
         } catch (MissingCommandException e) {
             jc.usage();
             if (e.getUnknownCommand().isEmpty()) {
@@ -123,49 +120,41 @@ public class Client {
             }
         }
         if (commandMain.help) {
-            System.out.println("F");
             jc.usage();
         } else {
             switch (jc.getParsedCommand()) {
                 case "report":
                     if (commandReport.help) {
-                        System.out.println("G");
                         printJCommanderHelp(jc, "autotool", "report");
                     } else {
-                        System.out.println("H");
                         client.handleReport(commandReport.tools, commandEnqueue.source);
                     }
                     break;
                 case "enqueue":
                     if (commandEnqueue.help) {
-                        System.out.println("I");
                         printJCommanderHelp(jc, "autotool", "enqueue");
                     } else {
-                        System.out.println("J");
                         client.handleRunTests(commandEnqueue.tools, commandEnqueue.source);
                     }
                     break;
                 case "file-report":
                     if (commandFileReport.help) {
-                        System.out.println("K");
                         printJCommanderHelp(jc, "autotool", "file-report");
                     } else {
-                        System.out.println("L");
                         client.handleFileReport(commandFileReport.tool);
                     }
                     break;
                 case "sync":
                     if (commandSync.help) {
-                        System.out.println("M");
                         printJCommanderHelp(jc, "autotool", "sync");
                     } else {
-                        System.out.println("N");
                         client.handleCreateTests(commandSync.tools, commandSync.source);
                     }
                     break;
                 default:
-                    System.out.println("O");
                     jc.usage();
+                    // This line should never get called, as this case would've been caught when
+                    // jc.parse(argv) was called
             }
         }
     }
