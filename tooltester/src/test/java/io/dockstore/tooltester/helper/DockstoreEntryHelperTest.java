@@ -66,9 +66,7 @@ public class DockstoreEntryHelperTest {
         Assert.assertEquals("dockstore workflow launch --entry github.com/ICGC-TCGA-PanCancer/pcawg-snv-indel-annotation:1.0.0 --yaml test.yaml --script", command);
     }
 
-
     @Test
-    // Should not be ignored
     public void convertTRSToolToDockstoreTool() {
         Tool tool = new Tool();
         tool.setId("quay.io/briandoconnor/dockstore-tool-md5sum");
