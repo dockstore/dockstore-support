@@ -64,6 +64,7 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
 import static io.dockstore.tooltester.client.cli.JCommanderUtility.printJCommanderHelp;
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
@@ -107,51 +108,64 @@ public class Client {
         jc.addCommand("enqueue", commandEnqueue);
         jc.addCommand("file-report", commandFileReport);
         jc.addCommand("sync", commandSync);
+        System.out.println("A");
         try {
+            System.out.println("A");
             jc.parse(argv);
+            System.out.println("C");
         } catch (MissingCommandException e) {
             jc.usage();
-            exceptionMessage(e, "Unknown command", COMMAND_ERROR);
+            if (e.getUnknownCommand().isEmpty()) {
+                out("No command entered");
+                return;
+            } else {
+                exceptionMessage(e, "Unknown command", COMMAND_ERROR);
+            }
         }
         if (commandMain.help) {
+            System.out.println("F");
             jc.usage();
         } else {
-
-            if (jc.getParsedCommand() != null) {
-                switch (jc.getParsedCommand()) {
-                    case "report":
-                        if (commandReport.help) {
-                            printJCommanderHelp(jc, "autotool", "report");
-                        } else {
-                            client.handleReport(commandReport.tools, commandEnqueue.source);
-                        }
-                        break;
-                    case "enqueue":
-                        if (commandEnqueue.help) {
-                            printJCommanderHelp(jc, "autotool", "enqueue");
-                        } else {
-                            client.handleRunTests(commandEnqueue.tools, commandEnqueue.source);
-                        }
-                        break;
-                    case "file-report":
-                        if (commandFileReport.help) {
-                            printJCommanderHelp(jc, "autotool", "file-report");
-                        } else {
-                            client.handleFileReport(commandFileReport.tool);
-                        }
-                        break;
-                    case "sync":
-                        if (commandSync.help) {
-                            printJCommanderHelp(jc, "autotool", "sync");
-                        } else {
-                            client.handleCreateTests(commandSync.tools, commandSync.source);
-                        }
-                        break;
-                    default:
-                        jc.usage();
-                }
-            } else {
-                jc.usage();
+            switch (jc.getParsedCommand()) {
+                case "report":
+                    if (commandReport.help) {
+                        System.out.println("G");
+                        printJCommanderHelp(jc, "autotool", "report");
+                    } else {
+                        System.out.println("H");
+                        client.handleReport(commandReport.tools, commandEnqueue.source);
+                    }
+                    break;
+                case "enqueue":
+                    if (commandEnqueue.help) {
+                        System.out.println("I");
+                        printJCommanderHelp(jc, "autotool", "enqueue");
+                    } else {
+                        System.out.println("J");
+                        client.handleRunTests(commandEnqueue.tools, commandEnqueue.source);
+                    }
+                    break;
+                case "file-report":
+                    if (commandFileReport.help) {
+                        System.out.println("K");
+                        printJCommanderHelp(jc, "autotool", "file-report");
+                    } else {
+                        System.out.println("L");
+                        client.handleFileReport(commandFileReport.tool);
+                    }
+                    break;
+                case "sync":
+                    if (commandSync.help) {
+                        System.out.println("M");
+                        printJCommanderHelp(jc, "autotool", "sync");
+                    } else {
+                        System.out.println("N");
+                        client.handleCreateTests(commandSync.tools, commandSync.source);
+                    }
+                    break;
+                default:
+                    System.out.println("O");
+                    jc.usage();
             }
         }
     }
