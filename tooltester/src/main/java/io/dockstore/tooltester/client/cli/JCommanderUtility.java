@@ -60,11 +60,7 @@ public final class JCommanderUtility {
 
     private static void printJCommanderHelpUsage(String programName, String commandName, JCommander jc) {
         out("Usage: " + programName + " " + commandName + " --help");
-        if (jc.getCommands().isEmpty()) {
-            out("       " + programName + " " + commandName + " [parameters]");
-        } else {
-            out("       " + programName + " " + commandName + " [parameters] [command]");
-        }
+        out("       " + programName + " " + commandName + " [parameters] [command]");
         out("");
     }
 
@@ -134,9 +130,6 @@ public final class JCommanderUtility {
     private static void printJCommanderHelpParameter(ParameterDescription pd, WrappedParameter parameter, int maxLength) {
         outFormatted("%-" + maxLength + "s %s", "  " + pd.getNames() + " <" + pd.getNames().replaceAll("--", "") + ">", pd.getDescription());
         Object def = pd.getDefault();
-        if (pd.isDynamicParameter()) {
-            out("Syntax: " + parameter.names()[0] + "key" + parameter.getAssignment() + "value");
-        }
         if (def != null && !pd.isHelp()) {
             String displayedDef = Strings.isStringEmpty(def.toString()) ? "<empty string>" : def.toString();
             outFormatted("%-" + maxLength + "s %s", "  ", "Default: " + (parameter.password() ? "********" : displayedDef));
