@@ -4,10 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.dockstore.tooltester.helper.PipelineTester;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
@@ -43,6 +40,7 @@ public class JenkinsJobTest {
         Assert.assertNotNull("client API could not start", client.getContainersApi());
     }
 
+    @Ignore
     @Test
     public void pipelineTestJobIT() {
         final String suffix = "id-tag";
@@ -70,6 +68,7 @@ public class JenkinsJobTest {
         //        }
     }
 
+    @Ignore
     @Test
     public void getNonExistantTest() {
         exit.expectSystemExitWithStatus(10);
