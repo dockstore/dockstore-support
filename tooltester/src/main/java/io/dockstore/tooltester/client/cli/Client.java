@@ -121,6 +121,9 @@ public class Client {
         }
         if (commandMain.help) {
             jc.usage();
+
+        } else if (jc.getParsedCommand() == null) {
+            jc.usage();
         } else {
             switch (jc.getParsedCommand()) {
                 case "report":
