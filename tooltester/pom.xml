@@ -37,7 +37,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
         <assertj.version>3.4.1</assertj.version>
-        <junit-version>4.11</junit-version>
+        <junit-version>4.13.2</junit-version>
         <slf4j.version>1.7.36</slf4j.version>
         <cwlavro.version>2.0.4.7</cwlavro.version>
         <jackson.version>2.13.4</jackson.version>
@@ -557,7 +557,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.4</version>
+                <version>0.8.7</version>
                 <executions>
                     <execution>
                         <goals>
