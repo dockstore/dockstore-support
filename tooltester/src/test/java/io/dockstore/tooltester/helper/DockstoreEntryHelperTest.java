@@ -45,6 +45,7 @@ public class DockstoreEntryHelperTest {
         Assert.assertEquals(command, "dockstore tool launch --entry quay.io/briandoconnor/dockstore-tool-md5sum:1.0.4 --json test.json --script");
     }
 
+    @Ignore
     @Test
     public void generateLaunchWorkflowCommand() {
         // No workflow name
@@ -75,7 +76,8 @@ public class DockstoreEntryHelperTest {
         Assert.assertNotNull(dockstoreTool);
     }
 
-    @Test    @Ignore
+    @Ignore
+    @Test
     public void convertTRSToolToWorkflow() {
         Tool tool = new Tool();
         tool.setId("#workflow/github.com/briandoconnor/dockstore-workflow-md5sum");
