@@ -33,7 +33,6 @@ public class DockstoreEntryHelperTest {
     }
 
     @Test
-    // Should not be ignored
     public void generateLaunchToolCommand() {
         // No tool name
         Long toolId = 1055L;
