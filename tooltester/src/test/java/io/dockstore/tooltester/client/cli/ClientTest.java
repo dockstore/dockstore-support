@@ -16,6 +16,9 @@ import org.junit.contrib.java.lang.system.SystemOutRule;
 import static io.dockstore.tooltester.client.cli.Client.main;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 
+/**
+ * Many tests ignored due to reasons explained in this PR https://github.com/dockstore/dockstore-support/pull/448
+ */
 public class ClientTest {
     @Rule
     public final ExpectedSystemExit exit = ExpectedSystemExit.none();

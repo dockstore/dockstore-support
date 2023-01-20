@@ -21,6 +21,10 @@ import static org.junit.Assert.assertTrue;
  * @author gluu
  * @since 24/01/17
  */
+
+/**
+ * Many tests ignored due to reasons explained in this PR https://github.com/dockstore/dockstore-support/pull/448
+ */
 public class JenkinsJobTest {
     @Rule
     public TestRule watcher = new TestWatcher() {

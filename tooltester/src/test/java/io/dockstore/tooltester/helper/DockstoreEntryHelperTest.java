@@ -19,6 +19,10 @@ import org.junit.Test;
  * @author gluu
  * @since 03/04/19
  */
+
+/**
+ * Many tests ignored due to reasons explained in this PR https://github.com/dockstore/dockstore-support/pull/448
+ */
 public class DockstoreEntryHelperTest {
     // This actually uses the real Dockstore staging server
     private static final String serverUrl = "https://staging.dockstore.org/api";
