@@ -146,8 +146,15 @@ public class ClientTest {
      * This tests the client with no parameters
      */
     @Test
-    public void empty() {
+    public void emptyOne() {
         String[] argv = { "" };
+        main(argv);
+        Assert.assertTrue(systemOutRule.getLog().contains("Usage: autotool [options] [command] [command options]"));
+     }
+
+    @Test
+    public void emptyTwo() {
+        String[] argv = { };
         main(argv);
         Assert.assertTrue(systemOutRule.getLog().contains("Usage: autotool [options] [command] [command options]"));
     }
