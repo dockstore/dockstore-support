@@ -11,7 +11,7 @@ updates:
 
   # Maintain dependencies for Maven
   - package-ecosystem: "maven"
-    directory: "/"
+    directory: "/tooltester"
     schedule:
       interval: "daily"
     # start with security updates only https://stackoverflow.com/a/68254421
