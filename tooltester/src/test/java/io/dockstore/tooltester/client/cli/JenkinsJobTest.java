@@ -4,7 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.dockstore.tooltester.helper.PipelineTester;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
