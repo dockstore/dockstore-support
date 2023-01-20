@@ -36,10 +36,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
-        <junit-version>4.13.2</junit-version>
         <slf4j.version>1.7.36</slf4j.version>
         <jackson.version>2.13.4</jackson.version>
-        <aws.version>1.11.86</aws.version>
+        <aws.version>1.12.387</aws.version>
         <dockstore.core.version>1.13.1</dockstore.core.version>
     </properties>
 
@@ -331,7 +330,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.11</version>
             <scope>test</scope>
 
         </dependency>
