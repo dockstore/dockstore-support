@@ -64,6 +64,8 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
+import static io.dockstore.tooltester.client.cli.JCommanderUtility.printJCommanderHelp;
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.DEBUG;
@@ -110,47 +112,52 @@ public class Client {
             jc.parse(argv);
         } catch (MissingCommandException e) {
             jc.usage();
-            exceptionMessage(e, "Unknown command", COMMAND_ERROR);
+            if (e.getUnknownCommand().isEmpty()) {
+                out("No command entered");
+                return;
+            } else {
+                exceptionMessage(e, "Unknown command", COMMAND_ERROR);
+            }
         }
         if (commandMain.help) {
             jc.usage();
-        } else {
 
-            if (jc.getParsedCommand() != null) {
-                switch (jc.getParsedCommand()) {
+        } else if (jc.getParsedCommand() == null) {
+            jc.usage();
+        } else {
+            switch (jc.getParsedCommand()) {
                 case "report":
                     if (commandReport.help) {
-                        jc.usage("report");
+                        printJCommanderHelp(jc, "autotool", "report");
                     } else {
                         client.handleReport(commandReport.tools, commandEnqueue.source);
                     }
                     break;
                 case "enqueue":
                     if (commandEnqueue.help) {
-                        jc.usage("enqueue");
+                        printJCommanderHelp(jc, "autotool", "enqueue");
                     } else {
                         client.handleRunTests(commandEnqueue.tools, commandEnqueue.source);
                     }
                     break;
                 case "file-report":
                     if (commandFileReport.help) {
-                        jc.usage("file-report");
+                        printJCommanderHelp(jc, "autotool", "file-report");
                     } else {
                         client.handleFileReport(commandFileReport.tool);
                     }
                     break;
                 case "sync":
                     if (commandSync.help) {
-                        jc.usage("sync");
+                        printJCommanderHelp(jc, "autotool", "sync");
                     } else {
                         client.handleCreateTests(commandSync.tools, commandSync.source);
                     }
                     break;
                 default:
                     jc.usage();
-                }
-            } else {
-                jc.usage();
+                    // This line should never get called, as this case would've been caught when
+                    // jc.parse(argv) was called
             }
         }
     }

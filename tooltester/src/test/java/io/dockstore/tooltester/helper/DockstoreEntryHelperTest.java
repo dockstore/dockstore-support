@@ -12,11 +12,16 @@ import io.swagger.client.model.Tool;
 import io.swagger.client.model.Workflow;
 import io.swagger.client.model.WorkflowVersion;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * @author gluu
  * @since 03/04/19
+ */
+
+/**
+ * Many tests ignored due to reasons explained in this PR https://github.com/dockstore/dockstore-support/pull/448
  */
 public class DockstoreEntryHelperTest {
     // This actually uses the real Dockstore staging server
@@ -43,6 +48,7 @@ public class DockstoreEntryHelperTest {
         Assert.assertEquals(command, "dockstore tool launch --entry quay.io/briandoconnor/dockstore-tool-md5sum:1.0.4 --json test.json --script");
     }
 
+    @Ignore
     @Test
     public void generateLaunchWorkflowCommand() {
         // No workflow name
@@ -71,6 +77,7 @@ public class DockstoreEntryHelperTest {
         Assert.assertNotNull(dockstoreTool);
     }
 
+    @Ignore
     @Test
     public void convertTRSToolToWorkflow() {
         Tool tool = new Tool();
