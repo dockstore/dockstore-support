@@ -4,18 +4,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.dockstore.tooltester.helper.PipelineTester;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.ExpectedSystemExit;
-import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.extension.ExtendWith;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
+import uk.org.webcompere.systemstubs.stream.SystemErr;
+import uk.org.webcompere.systemstubs.stream.output.NoopStream;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
 
 /**
  * @author gluu
@@ -25,35 +24,36 @@ import static org.junit.Assert.assertTrue;
 /**
  * Many tests ignored due to reasons explained in this PR https://github.com/dockstore/dockstore-support/pull/448
  */
+@ExtendWith(SystemStubsExtension.class)
 public class JenkinsJobTest {
-    @Rule
-    public TestRule watcher = new TestWatcher() {
-        protected void starting(Description description) {
-            System.out.println("Starting test: " + description.getMethodName());
-        }
-    };
+//    @Rule
+//    public TestRule watcher = new TestWatcher() {
+//        protected void starting(Description description) {
+//            System.out.println("Starting test: " + description.getMethodName());
+//        }
+//    };
 
     /**
      * This tests if a parameter file test can be created and ran.
      * Also tests if the test results can be attained and the console output file can be generated
      */
-    @Rule
-    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
+    @SystemStub
+    private SystemErr systemErr = new SystemErr(new NoopStream());
     private Client client;
 
-    @Before
+    @BeforeEach
     public void initialize() {
         client = new Client();
         client.setupClientEnvironment();
-        Assert.assertNotNull("client API could not start", client.getContainersApi());
+        Assertions.assertNotNull(client.getContainersApi(), "client API could not start");
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void pipelineTestJobIT() {
         final String suffix = "id-tag";
         client.setupTesters();
-        Assert.assertNotNull("Jenkins server can not be reached", client.getPipelineTester().getJenkins());
+        Assertions.assertNotNull(client.getPipelineTester().getJenkins(), "Jenkins server can not be reached");
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
         String jenkinsJobTemplate = pipelineTester.getJenkinsJobTemplate();
@@ -68,7 +68,7 @@ public class JenkinsJobTest {
 
         pipelineTester.runTest(suffix, map);
         String status = pipelineTester.getTestResults(suffix).get("status");
-        assertNotNull("Status is not SUCCESS: ", status);
+        Assertions.assertNotNull(status, "Status is not SUCCESS: ");
         //        try {
         //            client.getJenkins().deleteJob("PipelineTest" + "-" + suffix, true);
         //        } catch (IOException e) {
@@ -76,13 +76,15 @@ public class JenkinsJobTest {
         //        }
     }
 
-    @Ignore
+    @Disabled
     @Test
-    public void getNonExistantTest() {
-        exit.expectSystemExitWithStatus(10);
-        client.setupTesters();
+    public void getNonExistantTest() throws Exception {
+        int exitCode = catchSystemExit(() -> {
+            client.setupTesters();
+        });
+        Assertions.assertEquals(10, exitCode);
         PipelineTester pipelineTester = client.getPipelineTester();
-        Assert.assertNotNull("Jenkins server can not be reached", pipelineTester.getJenkins());
+        Assertions.assertNotNull(pipelineTester.getJenkins(), "Jenkins server can not be reached");
         pipelineTester.getTestResults("SuffixOfATestThatShouldNotExist");
     }
 }

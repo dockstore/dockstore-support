@@ -2,52 +2,59 @@ package io.dockstore.tooltester.helper;
 
 import java.io.IOException;
 
-import org.junit.Rule;
-import org.junit.Test;
+import com.beust.jcommander.ParameterException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
+import org.junit.jupiter.api.extension.ExtendWith;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-import static org.junit.Assert.*;
+import static io.dockstore.tooltester.client.cli.Client.main;
+import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
+
 
 /**
  * @author gluu
  * @since 05/12/17
  */
+@ExtendWith(SystemStubsExtension.class)
 public class DockstoreConfigHelperTest {
-    @Rule
-    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
     @Test
     public void testCwltoolConfig() {
         final String url = "https://staging.dockstore.org:8443";
         String cwltoolConfig = DockstoreConfigHelper.getConfig(url, "cwltool");
-        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: cwltool\n", cwltoolConfig);
+        Assertions.assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: cwltool\n", cwltoolConfig);
     }
 
     @Test
     public void testToilConfig() throws IOException {
         final String url = "https://staging.dockstore.org:8443";
         String toilConfig = DockstoreConfigHelper.getConfig(url, "toil");
-        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: toil\n", toilConfig);
+        Assertions.assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: toil\n", toilConfig);
     }
 
     @Test
     public void testCromwellConfig() throws IOException {
         final String url = "https://staging.dockstore.org:8443";
         String toilConfig = DockstoreConfigHelper.getConfig(url, "cromwell");
-        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\n# cromwell-version = 36\n", toilConfig);
+        Assertions.assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\n# cromwell-version = 36\n", toilConfig);
     }
 
     @Test
     public void testCwlrunnerConfig() throws IOException {
         final String url = "https://staging.dockstore.org:8443";
         String toilConfig = DockstoreConfigHelper.getConfig(url, "cwl-runner");
-        assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: cwl-runner\n", toilConfig);
+        Assertions.assertEquals("token: test\\nserver-url: https://staging.dockstore.org:8443\\ncwlrunner: cwl-runner\n", toilConfig);
     }
 
     @Test
-    public void testPotatoConfig() {
+    public void testPotatoConfig() throws Exception {
         final String url = "https://staging.dockstore.org:8443";
-        exit.expectSystemExitWithStatus(ExceptionHandler.CLIENT_ERROR);
-        String rabixConfig = DockstoreConfigHelper.getConfig(url, "potato");
+        int exitCode = catchSystemExit(() -> {
+            DockstoreConfigHelper.getConfig(url, "potato");
+        });
+        Assertions.assertEquals(ExceptionHandler.CLIENT_ERROR, exitCode);
     }
 }
