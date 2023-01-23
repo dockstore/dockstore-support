@@ -11,9 +11,9 @@ import io.swagger.client.model.Tag;
 import io.swagger.client.model.Tool;
 import io.swagger.client.model.Workflow;
 import io.swagger.client.model.WorkflowVersion;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author gluu
@@ -45,10 +45,10 @@ public class DockstoreEntryHelperTest {
         Tag tag1 = tags.stream().filter(tag -> tag.getName().equals("1.0.4"))
                 .findFirst().get();
         String command = DockstoreEntryHelper.generateLaunchEntryCommand(dockstoreTool, tag1, "test.json");
-        Assert.assertEquals(command, "dockstore tool launch --entry quay.io/briandoconnor/dockstore-tool-md5sum:1.0.4 --json test.json --script");
+        Assertions.assertEquals(command, "dockstore tool launch --entry quay.io/briandoconnor/dockstore-tool-md5sum:1.0.4 --json test.json --script");
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void generateLaunchWorkflowCommand() {
         // No workflow name
@@ -58,7 +58,7 @@ public class DockstoreEntryHelperTest {
         WorkflowVersion workflowVersion1 = workflowVersions.stream().filter(workflowVersion -> workflowVersion.getName().equals("1.4.0"))
                 .findFirst().get();
         String command = DockstoreEntryHelper.generateLaunchEntryCommand(publishedWorkflow, workflowVersion1, "test.json");
-        Assert.assertEquals("dockstore workflow launch --entry github.com/briandoconnor/dockstore-workflow-md5sum:1.4.0 --json test.json --script", command);
+        Assertions.assertEquals("dockstore workflow launch --entry github.com/briandoconnor/dockstore-workflow-md5sum:1.4.0 --json test.json --script", command);
         // With workflow name
         workflowId = 4818L;
         publishedWorkflow = workflowsApi.getPublishedWorkflow(workflowId, null);
@@ -66,7 +66,7 @@ public class DockstoreEntryHelperTest {
         workflowVersion1 = workflowVersions.stream().filter(workflowVersion -> workflowVersion.getName().equals("1.0.0"))
                 .findFirst().get();
         command = DockstoreEntryHelper.generateLaunchEntryCommand(publishedWorkflow, workflowVersion1, "test.yaml");
-        Assert.assertEquals("dockstore workflow launch --entry github.com/ICGC-TCGA-PanCancer/pcawg-snv-indel-annotation:1.0.0 --yaml test.yaml --script", command);
+        Assertions.assertEquals("dockstore workflow launch --entry github.com/ICGC-TCGA-PanCancer/pcawg-snv-indel-annotation:1.0.0 --yaml test.yaml --script", command);
     }
 
     @Test
@@ -74,27 +74,27 @@ public class DockstoreEntryHelperTest {
         Tool tool = new Tool();
         tool.setId("quay.io/briandoconnor/dockstore-tool-md5sum");
         DockstoreTool dockstoreTool = DockstoreEntryHelper.convertTRSToolToDockstoreEntry(tool, containersApi);
-        Assert.assertNotNull(dockstoreTool);
+        Assertions.assertNotNull(dockstoreTool);
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void convertTRSToolToWorkflow() {
         Tool tool = new Tool();
         tool.setId("#workflow/github.com/briandoconnor/dockstore-workflow-md5sum");
         Workflow workflow = DockstoreEntryHelper.convertTRSToolToDockstoreEntry(tool, workflowsApi);
-        Assert.assertNotNull(workflow);
+        Assertions.assertNotNull(workflow);
     }
 
     @Test
     public void convertGitSSHUrlToGitHTTPSUrl() {
         String originalGitUrl = "git@github.com:briandoconnor/dockstore-workflow-md5sum.git";
-        Assert.assertEquals("https://github.com/briandoconnor/dockstore-workflow-md5sum.git", DockstoreEntryHelper.convertGitSSHUrlToGitHTTPSUrl(originalGitUrl));
+        Assertions.assertEquals("https://github.com/briandoconnor/dockstore-workflow-md5sum.git", DockstoreEntryHelper.convertGitSSHUrlToGitHTTPSUrl(originalGitUrl));
     }
     
     @Test
     public void convertDockstoreAbsolutePathToJenkinsRelativePath() {
         String dockstoreAbsolutePath = "/Dockerfile";
-        Assert.assertEquals("Dockerfile", DockstoreEntryHelper.convertDockstoreAbsolutePathToJenkinsRelativePath(dockstoreAbsolutePath));
+        Assertions.assertEquals("Dockerfile", DockstoreEntryHelper.convertDockstoreAbsolutePathToJenkinsRelativePath(dockstoreAbsolutePath));
     }
 }
