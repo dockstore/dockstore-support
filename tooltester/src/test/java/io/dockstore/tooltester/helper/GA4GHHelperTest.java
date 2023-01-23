@@ -13,12 +13,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author gluu
@@ -29,15 +27,15 @@ public class GA4GHHelperTest {
 
     @Test
     public void runnerSupportsDescriptorType() {
-        Assert.assertTrue(GA4GHHelper.runnerSupportsDescriptorType("cwl-runner", ToolVersion.DescriptorTypeEnum.CWL));
-        Assert.assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cwl-runner", ToolVersion.DescriptorTypeEnum.WDL));
-        Assert.assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cwl-runner", ToolVersion.DescriptorTypeEnum.NFL));
-        Assert.assertTrue(GA4GHHelper.runnerSupportsDescriptorType("cwltool", ToolVersion.DescriptorTypeEnum.CWL));
-        Assert.assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cwltool", ToolVersion.DescriptorTypeEnum.WDL));
-        Assert.assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cwltool", ToolVersion.DescriptorTypeEnum.NFL));
-        Assert.assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cromwell", ToolVersion.DescriptorTypeEnum.CWL));
-        Assert.assertTrue(GA4GHHelper.runnerSupportsDescriptorType("cromwell", ToolVersion.DescriptorTypeEnum.WDL));
-        Assert.assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cromwell", ToolVersion.DescriptorTypeEnum.NFL));
+        Assertions.assertTrue(GA4GHHelper.runnerSupportsDescriptorType("cwl-runner", ToolVersion.DescriptorTypeEnum.CWL));
+        Assertions.assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cwl-runner", ToolVersion.DescriptorTypeEnum.WDL));
+        Assertions.assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cwl-runner", ToolVersion.DescriptorTypeEnum.NFL));
+        Assertions.assertTrue(GA4GHHelper.runnerSupportsDescriptorType("cwltool", ToolVersion.DescriptorTypeEnum.CWL));
+        Assertions.assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cwltool", ToolVersion.DescriptorTypeEnum.WDL));
+        Assertions.assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cwltool", ToolVersion.DescriptorTypeEnum.NFL));
+        Assertions.assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cromwell", ToolVersion.DescriptorTypeEnum.CWL));
+        Assertions.assertTrue(GA4GHHelper.runnerSupportsDescriptorType("cromwell", ToolVersion.DescriptorTypeEnum.WDL));
+        Assertions.assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cromwell", ToolVersion.DescriptorTypeEnum.NFL));
     }
 
     @Test
@@ -45,11 +43,11 @@ public class GA4GHHelperTest {
         String json = resourceFilePathToString();
         List<Tool> allTools = Arrays.asList(objectMapper.readValue(json, Tool[].class));
         List<Tool> filteredTools1 = GA4GHHelper.filterTools(allTools, false, new ArrayList<>(), new ArrayList<>(), true, true);
-        Assert.assertEquals(25, filteredTools1.size());
+        Assertions.assertEquals(25, filteredTools1.size());
         List<Tool> filteredTools2 = GA4GHHelper.filterTools(allTools, true, new ArrayList<>(), new ArrayList<>(), false, true);
-        Assert.assertEquals(18, filteredTools2.size());
+        Assertions.assertEquals(18, filteredTools2.size());
         List<Tool> filteredTools = GA4GHHelper.filterTools(allTools, true, new ArrayList<>(), new ArrayList<>(), true, true);
-        Assert.assertEquals(20, filteredTools.size());
+        Assertions.assertEquals(20, filteredTools.size());
     }
 
     private String resourceFilePathToString() throws IOException, URISyntaxException {
