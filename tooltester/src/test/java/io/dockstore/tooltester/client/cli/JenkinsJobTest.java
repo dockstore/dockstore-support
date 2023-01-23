@@ -26,12 +26,6 @@ import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
  */
 @ExtendWith(SystemStubsExtension.class)
 public class JenkinsJobTest {
-//    @Rule
-//    public TestRule watcher = new TestWatcher() {
-//        protected void starting(Description description) {
-//            System.out.println("Starting test: " + description.getMethodName());
-//        }
-//    };
 
     /**
      * This tests if a parameter file test can be created and ran.
