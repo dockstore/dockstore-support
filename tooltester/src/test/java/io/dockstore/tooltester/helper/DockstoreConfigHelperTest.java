@@ -5,7 +5,6 @@ import java.io.IOException;
 import com.beust.jcommander.ParameterException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
