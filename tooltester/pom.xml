@@ -36,8 +36,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
-        <junit-version>4.13.2</junit-version>
         <slf4j.version>1.7.36</slf4j.version>
+        <system-stubs.version>2.0.1</system-stubs.version>
         <jackson.version>2.13.4</jackson.version>
         <aws.version>1.11.86</aws.version>
         <dockstore.core.version>1.13.1</dockstore.core.version>
@@ -335,13 +335,13 @@
         <dependency>
             <groupId>uk.org.webcompere</groupId>
             <artifactId>system-stubs-jupiter</artifactId>
-            <version>1.1.0</version>
+            <version>${system-stubs.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>uk.org.webcompere</groupId>
             <artifactId>system-stubs-core</artifactId>
-            <version>1.1.0</version>
+            <version>${system-stubs.version}</version>
             <scope>test</scope>
         </dependency>
 
