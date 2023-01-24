@@ -5,15 +5,18 @@ import java.io.File;
 import com.beust.jcommander.ParameterException;
 import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import uk.org.webcompere.systemstubs.stream.SystemErr;
 import uk.org.webcompere.systemstubs.stream.SystemOut;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 import static io.dockstore.tooltester.client.cli.Client.main;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
@@ -23,6 +26,7 @@ import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
  * Many tests ignored due to reasons explained in this PR https://github.com/dockstore/dockstore-support/pull/448
  */
 
+@ExtendWith(ClientTest.TestStatus.class)
 @ExtendWith(SystemStubsExtension.class)
 public class ClientTest {
     @SystemStub
@@ -30,6 +34,9 @@ public class ClientTest {
 
     @SystemStub
     private SystemErr systemErr;
+
+    private static String systemOutputForIndividualTest;
+    private static String systemErrorForIndividualTest;
 
     private Client client;
 
@@ -40,12 +47,19 @@ public class ClientTest {
         Assertions.assertNotNull(client.getContainersApi(), "client API could not start");
     }
 
+    @AfterEach
+    public void saveOutAndErr() {
+        systemOutputForIndividualTest = systemOut.getText();
+        systemErrorForIndividualTest = systemErr.getText();
+    }
+
     @Test
     public void setupEnvironment() {
         client = new Client();
         client.setupClientEnvironment();
         Assertions.assertNotNull(client.getContainersApi(), "client API could not start");
     }
+
 
     /**
      * Tests if Jenkins server is set up
@@ -131,7 +145,7 @@ public class ClientTest {
     public void syncHelp() {
         String[] argv = { "sync", "--help" };
         main(argv);
-        Assertions.assertTrue(systemOut.getText().contains("Synchronizes with Jenkins to create tests for verified tools."));
+        Assertions.assertTrue(systemOut.getText().contains("Synchonizes with Jenkins to create tests for verified tools."));
     }
 
     /**
@@ -295,4 +309,29 @@ public class ClientTest {
         main(argv);
         Assertions.assertTrue(systemOut.getText().contains("Usage: autotool [options] [command] [command options]"));
     }
+
+    public static class TestStatus implements TestWatcher {
+        @Override
+        public void testSuccessful(ExtensionContext context) {
+            System.out.printf("Test successful: %s%n", context.getTestMethod().get());
+        }
+        @Override
+        public void testFailed(ExtensionContext context, Throwable cause) {
+            System.out.printf("Test failed: %s%n", context.getTestMethod().get());
+            System.out.printf("System Output:\n");
+            if (systemOutputForIndividualTest.isEmpty()) {
+                System.out.printf("System Output is empty\n");
+            } else {
+                System.out.printf(systemOutputForIndividualTest);
+            }
+            System.out.printf("System Error:\n");
+            if (systemErrorForIndividualTest.isEmpty()) {
+                System.out.printf("System Error is empty\n");
+            } else {
+                System.out.printf(systemErrorForIndividualTest);
+            }
+        }
+        }
+
+
 }
