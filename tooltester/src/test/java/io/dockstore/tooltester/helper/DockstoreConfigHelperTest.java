@@ -2,19 +2,20 @@ package io.dockstore.tooltester.helper;
 
 import java.io.IOException;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.ExpectedSystemExit;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
+
 
 /**
  * @author gluu
  * @since 05/12/17
  */
+@ExtendWith(SystemStubsExtension.class)
 public class DockstoreConfigHelperTest {
-    @Rule
-    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
     @Test
     public void testCwltoolConfig() {
@@ -45,9 +46,11 @@ public class DockstoreConfigHelperTest {
     }
 
     @Test
-    public void testPotatoConfig() {
+    public void testPotatoConfig() throws Exception {
         final String url = "https://staging.dockstore.org:8443";
-        exit.expectSystemExitWithStatus(ExceptionHandler.CLIENT_ERROR);
-        String rabixConfig = DockstoreConfigHelper.getConfig(url, "potato");
+        int exitCode = catchSystemExit(() -> {
+            DockstoreConfigHelper.getConfig(url, "potato");
+        });
+        assertEquals(ExceptionHandler.CLIENT_ERROR, exitCode);
     }
 }
