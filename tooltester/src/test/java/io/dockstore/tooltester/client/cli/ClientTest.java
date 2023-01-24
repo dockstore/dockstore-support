@@ -5,7 +5,11 @@ import java.io.File;
 import com.beust.jcommander.ParameterException;
 import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
-import org.junit.jupiter.api.Assertions;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -37,14 +41,14 @@ public class ClientTest {
     public void initialize() {
         this.client = new Client();
         this.client.setupClientEnvironment();
-        Assertions.assertNotNull(client.getContainersApi(), "client API could not start");
+        assertNotNull(client.getContainersApi(), "client API could not start");
     }
 
     @Test
     public void setupEnvironment() {
         client = new Client();
         client.setupClientEnvironment();
-        Assertions.assertNotNull(client.getContainersApi(), "client API could not start");
+        assertNotNull(client.getContainersApi(), "client API could not start");
     }
 
     /**
@@ -55,7 +59,7 @@ public class ClientTest {
     public void setupTesters() {
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
-        Assertions.assertNotNull(pipelineTester.getJenkins(), "Jenkins server can not be reached");
+        assertNotNull(pipelineTester.getJenkins(), "Jenkins server can not be reached");
     }
 
     /**
@@ -67,7 +71,7 @@ public class ClientTest {
         int exitCode = catchSystemExit(() -> {
             main(argv);
         });
-        Assertions.assertEquals(COMMAND_ERROR, exitCode);
+        assertEquals(COMMAND_ERROR, exitCode);
     }
 
     /**
@@ -78,7 +82,7 @@ public class ClientTest {
     public void enqueue() {
         String[] argv = { "enqueue" };
         main(argv);
-        Assertions.assertTrue(systemOut.getText().isEmpty());
+        assertTrue(systemOut.getText().isEmpty());
     }
 
     /**
@@ -88,7 +92,7 @@ public class ClientTest {
     public void enqueueHelp() {
         String[] argv = { "enqueue", "--help" };
         main(argv);
-        Assertions.assertTrue(systemOut.getText().contains("Test verified tools on Jenkins."));
+        assertTrue(systemOut.getText().contains("Test verified tools on Jenkins."));
     }
 
     /**
@@ -99,7 +103,7 @@ public class ClientTest {
     public void enqueueTool() {
         String[] argv = { "enqueue", "--tool", "quay.io/pancancer/pcawg_delly_workflow" };
         main(argv);
-        Assertions.assertTrue(systemOut.getText().isEmpty());
+        assertTrue(systemOut.getText().isEmpty());
     }
 
     /**
@@ -110,7 +114,7 @@ public class ClientTest {
     public void enqueueToolSource() {
         String[] argv = { "enqueue", "--source", "Docktesters group" };
         main(argv);
-        Assertions.assertTrue(systemOut.getText().isEmpty());
+        assertTrue(systemOut.getText().isEmpty());
     }
 
     /**
@@ -121,7 +125,7 @@ public class ClientTest {
     public void createJenkinsTests() {
         String[] argv = { "sync" };
         main(argv);
-        Assertions.assertTrue(systemOut.getText().isEmpty());
+        assertTrue(systemOut.getText().isEmpty());
     }
 
     /**
@@ -131,7 +135,7 @@ public class ClientTest {
     public void syncHelp() {
         String[] argv = { "sync", "--help" };
         main(argv);
-        Assertions.assertTrue(systemOut.getText().contains("Synchronizes with Jenkins to create tests for verified tools."));
+        assertTrue(systemOut.getText().contains("Synchronizes with Jenkins to create tests for verified tools."));
     }
 
     /**
@@ -142,7 +146,7 @@ public class ClientTest {
     public void createJenkinsTestsSource() {
         String[] argv = { "sync", "--source", "Docktesters group"};
         main(argv);
-        Assertions.assertTrue(systemOut.getText().isEmpty());
+        assertTrue(systemOut.getText().isEmpty());
     }
 
     /**
@@ -153,7 +157,7 @@ public class ClientTest {
     public void createUnverifiedJenkinsTests() {
         String[] argv = { "sync", "--source", "Docktesters group", "--tools", "quay.io/ucsc_cgl/dockstore_tool_adtex" };
         main(argv);
-        Assertions.assertTrue(systemOut.getText().isEmpty());
+        assertTrue(systemOut.getText().isEmpty());
     }
 
     /**
@@ -163,14 +167,14 @@ public class ClientTest {
     public void emptyOne() {
         String[] argv = { "" };
         main(argv);
-        Assertions.assertTrue(systemOut.getText().contains("Usage: autotool [options] [command] [command options]"));
+        assertTrue(systemOut.getText().contains("Usage: autotool [options] [command] [command options]"));
      }
 
     @Test
     public void emptyTwo() {
         String[] argv = { };
         main(argv);
-        Assertions.assertTrue(systemOut.getText().contains("Usage: autotool [options] [command] [command options]"));
+        assertTrue(systemOut.getText().contains("Usage: autotool [options] [command] [command options]"));
     }
 
     /**
@@ -209,24 +213,24 @@ public class ClientTest {
     }
 
     private void assertReport() {
-        Assertions.assertTrue(systemOut.getText().contains("Tool/Workflow ID"));
-        Assertions.assertTrue(systemOut.getText().contains("DATE"));
-        Assertions.assertTrue(systemOut.getText().contains("Version"));
-        Assertions.assertTrue(systemOut.getText().contains("Engine"));
-        Assertions.assertTrue(systemOut.getText().contains("Action Performed"));
-        Assertions.assertTrue(systemOut.getText().contains("Runtime"));
-        Assertions.assertTrue(systemOut.getText().contains("Status of Test Files"));
-        Assertions.assertFalse(new File("tooltester/Report.csv").exists());
+        assertTrue(systemOut.getText().contains("Tool/Workflow ID"));
+        assertTrue(systemOut.getText().contains("DATE"));
+        assertTrue(systemOut.getText().contains("Version"));
+        assertTrue(systemOut.getText().contains("Engine"));
+        assertTrue(systemOut.getText().contains("Action Performed"));
+        assertTrue(systemOut.getText().contains("Runtime"));
+        assertTrue(systemOut.getText().contains("Status of Test Files"));
+        assertFalse(new File("tooltester/Report.csv").exists());
     }
 
     private void assertFileReport() {
-        Assertions.assertTrue(systemOut.getText().contains("Build ID"));
-        Assertions.assertTrue(systemOut.getText().contains("Tag"));
-        Assertions.assertTrue(systemOut.getText().contains("File Name"));
-        Assertions.assertTrue(systemOut.getText().contains("CWL ID"));
-        Assertions.assertTrue(systemOut.getText().contains("md5sum"));
-        Assertions.assertTrue(systemOut.getText().contains("File Size"));
-        Assertions.assertFalse(new File("tooltester/FileReport.csv").exists());
+        assertTrue(systemOut.getText().contains("Build ID"));
+        assertTrue(systemOut.getText().contains("Tag"));
+        assertTrue(systemOut.getText().contains("File Name"));
+        assertTrue(systemOut.getText().contains("CWL ID"));
+        assertTrue(systemOut.getText().contains("md5sum"));
+        assertTrue(systemOut.getText().contains("File Size"));
+        assertFalse(new File("tooltester/FileReport.csv").exists());
     }
 
     @Disabled
@@ -241,8 +245,8 @@ public class ClientTest {
     public void testCleanSuffix() {
         final String testSuffix1 = "quay.io/pancancer/pcawg-bwa";
         final String testSuffix2 = "#workflow/pancancer/pcawg-bwa";
-        Assertions.assertEquals("quay.io-pancancer-pcawg-bwa", JenkinsHelper.cleanSuffx(testSuffix1));
-        Assertions.assertEquals("-workflow-pancancer-pcawg-bwa", JenkinsHelper.cleanSuffx(testSuffix2));
+        assertEquals("quay.io-pancancer-pcawg-bwa", JenkinsHelper.cleanSuffx(testSuffix1));
+        assertEquals("-workflow-pancancer-pcawg-bwa", JenkinsHelper.cleanSuffx(testSuffix2));
     }
 
     /**
@@ -251,7 +255,7 @@ public class ClientTest {
     @Test
     public void fileReport() {
         String[] argv = new String[] { "file-report" };
-        Assertions.assertThrows(ParameterException.class, () -> main(argv));
+        assertThrows(ParameterException.class, () -> main(argv));
     }
 
     /**
@@ -272,7 +276,7 @@ public class ClientTest {
     public void fileReportHelp() {
         String[] argv = new String[] { "file-report", "--help" };
         main(argv);
-        Assertions.assertTrue(
+        assertTrue(
                 systemOut.getText().contains("Reports the file sizes and checksum of a verified tool across all tested versions."));
     }
 
@@ -283,7 +287,7 @@ public class ClientTest {
     public void reportHelp() {
         String[] argv = { "report", "--help" };
         main(argv);
-        Assertions.assertTrue(systemOut.getText().contains("Report status of verified tools tested."));
+        assertTrue(systemOut.getText().contains("Report status of verified tools tested."));
     }
 
     /**
@@ -293,6 +297,6 @@ public class ClientTest {
     public void mainHelp() {
         String[] argv = { "--help" };
         main(argv);
-        Assertions.assertTrue(systemOut.getText().contains("Usage: autotool [options] [command] [command options]"));
+        assertTrue(systemOut.getText().contains("Usage: autotool [options] [command] [command options]"));
     }
 }
