@@ -5,7 +5,9 @@ import java.util.Map;
 
 import io.dockstore.tooltester.helper.PipelineTester;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Assertions;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,7 +41,7 @@ public class JenkinsJobTest {
     public void initialize() {
         client = new Client();
         client.setupClientEnvironment();
-        Assertions.assertNotNull(client.getContainersApi(), "client API could not start");
+        assertNotNull(client.getContainersApi(), "client API could not start");
     }
 
     @Disabled
@@ -47,7 +49,7 @@ public class JenkinsJobTest {
     public void pipelineTestJobIT() {
         final String suffix = "id-tag";
         client.setupTesters();
-        Assertions.assertNotNull(client.getPipelineTester().getJenkins(), "Jenkins server can not be reached");
+        assertNotNull(client.getPipelineTester().getJenkins(), "Jenkins server can not be reached");
         client.setupTesters();
         PipelineTester pipelineTester = client.getPipelineTester();
         String jenkinsJobTemplate = pipelineTester.getJenkinsJobTemplate();
@@ -62,7 +64,7 @@ public class JenkinsJobTest {
 
         pipelineTester.runTest(suffix, map);
         String status = pipelineTester.getTestResults(suffix).get("status");
-        Assertions.assertNotNull(status, "Status is not SUCCESS: ");
+        assertNotNull(status, "Status is not SUCCESS: ");
         //        try {
         //            client.getJenkins().deleteJob("PipelineTest" + "-" + suffix, true);
         //        } catch (IOException e) {
@@ -76,9 +78,9 @@ public class JenkinsJobTest {
         int exitCode = catchSystemExit(() -> {
             client.setupTesters();
         });
-        Assertions.assertEquals(10, exitCode);
+        assertEquals(10, exitCode);
         PipelineTester pipelineTester = client.getPipelineTester();
-        Assertions.assertNotNull(pipelineTester.getJenkins(), "Jenkins server can not be reached");
+        assertNotNull(pipelineTester.getJenkins(), "Jenkins server can not be reached");
         pipelineTester.getTestResults("SuffixOfATestThatShouldNotExist");
     }
 }
