@@ -1,4 +1,4 @@
-package org.example;
+package io.dockstore.jira;
 
 import java.io.IOException;
 import java.util.List;
