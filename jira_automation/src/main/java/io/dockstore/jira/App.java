@@ -7,28 +7,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.kohsuke.github.GHIssue;
-import org.kohsuke.github.GHIssueState;
 import org.kohsuke.github.GHRepository;
-import org.kohsuke.github.GitHub;
-import org.kohsuke.github.GitHubBuilder;
 
+/**
+ * Generates a JIRA JQL query to find JIRA issues closed by Unito that are open in JIRA.
+ *
+ * Does not generate a url, because the url will be too long for the browser; you need to input
+ * the query in JIRA so it can be POSTed.
+ */
 public class App
 {
     private final static Pattern JIRA_ISSUE_IN_GITHUB_BODY = Pattern.compile("((Issue Number)|(friendlyId)): (DOCK-\\d+)");
     public static void main( String[] args ) throws IOException {
-        final GitHub gitHub =
-            new GitHubBuilder().withAuthorizationProvider(
-                () -> "Bearer " + System.getenv("GITHUB_TOKEN")).build();
-        final GHRepository repository = gitHub.getRepository("dockstore/dockstore");
+        final GHRepository repository = Utils.getDockstoreRepository();
         final String jqlQuery = issuesOpenInGitHubButDoneInJiraQuery(repository);
         System.out.println(jqlQuery);
     }
 
     private static String issuesOpenInGitHubButDoneInJiraQuery(final GHRepository repository) throws IOException {
-        final List<GHIssue> prsAndIssues = repository.getIssues(GHIssueState.OPEN);
-        final List<GHIssue> issues = prsAndIssues.stream()
-            .filter(ghIssue -> !ghIssue.isPullRequest())
-            .toList();
+        final List<GHIssue> issues = Utils.findOpenIssues(repository);
         final String jiraIssues = issues.stream()
             .map(ghIssue -> {
                 final Matcher matcher = JIRA_ISSUE_IN_GITHUB_BODY.matcher(ghIssue.getBody());
