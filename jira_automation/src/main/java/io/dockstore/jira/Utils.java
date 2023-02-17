@@ -24,8 +24,7 @@ public class Utils {
      * @throws IOException
      */
     public static List<GHIssue> findOpenIssues(GHRepository repository) throws IOException {
-        final List<GHIssue> prsAndIssues = repository.getIssues(GHIssueState.OPEN);
-        return prsAndIssues.stream()
+        return repository.getIssues(GHIssueState.OPEN).stream()
             .filter(ghIssue -> !ghIssue.isPullRequest())
             .toList();
     }

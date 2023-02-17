@@ -30,6 +30,7 @@ public class MilestoneChecker {
                 final Matcher matcher = FIX_VERSIONS.matcher(body);
                 if (matcher.find()) {
                     if (milestone == null) {
+                        // There's a fix version in JIRA, but none in GitHub
                         return true;
                     }
                     final String jiraFixVersion = matcher.group(6);

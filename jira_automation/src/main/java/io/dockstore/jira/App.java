@@ -30,12 +30,12 @@ public class App
             .map(ghIssue -> {
                 final Matcher matcher = JIRA_ISSUE_IN_GITHUB_BODY.matcher(ghIssue.getBody());
                 if (matcher.find()) {
-                    return "\"" + matcher.group(4) + "\"";
+                    return "\"%s\"".formatted(matcher.group(4));
                 }
                 return null;
             })
             .filter(Objects::nonNull)
-            .collect(Collectors.joining(", "));
+            .collect(Collectors.joining(","));
 
         return """
             project = "DOCK" and key in ( %s ) and status = Done ORDER BY created DESC
