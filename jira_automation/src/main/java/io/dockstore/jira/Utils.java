@@ -2,6 +2,9 @@ package io.dockstore.jira;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.kohsuke.github.GHIssue;
 import org.kohsuke.github.GHIssueState;
 import org.kohsuke.github.GHRepository;
@@ -9,6 +12,8 @@ import org.kohsuke.github.GitHub;
 import org.kohsuke.github.GitHubBuilder;
 
 public class Utils {
+
+    private final static Pattern JIRA_ISSUE_IN_GITHUB_BODY = Pattern.compile("((Issue Number)|(friendlyId)): (DOCK-\\d+)");
 
     public static GHRepository getDockstoreRepository() throws IOException {
         final GitHub gitHub =
@@ -27,6 +32,14 @@ public class Utils {
         return repository.getIssues(GHIssueState.OPEN).stream()
             .filter(ghIssue -> !ghIssue.isPullRequest())
             .toList();
+    }
+
+    public static Optional<String> findJiraIssueInBody(GHIssue ghIssue) {
+        final Matcher matcher = JIRA_ISSUE_IN_GITHUB_BODY.matcher(ghIssue.getBody());
+        if (matcher.find()) {
+            return Optional.of(matcher.group(4));
+        }
+        return Optional.empty();
     }
 
 }

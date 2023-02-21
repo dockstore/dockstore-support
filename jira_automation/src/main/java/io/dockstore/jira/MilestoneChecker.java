@@ -23,7 +23,7 @@ public class MilestoneChecker {
 
     public static void main(String[] args) throws IOException {
         final List<GHIssue> openIssues = Utils.findOpenIssues(Utils.getDockstoreRepository());
-        final String mismatches = openIssues.stream()
+        final List<JiraAndGithub> issues = openIssues.stream()
             .filter(ghIssue -> {
                 final GHMilestone milestone = ghIssue.getMilestone();
                 final String body = ghIssue.getBody();
@@ -40,13 +40,29 @@ public class MilestoneChecker {
                     return milestone != null;
                 }
             })
-            .map(ghIssue -> String.valueOf(ghIssue.getNumber()))
+            .map(ghIssue -> new JiraAndGithub(Utils.findJiraIssueInBody(ghIssue).get(), ghIssue.getNumber()))
+            .collect(Collectors.toList());
+        System.out.println(generateGitHubIssuesUrl(issues));
+        System.out.println();
+        System.out.println(generateJiraIssuesUrl(issues));
+    }
+
+    private static String generateJiraIssuesUrl(final List<JiraAndGithub> issues) {
+        return "https://ucsc-cgl.atlassian.net/issues/?jql=project=DOCK AND " +
+            issues.stream().map(issue -> "key=\"" + issue.jiraIssue() + "\"")
+                .collect(Collectors.joining(" or "));
+    }
+
+    private static String generateGitHubIssuesUrl(final List<JiraAndGithub> issues) {
+        return "https://github.com/dockstore/dockstore/issues?q="
+            + issues.stream().map(issue -> "" + issue.githubIssue())
             .collect(Collectors.joining("+"));
-        System.out.println("https://github.com/dockstore/dockstore/issues?q=" + mismatches);
     }
 
     private static boolean milestoneAndFixVersionEqual(String jiraFixVersion, String milestone) {
         return "Open-ended research tasks".equals(jiraFixVersion) && milestone.equals("Open ended research tasks")
             || Objects.equals(jiraFixVersion, milestone);
     }
+
+    record JiraAndGithub(String jiraIssue, int githubIssue){}
 }

@@ -17,7 +17,6 @@ import org.kohsuke.github.GHRepository;
  */
 public class App
 {
-    private final static Pattern JIRA_ISSUE_IN_GITHUB_BODY = Pattern.compile("((Issue Number)|(friendlyId)): (DOCK-\\d+)");
     public static void main( String[] args ) throws IOException {
         final GHRepository repository = Utils.getDockstoreRepository();
         final String jqlQuery = issuesOpenInGitHubButDoneInJiraQuery(repository);
@@ -27,13 +26,9 @@ public class App
     private static String issuesOpenInGitHubButDoneInJiraQuery(final GHRepository repository) throws IOException {
         final List<GHIssue> issues = Utils.findOpenIssues(repository);
         final String jiraIssues = issues.stream()
-            .map(ghIssue -> {
-                final Matcher matcher = JIRA_ISSUE_IN_GITHUB_BODY.matcher(ghIssue.getBody());
-                if (matcher.find()) {
-                    return "\"%s\"".formatted(matcher.group(4));
-                }
-                return null;
-            })
+            .map(ghIssue -> Utils.findJiraIssueInBody(ghIssue)
+                .map(issue -> "\"%s\"".formatted(issue))
+                .orElse(null))
             .filter(Objects::nonNull)
             .collect(Collectors.joining(","));
 
