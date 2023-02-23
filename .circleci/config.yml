@@ -105,7 +105,7 @@ commands:
     steps:
       - run:
           name: send coverage
-          command: bash <(curl -s https://codecov.io/bash) -F ${TESTING_PROFILE//-} || echo "Codecov did not collect coverage reports"
+          command: bash <(curl -s https://codecov.io/bash) -F ${DIRECTORY//-} || echo "Codecov did not collect coverage reports"
 
   install_dockerize:
     steps:
@@ -196,7 +196,7 @@ commands:
       - run:
           name: run tests
           command: |
-            cd $DIRECTORY && mvn -B org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate clean install -ntp | grep  -v "^Running Changeset:"
+            cd $DIRECTORY && mvn -B clean install -ntp | grep  -v "^Running Changeset:"
   save_test_results:
     steps:
       - run:
@@ -214,16 +214,3 @@ commands:
       - run_tests
       - save_test_results
       - send_coverage
-      - persist_coverage
-
-  persist_coverage:
-    steps:
-      - run:
-          name: Rename and move coverage reports
-          command: |
-            mkdir coverage
-            cp ./reports/target/site/jacoco-aggregate/jacoco.xml coverage/${CIRCLE_JOB}-${CIRCLE_NODE_INDEX}.xml
-      - persist_to_workspace:
-          root: .
-          paths:
-            - coverage
