@@ -83,7 +83,7 @@ jobs:
       - install-git-secrets
       - run:
           name: build
-          command: mvn clean install -DskipTests
+          command: cd $DIRECTORY && mvn clean install -DskipTests
       - run:
           name: SonarCloud scan - coverage
           command: mvn -Dsonar.coverage.jacoco.xmlReportPaths=../coverage/* sonar:sonar
