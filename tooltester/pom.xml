@@ -381,12 +381,6 @@
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>cli-utilities</artifactId>
-            <version>0.1-alpha.0-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
 
         <!-- For AWS integration END -->
     </dependencies>

@@ -1,4 +1,4 @@
-package io.dockstore.cliutilities;
+package io.dockstore.tooltester.helper;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

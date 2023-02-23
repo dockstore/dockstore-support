@@ -1,11 +1,5 @@
 package io.dockstore.metricsaggregator.client.cli;
 
-import static io.dockstore.cliutilities.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.cliutilities.ExceptionHandler.GENERIC_ERROR;
-import static io.dockstore.cliutilities.ExceptionHandler.errorMessage;
-import static io.dockstore.cliutilities.ExceptionHandler.exceptionMessage;
-import static io.dockstore.cliutilities.JCommanderUtility.out;
-
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
@@ -27,6 +21,8 @@ public class Client {
 
     public static final String CONFIG_FILE_NAME = "metrics-aggregator.config";
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
+    public static final int SUCCESS_EXIT_CODE = 0;
+    public static final int FAILURE_EXIT_CODE = 1;
 
     public Client() {
 
@@ -44,11 +40,11 @@ public class Client {
         } catch (MissingCommandException e) {
             jCommander.usage();
             if (e.getUnknownCommand().isEmpty()) {
-                out("No command entered");
-                return;
+                LOG.error("No command entered");
             } else {
-                exceptionMessage(e, "Unknown command", COMMAND_ERROR);
+                LOG.error("Unknown command", e);
             }
+            System.exit(FAILURE_EXIT_CODE);
         }
 
         if (commandLineArgs.isHelp()) {
@@ -56,14 +52,16 @@ public class Client {
         } else if ("aggregate-metrics".equals(jCommander.getParsedCommand())) {
             final Optional<INIConfiguration> config = getConfiguration(aggregateMetricsCommand.getConfig());
             if (config.isEmpty()) {
-                errorMessage("Error reading configuration file", GENERIC_ERROR);
+                LOG.error("Error reading configuration file");
+                System.exit(FAILURE_EXIT_CODE);
             }
 
             try {
                 final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config.get());
                 client.aggregateMetrics(metricsAggregatorConfig, aggregateMetricsCommand.getToolId(), aggregateMetricsCommand.getVersionId());
             } catch (Exception e) {
-                exceptionMessage(e, "Could not aggregate metrics", GENERIC_ERROR);
+                LOG.error("Could not aggregate metrics", e);
+                System.exit(FAILURE_EXIT_CODE);
             }
         }
     }

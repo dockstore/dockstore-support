@@ -42,6 +42,9 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Object;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.stream.SystemErr;
+import uk.org.webcompere.systemstubs.stream.SystemOut;
 
 import static io.dockstore.client.cli.BaseIT.ADMIN_USERNAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,6 +68,12 @@ class MetricsS3ClientTest {
 
     public static DropwizardTestSupport<DockstoreWebserviceConfiguration> SUPPORT = new DropwizardTestSupport<>(
             DockstoreWebserviceApplication.class, CommonTestUtilities.PUBLIC_CONFIG_PATH);
+
+    @SystemStub
+    public final SystemOut systemOutRule = new SystemOut();
+
+    @SystemStub
+    public final SystemErr systemErrRule = new SystemErr();
 
     @BeforeAll
     public static void setup() throws Exception {

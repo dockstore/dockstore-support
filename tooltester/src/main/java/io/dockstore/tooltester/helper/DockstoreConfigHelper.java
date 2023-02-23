@@ -8,8 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Objects;
 
-import io.dockstore.cliutilities.ExceptionHandler;
-
 /**
  * @author gluu
  * @since 05/12/17

@@ -29,11 +29,11 @@ import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.dockstore.cliutilities.ExceptionHandler.CLIENT_ERROR;
-import static io.dockstore.cliutilities.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.cliutilities.ExceptionHandler.IO_ERROR;
-import static io.dockstore.cliutilities.ExceptionHandler.errorMessage;
-import static io.dockstore.cliutilities.ExceptionHandler.exceptionMessage;
+import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 
 //import com.offbytwo.jenkins.model.Artifact;
 

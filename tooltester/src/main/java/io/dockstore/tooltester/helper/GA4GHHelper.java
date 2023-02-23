@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.dockstore.cliutilities.ExceptionHandler;
 import io.dockstore.tooltester.CommandObject;
 import io.dockstore.tooltester.blacklist.BlackList;
 import io.swagger.client.ApiException;
@@ -18,9 +17,9 @@ import io.swagger.client.model.ToolVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.dockstore.cliutilities.ExceptionHandler.API_ERROR;
-import static io.dockstore.cliutilities.ExceptionHandler.CLIENT_ERROR;
-import static io.dockstore.cliutilities.ExceptionHandler.exceptionMessage;
+import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 
 /**
  * A variety of helper methods to filter TRS Tool and TRS ToolVersion

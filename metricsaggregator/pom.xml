@@ -169,10 +169,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>cli-utilities</artifactId>
-            <version>0.1-alpha.0-SNAPSHOT</version>
-            <scope>compile</scope>
+            <groupId>uk.org.webcompere</groupId>
+            <artifactId>system-stubs-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
