@@ -70,6 +70,10 @@ jobs:
 
         # Running scan must occur after build
       - run_git_secrets_scan
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
   sonar-cloud:
     docker: # run the steps with Docker
       - image: cimg/openjdk:<< pipeline.parameters.java-tag >>
@@ -94,12 +98,8 @@ commands:
             mvn -v
             python3 -V
       - run:
-          name: Navigate to correct directory
-          command: |
-            cd $DIRECTORY
-      - run:
           name: Docker-Compose
-          command: docker-compose up -d
+          command: cd $DIRECTORY && docker-compose up -d
 
   send_coverage:
     steps:
