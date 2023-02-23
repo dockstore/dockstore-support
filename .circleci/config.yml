@@ -196,7 +196,7 @@ commands:
       - run:
           name: run tests
           command: |
-            mvn -B org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate clean install -ntp | grep  -v "^Running Changeset:"
+            cd $DIRECTORY && mvn -B org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate clean install -ntp | grep  -v "^Running Changeset:"
   save_test_results:
     steps:
       - run:
