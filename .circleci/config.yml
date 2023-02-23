@@ -35,13 +35,6 @@ workflows:
           <<: *common_filters
           requires:
             - build
-      - sonar-cloud:
-          <<: *common_filters
-          requires:
-            - metrics-aggregator-tests
-          context:
-            - sonarcloud
-
 
 jobs:
   metrics-aggregator-tests:
@@ -74,19 +67,6 @@ jobs:
           root: .
           paths:
             - .
-  sonar-cloud:
-    docker: # run the steps with Docker
-      - image: cimg/openjdk:<< pipeline.parameters.java-tag >>
-    steps:
-      - attach_workspace:
-          at: .
-      - install-git-secrets
-      - run:
-          name: build
-          command: cd $DIRECTORY && mvn clean install -DskipTests
-      - run:
-          name: SonarCloud scan - coverage
-          command: mvn -Dsonar.coverage.jacoco.xmlReportPaths=../coverage/* sonar:sonar
 
 commands:
   setup_machine:
