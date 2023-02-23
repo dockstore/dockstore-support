@@ -1,0 +1,257 @@
+version: 2.1
+parameters:
+  java-tag:
+    type: string
+    default: "17.0.3"
+orbs:
+  build-tools: circleci/build-tools@2.7.0
+executors:
+  unit_tests_executor:
+    docker: # run the steps with Docker
+      - image: cimg/openjdk:<< pipeline.parameters.java-tag >>
+
+  machine_integration_test_exec:
+    machine: # run the steps with Ubuntu VM
+      image: ubuntu-2204:2022.10.1
+    environment:
+      PGHOST: 127.0.0.1
+    resource_class: medium
+
+common_filters: &common_filters
+  filters:
+    tags:
+      only: /.*/
+    branches:
+      ignore:
+        - gh-pages
+
+workflows:
+  version: 2
+  everything:
+    jobs:
+      - build:
+          <<: *common_filters
+      - metrics-aggregator-tests:
+          <<: *common_filters
+          requires:
+            - build
+      - sonar-cloud:
+          <<: *common_filters
+          requires:
+            - metrics-aggregator-tests
+          context:
+            - sonarcloud
+
+
+jobs:
+  metrics-aggregator-tests:
+    executor: machine_integration_test_exec
+    parallelism: 1
+    environment:
+      DIRECTORY: metricsaggregator
+      MAVEN_GOAL: verify
+    steps:
+      - setup_and_run_integration_tests
+
+  build:
+    docker: # run the steps with Docker
+      - image: cimg/openjdk:<< pipeline.parameters.java-tag >>
+        environment:
+          # Java can read cgroup. Sadly the cgroup in
+          # CircleCI is wrong. Have to manually set. Nothing to do with surefire
+          # plugin, it has its own JVM. The two of these must add up to a bit less than 4GB.
+          JAVA_TOOL_OPTIONS: -Xmx512m
+    steps: # a collection of executable commands
+      - checkout # check out source code to working directory
+      - install-git-secrets
+      - run:
+          name: build
+          command: cd metricsaggregator && mvn -B clean install -DskipTests
+
+        # Running scan must occur after build
+      - run_git_secrets_scan
+      - run:
+          name: Generate test lists
+          command: bash scripts/generate-test-list.sh
+      - store_artifacts:
+          path: temp/test-list
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  sonar-cloud:
+    docker: # run the steps with Docker
+      - image: cimg/openjdk:<< pipeline.parameters.java-tag >>
+    steps:
+      - attach_workspace:
+          at: .
+      - install-git-secrets
+      - run:
+          name: build
+          command: mvn clean install -DskipTests
+      - run:
+          name: SonarCloud scan - coverage
+          command: mvn -Dsonar.coverage.jacoco.xmlReportPaths=../coverage/* sonar:sonar
+      - store_artifacts:
+          path: misses
+
+commands:
+  setup_machine:
+    steps:
+      - run: # Useful for verifying default versions on machine image
+          name: Java/Maven/Python versions
+          command: |
+            java -version
+            mvn -v
+            python3 -V
+      - run:
+          name: Navigate to correct directory
+          command: |
+            cd $DIRECTORY
+      - run:
+          name: Docker-Compose
+          command: docker-compose up -d
+
+  send_coverage:
+    steps:
+      - run:
+          name: send coverage
+          command: bash <(curl -s https://codecov.io/bash) -F ${TESTING_PROFILE//-} || echo "Codecov did not collect coverage reports"
+
+  install_dockerize:
+    steps:
+      - run:
+          name: install dockerize
+          command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && sudo tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+          environment:
+            DOCKERIZE_VERSION: v0.6.1
+
+  wait_for_db:
+    steps:
+      - run:
+          name: Wait for db
+          command: dockerize -wait tcp://localhost:5432 -timeout 1m
+
+  wait_for_elastic_search:
+    steps:
+      - run:
+          name: Wait for ES
+          command: |
+            wget --output-document /dev/null --waitretry=5 --tries=10 --retry-connrefused localhost:9200 || true
+            wget --output-document /dev/null --waitretry=5 --tries=10 --retry-connrefused localhost:9200 || true
+
+  run_git_secrets_scan:
+    steps:
+      - run:
+          name: Run git-secrets scan on dockstore repository
+          # Needs to be after a build so that the correct configuration is set
+          # by the exec-maven plugin
+          command: |
+            git secrets --scan
+
+  install-git-secrets:
+    steps:
+      - run:
+          name: Install git-secrets
+          command: |
+            wget --no-verbose -O git-secrets-1.3.0.tar.gz https://github.com/awslabs/git-secrets/archive/1.3.0.tar.gz
+            tar -zxf git-secrets-1.3.0.tar.gz
+            cd git-secrets-1.3.0
+            sudo make install
+
+  setup_postgres:
+    steps:
+      - run:
+          name: setup postgres user and DB
+          command: |
+            psql -c "create user dockstore with password 'dockstore' createdb;" -U postgres
+            psql -c 'create database webservice_test with owner = dockstore;' -U postgres
+            psql -c "ALTER USER dockstore WITH superuser;" -U postgres
+
+  install_postgres_sql_client:
+    steps:
+      - run:
+          name: Install postgresql client
+          command: |
+            sudo rm -rf /var/lib/apt/lists/*
+            # heroku.com is not updating their keys
+            # https://github.com/heroku/cli/issues/1464
+            curl https://cli-assets.heroku.com/apt/release.key | sudo apt-key add -
+            sudo apt update
+            # NOTE: this may be installing latest client; perhaps should
+            # specify version
+            sudo apt install -y postgresql-client
+
+  setup_for_integration_tests:
+    steps:
+      - get_workspace_and_dependencies
+      - setup_machine
+      - setup_for_tests
+      - wait_for_elastic_search
+
+  get_workspace_and_dependencies:
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: identify tests to run
+          command: |
+            if [ $CIRCLE_NODE_TOTAL != 1 ] 
+            then
+              TESTS_TO_RUN=$(cat temp/test-list/IT/all.txt | circleci tests split --split-by=timings --time-default=0.1s | tr '\n' ',')
+            else 
+              TESTS_TO_RUN=$(cat temp/test-list/IT/all.txt | tr '\n' ',')
+            fi
+            echo $TESTS_TO_RUN | tee /tmp/tests-to-run.txt
+          # The piping grep command is a temporary fix to this issue https://github.com/liquibase/liquibase/issues/2396
+
+  setup_for_tests:
+    steps:
+      - install-git-secrets
+      - install_postgres_sql_client
+      - setup_postgres
+      - install_dockerize
+      - wait_for_db
+
+  run_tests:
+    steps:
+      - run:
+          name: run tests
+          command: |            
+            if [ $CIRCLE_NODE_TOTAL != 1 ]
+            then
+              mvn -B org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate clean install -Dit.test=`cat /tmp/tests-to-run.txt` -DfailIfNoTests=false -ntp | grep  -v "^Running Changeset:"
+            else
+              mvn -B org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate clean install -ntp | grep  -v "^Running Changeset:"
+            fi
+          # The piping grep command is a temporary fix to this issue https://github.com/liquibase/liquibase/issues/2396
+  save_test_results:
+    steps:
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/test-results/junit/
+            find . -type f -regex ".*/target/.*-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/test-results
+
+  setup_and_run_integration_tests:
+    steps:
+      - setup_for_integration_tests
+      - run_tests
+      - save_test_results
+      - send_coverage
+      - persist_coverage
+
+  persist_coverage:
+    steps:
+      - run:
+          name: Rename and move coverage reports
+          command: |
+            mkdir coverage
+            cp ./reports/target/site/jacoco-aggregate/jacoco.xml coverage/${CIRCLE_JOB}-${CIRCLE_NODE_INDEX}.xml
+      - persist_to_workspace:
+          root: .
+          paths:
+            - coverage

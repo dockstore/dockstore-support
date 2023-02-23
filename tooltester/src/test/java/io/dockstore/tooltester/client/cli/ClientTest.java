@@ -20,7 +20,7 @@ import uk.org.webcompere.systemstubs.stream.SystemErr;
 import uk.org.webcompere.systemstubs.stream.SystemOut;
 
 import static io.dockstore.tooltester.client.cli.Client.main;
-import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.cliutilities.ExceptionHandler.COMMAND_ERROR;
 import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
 
 /**

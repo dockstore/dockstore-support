@@ -64,14 +64,14 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
-import static io.dockstore.tooltester.client.cli.JCommanderUtility.printJCommanderHelp;
-import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.DEBUG;
-import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+import static io.dockstore.cliutilities.JCommanderUtility.out;
+import static io.dockstore.cliutilities.JCommanderUtility.printJCommanderHelp;
+import static io.dockstore.cliutilities.ExceptionHandler.API_ERROR;
+import static io.dockstore.cliutilities.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.cliutilities.ExceptionHandler.DEBUG;
+import static io.dockstore.cliutilities.ExceptionHandler.GENERIC_ERROR;
+import static io.dockstore.cliutilities.ExceptionHandler.IO_ERROR;
+import static io.dockstore.cliutilities.ExceptionHandler.exceptionMessage;
 import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
 
 /**

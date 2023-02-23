@@ -23,8 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.client.cli.Client.getApiClient;
-import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
+import static io.dockstore.cliutilities.ExceptionHandler.CLIENT_ERROR;
+import static io.dockstore.cliutilities.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
 
 /**

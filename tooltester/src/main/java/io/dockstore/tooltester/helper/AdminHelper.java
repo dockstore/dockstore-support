@@ -8,8 +8,8 @@ import java.util.Map;
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.model.Job;
 
-import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+import static io.dockstore.cliutilities.ExceptionHandler.IO_ERROR;
+import static io.dockstore.cliutilities.ExceptionHandler.exceptionMessage;
 
 /**
  * @author gluu

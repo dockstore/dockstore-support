@@ -13,7 +13,7 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package io.dockstore.tooltester.client.cli;
+package io.dockstore.cliutilities;
 
 import java.util.Collections;
 import java.util.List;

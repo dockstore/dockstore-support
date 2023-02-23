@@ -18,8 +18,8 @@ import de.vandermeer.asciitable.v2.themes.V2_E_TableThemes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+import static io.dockstore.cliutilities.ExceptionHandler.IO_ERROR;
+import static io.dockstore.cliutilities.ExceptionHandler.exceptionMessage;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**

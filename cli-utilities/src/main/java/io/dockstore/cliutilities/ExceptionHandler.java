@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.helper;
+package io.dockstore.cliutilities;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -18,6 +18,10 @@ public class ExceptionHandler {
     public static final AtomicBoolean DEBUG = new AtomicBoolean(false);
     static final int CONNECTION_ERROR = 150; // Connection exception
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
+
+    private ExceptionHandler() {
+
+    }
 
     public static void errorMessage(String message, int exitCode) {
         err(message);

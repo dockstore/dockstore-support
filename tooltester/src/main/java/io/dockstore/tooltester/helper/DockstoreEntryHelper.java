@@ -11,8 +11,8 @@ import io.swagger.client.model.Tool;
 import io.swagger.client.model.Workflow;
 import io.swagger.client.model.WorkflowVersion;
 
-import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+import static io.dockstore.cliutilities.ExceptionHandler.API_ERROR;
+import static io.dockstore.cliutilities.ExceptionHandler.exceptionMessage;
 
 /**
  * @author gluu
