@@ -173,9 +173,15 @@ commands:
 
   setup_for_integration_tests:
     steps:
+      - get_workspace_and_dependencies
       - setup_machine
       - setup_for_tests
       - wait_for_elastic_search
+
+  get_workspace_and_dependencies:
+    steps:
+      - attach_workspace:
+          at: .
 
   setup_for_tests:
     steps:
