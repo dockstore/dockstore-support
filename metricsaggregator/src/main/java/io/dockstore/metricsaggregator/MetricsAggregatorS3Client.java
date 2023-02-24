@@ -44,15 +44,15 @@ public class MetricsAggregatorS3Client {
     private static final Logger LOG = LoggerFactory.getLogger(MetricsAggregatorS3Client.class);
     private static final Gson GSON = new Gson();
 
-    private String bucketName;
+    private final String bucketName;
 
-    private S3Client s3Client;
-    private MetricsDataS3Client metricsDataS3Client;
+    private final S3Client s3Client;
+    private final MetricsDataS3Client metricsDataS3Client;
 
     public MetricsAggregatorS3Client(String bucketName) {
         this.bucketName = bucketName;
-        this.s3Client = S3Client.builder().build();
-        this.metricsDataS3Client = new MetricsDataS3Client(bucketName);
+        this.s3Client = S3ClientHelper.createS3Client();
+        this.metricsDataS3Client = new MetricsDataS3Client(bucketName, this.s3Client);
     }
 
     public MetricsAggregatorS3Client(String bucketName, String s3EndpointOverride) throws URISyntaxException {
@@ -87,7 +87,41 @@ public class MetricsAggregatorS3Client {
 
     /**
      * Returns a unique list of directories containing metrics files.
-     * Directory example: "workflow/github.com/DockstoreTestUser2/dockstore_workflow_cnv/master/TERRA/"
+     * For example, suppose the local-dockstore-metrics-data bucket looks like the following.
+     * <p>
+     * local-dockstore-metrics-data
+     * ├── tool
+     * │   └── quay.io
+     * │       └── dockstoretestuser2
+     * │           └── dockstore-cgpmap
+     * │               └── symbolic.v1
+     * │                   └── TERRA
+     * │                       └── 1673972062578.json
+     * │                           └── OBJECT METADATA
+     * │                               └── owner: 1
+     * │                               └── description:
+     * └── workflow
+     *     └── github.com
+     *         └── DockstoreTestUser2
+     *             └── dockstore_workflow_cnv%2Fmy-workflow
+     *                 └── master
+     *                     ├── TERRA
+     *                     │   └── 1673972062578.json
+     *                     │       └── OBJECT METADATA
+     *                     │           └── owner: 1
+     *                     │           └── description: A single execution
+     *                     └── DNA_STACK
+     *                         └── 1673972062578.json
+     *                             └── OBJECT METADATA
+     *                                 └── owner: 1
+     *                                 └── description: A single execution
+     * <p>
+     * This function returns the following directories:
+     * <ul>
+     *     <li>tool/quay.io/dockstoretestuser2/dockstore-cgpmap/symbolic.v1/TERRA/</li>
+     *     <li>workflow/github.com/DockstoreTestUser2/dockstore_workflow_cnv%2Fmy-workflow/master/TERRA/</li>
+     *     <li>workflow/github.com/DockstoreTestUser2/dockstore_workflow_cnv%2Fmy-workflow/master/DNA_STACK/</li>
+     * </ul>
      *
      * @return
      */
