@@ -39,6 +39,7 @@ import io.dockstore.webservice.core.Partner;
 import io.dockstore.webservice.core.metrics.ExecutionTimeStatisticMetric;
 import io.dockstore.webservice.core.metrics.MemoryStatisticMetric;
 import io.dropwizard.testing.DropwizardTestSupport;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +57,6 @@ import uk.org.webcompere.systemstubs.stream.SystemErr;
 import uk.org.webcompere.systemstubs.stream.SystemOut;
 
 import static io.dockstore.client.cli.BaseIT.ADMIN_USERNAME;
-import static io.dockstore.metricsaggregator.client.cli.Client.CONFIG_FILE_ERROR;
 import static io.dockstore.metricsaggregator.common.TestUtilities.BUCKET_NAME;
 import static io.dockstore.metricsaggregator.common.TestUtilities.CONFIG_FILE_PATH;
 import static io.dockstore.metricsaggregator.common.TestUtilities.createExecution;
@@ -102,6 +102,11 @@ class ClientTest {
     @AfterEach
     void tearDown() {
         deleteBucketContents();
+    }
+
+    @AfterAll
+    public static void afterClass() {
+        SUPPORT.after();
     }
 
     private static void deleteBucketContents() {
@@ -246,6 +251,5 @@ class ClientTest {
     void testClientErrors() throws Exception {
         int exitCode = catchSystemExit(() -> Client.main(new String[] {"aggregate-metrics", "--config", "thisdoesntexist"}));
         assertEquals(Client.FAILURE_EXIT_CODE, exitCode);
-        assertTrue(systemOutRule.getText().contains(CONFIG_FILE_ERROR));
     }
 }

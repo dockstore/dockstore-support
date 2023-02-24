@@ -40,6 +40,7 @@ import io.dockstore.webservice.DockstoreWebserviceConfiguration;
 import io.dockstore.webservice.core.Partner;
 import io.dockstore.webservice.helpers.S3ClientHelper;
 import io.dropwizard.testing.DropwizardTestSupport;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,6 +94,11 @@ class MetricsAggregatorS3ClientTest {
     @AfterEach
     void tearDown() {
         deleteBucketContents();
+    }
+
+    @AfterAll
+    public static void afterClass() {
+        SUPPORT.after();
     }
 
     private static void deleteBucketContents() {

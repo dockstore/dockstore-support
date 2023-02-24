@@ -63,26 +63,43 @@ public class MetricsAggregatorS3Client {
 
     public void aggregateMetrics(ExtendedGa4GhApi extendedGa4GhApi) {
         List<String> metricsDirectories = getDirectories();
+
+        if (metricsDirectories.isEmpty()) {
+            System.out.println("No directories found to aggregate metrics");
+            return;
+        }
+
         // Each directory contains metrics for a specific tool version and platform
         for (String directory : metricsDirectories) {
             String toolId = S3ClientHelper.getToolId(directory); // Check if we should just give the full key
             String versionName = S3ClientHelper.getVersionName(directory);
             String platform = S3ClientHelper.getPlatform(directory);
             List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(toolId, versionName, Partner.valueOf(platform));
-            List<Execution> executions = metricsDataList.stream().map(metricsData -> {
-                try {
-                    String fileContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(),
-                            platform, metricsData.fileName());
-                    return List.of(GSON.fromJson(fileContent, Execution[].class));
-                } catch (IOException e) {
-                    LOG.error("Error aggregating metrics: Unable to get all executions", e);
-                    throw new RuntimeException("Error aggregating metrics: Unable to get all executions");
-                }
-            }).flatMap(List::stream).toList();
 
-            getAggregatedMetrics(executions).ifPresent(
-                    metrics -> extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, toolId, versionName));
+            List<Execution> executions;
+            try {
+                executions = getExecutions(metricsDataList);
+            } catch (IOException e) {
+                LOG.error("Error aggregating metrics: Unable to get all executions from directory {}", directory, e);
+                continue; // Continue aggregating metrics for other directories
+            }
+
+            getAggregatedMetrics(executions).ifPresent(metrics -> {
+                extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, toolId, versionName);
+                System.out.println(String.format("Aggregated metrics for tool ID %s, version %s, platform %s from S3 directory %s", toolId, versionName, platform, directory));
+            });
         }
+    }
+
+    private List<Execution> getExecutions(List<MetricsData> metricsDataList) throws IOException {
+        List<Execution> executionsFromAllSubmissions = new ArrayList<>();
+        for (MetricsData metricsData : metricsDataList) {
+            String fileContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(),
+                    metricsData.platform(), metricsData.fileName());
+            List<Execution> executionsFromOneSubmission = List.of(GSON.fromJson(fileContent, Execution[].class));
+            executionsFromAllSubmissions.addAll(executionsFromOneSubmission);
+        }
+        return executionsFromAllSubmissions;
     }
 
     /**
