@@ -17,22 +17,8 @@ public class CommandLineArgs {
         @Parameter(names = {"-c", "--config"}, description = "The config file path.")
         private File config = new File("./" + Client.CONFIG_FILE_NAME);
 
-        @Parameter(names = {"-t", "--toolId"}, description = "Aggregate metrics for the specific tool ID.")
-        private String toolId;
-
-        @Parameter(names = {"-v", "--versionId"}, description = "Aggregate metrics for the specific version ID. Must also provide the tool ID.")
-        private String versionId;
-
         public File getConfig() {
             return config;
-        }
-
-        public String getToolId() {
-            return toolId;
-        }
-
-        public String getVersionId() {
-            return versionId;
         }
     }
 }

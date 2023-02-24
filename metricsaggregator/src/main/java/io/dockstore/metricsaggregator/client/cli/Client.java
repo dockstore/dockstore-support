@@ -2,8 +2,9 @@ package io.dockstore.metricsaggregator.client.cli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
+import com.beust.jcommander.ParameterException;
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
-import io.dockstore.metricsaggregator.MetricsS3Client;
+import io.dockstore.metricsaggregator.MetricsAggregatorS3Client;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.AggregateMetricsCommand;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.Configuration;
@@ -23,6 +24,7 @@ public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
     public static final int SUCCESS_EXIT_CODE = 0;
     public static final int FAILURE_EXIT_CODE = 1;
+    public static final String CONFIG_FILE_ERROR = "Could not get configuration file";
 
     public Client() {
 
@@ -40,28 +42,35 @@ public class Client {
         } catch (MissingCommandException e) {
             jCommander.usage();
             if (e.getUnknownCommand().isEmpty()) {
-                LOG.error("No command entered");
+                LOG.error("No command entered", e);
             } else {
                 LOG.error("Unknown command", e);
             }
+            System.exit(FAILURE_EXIT_CODE);
+        } catch (ParameterException e) {
+            jCommander.usage();
+            LOG.error("Error parsing arguments", e);
             System.exit(FAILURE_EXIT_CODE);
         }
 
         if (commandLineArgs.isHelp()) {
             jCommander.usage();
         } else if ("aggregate-metrics".equals(jCommander.getParsedCommand())) {
-            final Optional<INIConfiguration> config = getConfiguration(aggregateMetricsCommand.getConfig());
-            if (config.isEmpty()) {
-                LOG.error("Error reading configuration file");
-                System.exit(FAILURE_EXIT_CODE);
-            }
+            if (aggregateMetricsCommand.isHelp()) {
+                jCommander.usage();
+            } else {
+                final Optional<INIConfiguration> config = getConfiguration(aggregateMetricsCommand.getConfig());
+                if (config.isEmpty()) {
+                    System.exit(FAILURE_EXIT_CODE);
+                }
 
-            try {
-                final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config.get());
-                client.aggregateMetrics(metricsAggregatorConfig, aggregateMetricsCommand.getToolId(), aggregateMetricsCommand.getVersionId());
-            } catch (Exception e) {
-                LOG.error("Could not aggregate metrics", e);
-                System.exit(FAILURE_EXIT_CODE);
+                try {
+                    final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config.get());
+                    client.aggregateMetrics(metricsAggregatorConfig);
+                } catch (Exception e) {
+                    LOG.error("Could not aggregate metrics", e);
+                    System.exit(FAILURE_EXIT_CODE);
+                }
             }
         }
     }
@@ -73,6 +82,7 @@ public class Client {
             INIConfiguration config = configs.ini(iniFile);
             return Optional.of(config);
         } catch (ConfigurationException e) {
+            LOG.error(CONFIG_FILE_ERROR, e);
             return Optional.empty();
         }
     }
@@ -84,17 +94,17 @@ public class Client {
         return apiClient;
     }
 
-    private void aggregateMetrics(MetricsAggregatorConfig config, String toolId, String versionId) throws URISyntaxException {
+    private void aggregateMetrics(MetricsAggregatorConfig config) throws URISyntaxException {
         ApiClient apiClient = setupApiClient(config.getDockstoreServerUrl(), config.getDockstoreToken());
         ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
 
-        MetricsS3Client metricsS3Client;
+        MetricsAggregatorS3Client metricsAggregatorS3Client;
         if (config.getS3EndpointOverride() == null) {
-            metricsS3Client = new MetricsS3Client(config.getS3Bucket());
+            metricsAggregatorS3Client = new MetricsAggregatorS3Client(config.getS3Bucket());
         } else {
-            metricsS3Client = new MetricsS3Client(config.getS3Bucket(), config.getS3EndpointOverride());
+            metricsAggregatorS3Client = new MetricsAggregatorS3Client(config.getS3Bucket(), config.getS3EndpointOverride());
         }
 
-        metricsS3Client.aggregateMetrics(extendedGa4GhApi);
+        metricsAggregatorS3Client.aggregateMetrics(extendedGa4GhApi);
     }
 }
