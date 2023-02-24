@@ -15,4 +15,4 @@
  *
  */
 
-package io.dockstore.metricsaggregator.client.cli;
+package io.dockstore.metricsaggregator.helper;
