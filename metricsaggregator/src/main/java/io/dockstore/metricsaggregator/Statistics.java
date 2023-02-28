@@ -19,19 +19,45 @@ package io.dockstore.metricsaggregator;
 
 import java.util.List;
 
+/**
+ * Record that contains statistical information obtained from a list of Doubles.
+ * @param min
+ * @param max
+ * @param average
+ * @param numberOfDataPoints
+ */
 public record Statistics(double min, double max, double average, int numberOfDataPoints) {
+    /**
+     * Constructor that calculates statistical information from the provided list of data points.
+     * @param dataPoints List of Doubles
+     */
     public Statistics(List<Double> dataPoints) {
         this(getMinimum(dataPoints), getMaximum(dataPoints), getAverage(dataPoints), dataPoints.size());
     }
 
+    /**
+     * Get the lowest value from the list of data points.
+     * @param dataPoints
+     * @return
+     */
     public static double getMinimum(List<Double> dataPoints) {
         return dataPoints.stream().mapToDouble(d -> d).min().getAsDouble();
     }
 
+    /**
+     * Get the highest value from the list of data points.
+     * @param dataPoints
+     * @return
+     */
     public static double getMaximum(List<Double> dataPoints) {
         return dataPoints.stream().mapToDouble(d -> d).max().getAsDouble();
     }
 
+    /**
+     * Calculate the average from the list of data points.
+     * @param dataPoints
+     * @return
+     */
     public static double getAverage(List<Double> dataPoints) {
         return dataPoints.stream().mapToDouble(d -> d).average().getAsDouble();
     }

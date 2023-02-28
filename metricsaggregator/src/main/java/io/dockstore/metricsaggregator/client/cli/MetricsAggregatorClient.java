@@ -35,20 +35,20 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Client {
+public class MetricsAggregatorClient {
 
     public static final String CONFIG_FILE_NAME = "metrics-aggregator.config";
-    private static final Logger LOG = LoggerFactory.getLogger(Client.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MetricsAggregatorClient.class);
     public static final int SUCCESS_EXIT_CODE = 0;
     public static final int FAILURE_EXIT_CODE = 1;
     public static final String CONFIG_FILE_ERROR = "Could not get configuration file";
 
-    public Client() {
+    public MetricsAggregatorClient() {
 
     }
 
     public static void main(String[] args) {
-        Client client = new Client();
+        MetricsAggregatorClient metricsAggregatorClient = new MetricsAggregatorClient();
         final CommandLineArgs commandLineArgs = new CommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
         final AggregateMetricsCommand aggregateMetricsCommand = new AggregateMetricsCommand();
@@ -83,7 +83,7 @@ public class Client {
 
                 try {
                     final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config.get());
-                    client.aggregateMetrics(metricsAggregatorConfig);
+                    metricsAggregatorClient.aggregateMetrics(metricsAggregatorConfig);
                 } catch (Exception e) {
                     LOG.error("Could not aggregate metrics", e);
                     System.exit(FAILURE_EXIT_CODE);

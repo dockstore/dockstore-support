@@ -15,4 +15,7 @@
  *
  */
 
+/**
+ * Everything used in MetricsAggregator including s3 integration, config file handling, and the CLI
+ */
 package io.dockstore.metricsaggregator;

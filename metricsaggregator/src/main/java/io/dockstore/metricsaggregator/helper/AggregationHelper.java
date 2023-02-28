@@ -9,7 +9,6 @@ import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
 import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metrics;
-import io.dockstore.webservice.core.metrics.MemoryStatisticMetric;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -26,6 +25,11 @@ public final class AggregationHelper {
 
     private AggregationHelper() {}
 
+    /**
+     * Aggregate metrics from the list of executions.
+     * @param executions
+     * @return Metrics object containing aggregated metrics
+     */
     public static Optional<Metrics> getAggregatedMetrics(List<Execution> executions) {
         Optional<ExecutionStatusMetric> aggregatedExecutionStatus = getAggregatedExecutionStatus(executions);
         if (getAggregatedExecutionStatus(executions).isPresent()) {
@@ -39,6 +43,11 @@ public final class AggregationHelper {
         return Optional.empty();
     }
 
+    /**
+     * Aggregate Execution Status metrics from the list of executions by summing up the count of each Execution Status encountered in the list of executions.
+     * @param executions
+     * @return
+     */
     public static Optional<ExecutionStatusMetric> getAggregatedExecutionStatus(List<Execution> executions) {
         Map<String, Integer> statusCount = executions.stream()
                 .map(execution -> execution.getExecutionStatus().toString())
@@ -47,9 +56,15 @@ public final class AggregationHelper {
         if (statusCount.isEmpty()) {
             return Optional.empty();
         }
+        // Don't need to set the other fields because the setter for count will calculate and set the other fields
         return Optional.of(new ExecutionStatusMetric().count(statusCount));
     }
 
+    /**
+     * Aggregate Execution Time metrics from the list of executions by calculating the minimum, maximum, and average.
+     * @param executions
+     * @return
+     */
     public static Optional<ExecutionTimeMetric> getAggregatedExecutionTime(List<Execution> executions) {
         List<String> executionTimes = executions.stream()
                 .map(Execution::getExecutionTime)
@@ -58,13 +73,14 @@ public final class AggregationHelper {
         List<Double> executionTimesInSeconds = executionTimes.stream()
                 .map(executionTime -> {
                     // Convert executionTime in ISO 8601 duration format to seconds
-                    try {
-                        return Long.valueOf(Duration.parse(executionTime).toSeconds()).doubleValue();
-                    } catch (DateTimeParseException e) {
-                        LOG.error("Could not parse Duration from {}", executionTime);
+                    Optional<Duration> parsedISO8601ExecutionTime = checkExecutionTimeISO8601Format(executionTime);
+                    if (parsedISO8601ExecutionTime.isPresent()) {
+                        return Long.valueOf(parsedISO8601ExecutionTime.get().toSeconds()).doubleValue();
+                    } else {
                         return null;
                     }
                 })
+                .filter(Objects::nonNull)
                 .toList();
 
         if (!executionTimesInSeconds.isEmpty()) {
@@ -79,9 +95,31 @@ public final class AggregationHelper {
         return Optional.empty();
     }
 
+    /**
+     * Check that the execution time is in ISO-1806 format by parsing it into a Duration.
+     * @param executionTime ISO 18601 execution time
+     * @return Duration parsed from the ISO 18601 execution time
+     */
+    static Optional<Duration> checkExecutionTimeISO8601Format(String executionTime) {
+        try {
+            return Optional.of(Duration.parse(executionTime));
+        } catch (DateTimeParseException e) {
+            LOG.error("Execution time {} is not in ISO 8601 format and could not parsed to a  Duration", executionTime, e);
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Aggregate CPU metrics from the list of executions by calculating the minimum, maximum, and average.
+     * @param executions
+     * @return
+     */
     public static Optional<CpuMetric> getAggregatedCpu(List<Execution> executions) {
-        List<Double> cpuRequirements = executions.stream().map(Execution::getCpuRequirements).filter(Objects::nonNull).map(
-                Integer::doubleValue).toList();
+        List<Double> cpuRequirements = executions.stream()
+                .map(Execution::getCpuRequirements)
+                .filter(Objects::nonNull)
+                .map(Integer::doubleValue)
+                .toList();
         if (!cpuRequirements.isEmpty()) {
             Statistics statistics = new Statistics(cpuRequirements);
             return Optional.of(new CpuMetric()
@@ -93,32 +131,23 @@ public final class AggregationHelper {
         return Optional.empty();
     }
 
+    /**
+     * Aggregate Memory metrics from the list of executions by calculating the minimum, maximum, and average.
+     * @param executions
+     * @return
+     */
     public static Optional<MemoryMetric> getAggregatedMemory(List<Execution> executions) {
-        List<String> memoryRequirements = executions.stream().map(Execution::getMemoryRequirements).filter(Objects::nonNull).toList();
+        List<Double> memoryRequirements = executions.stream()
+                .map(Execution::getMemoryRequirementsGB)
+                .filter(Objects::nonNull)
+                .toList();
         if (!memoryRequirements.isEmpty()) {
-            List<Double> memoryDoubles = memoryRequirements.stream()
-                    .map(memoryString -> memoryString.split(" "))
-                    // Only aggregate memory specified in the following format: Numerical value, space, "GB". Ex: "2 GB"
-                    .filter(splitMemoryString -> splitMemoryString.length == 2 && MemoryStatisticMetric.UNIT.equals(splitMemoryString[1]))
-                    .map(splitMemoryString -> {
-                        try {
-                            return Double.parseDouble(splitMemoryString[0]);
-                        } catch (NumberFormatException e) {
-                            LOG.error("Could not parse integer from {}", splitMemoryString[0]);
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull)
-                    .toList();
-
-            if (!memoryDoubles.isEmpty()) {
-                Statistics statistics = new Statistics(memoryDoubles);
-                return Optional.of(new MemoryMetric()
-                        .minimum(statistics.min())
-                        .maximum(statistics.max())
-                        .average(statistics.average())
-                        .numberOfDataPointsForAverage(statistics.numberOfDataPoints()));
-            }
+            Statistics statistics = new Statistics(memoryRequirements);
+            return Optional.of(new MemoryMetric()
+                    .minimum(statistics.min())
+                    .maximum(statistics.max())
+                    .average(statistics.average())
+                    .numberOfDataPointsForAverage(statistics.numberOfDataPoints()));
         }
         return Optional.empty();
     }

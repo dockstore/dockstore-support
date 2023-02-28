@@ -24,11 +24,11 @@
     <packaging>jar</packaging>
 
     <name>metricsaggregator</name>
-    <description>A service for testing verified tools on Dockstore</description>
+    <description>A service for aggregating metrics for entries on Dockstore</description>
     <url>https://github.com/dockstore/dockstore-support</url>
 
     <prerequisites>
-        <maven>3.2.3</maven>
+        <maven>3.8.6</maven>
     </prerequisites>
 
 
@@ -387,7 +387,7 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>client</id>
+                        <id>metricsAggregatorClient</id>
                         <phase>package</phase>
                         <goals>
                             <goal>shade</goal>
@@ -396,7 +396,7 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>io.dockstore.metricsaggregator.client.cli.Client</Main-Class>
+                                        <Main-Class>io.dockstore.metricsaggregator.metricsAggregatorClient.cli.MetricsAggregatorClient</Main-Class>
                                     </manifestEntries>
                                 </transformer>
                             </transformers>

@@ -21,7 +21,7 @@ import java.io.File;
 import java.util.Optional;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
-import io.dockstore.metricsaggregator.client.cli.Client;
+import io.dockstore.metricsaggregator.client.cli.MetricsAggregatorClient;
 import io.dockstore.openapi.client.model.Execution;
 import io.dropwizard.testing.ResourceHelpers;
 import org.apache.commons.configuration2.INIConfiguration;
@@ -34,16 +34,16 @@ public final class TestUtilities {
 
     private TestUtilities() {}
 
-    public static Execution createExecution(Execution.ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, String memoryRequirements) {
+    public static Execution createExecution(Execution.ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB) {
         return new Execution()
                 .executionStatus(executionStatus)
                 .executionTime(executionTime)
                 .cpuRequirements(cpuRequirements)
-                .memoryRequirements(memoryRequirements);
+                .memoryRequirementsGB(memoryRequirementsGB);
     }
 
     public static MetricsAggregatorConfig getMetricsConfig() {
-        Optional<INIConfiguration> iniConfig = Client.getConfiguration(new File(CONFIG_FILE_PATH));
+        Optional<INIConfiguration> iniConfig = MetricsAggregatorClient.getConfiguration(new File(CONFIG_FILE_PATH));
         if (iniConfig.isEmpty()) {
             throw new RuntimeException("Unable to get config file");
         }

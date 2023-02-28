@@ -83,25 +83,24 @@ class AggregationHelperTest {
         memoryMetric = AggregationHelper.getAggregatedMemory(executions);
         assertTrue(memoryMetric.isEmpty());
 
-        // Add an execution that has memory written incorrectly without a space separating the numerical value and 'GB'
-        executions.add(new Execution().executionStatus(SUCCESSFUL).memoryRequirements("2GB"));
+        // Add an execution with memory data
+        Double memoryInGB = 2.0;
+        executions.add(new Execution().executionStatus(SUCCESSFUL).memoryRequirementsGB(memoryInGB));
         memoryMetric = AggregationHelper.getAggregatedMemory(executions);
-        assertTrue(memoryMetric.isEmpty());
-
-        // Add an execution that has memory written incorrectly with letters
-        executions.add(new Execution().executionStatus(SUCCESSFUL).memoryRequirements("two GB"));
-        memoryMetric = AggregationHelper.getAggregatedMemory(executions);
-        assertTrue(memoryMetric.isEmpty());
-
-        // Add an execution with memory specified correctly
-        final int memoryInGB = 2;
-        executions.add(new Execution().executionStatus(SUCCESSFUL).memoryRequirements(String.format("%d GB", memoryInGB)));
-        memoryMetric = AggregationHelper.getAggregatedMemory(executions);
-        assertTrue(memoryMetric.isPresent());
         assertTrue(memoryMetric.isPresent());
         assertEquals(memoryInGB, memoryMetric.get().getMinimum());
         assertEquals(memoryInGB, memoryMetric.get().getMaximum());
         assertEquals(memoryInGB, memoryMetric.get().getAverage());
         assertEquals(1, memoryMetric.get().getNumberOfDataPointsForAverage());
+    }
+
+    @Test
+    void testCheckExecutionTimeISO8601Format() {
+        assertTrue(AggregationHelper.checkExecutionTimeISO8601Format("PT5M").isPresent());
+        assertTrue(AggregationHelper.checkExecutionTimeISO8601Format("pt5m").isPresent());
+        assertTrue(AggregationHelper.checkExecutionTimeISO8601Format("PT5M30S").isPresent());
+
+        assertTrue(AggregationHelper.checkExecutionTimeISO8601Format("5 seconds").isEmpty());
+        assertTrue(AggregationHelper.checkExecutionTimeISO8601Format("PT 5M").isEmpty());
     }
 }

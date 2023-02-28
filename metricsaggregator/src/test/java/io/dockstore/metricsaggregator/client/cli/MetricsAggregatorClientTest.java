@@ -46,11 +46,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
-import software.amazon.awssdk.services.s3.model.S3Object;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import uk.org.webcompere.systemstubs.stream.SystemErr;
@@ -68,7 +63,7 @@ import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
 
 @ExtendWith({LocalstackDockerExtension.class, SystemStubsExtension.class})
 @LocalstackDockerProperties(imageTag = LocalStackTestUtilities.IMAGE_TAG, services = { ServiceName.S3 }, environmentVariableProvider = LocalStackTestUtilities.LocalStackEnvironmentVariables.class)
-class ClientTest {
+class MetricsAggregatorClientTest {
     private static S3Client s3Client;
     private static TestingPostgres testingPostgres;
 
@@ -89,9 +84,8 @@ class ClientTest {
 
         s3Client = TestUtils.getClientS3V2(); // Use localstack S3Client
         // Create a bucket to be used for tests
-        CreateBucketRequest request = CreateBucketRequest.builder().bucket(BUCKET_NAME).build();
-        s3Client.createBucket(request);
-        deleteBucketContents(); // This is here just in case a test was stopped before tearDown could clean up the bucket
+        LocalStackTestUtilities.createBucket(s3Client, BUCKET_NAME);
+        LocalStackTestUtilities.deleteBucketContents(s3Client, BUCKET_NAME); // This is here just in case a test was stopped before tearDown could clean up the bucket
     }
 
     @BeforeEach
@@ -101,22 +95,12 @@ class ClientTest {
 
     @AfterEach
     void tearDown() {
-        deleteBucketContents();
+        LocalStackTestUtilities.deleteBucketContents(s3Client, BUCKET_NAME);
     }
 
     @AfterAll
     public static void afterClass() {
         SUPPORT.after();
-    }
-
-    private static void deleteBucketContents() {
-        ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(BUCKET_NAME).build();
-        ListObjectsV2Response response = s3Client.listObjectsV2(request);
-        List<S3Object> contents = response.contents();
-        contents.forEach(s3Object -> {
-            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder().bucket(BUCKET_NAME).key(s3Object.key()).build();
-            s3Client.deleteObject(deleteObjectRequest);
-        });
     }
 
     @Test
@@ -136,14 +120,14 @@ class ClientTest {
         String versionId = version.getName();
 
         // A successful execution that ran for 5 minutes, requires 2 CPUs and 2 GBs of memory
-        Execution execution = createExecution(SUCCESSFUL, "PT5M", 2, "2 GB");
+        Execution execution = createExecution(SUCCESSFUL, "PT5M", 2, 2.0);
 
         // Submit metrics for two platforms
         extendedGa4GhApi.executionMetricsPost(List.of(execution), platform1, id, versionId, "");
         extendedGa4GhApi.executionMetricsPost(List.of(execution), platform2, id, versionId, "");
         int expectedNumberOfPlatforms = 2;
         // Aggregate metrics
-        Client.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
+        MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
         // Get workflow version to verify aggregated metrics
         workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
         version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
@@ -208,11 +192,11 @@ class ClientTest {
         assertEquals(ExecutionTimeStatisticMetric.UNIT, platform2Metrics.getExecutionTime().getUnit());
 
         // A failed execution that ran for 1 second, requires 2 CPUs and 4.5 GBs of memory
-        execution = createExecution(Execution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID, "PT1S", 4, "4.5 GB");
+        execution = createExecution(Execution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID, "PT1S", 4, 4.5);
         // Submit metrics for the same workflow version for platform 2
         extendedGa4GhApi.executionMetricsPost(List.of(execution), platform1, id, versionId, "");
         // Aggregate metrics
-        Client.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
+        MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
         // Get workflow version to verify aggregated metrics
         workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
         version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
@@ -249,7 +233,7 @@ class ClientTest {
 
     @Test
     void testClientErrors() throws Exception {
-        int exitCode = catchSystemExit(() -> Client.main(new String[] {"aggregate-metrics", "--config", "thisdoesntexist"}));
-        assertEquals(Client.FAILURE_EXIT_CODE, exitCode);
+        int exitCode = catchSystemExit(() -> MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", "thisdoesntexist"}));
+        assertEquals(MetricsAggregatorClient.FAILURE_EXIT_CODE, exitCode);
     }
 }

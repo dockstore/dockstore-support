@@ -25,7 +25,7 @@ endpointOverride: <Optional S3 endpoint override>
 
 **Optional:**
 - `endpointOverride`: Endpoint override to use when creating the S3 clients. This is typically only used for local testing so that a LocalStack endpoint 
-override is used.
+override can be used.
 
 ### AWS credentials
 
@@ -52,9 +52,9 @@ Usage: <main class> [options] [command] [command options]
 
 **Using the default configuration file path:**
 
-`java -jar target/metricsaggregator-0.1-alpha.0-SNAPSHOT.jar aggregate-metrics`
+`java -jar target/metricsaggregator-*-SNAPSHOT.jar aggregate-metrics`
 
 **Using a custom configuration file path:**
 
-`java -jar target/metricsaggregator-0.1-alpha.0-SNAPSHOT.jar aggregate-metrics --config my-custom-config`
+`java -jar target/metricsaggregator-*-SNAPSHOT.jar aggregate-metrics --config my-custom-config`
 
