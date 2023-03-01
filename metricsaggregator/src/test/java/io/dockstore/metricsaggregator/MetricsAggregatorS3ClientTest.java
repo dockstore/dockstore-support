@@ -69,7 +69,6 @@ class MetricsAggregatorS3ClientTest {
 
     @BeforeAll
     public static void setup() throws Exception {
-        CommonTestUtilities.dropAndRecreateNoTestData(SUPPORT, CommonTestUtilities.PUBLIC_CONFIG_PATH);
         SUPPORT.before();
         testingPostgres = new TestingPostgres(SUPPORT);
 

@@ -176,7 +176,7 @@ commands:
       - run:
           name: run tests
           command: |
-            cd $DIRECTORY && mvn -B clean install -ntp | grep  -v "^Running Changeset:"
+            cd $DIRECTORY && mvn -B clean install -ntp
   save_test_results:
     steps:
       - run:
