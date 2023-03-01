@@ -104,7 +104,7 @@ public final class AggregationHelper {
         try {
             return Optional.of(Duration.parse(executionTime));
         } catch (DateTimeParseException e) {
-            LOG.error("Execution time {} is not in ISO 8601 format and could not parsed to a  Duration", executionTime, e);
+            LOG.error("Execution time {} is not in ISO 8601 format and could not be parsed to a Duration", executionTime, e);
             return Optional.empty();
         }
     }
