@@ -130,6 +130,7 @@ public class WorkflowRunner {
         if (isWorkflowFinished()) {
             out("RUN STATISTICS:");
             out("ENTRY NAME: " + getCompleteEntryName());
+            out("END STATE: " + state);
             if (state.equals("COMPLETE")) {
                 printTimeStatistic();
             }
