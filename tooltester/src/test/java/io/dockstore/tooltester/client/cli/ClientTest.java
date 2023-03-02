@@ -291,6 +291,16 @@ public class ClientTest {
     }
 
     /**
+     * This displays the help menu for the report command
+     */
+    @Test
+    public void runWorkflowHelp() throws InterruptedException {
+        String[] argv = { "run-workflows", "--help" };
+        main(argv);
+        assertTrue(systemOut.getText().contains("Runs workflows and prints statistics."));
+    }
+
+    /**
      * This displays the help menu for the main command
      */
     @Test
