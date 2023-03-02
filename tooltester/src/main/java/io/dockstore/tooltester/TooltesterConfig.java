@@ -31,7 +31,7 @@ public class TooltesterConfig {
             setConfig(new HierarchicalINIConfiguration(configFile));
             setServerUrl(config.getString("server-url", "https://staging.dockstore.org/api"));
             setRunner(config.getString("runner", "cwltool cwl-runner cromwell").split(" "));
-            setDockstoreVersion(config.getString("dockstore-version", "1.6.0"));
+            setDockstoreVersion(config.getString("dockstore-version", "1.13.1"));
             setS3Bucket(config.getString("s3-bucket", "dockstore.tooltester.backup"));
             setS3Endpoint(config.getString("s3-endpoint", "https://s3.amazonaws.com"));
             setJenkinsServerUrl(config.getString("jenkins-server-url", "http://172.18.0.22:8080"));

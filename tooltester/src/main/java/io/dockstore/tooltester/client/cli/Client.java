@@ -36,6 +36,7 @@ import com.google.gson.reflect.TypeToken;
 import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.JobWithDetails;
+import io.dockstore.common.Utilities;
 import io.dockstore.tooltester.TooltesterConfig;
 import io.dockstore.tooltester.blacklist.BlackList;
 import io.dockstore.tooltester.helper.DockstoreConfigHelper;
@@ -73,18 +74,21 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
+import static java.lang.Thread.sleep;
 
 /**
  * Prototype for testing service
  */
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
+    public static final int WAIT_TIME = 10000;
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4GhApi ga4ghApi;
     private FileReport fileReport;
     private PipelineTester pipelineTester;
     private TooltesterConfig tooltesterConfig;
+    private Utilities utilities;
 
     Client() {
 
@@ -95,7 +99,7 @@ public class Client {
      *
      * @param argv Command line arguments
      */
-    public static void main(String[] argv) {
+    public static void main(String[] argv) throws InterruptedException {
         Client client = new Client();
         CommandMain commandMain = new CommandMain();
         JCommander jc = new JCommander(commandMain);
@@ -104,10 +108,12 @@ public class Client {
         CommandEnqueue commandEnqueue = new CommandEnqueue();
         CommandFileReport commandFileReport = new CommandFileReport();
         CommandSync commandSync = new CommandSync();
+        CommandRunWorkflows commandRunWorkflows = new CommandRunWorkflows();
         jc.addCommand("report", commandReport);
         jc.addCommand("enqueue", commandEnqueue);
         jc.addCommand("file-report", commandFileReport);
         jc.addCommand("sync", commandSync);
+        jc.addCommand("run-workflows", commandRunWorkflows);
         try {
             jc.parse(argv);
         } catch (MissingCommandException e) {
@@ -152,6 +158,15 @@ public class Client {
                         printJCommanderHelp(jc, "autotool", "sync");
                     } else {
                         client.handleCreateTests(commandSync.tools, commandSync.source);
+                    }
+                    break;
+                case "run-workflows":
+                    if (commandRunWorkflows.help) {
+                        printJCommanderHelp(jc, "autotool", "run-workflows");
+                    } else {
+                        client.runToolTesterOnWorkflows();
+
+
                     }
                     break;
                 default:
@@ -259,8 +274,9 @@ public class Client {
      */
     private void handleCreateTests(List<String> toolnames, List<String> source) {
         setupClientEnvironment();
-        setupTesters();
+        //setupTesters();
         List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames, true, true);
+        out(tools.toString());
         for (Tool tool : tools) {
             createToolTests(tool);
         }
@@ -274,11 +290,47 @@ public class Client {
      */
     private void handleRunTests(List<String> toolNames, List<String> sources) {
         setupClientEnvironment();
-        setupTesters();
+        out("QUERY 0--------------");
+        //setupTesters();
+        out("QUERY 1------------");
         List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames, true, true);
+        out("QUERY 2------------");
         for (Tool tool : tools) {
             testTool(tool);
         }
+    }
+
+
+    private void runToolTesterOnWorkflows() throws InterruptedException {
+        List<WorkflowRunner> workflowsToRun = new ArrayList<>();
+
+        // These are just left here for testing purposes, until I find the API commands to get them
+        workflowsToRun.add(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "Dockstore.json"));
+        workflowsToRun.add(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "Dockstore-2.json"));
+
+
+        for (WorkflowRunner workflow : workflowsToRun) {
+            workflow.runWorkflow();
+            sleep(WAIT_TIME);
+        }
+        List<WorkflowRunner> workflowsStillRunning = new ArrayList<>();
+        workflowsStillRunning.addAll(workflowsToRun);
+
+        while (!workflowsStillRunning.isEmpty()) {
+            List<WorkflowRunner> workflowsToCheck = new ArrayList<>();
+            workflowsToCheck.addAll(workflowsStillRunning);
+            for (WorkflowRunner workflow: workflowsToCheck) {
+                if (workflow.isWorkflowFinished()) {
+                    workflowsStillRunning.remove(workflow);
+                }
+                sleep(WAIT_TIME);
+            }
+        }
+
+        for (WorkflowRunner workflow: workflowsToRun) {
+            workflow.printRunStatistics();
+        }
+
     }
 
     void setupTesters() {
@@ -332,7 +384,7 @@ public class Client {
         parameter.put("DockerfilePath", dockerfilePath);
         parameter.put("SynapseCache", synapseCache);
         parameter.put("Config", DockstoreConfigHelper.getConfig(tooltesterConfig.getServerUrl(), runner));
-        parameter.put("DockstoreVersion", this.tooltesterConfig.getDockstoreVersion());
+        //parameter.put("DockstoreVersion", this.tooltesterConfig.getDockstIs this worth oreVersion());
         parameter.put("Commands", commands);
         if (runner == "toil") {
             parameter.put("AnsiblePlaybook", "toilPlaybook");
@@ -353,16 +405,21 @@ public class Client {
     private boolean testWorkflow(Tool tool) {
         boolean status = true;
         String toolId = tool.getId();
+        out(toolId);
         Workflow workflow = DockstoreEntryHelper.convertTRSToolToDockstoreEntry(tool, workflowsApi);
         String url = DockstoreEntryHelper.convertGitSSHUrlToGitHTTPSUrl(workflow.getGitUrl());
+        out(url);
         List<String> versionsToRun = tool.getVersions().stream().map(ToolVersion::getName).collect(Collectors.toList());
+        out(versionsToRun.toString());
         if (url == null) {
             return false;
         }
         Long entryId = workflow.getId();
+        out(entryId.toString());
         for (String runner : tooltesterConfig.getRunner()) {
             List<WorkflowVersion> matchingVersions = workflow.getWorkflowVersions().stream()
                     .filter(version -> versionsToRun.contains(version.getName())).collect(Collectors.toList());
+            out(matchingVersions.toString());
             for (WorkflowVersion version : matchingVersions) {
                 List<String> commandsList = new ArrayList<>();
                 List<String> descriptorsList = new ArrayList<>();
@@ -586,6 +643,12 @@ public class Client {
         @Parameter(names = "--tool", description = "The specific tool to report", required = true)
         private String tool;
         @Parameter(names = "--help", description = "Prints help for file-report", help = true)
+        private boolean help = false;
+    }
+
+    @Parameters(separators = "=", commandDescription = "Runs workflows and prints statistics")
+    private static class CommandRunWorkflows {
+        @Parameter(names = "--help", description = "Prints help for run-workflows", help = true)
         private boolean help = false;
     }
 }
