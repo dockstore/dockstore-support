@@ -30,18 +30,23 @@ class AggregationHelperTest {
 
     @Test
     void testGetAggregatedExecutionTime() {
-        List<Execution> executions = new ArrayList<>();
-        Optional<ExecutionTimeMetric> executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(executions);
+        List<Execution> badExecutions = new ArrayList<>();
+        Optional<ExecutionTimeMetric> executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(badExecutions);
         assertTrue(executionTimeMetric.isEmpty());
 
         // Add an execution that doesn't have execution time data
-        executions.add(new Execution().executionStatus(SUCCESSFUL));
-        executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(executions);
+        badExecutions.add(new Execution().executionStatus(SUCCESSFUL));
+        executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(badExecutions);
+        assertTrue(executionTimeMetric.isEmpty());
+
+        // Add an execution with malformed execution time data
+        badExecutions.add(new Execution().executionStatus(SUCCESSFUL).executionTime("1 second"));
+        executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(badExecutions);
         assertTrue(executionTimeMetric.isEmpty());
 
         // Add an execution with execution time
         final int timeInSeconds = 10;
-        executions.add(new Execution().executionStatus(SUCCESSFUL).executionTime(String.format("PT%dS", timeInSeconds)));
+        List<Execution> executions = List.of(new Execution().executionStatus(SUCCESSFUL).executionTime(String.format("PT%dS", timeInSeconds)));
         executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(executions);
         assertTrue(executionTimeMetric.isPresent());
         assertEquals(timeInSeconds, executionTimeMetric.get().getMinimum());
@@ -92,15 +97,5 @@ class AggregationHelperTest {
         assertEquals(memoryInGB, memoryMetric.get().getMaximum());
         assertEquals(memoryInGB, memoryMetric.get().getAverage());
         assertEquals(1, memoryMetric.get().getNumberOfDataPointsForAverage());
-    }
-
-    @Test
-    void testCheckExecutionTimeISO8601Format() {
-        assertTrue(AggregationHelper.checkExecutionTimeISO8601Format("PT5M").isPresent());
-        assertTrue(AggregationHelper.checkExecutionTimeISO8601Format("pt5m").isPresent());
-        assertTrue(AggregationHelper.checkExecutionTimeISO8601Format("PT5M30S").isPresent());
-
-        assertTrue(AggregationHelper.checkExecutionTimeISO8601Format("5 seconds").isEmpty());
-        assertTrue(AggregationHelper.checkExecutionTimeISO8601Format("PT 5M").isEmpty());
     }
 }

@@ -1,5 +1,6 @@
 package io.dockstore.metricsaggregator.helper;
 
+import static io.dockstore.webservice.core.metrics.Execution.checkExecutionTimeISO8601Format;
 import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.metricsaggregator.Statistics;
@@ -10,7 +11,6 @@ import io.dockstore.openapi.client.model.ExecutionTimeMetric;
 import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metrics;
 import java.time.Duration;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -70,17 +70,20 @@ public final class AggregationHelper {
                 .map(Execution::getExecutionTime)
                 .filter(Objects::nonNull)
                 .toList();
+
+
+        boolean containsMalformedExecutionTimes = executionTimes.stream().anyMatch(executionTime -> checkExecutionTimeISO8601Format(executionTime).isEmpty());
+        // This really shouldn't happen because the webservice validates that the ExecutionTime is in the correct format
+        if (containsMalformedExecutionTimes) {
+            return Optional.empty(); // Don't aggregate if there's malformed data
+        }
+
         List<Double> executionTimesInSeconds = executionTimes.stream()
                 .map(executionTime -> {
                     // Convert executionTime in ISO 8601 duration format to seconds
-                    Optional<Duration> parsedISO8601ExecutionTime = checkExecutionTimeISO8601Format(executionTime);
-                    if (parsedISO8601ExecutionTime.isPresent()) {
-                        return Long.valueOf(parsedISO8601ExecutionTime.get().toSeconds()).doubleValue();
-                    } else {
-                        return null;
-                    }
+                    Duration parsedISO8601ExecutionTime = checkExecutionTimeISO8601Format(executionTime).get();
+                    return Long.valueOf(parsedISO8601ExecutionTime.toSeconds()).doubleValue();
                 })
-                .filter(Objects::nonNull)
                 .toList();
 
         if (!executionTimesInSeconds.isEmpty()) {
@@ -93,20 +96,6 @@ public final class AggregationHelper {
             );
         }
         return Optional.empty();
-    }
-
-    /**
-     * Check that the execution time is in ISO-1806 format by parsing it into a Duration.
-     * @param executionTime ISO 18601 execution time
-     * @return Duration parsed from the ISO 18601 execution time
-     */
-    static Optional<Duration> checkExecutionTimeISO8601Format(String executionTime) {
-        try {
-            return Optional.of(Duration.parse(executionTime));
-        } catch (DateTimeParseException e) {
-            LOG.error("Execution time {} is not in ISO 8601 format and could not be parsed to a Duration", executionTime, e);
-            return Optional.empty();
-        }
     }
 
     /**
