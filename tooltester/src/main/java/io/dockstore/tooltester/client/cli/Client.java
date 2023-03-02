@@ -274,9 +274,8 @@ public class Client {
      */
     private void handleCreateTests(List<String> toolnames, List<String> source) {
         setupClientEnvironment();
-        //setupTesters();
+        setupTesters();
         List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames, true, true);
-        out(tools.toString());
         for (Tool tool : tools) {
             createToolTests(tool);
         }
@@ -290,11 +289,7 @@ public class Client {
      */
     private void handleRunTests(List<String> toolNames, List<String> sources) {
         setupClientEnvironment();
-        out("QUERY 0--------------");
-        //setupTesters();
-        out("QUERY 1------------");
         List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames, true, true);
-        out("QUERY 2------------");
         for (Tool tool : tools) {
             testTool(tool);
         }
@@ -384,8 +379,7 @@ public class Client {
         parameter.put("DockerfilePath", dockerfilePath);
         parameter.put("SynapseCache", synapseCache);
         parameter.put("Config", DockstoreConfigHelper.getConfig(tooltesterConfig.getServerUrl(), runner));
-        //parameter.put("DockstoreVersion", this.tooltesterConfig.getDockstIs this worth oreVersion());
-        parameter.put("Commands", commands);
+        parameter.put("DockstoreVersion", this.tooltesterConfig.getDockstoreVersion());        parameter.put("Commands", commands);
         if (runner == "toil") {
             parameter.put("AnsiblePlaybook", "toilPlaybook");
         } else {
@@ -405,21 +399,16 @@ public class Client {
     private boolean testWorkflow(Tool tool) {
         boolean status = true;
         String toolId = tool.getId();
-        out(toolId);
         Workflow workflow = DockstoreEntryHelper.convertTRSToolToDockstoreEntry(tool, workflowsApi);
         String url = DockstoreEntryHelper.convertGitSSHUrlToGitHTTPSUrl(workflow.getGitUrl());
-        out(url);
         List<String> versionsToRun = tool.getVersions().stream().map(ToolVersion::getName).collect(Collectors.toList());
-        out(versionsToRun.toString());
         if (url == null) {
             return false;
         }
         Long entryId = workflow.getId();
-        out(entryId.toString());
         for (String runner : tooltesterConfig.getRunner()) {
             List<WorkflowVersion> matchingVersions = workflow.getWorkflowVersions().stream()
                     .filter(version -> versionsToRun.contains(version.getName())).collect(Collectors.toList());
-            out(matchingVersions.toString());
             for (WorkflowVersion version : matchingVersions) {
                 List<String> commandsList = new ArrayList<>();
                 List<String> descriptorsList = new ArrayList<>();
