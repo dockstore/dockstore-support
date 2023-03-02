@@ -379,7 +379,8 @@ public class Client {
         parameter.put("DockerfilePath", dockerfilePath);
         parameter.put("SynapseCache", synapseCache);
         parameter.put("Config", DockstoreConfigHelper.getConfig(tooltesterConfig.getServerUrl(), runner));
-        parameter.put("DockstoreVersion", this.tooltesterConfig.getDockstoreVersion());        parameter.put("Commands", commands);
+        parameter.put("DockstoreVersion", this.tooltesterConfig.getDockstoreVersion());
+        parameter.put("Commands", commands);
         if (runner == "toil") {
             parameter.put("AnsiblePlaybook", "toilPlaybook");
         } else {
