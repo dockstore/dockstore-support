@@ -289,6 +289,7 @@ public class Client {
      */
     private void handleRunTests(List<String> toolNames, List<String> sources) {
         setupClientEnvironment();
+        setupTesters();
         List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames, true, true);
         for (Tool tool : tools) {
             testTool(tool);
