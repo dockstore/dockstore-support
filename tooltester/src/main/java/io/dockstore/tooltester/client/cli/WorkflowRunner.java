@@ -5,11 +5,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.dockstore.common.Utilities;
+import io.dockstore.openapi.client.api.Ga4Ghv20Api;
+import io.dockstore.openapi.client.model.FileWrapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
@@ -21,6 +24,7 @@ import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+import static java.util.UUID.randomUUID;
 
 
 public class WorkflowRunner {
@@ -43,6 +47,25 @@ public class WorkflowRunner {
         this.version = version;
         this.pathOfTestParameter = pathOfTestParameter;
     }
+
+    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api) throws InterruptedException {
+        this.entry = entry;
+        this.version = version;
+
+        File testParameterFile = new File("test-paramter-file-" + randomUUID() + ".json");
+        testParameterFile.deleteOnExit();
+
+        final FileWrapper testParameterFileWrapper = ga4Ghv20Api.toolsIdVersionsVersionIdTypeDescriptorRelativePathGet("WDL", "#workflow/" + entry, version, relativePathToTestParameterFile);
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(testParameterFile.getPath()));
+            writer.write(testParameterFileWrapper.getContent());
+            writer.close();
+            this.pathOfTestParameter = testParameterFile.getPath();
+        } catch (IOException e) {
+            exceptionMessage(e, "Error writing to testParameterFile", COMMAND_ERROR);
+        }
+    }
+
 
     private void createAgcWrapper() {
         String commandToWrite = "{\"workflowInputs\": \"" + pathOfTestParameter + "\"}";
@@ -113,6 +136,10 @@ public class WorkflowRunner {
         } else {
             errorMessage("Workflow is not finished, statistic are not available yet", COMMAND_ERROR);
         }
+    }
+
+    public static void printLine() {
+        out("-----------------------------------");
     }
 
 }

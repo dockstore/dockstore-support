@@ -52,6 +52,7 @@ import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
 import io.swagger.client.api.ContainersApi;
 import io.swagger.client.api.Ga4GhApi;
+import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.swagger.client.api.WorkflowsApi;
 import io.swagger.client.model.DockstoreTool;
 import io.swagger.client.model.SourceFile;
@@ -67,6 +68,7 @@ import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
 import static io.dockstore.tooltester.client.cli.JCommanderUtility.printJCommanderHelp;
+import static io.dockstore.tooltester.client.cli.WorkflowRunner.printLine;
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.DEBUG;
@@ -85,6 +87,7 @@ public class Client {
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4GhApi ga4ghApi;
+    private Ga4Ghv20Api ga4Ghv20Api;
     private FileReport fileReport;
     private PipelineTester pipelineTester;
     private TooltesterConfig tooltesterConfig;
@@ -297,18 +300,26 @@ public class Client {
     }
 
 
+    private void setUpGa4Ghv20Api() {
+        this.tooltesterConfig = new TooltesterConfig();
+        io.dockstore.openapi.client.ApiClient defaultApiClient = io.dockstore.openapi.client.Configuration.getDefaultApiClient();
+        defaultApiClient.setBasePath(this.tooltesterConfig.getServerUrl());
+        setGa4Ghv20Api(new Ga4Ghv20Api(defaultApiClient));
+    }
+
     private void runToolTesterOnWorkflows() throws InterruptedException {
         List<WorkflowRunner> workflowsToRun = new ArrayList<>();
+        setUpGa4Ghv20Api();
 
         // These are just left here for testing purposes, until I find the API commands to get them
         workflowsToRun.add(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "Dockstore.json"));
-        workflowsToRun.add(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "Dockstore-2.json"));
-
+        workflowsToRun.add(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "/agc-examples/fastq/input.json", getGa4Ghv20Api()));
 
         for (WorkflowRunner workflow : workflowsToRun) {
             workflow.runWorkflow();
             sleep(WAIT_TIME);
         }
+
         List<WorkflowRunner> workflowsStillRunning = new ArrayList<>();
         workflowsStillRunning.addAll(workflowsToRun);
 
@@ -323,8 +334,10 @@ public class Client {
             }
         }
 
+        printLine();
         for (WorkflowRunner workflow: workflowsToRun) {
             workflow.printRunStatistics();
+            printLine();
         }
 
     }
@@ -594,6 +607,14 @@ public class Client {
         this.ga4ghApi = ga4ghApi;
     }
 
+    private Ga4Ghv20Api getGa4Ghv20Api() {
+        return ga4Ghv20Api;
+    }
+
+    private void setGa4Ghv20Api(Ga4Ghv20Api ga4Ghv20Api) {
+        this.ga4Ghv20Api = ga4Ghv20Api;
+    }
+
     private static class CommandMain {
         @Parameter(names = "--help", description = "Prints help for tooltester", help = true)
         private boolean help = false;
@@ -637,7 +658,7 @@ public class Client {
         private boolean help = false;
     }
 
-    @Parameters(separators = "=", commandDescription = "Runs workflows and prints statistics")
+    @Parameters(separators = "=", commandDescription = "Runs workflows and prints statistics.")
     private static class CommandRunWorkflows {
         @Parameter(names = "--help", description = "Prints help for run-workflows", help = true)
         private boolean help = false;
