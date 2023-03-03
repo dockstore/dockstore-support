@@ -117,7 +117,7 @@ public class WorkflowRunner {
             Long minutes = seconds / SECONDS_IN_MINUTE;
             seconds = seconds % SECONDS_IN_MINUTE;
 
-
+            out("");
             out("TASK NAME: " + element.getAsJsonObject().get("name").getAsString());
             out("START TIME: " + startTime);
             out("END TIME: " + endTime);

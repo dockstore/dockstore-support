@@ -312,8 +312,9 @@ public class Client {
         setUpGa4Ghv20Api();
 
         // These are just left here for testing purposes, until I find the API commands to get them
-        workflowsToRun.add(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "Dockstore.json"));
+        workflowsToRun.add(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "test-parameter-files/agc-fastq-read-counts-test-parameter-file.json"));
         workflowsToRun.add(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "/agc-examples/fastq/input.json", getGa4Ghv20Api()));
+        workflowsToRun.add(new WorkflowRunner("github.com/gatk-workflows/seq-format-conversion/BAM-to-Unmapped-BAM", "3.0.0", "test-parameter-files/BAM-to-Unmapped-BAM-test-parameter-file.json"));
 
         for (WorkflowRunner workflow : workflowsToRun) {
             workflow.runWorkflow();
