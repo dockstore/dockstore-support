@@ -47,6 +47,8 @@ import io.dockstore.tooltester.helper.S3CacheHelper;
 import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.report.FileReport;
+import io.dockstore.tooltester.runWorkflow.WorkflowList;
+import io.dockstore.tooltester.runWorkflow.WorkflowRunner;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
@@ -68,7 +70,7 @@ import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
 import static io.dockstore.tooltester.client.cli.JCommanderUtility.printJCommanderHelp;
-import static io.dockstore.tooltester.client.cli.WorkflowRunner.printLine;
+import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.DEBUG;
@@ -308,21 +310,16 @@ public class Client {
     }
 
     private void runToolTesterOnWorkflows() throws InterruptedException {
-        List<WorkflowRunner> workflowsToRun = new ArrayList<>();
         setUpGa4Ghv20Api();
 
-        // These are just left here for testing purposes, until I find the API commands to get them
-        workflowsToRun.add(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "test-parameter-files/agc-fastq-read-counts-test-parameter-file.json"));
-        workflowsToRun.add(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "/agc-examples/fastq/input.json", getGa4Ghv20Api()));
-        workflowsToRun.add(new WorkflowRunner("github.com/gatk-workflows/seq-format-conversion/BAM-to-Unmapped-BAM", "3.0.0", "test-parameter-files/BAM-to-Unmapped-BAM-test-parameter-file.json"));
-        workflowsToRun.add(new WorkflowRunner("github.com/manning-lab/vcfToGds", "main", "test-parameter-files/vcfToGds-test-parameter-file.json"));
+        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api());
 
-        for (WorkflowRunner workflow : workflowsToRun) {
+        for (WorkflowRunner workflow : workflowsToRun.getWorkflowsToRun()) {
             workflow.runWorkflow();
         }
 
         List<WorkflowRunner> workflowsStillRunning = new ArrayList<>();
-        workflowsStillRunning.addAll(workflowsToRun);
+        workflowsStillRunning.addAll(workflowsToRun.getWorkflowsToRun());
 
         while (!workflowsStillRunning.isEmpty()) {
             sleep(WAIT_TIME);
@@ -336,7 +333,7 @@ public class Client {
         }
 
         printLine();
-        for (WorkflowRunner workflow: workflowsToRun) {
+        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
             workflow.printRunStatistics();
             printLine();
         }

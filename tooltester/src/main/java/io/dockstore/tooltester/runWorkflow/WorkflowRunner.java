@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.client.cli;
+package io.dockstore.tooltester.runWorkflow;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
