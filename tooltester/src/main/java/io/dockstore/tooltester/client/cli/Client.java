@@ -315,23 +315,23 @@ public class Client {
         workflowsToRun.add(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "test-parameter-files/agc-fastq-read-counts-test-parameter-file.json"));
         workflowsToRun.add(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "/agc-examples/fastq/input.json", getGa4Ghv20Api()));
         workflowsToRun.add(new WorkflowRunner("github.com/gatk-workflows/seq-format-conversion/BAM-to-Unmapped-BAM", "3.0.0", "test-parameter-files/BAM-to-Unmapped-BAM-test-parameter-file.json"));
+        workflowsToRun.add(new WorkflowRunner("github.com/manning-lab/vcfToGds", "main", "test-parameter-files/vcfToGds-test-parameter-file.json"));
 
         for (WorkflowRunner workflow : workflowsToRun) {
             workflow.runWorkflow();
-            sleep(WAIT_TIME);
         }
 
         List<WorkflowRunner> workflowsStillRunning = new ArrayList<>();
         workflowsStillRunning.addAll(workflowsToRun);
 
         while (!workflowsStillRunning.isEmpty()) {
+            sleep(WAIT_TIME);
             List<WorkflowRunner> workflowsToCheck = new ArrayList<>();
             workflowsToCheck.addAll(workflowsStillRunning);
             for (WorkflowRunner workflow: workflowsToCheck) {
                 if (workflow.isWorkflowFinished()) {
                     workflowsStillRunning.remove(workflow);
                 }
-                sleep(WAIT_TIME);
             }
         }
 

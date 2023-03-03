@@ -106,12 +106,14 @@ public class WorkflowRunner {
 
     private void printTimeStatistic() {
         JsonArray arr = log.getAsJsonArray("task_logs");
+        Long totalTimeTakenMilliseconds = 0L;
         for (JsonElement element: arr) {
             String startTime = element.getAsJsonObject().get("start_time").getAsString();
             String endTime = element.getAsJsonObject().get("end_time").getAsString();
             Date startTimeDate = parseISO8601Date(startTime);
             Date endTimeDate = parseISO8601Date(endTime);
             Long timeBetween = endTimeDate.getTime() - startTimeDate.getTime();
+            totalTimeTakenMilliseconds += timeBetween;
             Long milliseconds = timeBetween % MILLISECONDS_IN_SECOND;
             Long seconds = timeBetween / MILLISECONDS_IN_SECOND;
             Long minutes = seconds / SECONDS_IN_MINUTE;
@@ -123,6 +125,13 @@ public class WorkflowRunner {
             out("END TIME: " + endTime);
             out("DURATION: " + minutes + " minutes " + seconds + " seconds " + milliseconds + " milliseconds");
         }
+
+        out("");
+        Long milliseconds = totalTimeTakenMilliseconds % MILLISECONDS_IN_SECOND;
+        Long seconds = totalTimeTakenMilliseconds / MILLISECONDS_IN_SECOND;
+        Long minutes = seconds / SECONDS_IN_MINUTE;
+        seconds = seconds % SECONDS_IN_MINUTE;
+        out("TOTAL TIME: " + minutes + " minutes " + seconds + " seconds " + milliseconds + " milliseconds");
     }
 
     public void printRunStatistics() {
