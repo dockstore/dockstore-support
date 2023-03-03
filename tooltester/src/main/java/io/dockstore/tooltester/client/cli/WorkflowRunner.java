@@ -86,7 +86,6 @@ public class WorkflowRunner {
         ImmutablePair<String, String> result = Utilities.executeCommand("dockstore workflow wes launch --entry "
                 + getCompleteEntryName() + " --json " + agcWrapperPath + " --attach " + pathOfTestParameter + " --script");
         runID = StringUtils.deleteWhitespace(result.getLeft());
-        out(runID);
     }
 
     public Boolean isWorkflowFinished() {
