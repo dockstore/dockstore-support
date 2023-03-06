@@ -37,6 +37,7 @@ import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.JobWithDetails;
 import io.dockstore.common.Utilities;
+import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.tooltester.TooltesterConfig;
 import io.dockstore.tooltester.blacklist.BlackList;
 import io.dockstore.tooltester.helper.DockstoreConfigHelper;
@@ -70,7 +71,6 @@ import org.slf4j.LoggerFactory;
 
 import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
 import static io.dockstore.tooltester.client.cli.JCommanderUtility.printJCommanderHelp;
-import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.DEBUG;
@@ -78,6 +78,7 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
+import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
 import static java.lang.Thread.sleep;
 
 /**
@@ -93,6 +94,7 @@ public class Client {
     private FileReport fileReport;
     private PipelineTester pipelineTester;
     private TooltesterConfig tooltesterConfig;
+    private ExtendedGa4GhApi extendedGa4GhApi;
     private Utilities utilities;
 
     Client() {
@@ -309,10 +311,19 @@ public class Client {
         setGa4Ghv20Api(new Ga4Ghv20Api(defaultApiClient));
     }
 
+    private void setUpExtendedGa4GhApi() {
+        this.tooltesterConfig = new TooltesterConfig();
+        io.dockstore.openapi.client.ApiClient defaultApiClient = io.dockstore.openapi.client.Configuration.getDefaultApiClient();
+        defaultApiClient.setBasePath(this.tooltesterConfig.getServerUrl());
+        defaultApiClient.setAccessToken(this.tooltesterConfig.getDockstoreAuthorizationToken());
+        setExtendedGa4GhApi(new ExtendedGa4GhApi(defaultApiClient));
+    }
+
     private void runToolTesterOnWorkflows() throws InterruptedException {
         setUpGa4Ghv20Api();
+        setUpExtendedGa4GhApi();
 
-        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api());
+        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api(), getExtendedGa4GhApi());
 
         for (WorkflowRunner workflow : workflowsToRun.getWorkflowsToRun()) {
             workflow.runWorkflow();
@@ -338,6 +349,9 @@ public class Client {
             printLine();
         }
 
+        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
+            workflow.uploadRunInfo();
+        }
     }
 
     void setupTesters() {
@@ -603,6 +617,13 @@ public class Client {
 
     private void setGa4ghApi(Ga4GhApi ga4ghApi) {
         this.ga4ghApi = ga4ghApi;
+    }
+
+    private ExtendedGa4GhApi getExtendedGa4GhApi() {
+        return extendedGa4GhApi;
+    }
+    private void setExtendedGa4GhApi(ExtendedGa4GhApi extendedGa4GhApi) {
+        this.extendedGa4GhApi = extendedGa4GhApi;
     }
 
     private Ga4Ghv20Api getGa4Ghv20Api() {

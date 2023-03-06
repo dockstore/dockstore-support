@@ -22,6 +22,9 @@ public class TooltesterConfig {
     private String s3Bucket;
     private String s3Endpoint;
 
+
+    private String dockstoreAuthorizationToken;
+
     public TooltesterConfig() {
         String userHome = System.getProperty("user.home");
         try {
@@ -35,6 +38,7 @@ public class TooltesterConfig {
             setS3Bucket(config.getString("s3-bucket", "dockstore.tooltester.backup"));
             setS3Endpoint(config.getString("s3-endpoint", "https://s3.amazonaws.com"));
             setJenkinsServerUrl(config.getString("jenkins-server-url", "http://172.18.0.22:8080"));
+            setDockstoreAuthorizationToken(config.getString("authorization-token", null));
         } catch (ConfigurationException e) {
             exceptionMessage(e, "Could not get configuration file", API_ERROR);
         }
@@ -95,4 +99,13 @@ public class TooltesterConfig {
     private void setJenkinsServerUrl(String jenkinsServerUrl) {
         this.jenkinsServerUrl = jenkinsServerUrl;
     }
+
+    public String getDockstoreAuthorizationToken() {
+        return dockstoreAuthorizationToken;
+    }
+
+    private void setDockstoreAuthorizationToken(String dockstoreAuthorizationToken) {
+        this.dockstoreAuthorizationToken = dockstoreAuthorizationToken;
+    }
+
 }
