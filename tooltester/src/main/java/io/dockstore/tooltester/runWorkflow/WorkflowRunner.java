@@ -91,10 +91,10 @@ public class WorkflowRunner {
         }
 
         final FileWrapper testParameterFileWrapper = ga4Ghv20Api.toolsIdVersionsVersionIdTypeDescriptorRelativePathGet(getEntryNameForApi(), "WDL", version, relativePathToTestParameterFileFormatted);
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(testParameterFile.getPath()));
+        try (
+                BufferedWriter writer = new BufferedWriter(new FileWriter(testParameterFile.getPath()))
+        ) {
             writer.write(testParameterFileWrapper.getContent());
-            writer.close();
             this.pathOfTestParameter = testParameterFile.getPath();
         } catch (IOException e) {
             exceptionMessage(e, "Error writing to testParameterFile", COMMAND_ERROR);
