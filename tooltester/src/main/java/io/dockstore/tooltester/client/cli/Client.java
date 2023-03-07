@@ -333,6 +333,7 @@ public class Client {
         workflowsStillRunning.addAll(workflowsToRun.getWorkflowsToRun());
 
         while (!workflowsStillRunning.isEmpty()) {
+            // Using sleep here as workflows take a while to run, and there is no point in continuously checking if they are finished
             sleep(WAIT_TIME);
             List<WorkflowRunner> workflowsToCheck = new ArrayList<>();
             workflowsToCheck.addAll(workflowsStillRunning);
