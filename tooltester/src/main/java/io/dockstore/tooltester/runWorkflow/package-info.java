@@ -14,4 +14,7 @@
  *    limitations under the License.
  */
 
+/**
+ * Contains classes needed to run "run-workflows"
+ */
 package io.dockstore.tooltester.runWorkflow;
