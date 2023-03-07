@@ -117,6 +117,13 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>io.dockstore</groupId>
+                <artifactId>bom-internal</artifactId>
+                <type>pom</type>
+                <version>${dockstore.core.version}</version>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>com.fasterxml.jackson.jaxrs</groupId>
                 <artifactId>jackson-jaxrs-base</artifactId>
                 <version>${jackson.version}</version>
@@ -127,19 +134,7 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            <dependency>
-                <groupId>io.dockstore</groupId>
-                <artifactId>bom-internal</artifactId>
-                <type>pom</type>
-                <version>${dockstore.core.version}</version>
-                <scope>import</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.fasterxml.jackson.core</groupId>
-                        <artifactId>jackson-databind</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
+
             <!--  cwl management -->
             <dependency>
                 <groupId>io.cwl</groupId>
@@ -229,7 +224,6 @@
         <dependency>
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
             <artifactId>jackson-jaxrs-base</artifactId>
-            <version>${jackson.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -348,12 +342,6 @@
             <version>${slf4j.version}</version>
             <scope>runtime</scope>
         </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>commons-configuration</groupId>-->
-<!--            <artifactId>commons-configuration</artifactId>-->
-<!--            <version>1.10</version>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>com.offbytwo.jenkins</groupId>
             <artifactId>jenkins-client</artifactId>
