@@ -19,6 +19,10 @@ public class ExceptionHandler {
     static final int CONNECTION_ERROR = 150; // Connection exception
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
 
+    private ExceptionHandler() {
+
+    }
+
     public static void errorMessage(String message, int exitCode) {
         err(message);
         System.exit(exitCode);
