@@ -21,8 +21,6 @@ public class TooltesterConfig {
     private String dockstoreVersion;
     private String s3Bucket;
     private String s3Endpoint;
-
-
     private String dockstoreAuthorizationToken;
 
     public TooltesterConfig() {
