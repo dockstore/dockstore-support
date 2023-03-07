@@ -678,7 +678,7 @@ public class Client {
         private boolean help = false;
     }
 
-    @Parameters(separators = "=", commandDescription = "Runs workflows through the Dockstore CLI and AGC, then both prints and uploads to Dockstore the execution statistics")
+    @Parameters(separators = "=", commandDescription = "Runs workflows through the Dockstore CLI and AGC, then both prints and uploads to Dockstore the execution statistics.")
     private static class CommandRunWorkflows {
         @Parameter(names = "--help", description = "Prints help for run-workflows", help = true)
         private boolean help = false;
