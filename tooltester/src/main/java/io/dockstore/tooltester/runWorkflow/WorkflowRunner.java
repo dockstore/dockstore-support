@@ -46,14 +46,13 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static java.util.UUID.randomUUID;
+import static org.apache.commons.lang3.time.DurationFormatUtils.formatDuration;
 
 /**
  * A class to run workflows and get their metrics
  */
 public class WorkflowRunner {
 
-    public static final int MILLISECONDS_IN_SECOND = 1000;
-    public static final int SECONDS_IN_MINUTE = 60;
     private static final String COMPLETE = "COMPLETE";
     private String entry;
     private String version;
@@ -92,7 +91,7 @@ public class WorkflowRunner {
      * @param extendedGa4GhApi
      * @throws InterruptedException
      */
-    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi) throws InterruptedException {
+    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi)  {
         this.entry = entry;
         this.version = version;
         this.extendedGa4GhApi = extendedGa4GhApi;
@@ -194,25 +193,14 @@ public class WorkflowRunner {
             setTimeForEachTask();
         }
         for (TimeStatisticForOneTask time: timesForEachTask) {
-            Long timeTakenInMilliseconds = time.getTimeTakenInMilliseconds();
-            Long milliseconds = timeTakenInMilliseconds % MILLISECONDS_IN_SECOND;
-            Long seconds = timeTakenInMilliseconds / MILLISECONDS_IN_SECOND;
-            Long minutes = seconds / SECONDS_IN_MINUTE;
-            seconds = seconds % SECONDS_IN_MINUTE;
-
             out("");
             out("TASK NAME: " + time.getTaskName());
             out("START TIME: " + time.getStartTime().toString());
             out("END TIME: " + time.getEndTime().toString());
-            out("DURATION: " + minutes + " minutes " + seconds + " seconds " + milliseconds + " milliseconds");
+            out("DURATION: " + formatDuration(time.getTimeTakenInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
         }
         out("");
-        Long totalTimeTakenMilliseconds = getTotalTimeInMilliseconds();
-        Long milliseconds = totalTimeTakenMilliseconds % MILLISECONDS_IN_SECOND;
-        Long seconds = totalTimeTakenMilliseconds / MILLISECONDS_IN_SECOND;
-        Long minutes = seconds / SECONDS_IN_MINUTE;
-        seconds = seconds % SECONDS_IN_MINUTE;
-        out("TOTAL TIME: " + minutes + " minutes " + seconds + " seconds " + milliseconds + " milliseconds");
+        out("TOTAL TIME: " + formatDuration(getTotalTimeInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
     }
 
     public void printRunStatistics() {
@@ -224,7 +212,7 @@ public class WorkflowRunner {
                 printTimeStatistic();
             }
         } else {
-            errorMessage("Workflow is not finished, statistic are not available yet", COMMAND_ERROR);
+            errorMessage("Workflow is not finished, statistics are not available yet", COMMAND_ERROR);
         }
     }
 
