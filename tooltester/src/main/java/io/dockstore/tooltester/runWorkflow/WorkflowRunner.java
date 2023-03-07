@@ -103,11 +103,13 @@ public class WorkflowRunner {
 
 
     private void createAgcWrapper() {
+
         String commandToWrite = "{\"workflowInputs\": \"" + pathOfTestParameter + "\"}";
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(agcWrapperPath));
+
+        try (
+                BufferedWriter writer = new BufferedWriter(new FileWriter(agcWrapperPath))
+        ) {
             writer.write(commandToWrite);
-            writer.close();
         } catch (IOException e) {
             exceptionMessage(e, "There as an error writing to " + agcWrapperPath, COMMAND_ERROR);
         }
