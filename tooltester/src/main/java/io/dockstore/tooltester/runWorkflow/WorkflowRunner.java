@@ -54,6 +54,7 @@ public class WorkflowRunner {
 
     public static final int MILLISECONDS_IN_SECOND = 1000;
     public static final int SECONDS_IN_MINUTE = 60;
+    private static final String COMPLETE = "COMPLETE";
     private String entry;
     private String version;
     private String runID = null;
@@ -219,7 +220,7 @@ public class WorkflowRunner {
             out("RUN STATISTICS:");
             out("ENTRY NAME: " + getCompleteEntryName());
             out("END STATE: " + state);
-            if (state.equals("COMPLETE")) {
+            if (COMPLETE.equals(state)) {
                 printTimeStatistic();
             }
         } else {
@@ -237,7 +238,7 @@ public class WorkflowRunner {
     }
 
     private Execution.ExecutionStatusEnum getExecutionStatus() {
-        if ("COMPLETE".equals(state)) {
+        if (COMPLETE.equals(state)) {
             return Execution.ExecutionStatusEnum.SUCCESSFUL;
         } else {
             return Execution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
@@ -256,7 +257,7 @@ public class WorkflowRunner {
 
         executions.add(execution);
 
-        extendedGa4GhApi.executionMetricsPost(executions, Partner.OTHER.name(), getEntryNameForApi(), version, "this was generated with tooltester [TEST]");
+        extendedGa4GhApi.executionMetricsPost(executions, Partner.AGC.name(), getEntryNameForApi(), version, "generated with tooltester ('run-workflows' command)");
     }
 
     public static void printLine() {
