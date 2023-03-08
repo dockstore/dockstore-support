@@ -175,7 +175,7 @@ public class WorkflowRunner {
     }
 
 
-    private Long getTotalTimeInMilliseconds() {
+    private Long getSumOfTimeForEachTaskInMilliseconds() {
         if (timesForEachTask == null) {
             setTimeForEachTask();
         }
@@ -184,6 +184,35 @@ public class WorkflowRunner {
             totalTimeTaken += time.getTimeTakenInMilliseconds();
         }
         return totalTimeTaken;
+    }
+
+    private Boolean isFirstDateBeforeSecondDate(Date first, Date second) {
+        return first.getTime() < second.getTime();
+    }
+
+    private Long getWallClockTimeInMilliseconds() {
+        if (timesForEachTask == null) {
+            setTimeForEachTask();
+        }
+        Date timeFirstWorkflowStarted = null;
+        Date timeLastWorkflowFinished = null;
+        for (TimeStatisticForOneTask time: timesForEachTask) {
+            if (timeFirstWorkflowStarted == null) {
+                timeFirstWorkflowStarted = time.getStartTime();
+            }
+            if (timeLastWorkflowFinished == null) {
+                timeLastWorkflowFinished = time.getEndTime();
+            }
+            if (isFirstDateBeforeSecondDate(time.getStartTime(), timeFirstWorkflowStarted)) {
+                timeFirstWorkflowStarted = time.getStartTime();
+            }
+
+            if (isFirstDateBeforeSecondDate(timeLastWorkflowFinished, time.getEndTime())) {
+                timeLastWorkflowFinished = time.getEndTime();
+            }
+
+        }
+        return timeLastWorkflowFinished.getTime() - timeFirstWorkflowStarted.getTime();
     }
 
 
@@ -199,7 +228,8 @@ public class WorkflowRunner {
             out("DURATION: " + formatDuration(time.getTimeTakenInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
         }
         out("");
-        out("TOTAL TIME: " + formatDuration(getTotalTimeInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
+        out("TOTAL TIME (WALL CLOCK): " + formatDuration(getWallClockTimeInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
+        out("SUM OF TIMES TAKEN TO COMPLETE EACH TASK: " + formatDuration(getSumOfTimeForEachTaskInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
     }
 
     public void printRunStatistics() {
@@ -215,11 +245,11 @@ public class WorkflowRunner {
         }
     }
 
-    private String getTotalTimeInISO861Standard() {
+    private String getTotalWallClockTimeInISO861Standard() {
         if (timesForEachTask == null) {
             setTimeForEachTask();
         }
-        Long totalTimeMilliseconds = getTotalTimeInMilliseconds();
+        Long totalTimeMilliseconds = getWallClockTimeInMilliseconds();
         Duration duration = Duration.ofMillis(totalTimeMilliseconds);
         return duration.toString();
     }
@@ -239,7 +269,7 @@ public class WorkflowRunner {
 
         // Only include the time metric if the workflow successfully ran
         if (getExecutionStatus() == Execution.ExecutionStatusEnum.SUCCESSFUL) {
-            execution.setExecutionTime(getTotalTimeInISO861Standard());
+            execution.setExecutionTime(getTotalWallClockTimeInISO861Standard());
         }
 
         executions.add(execution);
