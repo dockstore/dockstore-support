@@ -1,0 +1,14 @@
+{
+  "assoc_agg.out_prefix": "allele",
+  "assoc_agg.input_gds_files": [
+    "s3://flynn-test-bucket/assocation-aggregate-wdl/1KG_phase3_subset_chr1.gds",
+    "s3://flynn-test-bucket/assocation-aggregate-wdl/1KG_phase3_subset_chr2.gds"],
+  "assoc_agg.phenotype_file": "s3://flynn-test-bucket/assocation-aggregate-wdl/1KG_phase3_subset_annot.RData",
+  "assoc_agg.null_model_file": "s3://flynn-test-bucket/assocation-aggregate-wdl/null_model.RData",
+  "assoc_agg.variant_group_files": [
+    "s3://flynn-test-bucket/assocation-aggregate-wdl/coding_variants_chr1.RData",
+    "s3://flynn-test-bucket/assocation-aggregate-wdl/coding_variants_chr2.RData"],
+  "assoc_agg.aggregate_type": "allele",
+  "assoc_agg.test": "burden",
+  "assoc_agg.genome_build": "hg19"
+}

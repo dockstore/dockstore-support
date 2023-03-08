@@ -39,7 +39,8 @@ public class WorkflowList {
         return List.of(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "test-parameter-files/agc-fastq-read-counts-test-parameter-file.json", extendedGa4GhApi),
                         new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "agc-examples/fastq/input.json", ga4Ghv20Api, extendedGa4GhApi),
                         new WorkflowRunner("github.com/gatk-workflows/seq-format-conversion/BAM-to-Unmapped-BAM", "3.0.0", "test-parameter-files/BAM-to-Unmapped-BAM-test-parameter-file.json", extendedGa4GhApi),
-                        new WorkflowRunner("github.com/manning-lab/vcfToGds", "main", "test-parameter-files/vcfToGds-test-parameter-file.json", extendedGa4GhApi)
+                        new WorkflowRunner("github.com/manning-lab/vcfToGds", "main", "test-parameter-files/vcfToGds-test-parameter-file.json", extendedGa4GhApi),
+                        new WorkflowRunner("github.com/DataBiosphere/analysis_pipeline_WDL/assocation-aggregate-wdl", "v7.1.1", "test-parameter-files/assocation-aggregate-wdl-test-parameter-file.json", extendedGa4GhApi)
                 );
     }
 
