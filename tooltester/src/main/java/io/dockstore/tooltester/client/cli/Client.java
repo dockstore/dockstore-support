@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.beust.jcommander.JCommander;
@@ -79,14 +80,13 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
 import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
-import static java.lang.Thread.sleep;
 
 /**
  * Prototype for testing service
  */
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
-    private static final int WAIT_TIME = 10000;
+    private static final int WAIT_TIME = 10;
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4GhApi ga4ghApi;
@@ -334,7 +334,7 @@ public class Client {
 
         while (!workflowsStillRunning.isEmpty()) {
             // Using sleep here as workflows take a while to run, and there is no point in continuously checking if they are finished
-            sleep(WAIT_TIME);
+            TimeUnit.SECONDS.sleep(WAIT_TIME);
             List<WorkflowRunner> workflowsToCheck = new ArrayList<>();
             workflowsToCheck.addAll(workflowsStillRunning);
             for (WorkflowRunner workflow: workflowsToCheck) {
