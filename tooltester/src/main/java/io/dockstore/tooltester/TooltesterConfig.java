@@ -29,6 +29,7 @@ public class TooltesterConfig {
         try {
             // This is the config file for production use.
             // If there's no configuration file, all properties will default to Travis ones.
+            // None of the below variables are used in the tooltester function "run-workflows"
             File configFile = new File(userHome + File.separator + ".tooltester" + File.separator + "config");
             setTooltesterConfig(new HierarchicalINIConfiguration(configFile));
             setRunner(tooltesterConfig.getString("runner", "cwltool cwl-runner cromwell").split(" "));
@@ -42,6 +43,7 @@ public class TooltesterConfig {
 
         try {
             // This is the config file used by the dockstore CLI, it should be in ~/.dockstore/config
+            // The below variables are used in the tooltester function "run-workflows"
             File configFile = new File(userHome + File.separator + ".dockstore" + File.separator + "config");
             setDockstoreConfig(new HierarchicalINIConfiguration(configFile));
             setServerUrl(dockstoreConfig.getString("server-url", "https://staging.dockstore.org/api"));
