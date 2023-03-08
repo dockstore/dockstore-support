@@ -356,7 +356,7 @@ public class Client {
     }
 
     void setupTesters() {
-        pipelineTester = new PipelineTester(tooltesterConfig.getConfig());
+        pipelineTester = new PipelineTester(tooltesterConfig.getTooltesterConfig());
     }
 
     void setupClientEnvironment() {

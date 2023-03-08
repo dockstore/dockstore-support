@@ -14,7 +14,8 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
  */
 public class TooltesterConfig {
 
-    private HierarchicalINIConfiguration config;
+    private HierarchicalINIConfiguration tooltesterConfig;
+    private HierarchicalINIConfiguration dockstoreConfig;
     private String jenkinsServerUrl;
     private String serverUrl;
     private String[] runner;
@@ -29,25 +30,33 @@ public class TooltesterConfig {
             // This is the config file for production use.
             // If there's no configuration file, all properties will default to Travis ones.
             File configFile = new File(userHome + File.separator + ".tooltester" + File.separator + "config");
-            setConfig(new HierarchicalINIConfiguration(configFile));
-            setServerUrl(config.getString("server-url", "https://staging.dockstore.org/api"));
-            setRunner(config.getString("runner", "cwltool cwl-runner cromwell").split(" "));
-            setDockstoreVersion(config.getString("dockstore-version", "1.13.1"));
-            setS3Bucket(config.getString("s3-bucket", "dockstore.tooltester.backup"));
-            setS3Endpoint(config.getString("s3-endpoint", "https://s3.amazonaws.com"));
-            setJenkinsServerUrl(config.getString("jenkins-server-url", "http://172.18.0.22:8080"));
-            setDockstoreAuthorizationToken(config.getString("authorization-token", null));
+            setTooltesterConfig(new HierarchicalINIConfiguration(configFile));
+            setRunner(tooltesterConfig.getString("runner", "cwltool cwl-runner cromwell").split(" "));
+            setDockstoreVersion(tooltesterConfig.getString("dockstore-version", "1.13.1"));
+            setS3Bucket(tooltesterConfig.getString("s3-bucket", "dockstore.tooltester.backup"));
+            setS3Endpoint(tooltesterConfig.getString("s3-endpoint", "https://s3.amazonaws.com"));
+            setJenkinsServerUrl(tooltesterConfig.getString("jenkins-server-url", "http://172.18.0.22:8080"));
         } catch (ConfigurationException e) {
-            exceptionMessage(e, "Could not get configuration file", API_ERROR);
+            exceptionMessage(e, "Could not get ~/.tooltester/config configuration file", API_ERROR);
+        }
+
+        try {
+            // This is the config file used by the dockstore CLI, it should be in ~/.dockstore/config
+            File configFile = new File(userHome + File.separator + ".dockstore" + File.separator + "config");
+            setDockstoreConfig(new HierarchicalINIConfiguration(configFile));
+            setServerUrl(dockstoreConfig.getString("server-url", "https://staging.dockstore.org/api"));
+            setDockstoreAuthorizationToken(dockstoreConfig.getString("token", null));
+        } catch (ConfigurationException e) {
+            exceptionMessage(e, "Could not get ~/.dockstore/config configuration file", API_ERROR);
         }
     }
 
-    public HierarchicalINIConfiguration getConfig() {
-        return config;
+    public HierarchicalINIConfiguration getTooltesterConfig() {
+        return tooltesterConfig;
     }
 
-    private void setConfig(HierarchicalINIConfiguration config) {
-        this.config = config;
+    private void setTooltesterConfig(HierarchicalINIConfiguration tooltesterConfig) {
+        this.tooltesterConfig = tooltesterConfig;
     }
 
     public String getServerUrl() {
@@ -104,6 +113,10 @@ public class TooltesterConfig {
 
     private void setDockstoreAuthorizationToken(String dockstoreAuthorizationToken) {
         this.dockstoreAuthorizationToken = dockstoreAuthorizationToken;
+    }
+
+    private void setDockstoreConfig(HierarchicalINIConfiguration dockstoreConfig) {
+        this.dockstoreConfig = dockstoreConfig;
     }
 
 }
