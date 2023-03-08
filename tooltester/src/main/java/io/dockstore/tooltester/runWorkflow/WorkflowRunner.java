@@ -82,14 +82,13 @@ public class WorkflowRunner {
         this.extendedGa4GhApi = extendedGa4GhApi;
     }
 
-    /** Construct the WorkflowRunner with a local test parameter file
+    /** Construct the WorkflowRunner with a test parameter file found on Dockstore site
      *
      * @param entry The workflow's entry (e.g. github.com/dockstore/hello_world)
      * @param version The workflow's version (e.g. 3.0.0)
      * @param relativePathToTestParameterFile The relative path to the test parameter file on the dockstore site (ex. agc-examples/fastq/input.json)
      * @param ga4Ghv20Api
      * @param extendedGa4GhApi
-     * @throws InterruptedException
      */
     public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi)  {
         this.entry = entry;
