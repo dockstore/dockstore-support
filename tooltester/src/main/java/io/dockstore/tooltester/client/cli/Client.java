@@ -86,7 +86,7 @@ import static java.lang.Thread.sleep;
  */
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
-    public static final int WAIT_TIME = 10000;
+    private static final int WAIT_TIME = 10000;
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4GhApi ga4ghApi;
