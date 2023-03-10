@@ -278,7 +278,6 @@ public class WorkflowRunner {
         Execution execution = new Execution();
         execution.setExecutionStatus(getExecutionStatus());
 
-        // Only include the time metric if the workflow successfully ran
         if (getTotalWallClockTimeInISO861Standard() != null) {
             execution.setExecutionTime(getTotalWallClockTimeInISO861Standard());
         }
