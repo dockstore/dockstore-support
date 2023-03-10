@@ -43,6 +43,9 @@ public class TimeStatisticForOneTask {
     }
 
     public Long getTimeTakenInMilliseconds() {
+        if (startTime == null || endTime == null) {
+            return 0L;
+        }
         return endTime.getTime() - startTime.getTime();
     }
 

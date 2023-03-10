@@ -197,8 +197,14 @@ public class WorkflowRunner {
         Date timeFirstWorkflowStarted = null;
         Date timeLastWorkflowFinished = null;
         for (TimeStatisticForOneTask time: timesForEachTask) {
+            if (time.getStartTime() == null) {
+                continue;
+            }
             if (timeFirstWorkflowStarted == null) {
                 timeFirstWorkflowStarted = time.getStartTime();
+            }
+            if (time.getEndTime() == null) {
+                continue;
             }
             if (timeLastWorkflowFinished == null) {
                 timeLastWorkflowFinished = time.getEndTime();
@@ -212,6 +218,9 @@ public class WorkflowRunner {
             }
 
         }
+        if (timeLastWorkflowFinished == null || timeFirstWorkflowStarted == null) {
+            return null;
+        }
         return timeLastWorkflowFinished.getTime() - timeFirstWorkflowStarted.getTime();
     }
 
@@ -224,8 +233,12 @@ public class WorkflowRunner {
             out("");
             out("TASK NAME: " + time.getTaskName());
             out("START TIME: " + time.getStartTime().toString());
-            out("END TIME: " + time.getEndTime().toString());
-            out("DURATION: " + formatDuration(time.getTimeTakenInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
+            if (time.getEndTime() != null) {
+                out("END TIME: " + time.getEndTime().toString());
+                out("DURATION: " + formatDuration(time.getTimeTakenInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
+            } else {
+                out("The end time for this task was null");
+            }
         }
         out("");
         out("TOTAL TIME (WALL CLOCK): " + formatDuration(getWallClockTimeInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
@@ -237,17 +250,15 @@ public class WorkflowRunner {
             out("RUN STATISTICS:");
             out("ENTRY NAME: " + getCompleteEntryName());
             out("END STATE: " + state);
-            if (COMPLETE.equals(state)) {
-                printTimeStatistic();
-            }
+            printTimeStatistic();
         } else {
             errorMessage("Workflow is not finished, statistics are not available yet", COMMAND_ERROR);
         }
     }
 
     private String getTotalWallClockTimeInISO861Standard() {
-        if (timesForEachTask == null) {
-            setTimeForEachTask();
+        if (getWallClockTimeInMilliseconds() == null) {
+            return null;
         }
         Long totalTimeMilliseconds = getWallClockTimeInMilliseconds();
         Duration duration = Duration.ofMillis(totalTimeMilliseconds);
@@ -268,7 +279,7 @@ public class WorkflowRunner {
         execution.setExecutionStatus(getExecutionStatus());
 
         // Only include the time metric if the workflow successfully ran
-        if (getExecutionStatus() == Execution.ExecutionStatusEnum.SUCCESSFUL) {
+        if (getTotalWallClockTimeInISO861Standard() != null) {
             execution.setExecutionTime(getTotalWallClockTimeInISO861Standard());
         }
 
