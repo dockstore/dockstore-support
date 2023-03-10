@@ -38,9 +38,9 @@
         <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
         <slf4j.version>1.7.36</slf4j.version>
         <system-stubs.version>2.0.1</system-stubs.version>
-        <jackson.version>2.13.4</jackson.version>
+        <jackson.version>2.14.1</jackson.version>
         <aws.version>1.12.387</aws.version>
-        <dockstore.core.version>1.13.1</dockstore.core.version>
+        <dockstore.core.version>1.14.0-alpha.9</dockstore.core.version>
         <maven-surefire.version>3.0.0-M5</maven-surefire.version>
         <maven-failsafe.version>2.22.2</maven-failsafe.version>
     </properties>
@@ -123,6 +123,18 @@
                 <version>${dockstore.core.version}</version>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                <artifactId>jackson-jaxrs-base</artifactId>
+                <version>${jackson.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>com.fasterxml.jackson.core</groupId>
+                        <artifactId>jackson-databind</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
             <!--  cwl management -->
             <dependency>
                 <groupId>io.cwl</groupId>
@@ -139,11 +151,6 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.jaxrs</groupId>
-                <artifactId>jackson-jaxrs-base</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.cwl</groupId>
                 <artifactId>cwlavro-generated</artifactId>
                 <exclusions>
@@ -158,18 +165,8 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-            </dependency>
-            <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <scope>test</scope>
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
@@ -227,7 +224,6 @@
         <dependency>
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
             <artifactId>jackson-jaxrs-base</artifactId>
-            <version>${jackson.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -261,12 +257,46 @@
         <dependency>
             <groupId>org.glassfish.jersey.inject</groupId>
             <artifactId>jersey-hk2</artifactId>
-            <version>2.37</version>
+            <version>2.39</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>openapi-java-client</artifactId>
+            <version>${dockstore.core.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.module</groupId>
+                    <artifactId>jackson-module-jaxb-annotations</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>dockstore-common</artifactId>
+            <version>${dockstore.core.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpcore</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.dockstore</groupId>
@@ -279,6 +309,27 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>dockstore-webservice</artifactId>
+            <version>${dockstore.core.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpcore</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-io</groupId>
+                    <artifactId>commons-io</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <!-- slf4j -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -290,12 +341,6 @@
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
             <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
-            <version>1.10</version>
         </dependency>
         <dependency>
             <groupId>com.offbytwo.jenkins</groupId>
@@ -325,6 +370,10 @@
                 <exclusion>
                     <groupId>org.apache.httpcomponents</groupId>
                     <artifactId>httpcore</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpmime</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -659,7 +708,11 @@
                             <ignoreNonCompile>true</ignoreNonCompile>
                             <usedDependencies>
                                 <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
+                                <usedDependency>org.slf4j:slf4j-api</usedDependency>
                             </usedDependencies>
+                            <ignoredDependencies>
+                                <ignoredDependency>com.fasterxml.jackson.core:jackson-databind</ignoredDependency>
+                            </ignoredDependencies>
                         </configuration>
                     </execution>
                 </executions>

@@ -1,0 +1,5 @@
+
+{
+  "BamToUnmappedBams.input_bam": "s3://flynn-test-bucket/NA12878.bam"
+}
+

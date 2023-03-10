@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import com.beust.jcommander.JCommander;
@@ -36,6 +37,8 @@ import com.google.gson.reflect.TypeToken;
 import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.JobWithDetails;
+import io.dockstore.common.Utilities;
+import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.tooltester.TooltesterConfig;
 import io.dockstore.tooltester.blacklist.BlackList;
 import io.dockstore.tooltester.helper.DockstoreConfigHelper;
@@ -46,11 +49,14 @@ import io.dockstore.tooltester.helper.S3CacheHelper;
 import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.report.FileReport;
+import io.dockstore.tooltester.runWorkflow.WorkflowList;
+import io.dockstore.tooltester.runWorkflow.WorkflowRunner;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
 import io.swagger.client.api.ContainersApi;
 import io.swagger.client.api.Ga4GhApi;
+import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.swagger.client.api.WorkflowsApi;
 import io.swagger.client.model.DockstoreTool;
 import io.swagger.client.model.SourceFile;
@@ -73,18 +79,23 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
+import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
 
 /**
  * Prototype for testing service
  */
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
+    private static final int WAIT_TIME = 10;
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4GhApi ga4ghApi;
+    private Ga4Ghv20Api ga4Ghv20Api;
     private FileReport fileReport;
     private PipelineTester pipelineTester;
     private TooltesterConfig tooltesterConfig;
+    private ExtendedGa4GhApi extendedGa4GhApi;
+    private Utilities utilities;
 
     Client() {
 
@@ -95,7 +106,7 @@ public class Client {
      *
      * @param argv Command line arguments
      */
-    public static void main(String[] argv) {
+    public static void main(String[] argv) throws InterruptedException {
         Client client = new Client();
         CommandMain commandMain = new CommandMain();
         JCommander jc = new JCommander(commandMain);
@@ -104,10 +115,12 @@ public class Client {
         CommandEnqueue commandEnqueue = new CommandEnqueue();
         CommandFileReport commandFileReport = new CommandFileReport();
         CommandSync commandSync = new CommandSync();
+        CommandRunWorkflows commandRunWorkflows = new CommandRunWorkflows();
         jc.addCommand("report", commandReport);
         jc.addCommand("enqueue", commandEnqueue);
         jc.addCommand("file-report", commandFileReport);
         jc.addCommand("sync", commandSync);
+        jc.addCommand("run-workflows", commandRunWorkflows);
         try {
             jc.parse(argv);
         } catch (MissingCommandException e) {
@@ -152,6 +165,15 @@ public class Client {
                         printJCommanderHelp(jc, "autotool", "sync");
                     } else {
                         client.handleCreateTests(commandSync.tools, commandSync.source);
+                    }
+                    break;
+                case "run-workflows":
+                    if (commandRunWorkflows.help) {
+                        printJCommanderHelp(jc, "autotool", "run-workflows");
+                    } else {
+                        client.runToolTesterOnWorkflows();
+
+
                     }
                     break;
                 default:
@@ -281,8 +303,60 @@ public class Client {
         }
     }
 
+
+    private void setUpGa4Ghv20Api() {
+        this.tooltesterConfig = new TooltesterConfig();
+        io.dockstore.openapi.client.ApiClient defaultApiClient = io.dockstore.openapi.client.Configuration.getDefaultApiClient();
+        defaultApiClient.setBasePath(this.tooltesterConfig.getServerUrl());
+        setGa4Ghv20Api(new Ga4Ghv20Api(defaultApiClient));
+    }
+
+    private void setUpExtendedGa4GhApi() {
+        this.tooltesterConfig = new TooltesterConfig();
+        io.dockstore.openapi.client.ApiClient defaultApiClient = io.dockstore.openapi.client.Configuration.getDefaultApiClient();
+        defaultApiClient.setBasePath(this.tooltesterConfig.getServerUrl());
+        defaultApiClient.setAccessToken(this.tooltesterConfig.getDockstoreAuthorizationToken());
+        setExtendedGa4GhApi(new ExtendedGa4GhApi(defaultApiClient));
+    }
+
+    private void runToolTesterOnWorkflows() throws InterruptedException {
+        setUpGa4Ghv20Api();
+        setUpExtendedGa4GhApi();
+
+        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api(), getExtendedGa4GhApi());
+
+        for (WorkflowRunner workflow : workflowsToRun.getWorkflowsToRun()) {
+            workflow.runWorkflow();
+        }
+
+        List<WorkflowRunner> workflowsStillRunning = new ArrayList<>();
+        workflowsStillRunning.addAll(workflowsToRun.getWorkflowsToRun());
+
+        while (!workflowsStillRunning.isEmpty()) {
+            // Using sleep here as workflows take a while to run, and there is no point in continuously checking if they are finished
+            TimeUnit.SECONDS.sleep(WAIT_TIME);
+            List<WorkflowRunner> workflowsToCheck = new ArrayList<>();
+            workflowsToCheck.addAll(workflowsStillRunning);
+            for (WorkflowRunner workflow: workflowsToCheck) {
+                if (workflow.isWorkflowFinished()) {
+                    workflowsStillRunning.remove(workflow);
+                }
+            }
+        }
+
+        printLine();
+        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
+            workflow.printRunStatistics();
+            printLine();
+        }
+
+        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
+            workflow.uploadRunInfo();
+        }
+    }
+
     void setupTesters() {
-        pipelineTester = new PipelineTester(tooltesterConfig.getConfig());
+        pipelineTester = new PipelineTester(tooltesterConfig.getTooltesterConfig());
     }
 
     void setupClientEnvironment() {
@@ -546,6 +620,21 @@ public class Client {
         this.ga4ghApi = ga4ghApi;
     }
 
+    private ExtendedGa4GhApi getExtendedGa4GhApi() {
+        return extendedGa4GhApi;
+    }
+    private void setExtendedGa4GhApi(ExtendedGa4GhApi extendedGa4GhApi) {
+        this.extendedGa4GhApi = extendedGa4GhApi;
+    }
+
+    private Ga4Ghv20Api getGa4Ghv20Api() {
+        return ga4Ghv20Api;
+    }
+
+    private void setGa4Ghv20Api(Ga4Ghv20Api ga4Ghv20Api) {
+        this.ga4Ghv20Api = ga4Ghv20Api;
+    }
+
     private static class CommandMain {
         @Parameter(names = "--help", description = "Prints help for tooltester", help = true)
         private boolean help = false;
@@ -586,6 +675,12 @@ public class Client {
         @Parameter(names = "--tool", description = "The specific tool to report", required = true)
         private String tool;
         @Parameter(names = "--help", description = "Prints help for file-report", help = true)
+        private boolean help = false;
+    }
+
+    @Parameters(separators = "=", commandDescription = "Runs workflows through the Dockstore CLI and AGC, then both prints and uploads to Dockstore the execution statistics.")
+    private static class CommandRunWorkflows {
+        @Parameter(names = "--help", description = "Prints help for run-workflows", help = true)
         private boolean help = false;
     }
 }

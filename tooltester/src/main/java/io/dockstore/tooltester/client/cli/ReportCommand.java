@@ -46,7 +46,7 @@ final class ReportCommand {
     ReportCommand() {
         tooltesterConfig = new TooltesterConfig();
         ga4ghApi = new Ga4GhApi(getApiClient(tooltesterConfig.getServerUrl()));
-        pipelineTester = new PipelineTester(tooltesterConfig.getConfig());
+        pipelineTester = new PipelineTester(tooltesterConfig.getTooltesterConfig());
         jenkinsServerUrl = tooltesterConfig.getJenkinsServerUrl();
         if (SEND_LOGS) {
             s3Client = new S3Client();
