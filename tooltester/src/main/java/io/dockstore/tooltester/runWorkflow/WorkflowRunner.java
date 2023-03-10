@@ -95,7 +95,7 @@ public class WorkflowRunner {
         this.version = version;
         this.extendedGa4GhApi = extendedGa4GhApi;
 
-        File testParameterFile = new File("test-paramter-file-" + randomUUID() + ".json");
+        File testParameterFile = new File("test-parameter-file-" + randomUUID() + ".json");
         testParameterFile.deleteOnExit();
 
         String relativePathToTestParameterFileFormatted;
