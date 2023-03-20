@@ -115,7 +115,7 @@ public class GA4GHHelper {
                                 .collect(Collectors.toList()));
                 // The above was originally
                 /*
-                tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource().toString()))
+                tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource()))
                         .collect(Collectors.toList()));
                  */
             }
