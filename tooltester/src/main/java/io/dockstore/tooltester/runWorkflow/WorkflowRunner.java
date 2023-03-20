@@ -229,6 +229,9 @@ public class WorkflowRunner {
                 try {
                     startTimeDate = parseISO8601Date(startTime + "Z");
                     endTimeDate = parseISO8601Date(endTime + "Z");
+                    // The TOIL (which is what runs CWL) endpoint gives times that look like this: 2023-03-20T16:49:23.664
+                    // the issue is, that the time given is in the UTC time zone, but that is not specified in the time
+                    // string. The ` + "Z"` specifies to the parser that the time is in the UTC time zone.
                 } catch (Exception ex) {
                     exceptionMessage(ex, "Unable to pass date for a CWL workflow", API_ERROR);
                 }
