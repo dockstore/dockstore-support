@@ -1,15 +1,17 @@
 package io.dockstore.tooltester.helper;
 
+import io.dockstore.openapi.client.ApiException;
+import io.dockstore.openapi.client.api.ContainersApi;
+import io.dockstore.openapi.client.api.WorkflowsApi;
+import io.dockstore.openapi.client.model.DockstoreTool;
+import io.dockstore.openapi.client.model.Tag;
+import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.Workflow;
+import io.dockstore.openapi.client.model.WorkflowVersion;
+
 import java.util.ArrayList;
 
-import io.swagger.client.ApiException;
-import io.swagger.client.api.ContainersApi;
-import io.swagger.client.api.WorkflowsApi;
-import io.swagger.client.model.DockstoreTool;
-import io.swagger.client.model.Tag;
-import io.swagger.client.model.Tool;
-import io.swagger.client.model.Workflow;
-import io.swagger.client.model.WorkflowVersion;
+
 
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;

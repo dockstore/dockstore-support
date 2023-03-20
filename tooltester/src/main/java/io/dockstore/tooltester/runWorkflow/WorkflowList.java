@@ -18,7 +18,7 @@ package io.dockstore.tooltester.runWorkflow;
 
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
-import io.swagger.client.api.WorkflowsApi;
+import io.dockstore.openapi.client.api.WorkflowsApi;
 
 import java.util.List;
 
@@ -51,7 +51,8 @@ public class WorkflowList {
                         new WorkflowRunner("github.com/manning-lab/vcfToGds", "main", "test-parameter-files/vcfToGds-test-parameter-file.json", extendedGa4GhApi, workflowsApi, configFilePathWDL, configFilePathCWL),
                         new WorkflowRunner("github.com/DataBiosphere/analysis_pipeline_WDL/assocation-aggregate-wdl", "v7.1.1", "test-parameter-files/assocation-aggregate-wdl-test-parameter-file.json", extendedGa4GhApi, workflowsApi, configFilePathWDL, configFilePathCWL),
                         new WorkflowRunner("github.com/fhembroff/wes-testing/nontrivial", "main", "test-parameter-files/nontrivial-test-parameter-file.json", extendedGa4GhApi, workflowsApi, configFilePathWDL, configFilePathCWL),
-                        new WorkflowRunner("github.com/fhembroff/wes-testing/manyJobs", "main", "manyjobs/inputs.tiny.json", ga4Ghv20Api, extendedGa4GhApi, workflowsApi, configFilePathWDL, configFilePathCWL)
+                        new WorkflowRunner("github.com/fhembroff/wes-testing/manyJobs", "main", "manyjobs/inputs.tiny.json", ga4Ghv20Api, extendedGa4GhApi, workflowsApi, configFilePathWDL, configFilePathCWL),
+                        new WorkflowRunner("github.com/fhembroff/wes-testing/manyJobs", "main", "manyjobs/inputs.json", ga4Ghv20Api, extendedGa4GhApi, workflowsApi, configFilePathWDL, configFilePathCWL)
                 );
     }
 

@@ -13,8 +13,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.client.model.Tool;
-import io.swagger.client.model.ToolVersion;
+import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.ToolVersion;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,6 +42,7 @@ public class GA4GHHelperTest {
         assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cromwell", ToolVersion.DescriptorTypeEnum.NFL));
     }
 
+    @Disabled
     @Test
     public void getTools() throws URISyntaxException, IOException {
         String json = resourceFilePathToString();

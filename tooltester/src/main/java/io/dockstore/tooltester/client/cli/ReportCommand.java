@@ -16,9 +16,9 @@ import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.helper.TinyUrl;
 import io.dockstore.tooltester.report.StatusReport;
-import io.swagger.client.api.Ga4GhApi;
-import io.swagger.client.model.Tool;
-import io.swagger.client.model.ToolVersion;
+import io.dockstore.openapi.client.api.Ga4Ghv20Api;
+import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.ToolVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ final class ReportCommand {
     private static final boolean SEND_LOGS = true;
     private PipelineTester pipelineTester;
     private TooltesterConfig tooltesterConfig;
-    private Ga4GhApi ga4ghApi;
+    private Ga4Ghv20Api ga4Ghv20Api;
     private String jenkinsServerUrl;
     private S3Client s3Client;
 
@@ -45,7 +45,7 @@ final class ReportCommand {
      */
     ReportCommand() {
         tooltesterConfig = new TooltesterConfig();
-        ga4ghApi = new Ga4GhApi(getApiClient(tooltesterConfig.getServerUrl()));
+        ga4Ghv20Api = new Ga4Ghv20Api(getApiClient(tooltesterConfig.getServerUrl()));
         pipelineTester = new PipelineTester(tooltesterConfig.getTooltesterConfig());
         jenkinsServerUrl = tooltesterConfig.getJenkinsServerUrl();
         if (SEND_LOGS) {
@@ -77,7 +77,7 @@ final class ReportCommand {
      * @param sources   List of verified sources to report on, otherwise reports on all of them by default
      */
     void report(List<String> toolNames, List<String> sources) {
-        List<Tool> tools = GA4GHHelper.getTools(ga4ghApi, true, sources, toolNames, true, true);
+        List<Tool> tools = GA4GHHelper.getTools(ga4Ghv20Api, true, sources, toolNames, true, true);
         String prefix = TimeHelper.getDateFilePrefix();
         StatusReport report = new StatusReport(prefix + "Report.csv");
         tools.forEach(tool -> getToolTestResults(tool, report));

@@ -23,11 +23,11 @@ import com.google.gson.JsonObject;
 import io.dockstore.common.Utilities;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
+import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.Execution;
 import io.dockstore.openapi.client.model.FileWrapper;
+import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowSubClass;
-import io.swagger.client.api.WorkflowsApi;
-import io.swagger.client.model.Workflow;
 import org.apache.commons.lang3.StringUtils;
 import io.dockstore.webservice.core.Partner;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -102,11 +102,7 @@ public class WorkflowRunner {
      */
     @SuppressWarnings("checkstyle:parameternumber")
     public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String WDLConfigFilePath, String CWLConfigFilePath)  {
-        this.entry = entry;
-        this.version = version;
-        this.extendedGa4GhApi = extendedGa4GhApi;
-        this.workflowsApi = workflowsApi;
-        setDescriptorLanguage(WDLConfigFilePath, CWLConfigFilePath);
+        this(entry, version, relativePathToTestParameterFile, extendedGa4GhApi, workflowsApi, WDLConfigFilePath, CWLConfigFilePath);
 
         File testParameterFile = new File("test-parameter-file-" + randomUUID() + ".json");
         testParameterFile.deleteOnExit();
@@ -131,7 +127,7 @@ public class WorkflowRunner {
 
     private void setDescriptorLanguage(String WDLConfigFilePath, String CWLConfigFilePath) {
         // Get the workflow object associated with the provided entry path
-        final Workflow workflow = workflowsApi.getPublishedWorkflowByPath(entry, WorkflowSubClass.BIOWORKFLOW.toString(), null, version);
+        final Workflow workflow = workflowsApi.getPublishedWorkflowByPath(entry, WorkflowSubClass.BIOWORKFLOW, null, version);
         descriptorType = workflow.getDescriptorType();
         switch (descriptorType) {
             case WDL:

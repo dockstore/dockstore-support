@@ -38,7 +38,20 @@ import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.JobWithDetails;
 import io.dockstore.common.Utilities;
+import io.dockstore.openapi.client.ApiException;
+import io.dockstore.openapi.client.Configuration;
+import io.dockstore.openapi.client.api.ContainersApi;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
+import io.dockstore.openapi.client.api.Ga4Ghv20Api;
+import io.dockstore.openapi.client.api.WorkflowsApi;
+import io.dockstore.openapi.client.model.DockstoreTool;
+import io.dockstore.openapi.client.model.SourceFile;
+import io.dockstore.openapi.client.model.Tag;
+import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.ToolClass;
+import io.dockstore.openapi.client.model.ToolVersion;
+import io.dockstore.openapi.client.model.Workflow;
+import io.dockstore.openapi.client.model.WorkflowVersion;
 import io.dockstore.tooltester.TooltesterConfig;
 import io.dockstore.tooltester.blacklist.BlackList;
 import io.dockstore.tooltester.helper.DockstoreConfigHelper;
@@ -51,21 +64,7 @@ import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.report.FileReport;
 import io.dockstore.tooltester.runWorkflow.WorkflowList;
 import io.dockstore.tooltester.runWorkflow.WorkflowRunner;
-import io.swagger.client.ApiClient;
-import io.swagger.client.ApiException;
-import io.swagger.client.Configuration;
-import io.swagger.client.api.ContainersApi;
-import io.swagger.client.api.Ga4GhApi;
-import io.dockstore.openapi.client.api.Ga4Ghv20Api;
-import io.swagger.client.api.WorkflowsApi;
-import io.swagger.client.model.DockstoreTool;
-import io.swagger.client.model.SourceFile;
-import io.swagger.client.model.Tag;
-import io.swagger.client.model.Tool;
-import io.swagger.client.model.ToolClass;
-import io.swagger.client.model.ToolVersion;
-import io.swagger.client.model.Workflow;
-import io.swagger.client.model.WorkflowVersion;
+import io.dockstore.openapi.client.ApiClient;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +88,6 @@ public class Client {
     private static final int WAIT_TIME = 10;
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
-    private Ga4GhApi ga4ghApi;
     private Ga4Ghv20Api ga4Ghv20Api;
     private FileReport fileReport;
     private PipelineTester pipelineTester;
@@ -282,7 +280,7 @@ public class Client {
     private void handleCreateTests(List<String> toolnames, List<String> source) {
         setupClientEnvironment();
         setupTesters();
-        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, source, toolnames, true, true);
+        List<Tool> tools = GA4GHHelper.getTools(getGa4Ghv20Api(), true, source, toolnames, true, true);
         for (Tool tool : tools) {
             createToolTests(tool);
         }
@@ -297,7 +295,7 @@ public class Client {
     private void handleRunTests(List<String> toolNames, List<String> sources) {
         setupClientEnvironment();
         setupTesters();
-        List<Tool> tools = GA4GHHelper.getTools(getGa4ghApi(), true, sources, toolNames, true, true);
+        List<Tool> tools = GA4GHHelper.getTools(getGa4Ghv20Api(), true, sources, toolNames, true, true);
         for (Tool tool : tools) {
             testTool(tool);
         }
@@ -371,7 +369,7 @@ public class Client {
         ApiClient defaultApiClient = getApiClient(this.tooltesterConfig.getServerUrl());
         this.containersApi = new ContainersApi(defaultApiClient);
         this.workflowsApi = new WorkflowsApi(defaultApiClient);
-        setGa4ghApi(new Ga4GhApi(defaultApiClient));
+        setGa4Ghv20Api(new Ga4Ghv20Api(defaultApiClient));
     }
 
     private void finalizeFileReport() {
@@ -456,12 +454,12 @@ public class Client {
                 String name = buildName(runner, toolId + "-" + tagName);
                 try {
                     if (compatibleRunner(runner, descriptorType.toString())) {
-                        descriptor = workflowsApi.primaryDescriptor(entryId, tagName, descriptorType.toString());
+                        descriptor = workflowsApi.primaryDescriptor1(entryId, tagName, descriptorType.toString());
                     } else {
                         continue;
                     }
                     String descriptorPath = DockstoreEntryHelper.convertDockstoreAbsolutePathToJenkinsRelativePath(descriptor.getPath());
-                    testParameterFiles = workflowsApi.getTestParameterFiles(entryId, tagName);
+                    testParameterFiles = workflowsApi.getTestParameterFiles1(entryId, tagName);
                     testParameterFiles.stream().map(testParameterFile -> DockstoreEntryHelper
                             .convertDockstoreAbsolutePathToJenkinsRelativePath(testParameterFile.getPath())).forEach(parameterPath -> {
                         parametersList.add(parameterPath);
@@ -617,14 +615,6 @@ public class Client {
 
     ContainersApi getContainersApi() {
         return containersApi;
-    }
-
-    private Ga4GhApi getGa4ghApi() {
-        return ga4ghApi;
-    }
-
-    private void setGa4ghApi(Ga4GhApi ga4ghApi) {
-        this.ga4ghApi = ga4ghApi;
     }
 
     private ExtendedGa4GhApi getExtendedGa4GhApi() {

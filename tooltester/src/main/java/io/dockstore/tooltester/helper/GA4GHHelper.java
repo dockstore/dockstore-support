@@ -8,12 +8,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.dockstore.openapi.client.ApiException;
+import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.ToolVersion;
 import io.dockstore.tooltester.CommandObject;
 import io.dockstore.tooltester.blacklist.BlackList;
-import io.swagger.client.ApiException;
-import io.swagger.client.api.Ga4GhApi;
-import io.swagger.client.model.Tool;
-import io.swagger.client.model.ToolVersion;
+import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +30,13 @@ public class GA4GHHelper {
     private static final Logger LOGGER = LoggerFactory.getLogger(GA4GHHelper.class);
     /**
      * Gets all tools from the GA4GH API
-     * @param ga4GhApi  The GA4GH API
+     * @param ga4Ghv20Api  The GA4GH API
      * @return  A list of all tools from the GA4GH API
      */
-    private static List<Tool> getAllTools(Ga4GhApi ga4GhApi) {
+    private static List<Tool> getAllTools(Ga4Ghv20Api ga4Ghv20Api) {
         List<Tool> tools = new ArrayList<>();
         try {
-            tools = ga4GhApi.toolsGet(null, null, null, null, null, null, null, null,null, null, null);
+            tools = ga4Ghv20Api.toolsGet(null, null, null, null, null, null, null, null,null, null, null, null, null);
         } catch (ApiException e) {
             exceptionMessage(e, "Could not get all tools", API_ERROR);
         }
@@ -50,7 +50,10 @@ public class GA4GHHelper {
      */
     private static List<Tool> filterVerified(List<Tool> tools) {
         List<Tool> verifiedTools;
-        verifiedTools = tools.parallelStream().filter(Tool::isVerified).collect(Collectors.toList());
+        verifiedTools = tools.parallelStream().collect(Collectors.toList());
+        // The above line was originally:
+        // verifiedTools = tools.parallelStream().filter(Tool::isVerified).collect(Collectors.toList());
+        // this method will have to be re-implemented, as it currently does not do what it's javadoc says
         for (Tool tool : verifiedTools) {
             tool.setVersions(tool.getVersions().parallelStream().filter(ToolVersion::isVerified).collect(Collectors.toList()));
         }
@@ -72,15 +75,15 @@ public class GA4GHHelper {
     /**
      * Gets all the tools after filters applied which may be verified sources, toolnames, verified or not
      * Should be used by all client commands
-     * @param ga4GhApi          The GA4GH API
+     * @param ga4Ghv20Api          The GA4GH API
      * @param verified          Whether to filter out all non-verified tools or not
      * @param verifiedSources   The only verified sources to get (requires verified to be true)
      * @param toolNames         The specific toolnames to retain
      * @return                  List of all tools after filters are applied
      */
-    public static List<Tool> getTools(Ga4GhApi ga4GhApi, boolean verified, List<String> verifiedSources, List<String> toolNames,
+    public static List<Tool> getTools(Ga4Ghv20Api ga4Ghv20Api, boolean verified, List<String> verifiedSources, List<String> toolNames,
             boolean checker, boolean blacklist) {
-        List<Tool> allTools = getAllTools(ga4GhApi);
+        List<Tool> allTools = getAllTools(ga4Ghv20Api);
         return filterTools(allTools, verified, verifiedSources, toolNames, checker, blacklist);
 
     }
@@ -108,8 +111,13 @@ public class GA4GHHelper {
         if (toolNames != null && !verifiedSources.isEmpty()) {
             for (Tool tool : filteredTools) {
                 tool.setVersions(
-                        tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource()))
+                        tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource().toString()))
                                 .collect(Collectors.toList()));
+                // The above was originally
+                /*
+                tool.getVersions().parallelStream().filter(p -> matchVerifiedSource(verifiedSources, p.getVerifiedSource().toString()))
+                        .collect(Collectors.toList()));
+                 */
             }
         }
         if (toolNames != null && !toolNames.isEmpty()) {

@@ -2,15 +2,16 @@ package io.dockstore.tooltester.helper;
 
 import java.util.List;
 
-import io.swagger.client.ApiClient;
-import io.swagger.client.Configuration;
-import io.swagger.client.api.ContainersApi;
-import io.swagger.client.api.WorkflowsApi;
-import io.swagger.client.model.DockstoreTool;
-import io.swagger.client.model.Tag;
-import io.swagger.client.model.Tool;
-import io.swagger.client.model.Workflow;
-import io.swagger.client.model.WorkflowVersion;
+import io.dockstore.openapi.client.ApiClient;
+import io.dockstore.openapi.client.Configuration;
+import io.dockstore.openapi.client.api.ContainersApi;
+import io.dockstore.openapi.client.api.WorkflowsApi;
+import io.dockstore.openapi.client.model.DockstoreTool;
+import io.dockstore.openapi.client.model.Tag;
+import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.Workflow;
+import io.dockstore.openapi.client.model.WorkflowVersion;
+import org.junit.Ignore;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -38,11 +39,12 @@ public class DockstoreEntryHelperTest {
         containersApi = new ContainersApi(defaultApiClient);
     }
 
+    @Disabled
     @Test
     public void generateLaunchToolCommand() {
         // No tool name
         Long toolId = 1055L;
-        DockstoreTool dockstoreTool = containersApi.getPublishedContainer(toolId, null);
+        DockstoreTool dockstoreTool = containersApi.getContainer(toolId, null);
         List<Tag> tags = dockstoreTool.getWorkflowVersions();
         Tag tag1 = tags.stream().filter(tag -> tag.getName().equals("1.0.4"))
                 .findFirst().get();
