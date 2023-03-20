@@ -179,7 +179,7 @@ public class WorkflowRunner {
                 break;
             case CWL:
                 result = Utilities.executeCommand("dockstore workflow wes launch --entry "
-                        + getCompleteEntryName() + " --json " + pathOfTestParameter + " --inline-workflow"
+                        + getCompleteEntryName() + " --json " + pathOfTestParameter + " --inline-workflow "
                         + " --config " + configFilePath + " --script");
                 break;
             default:
