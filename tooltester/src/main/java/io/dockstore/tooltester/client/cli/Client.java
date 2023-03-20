@@ -322,7 +322,6 @@ public class Client {
         ApiClient defaultApiClient = Configuration.getDefaultApiClient();
         defaultApiClient.setBasePath(this.tooltesterConfig.getServerUrl());
         setWorkflowsApi(new WorkflowsApi(defaultApiClient));
-        out(getWorkflowsApi().toString());
     }
     private void runToolTesterOnWorkflows(String WDLconfigFilePath, String CWLconfigFilePath) throws InterruptedException {
         setUpGa4Ghv20Api();
