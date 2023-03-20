@@ -171,7 +171,7 @@ public class Client {
                     if (commandRunWorkflows.help) {
                         printJCommanderHelp(jc, "autotool", "run-workflows");
                     } else {
-                        client.runToolTesterOnWorkflows();
+                        client.runToolTesterOnWorkflows(commandRunWorkflows.configWDL, commandRunWorkflows.configCWL);
 
 
                     }
@@ -319,11 +319,18 @@ public class Client {
         setExtendedGa4GhApi(new ExtendedGa4GhApi(defaultApiClient));
     }
 
-    private void runToolTesterOnWorkflows() throws InterruptedException {
+    private void setUpWorkflowApi() {
+        this.tooltesterConfig = new TooltesterConfig();
+        ApiClient defaultApiClient = Configuration.getDefaultApiClient();
+        defaultApiClient.setBasePath(this.tooltesterConfig.getServerUrl());
+        setWorkflowsApi(new WorkflowsApi(defaultApiClient));
+        out(getWorkflowsApi().toString());
+    }
+    private void runToolTesterOnWorkflows(String WDLconfigFilePath, String CWLconfigFilePath) throws InterruptedException {
         setUpGa4Ghv20Api();
         setUpExtendedGa4GhApi();
-
-        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api(), getExtendedGa4GhApi());
+        setUpWorkflowApi();
+        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api(), getExtendedGa4GhApi(), getWorkflowsApi(), WDLconfigFilePath, CWLconfigFilePath);
 
         for (WorkflowRunner workflow : workflowsToRun.getWorkflowsToRun()) {
             workflow.runWorkflow();
@@ -635,6 +642,14 @@ public class Client {
         this.ga4Ghv20Api = ga4Ghv20Api;
     }
 
+    public WorkflowsApi getWorkflowsApi() {
+        return workflowsApi;
+    }
+
+    public void setWorkflowsApi(WorkflowsApi workflowsApi) {
+        this.workflowsApi = workflowsApi;
+    }
+
     private static class CommandMain {
         @Parameter(names = "--help", description = "Prints help for tooltester", help = true)
         private boolean help = false;
@@ -682,6 +697,12 @@ public class Client {
     private static class CommandRunWorkflows {
         @Parameter(names = "--help", description = "Prints help for run-workflows", help = true)
         private boolean help = false;
+
+        @Parameter(names = "--WDL-config-file-path", description = "The config file used to run WDL workflows", required = true)
+        private String configWDL;
+
+        @Parameter(names = "--CWL-config-file-path", description = "The config file used to run CWL workflows", required = true)
+        private String configCWL;
     }
 }
 

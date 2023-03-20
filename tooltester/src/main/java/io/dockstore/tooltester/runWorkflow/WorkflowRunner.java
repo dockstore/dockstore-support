@@ -25,6 +25,9 @@ import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.model.Execution;
 import io.dockstore.openapi.client.model.FileWrapper;
+import io.dockstore.openapi.client.model.WorkflowSubClass;
+import io.swagger.client.api.WorkflowsApi;
+import io.swagger.client.model.Workflow;
 import org.apache.commons.lang3.StringUtils;
 import io.dockstore.webservice.core.Partner;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -42,7 +45,9 @@ import java.util.List;
 
 import static com.amazonaws.util.DateUtils.parseISO8601Date;
 import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
+import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static java.util.UUID.randomUUID;
@@ -62,7 +67,10 @@ public class WorkflowRunner {
     private JsonObject log = null;
     private Boolean finished = false;
     private String state;
+    private Workflow.DescriptorTypeEnum descriptorType;
     private ExtendedGa4GhApi extendedGa4GhApi;
+    private WorkflowsApi workflowsApi;
+    private String configFilePath;
 
     private final List<String> inProgressStates = Arrays.asList("RUNNING", "INITIALIZING");
 
@@ -75,11 +83,13 @@ public class WorkflowRunner {
      * @param pathOfTestParameter A relative path to the location of the test parameter (e.g. test/test-parameter-file.json)
      * @param extendedGa4GhApi
      */
-    public WorkflowRunner(String entry, String version, String pathOfTestParameter, ExtendedGa4GhApi extendedGa4GhApi) {
+    public WorkflowRunner(String entry, String version, String pathOfTestParameter, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String WDLconfigFilePath, String CWLconfigFilePath) {
         this.entry = entry;
         this.version = version;
         this.pathOfTestParameter = pathOfTestParameter;
         this.extendedGa4GhApi = extendedGa4GhApi;
+        this.workflowsApi = workflowsApi;
+        setDescriptorLanguage(WDLconfigFilePath, CWLconfigFilePath);
     }
 
     /** Construct the WorkflowRunner with a test parameter file found on Dockstore site
@@ -90,10 +100,13 @@ public class WorkflowRunner {
      * @param ga4Ghv20Api
      * @param extendedGa4GhApi
      */
-    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi)  {
+    @SuppressWarnings("checkstyle:parameternumber")
+    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String WDLConfigFilePath, String CWLConfigFilePath)  {
         this.entry = entry;
         this.version = version;
         this.extendedGa4GhApi = extendedGa4GhApi;
+        this.workflowsApi = workflowsApi;
+        setDescriptorLanguage(WDLConfigFilePath, CWLConfigFilePath);
 
         File testParameterFile = new File("test-parameter-file-" + randomUUID() + ".json");
         testParameterFile.deleteOnExit();
@@ -113,6 +126,24 @@ public class WorkflowRunner {
             this.pathOfTestParameter = testParameterFile.getPath();
         } catch (IOException e) {
             exceptionMessage(e, "Error writing to testParameterFile", COMMAND_ERROR);
+        }
+    }
+
+    private void setDescriptorLanguage(String WDLConfigFilePath, String CWLConfigFilePath) {
+        // Get the workflow object associated with the provided entry path
+        final Workflow workflow = workflowsApi.getPublishedWorkflowByPath(entry, WorkflowSubClass.BIOWORKFLOW.toString(), null, version);
+        descriptorType = workflow.getDescriptorType();
+        switch (descriptorType) {
+            case WDL:
+                configFilePath = WDLConfigFilePath;
+                break;
+
+            case CWL:
+                configFilePath = CWLConfigFilePath;
+                break;
+
+            default:
+                errorMessage("The descriptor type of " + workflow.getWorkflowName() + "(which is " + descriptorType.toString() + ") is not supported", GENERIC_ERROR);
         }
     }
 
@@ -138,9 +169,22 @@ public class WorkflowRunner {
         return entry + ":" + version;
     }
     public void runWorkflow() {
-        createAgcWrapper();
-        ImmutablePair<String, String> result = Utilities.executeCommand("dockstore workflow wes launch --entry "
-                + getCompleteEntryName() + " --json " + agcWrapperPath + " --attach " + pathOfTestParameter + " --script");
+        ImmutablePair<String, String> result = null;
+        switch (descriptorType) {
+            case WDL:
+                createAgcWrapper();
+                result = Utilities.executeCommand("dockstore workflow wes launch --entry "
+                        + getCompleteEntryName() + " --json " + agcWrapperPath + " --attach " + pathOfTestParameter
+                        + " --config " + configFilePath + " --script");
+                break;
+            case CWL:
+                result = Utilities.executeCommand("dockstore workflow wes launch --entry "
+                        + getCompleteEntryName() + " --json " + pathOfTestParameter + " --inline-workflow"
+                        + " --config " + configFilePath + " --script");
+                break;
+            default:
+                errorMessage("The descriptor type of this workflow is not supported", GENERIC_ERROR);
+        }
         runID = StringUtils.deleteWhitespace(result.getLeft());
     }
 
@@ -148,7 +192,8 @@ public class WorkflowRunner {
         if (finished) {
             return true;
         }
-        ImmutablePair<String, String> result = Utilities.executeCommand("dockstore workflow wes logs --id " + runID + " --script");
+        ImmutablePair<String, String> result = Utilities.executeCommand("dockstore workflow wes logs --id " + runID
+                + " --config " + configFilePath + " --script");
         String logJson = result.getLeft();
         log = new Gson().fromJson(logJson, JsonObject.class);
         state = log.get("state").getAsString();
@@ -163,13 +208,35 @@ public class WorkflowRunner {
 
     private void setTimeForEachTask() {
         List<TimeStatisticForOneTask> times = new ArrayList<>();
-        JsonArray arr = log.getAsJsonArray("task_logs");
-        for (JsonElement element: arr) {
-            String startTime = element.getAsJsonObject().get("start_time").getAsString();
-            String endTime = element.getAsJsonObject().get("end_time").getAsString();
-            Date startTimeDate = parseISO8601Date(startTime);
-            Date endTimeDate = parseISO8601Date(endTime);
-            times.add(new TimeStatisticForOneTask(startTimeDate, endTimeDate, element.getAsJsonObject().get("name").getAsString()));
+        switch(descriptorType) {
+            case WDL:
+                JsonArray arr = log.getAsJsonArray("task_logs");
+                for (JsonElement element : arr) {
+                    String startTime = element.getAsJsonObject().get("start_time").getAsString();
+                    String endTime = element.getAsJsonObject().get("end_time").getAsString();
+                    Date startTimeDate = parseISO8601Date(startTime);
+                    Date endTimeDate = parseISO8601Date(endTime);
+                    times.add(new TimeStatisticForOneTask(startTimeDate, endTimeDate, element.getAsJsonObject().get("name").getAsString()));
+                }
+                break;
+
+            case CWL:
+                JsonElement runLog = log.getAsJsonObject().get("run_log");
+                String startTime = runLog.getAsJsonObject().get("start_time").getAsString();
+                String endTime = runLog.getAsJsonObject().get("end_time").getAsString();
+                Date startTimeDate = null;
+                Date endTimeDate = null;
+                try {
+                    startTimeDate = parseISO8601Date(startTime + "Z");
+                    endTimeDate = parseISO8601Date(endTime + "Z");
+                } catch (Exception ex) {
+                    exceptionMessage(ex, "Unable to pass date for a CWL workflow", API_ERROR);
+                }
+                times.add(new TimeStatisticForOneTask(startTimeDate, endTimeDate, getCompleteEntryName()));
+                break;
+
+            default:
+                errorMessage("Workflow is not finished, statistics are not available yet", COMMAND_ERROR);
         }
         this.timesForEachTask = times;
     }
