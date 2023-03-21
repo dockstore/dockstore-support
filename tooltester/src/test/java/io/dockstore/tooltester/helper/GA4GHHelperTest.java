@@ -42,7 +42,8 @@ public class GA4GHHelperTest {
         assertFalse(GA4GHHelper.runnerSupportsDescriptorType("cromwell", ToolVersion.DescriptorTypeEnum.NFL));
     }
 
-    @Disabled
+    // TODO: correct the issues in this test and have it run correctly
+    @Disabled("When upgrading the APIs used in this test, the test broke")
     @Test
     public void getTools() throws URISyntaxException, IOException {
         String json = resourceFilePathToString();

@@ -11,7 +11,6 @@ import io.dockstore.openapi.client.model.Tag;
 import io.dockstore.openapi.client.model.Tool;
 import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowVersion;
-import org.junit.Ignore;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +38,8 @@ public class DockstoreEntryHelperTest {
         containersApi = new ContainersApi(defaultApiClient);
     }
 
-    @Disabled
+    // TODO: Give this test access to credentials to enable it to run
+    @Disabled("Disabled as after the APIs were upgraded, the ones used by this test require credentials")
     @Test
     public void generateLaunchToolCommand() {
         // No tool name
