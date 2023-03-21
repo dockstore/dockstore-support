@@ -139,7 +139,7 @@ public class WorkflowRunner {
                 break;
 
             default:
-                errorMessage("The descriptor type of " + workflow.getWorkflowName() + "(which is " + descriptorType.toString() + ") is not supported", GENERIC_ERROR);
+                errorMessage("The descriptor type of " + workflow.getWorkflowName() + " (which is " + descriptorType.toString() + ") is not supported", GENERIC_ERROR);
         }
     }
 
