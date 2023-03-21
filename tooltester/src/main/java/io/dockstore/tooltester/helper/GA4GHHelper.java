@@ -53,7 +53,7 @@ public class GA4GHHelper {
         verifiedTools = tools.parallelStream().collect(Collectors.toList());
         // The above line was originally:
         // verifiedTools = tools.parallelStream().filter(Tool::isVerified).collect(Collectors.toList());
-        // this method will have to be re-implemented, as it currently does not do what it's javadoc says
+        // TODO: re-implement this method, as it currently does not do what its javadoc says
         for (Tool tool : verifiedTools) {
             tool.setVersions(tool.getVersions().parallelStream().filter(ToolVersion::isVerified).collect(Collectors.toList()));
         }
