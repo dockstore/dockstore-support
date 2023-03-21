@@ -83,13 +83,13 @@ public class WorkflowRunner {
      * @param pathOfTestParameter A relative path to the location of the test parameter (e.g. test/test-parameter-file.json)
      * @param extendedGa4GhApi
      */
-    public WorkflowRunner(String entry, String version, String pathOfTestParameter, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String WDLconfigFilePath, String CWLconfigFilePath) {
+    public WorkflowRunner(String entry, String version, String pathOfTestParameter, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String wdlConfigFilePath, String cwlConfigFilePath) {
         this.entry = entry;
         this.version = version;
         this.pathOfTestParameter = pathOfTestParameter;
         this.extendedGa4GhApi = extendedGa4GhApi;
         this.workflowsApi = workflowsApi;
-        setDescriptorLanguage(WDLconfigFilePath, CWLconfigFilePath);
+        setDescriptorLanguage(wdlConfigFilePath, cwlConfigFilePath);
     }
 
     /** Construct the WorkflowRunner with a test parameter file found on Dockstore site
@@ -101,8 +101,8 @@ public class WorkflowRunner {
      * @param extendedGa4GhApi
      */
     @SuppressWarnings("checkstyle:parameternumber")
-    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String WDLConfigFilePath, String CWLConfigFilePath)  {
-        this(entry, version, relativePathToTestParameterFile, extendedGa4GhApi, workflowsApi, WDLConfigFilePath, CWLConfigFilePath);
+    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String wdlConfigFilePath, String cwlConfigFilePath)  {
+        this(entry, version, relativePathToTestParameterFile, extendedGa4GhApi, workflowsApi, wdlConfigFilePath, cwlConfigFilePath);
 
         File testParameterFile = new File("test-parameter-file-" + randomUUID() + ".json");
         testParameterFile.deleteOnExit();
@@ -125,17 +125,17 @@ public class WorkflowRunner {
         }
     }
 
-    private void setDescriptorLanguage(String WDLConfigFilePath, String CWLConfigFilePath) {
+    private void setDescriptorLanguage(String wdlConfigFilePath, String cwlConfigFilePath) {
         // Get the workflow object associated with the provided entry path
         final Workflow workflow = workflowsApi.getPublishedWorkflowByPath(entry, WorkflowSubClass.BIOWORKFLOW, null, version);
         descriptorType = workflow.getDescriptorType();
         switch (descriptorType) {
             case WDL:
-                configFilePath = WDLConfigFilePath;
+                configFilePath = wdlConfigFilePath;
                 break;
 
             case CWL:
-                configFilePath = CWLConfigFilePath;
+                configFilePath = cwlConfigFilePath;
                 break;
 
             default:
