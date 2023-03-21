@@ -323,11 +323,11 @@ public class Client {
         defaultApiClient.setBasePath(this.tooltesterConfig.getServerUrl());
         setWorkflowsApi(new WorkflowsApi(defaultApiClient));
     }
-    private void runToolTesterOnWorkflows(String WDLconfigFilePath, String CWLconfigFilePath) throws InterruptedException {
+    private void runToolTesterOnWorkflows(String wdlConfigFilePath, String cwlConfigFilePath) throws InterruptedException {
         setUpGa4Ghv20Api();
         setUpExtendedGa4GhApi();
         setUpWorkflowApi();
-        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api(), getExtendedGa4GhApi(), getWorkflowsApi(), WDLconfigFilePath, CWLconfigFilePath);
+        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api(), getExtendedGa4GhApi(), getWorkflowsApi(), wdlConfigFilePath, cwlConfigFilePath);
 
         for (WorkflowRunner workflow : workflowsToRun.getWorkflowsToRun()) {
             workflow.runWorkflow();
