@@ -1,6 +1,7 @@
 package io.dockstore.tooltester;
 
-import io.swagger.client.model.ToolVersion;
+
+import io.dockstore.openapi.client.model.ToolVersion;
 
 /**
  * @author gluu

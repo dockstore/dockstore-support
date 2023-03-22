@@ -300,18 +300,6 @@
         </dependency>
         <dependency>
             <groupId>io.dockstore</groupId>
-            <artifactId>swagger-java-client</artifactId>
-            <version>${dockstore.core.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>jakarta.activation</groupId>
-                    <artifactId>jakarta.activation-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.dockstore</groupId>
             <artifactId>dockstore-webservice</artifactId>
             <version>${dockstore.core.version}</version>
             <exclusions>
