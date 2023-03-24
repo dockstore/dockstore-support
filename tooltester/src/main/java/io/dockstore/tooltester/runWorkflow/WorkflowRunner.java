@@ -31,6 +31,7 @@ import io.dockstore.openapi.client.model.WorkflowSubClass;
 import org.apache.commons.lang3.StringUtils;
 import io.dockstore.webservice.core.Partner;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.jline.utils.Log;
 
 
 import java.io.BufferedWriter;
@@ -71,6 +72,8 @@ public class WorkflowRunner {
     private ExtendedGa4GhApi extendedGa4GhApi;
     private WorkflowsApi workflowsApi;
     private String configFilePath;
+    private Date workflowStartTime = null;
+    private Date workflowEndTime = null;
 
     private final List<String> inProgressStates = Arrays.asList("RUNNING", "INITIALIZING");
 
@@ -256,38 +259,52 @@ public class WorkflowRunner {
         return first.getTime() < second.getTime();
     }
 
-    private Long getWallClockTimeInMilliseconds() {
+
+    private void setStartAndEndTime() {
         if (timesForEachTask == null) {
             setTimeForEachTask();
         }
-        Date timeFirstWorkflowStarted = null;
-        Date timeLastWorkflowFinished = null;
+        if (workflowStartTime != null || workflowStartTime != null) {
+            Log.debug("workflowStartTime or workflowStartTime has already been set");
+            return;
+        }
+        Date timeFirstTaskStarted = null;
+        Date timeLastTaskFinished = null;
         for (TimeStatisticForOneTask time: timesForEachTask) {
             if (time.getStartTime() == null) {
                 continue;
             }
-            if (timeFirstWorkflowStarted == null) {
-                timeFirstWorkflowStarted = time.getStartTime();
+            if (timeFirstTaskStarted == null) {
+                timeFirstTaskStarted = time.getStartTime();
             }
             if (time.getEndTime() == null) {
                 continue;
             }
-            if (timeLastWorkflowFinished == null) {
-                timeLastWorkflowFinished = time.getEndTime();
+            if (timeLastTaskFinished == null) {
+                timeLastTaskFinished = time.getEndTime();
             }
-            if (isFirstDateBeforeSecondDate(time.getStartTime(), timeFirstWorkflowStarted)) {
-                timeFirstWorkflowStarted = time.getStartTime();
-            }
-
-            if (isFirstDateBeforeSecondDate(timeLastWorkflowFinished, time.getEndTime())) {
-                timeLastWorkflowFinished = time.getEndTime();
+            if (isFirstDateBeforeSecondDate(time.getStartTime(), timeFirstTaskStarted)) {
+                timeFirstTaskStarted = time.getStartTime();
             }
 
+            if (isFirstDateBeforeSecondDate(timeLastTaskFinished, time.getEndTime())) {
+                timeLastTaskFinished = time.getEndTime();
+            }
         }
-        if (timeLastWorkflowFinished == null || timeFirstWorkflowStarted == null) {
+
+        workflowStartTime = timeFirstTaskStarted;
+        workflowEndTime = timeLastTaskFinished;
+
+    }
+    private Long getWallClockTimeInMilliseconds() {
+        if (timesForEachTask == null) {
+            setTimeForEachTask();
+        }
+        setStartAndEndTime();
+        if (workflowStartTime == null || workflowEndTime == null) {
             return null;
         }
-        return timeLastWorkflowFinished.getTime() - timeFirstWorkflowStarted.getTime();
+        return workflowEndTime.getTime() - workflowStartTime.getTime();
     }
 
 
