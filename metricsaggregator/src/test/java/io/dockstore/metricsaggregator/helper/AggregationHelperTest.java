@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Optional;
 
 import io.dockstore.openapi.client.model.CpuMetric;
-import io.dockstore.openapi.client.model.Execution;
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
 import io.dockstore.openapi.client.model.MemoryMetric;
+import io.dockstore.openapi.client.model.RunExecution;
 import org.junit.jupiter.api.Test;
 
-import static io.dockstore.openapi.client.model.Execution.ExecutionStatusEnum.SUCCESSFUL;
+import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,34 +19,34 @@ class AggregationHelperTest {
 
     @Test
     void testGetAggregatedExecutionStatus() {
-        List<Execution> executions = new ArrayList<>();
+        List<RunExecution> executions = new ArrayList<>();
         Optional<ExecutionStatusMetric> executionStatusMetric = AggregationHelper.getAggregatedExecutionStatus(executions);
         assertTrue(executionStatusMetric.isEmpty());
 
-        executions.add(new Execution().executionStatus(SUCCESSFUL));
+        executions.add(new RunExecution().executionStatus(SUCCESSFUL));
         executionStatusMetric = AggregationHelper.getAggregatedExecutionStatus(executions);
         assertTrue(executionStatusMetric.isPresent());
     }
 
     @Test
     void testGetAggregatedExecutionTime() {
-        List<Execution> badExecutions = new ArrayList<>();
+        List<RunExecution> badExecutions = new ArrayList<>();
         Optional<ExecutionTimeMetric> executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(badExecutions);
         assertTrue(executionTimeMetric.isEmpty());
 
         // Add an execution that doesn't have execution time data
-        badExecutions.add(new Execution().executionStatus(SUCCESSFUL));
+        badExecutions.add(new RunExecution().executionStatus(SUCCESSFUL));
         executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(badExecutions);
         assertTrue(executionTimeMetric.isEmpty());
 
         // Add an execution with malformed execution time data
-        badExecutions.add(new Execution().executionStatus(SUCCESSFUL).executionTime("1 second"));
+        badExecutions.add(new RunExecution().executionStatus(SUCCESSFUL).executionTime("1 second"));
         executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(badExecutions);
         assertTrue(executionTimeMetric.isEmpty());
 
         // Add an execution with execution time
         final int timeInSeconds = 10;
-        List<Execution> executions = List.of(new Execution().executionStatus(SUCCESSFUL).executionTime(String.format("PT%dS", timeInSeconds)));
+        List<RunExecution> executions = List.of(new RunExecution().executionStatus(SUCCESSFUL).executionTime(String.format("PT%dS", timeInSeconds)));
         executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(executions);
         assertTrue(executionTimeMetric.isPresent());
         assertEquals(timeInSeconds, executionTimeMetric.get().getMinimum());
@@ -57,18 +57,18 @@ class AggregationHelperTest {
 
     @Test
     void testGetAggregatedCpu() {
-        List<Execution> executions = new ArrayList<>();
+        List<RunExecution> executions = new ArrayList<>();
         Optional<CpuMetric> cpuMetric = AggregationHelper.getAggregatedCpu(executions);
         assertTrue(cpuMetric.isEmpty());
 
         // Add an execution that doesn't have cpu data
-        executions.add(new Execution().executionStatus(SUCCESSFUL));
+        executions.add(new RunExecution().executionStatus(SUCCESSFUL));
         cpuMetric = AggregationHelper.getAggregatedCpu(executions);
         assertTrue(cpuMetric.isEmpty());
 
         // Add an execution with cpu data
         final int cpu = 1;
-        executions.add(new Execution().executionStatus(SUCCESSFUL).cpuRequirements(cpu));
+        executions.add(new RunExecution().executionStatus(SUCCESSFUL).cpuRequirements(cpu));
         cpuMetric = AggregationHelper.getAggregatedCpu(executions);
         assertTrue(cpuMetric.isPresent());
         assertEquals(cpu, cpuMetric.get().getMinimum());
@@ -79,18 +79,18 @@ class AggregationHelperTest {
 
     @Test
     void testGetAggregatedMemory() {
-        List<Execution> executions = new ArrayList<>();
+        List<RunExecution> executions = new ArrayList<>();
         Optional<MemoryMetric> memoryMetric = AggregationHelper.getAggregatedMemory(executions);
         assertTrue(memoryMetric.isEmpty());
 
         // Add an execution that doesn't have memory data
-        executions.add(new Execution().executionStatus(SUCCESSFUL));
+        executions.add(new RunExecution().executionStatus(SUCCESSFUL));
         memoryMetric = AggregationHelper.getAggregatedMemory(executions);
         assertTrue(memoryMetric.isEmpty());
 
         // Add an execution with memory data
         Double memoryInGB = 2.0;
-        executions.add(new Execution().executionStatus(SUCCESSFUL).memoryRequirementsGB(memoryInGB));
+        executions.add(new RunExecution().executionStatus(SUCCESSFUL).memoryRequirementsGB(memoryInGB));
         memoryMetric = AggregationHelper.getAggregatedMemory(executions);
         assertTrue(memoryMetric.isPresent());
         assertEquals(memoryInGB, memoryMetric.get().getMinimum());

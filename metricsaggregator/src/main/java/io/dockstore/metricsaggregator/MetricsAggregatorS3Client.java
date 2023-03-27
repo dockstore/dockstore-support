@@ -22,7 +22,8 @@ import static io.dockstore.metricsaggregator.helper.AggregationHelper.getAggrega
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
-import io.dockstore.openapi.client.model.Execution;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
+import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.webservice.core.Partner;
 import io.dockstore.webservice.core.metrics.MetricsData;
 import io.dockstore.webservice.core.metrics.MetricsDataS3Client;
@@ -74,11 +75,11 @@ public class MetricsAggregatorS3Client {
         for (String directory : metricsDirectories) {
             String toolId = S3ClientHelper.getToolId(directory); // Check if we should just give the full key
             String versionName = S3ClientHelper.getVersionName(directory);
-            String platform = S3ClientHelper.getPlatform(directory);
+            String platform = S3ClientHelper.getMetricsPlatform(directory);
 
-            List<Execution> executions;
+            List<RunExecution> executions;
             try {
-                executions = getExecutions(toolId, versionName, platform);
+                executions = getRunExecutions(toolId, versionName, platform);
             } catch (Exception e) {
                 LOG.error("Error aggregating metrics: Could not get all executions from directory {}", directory, e);
                 continue; // Continue aggregating metrics for other directories
@@ -98,13 +99,13 @@ public class MetricsAggregatorS3Client {
      * @param platform
      * @return
      */
-    private List<Execution> getExecutions(String toolId, String versionName, String platform) throws IOException, JsonSyntaxException {
+    private List<RunExecution> getRunExecutions(String toolId, String versionName, String platform) throws IOException, JsonSyntaxException {
         List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(toolId, versionName, Partner.valueOf(platform));
-        List<Execution> executionsFromAllSubmissions = new ArrayList<>();
+        List<RunExecution> executionsFromAllSubmissions = new ArrayList<>();
         for (MetricsData metricsData : metricsDataList) {
             String fileContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(),
                     metricsData.platform(), metricsData.fileName());
-            List<Execution> executionsFromOneSubmission = List.of(GSON.fromJson(fileContent, Execution[].class));
+            List<RunExecution> executionsFromOneSubmission = GSON.fromJson(fileContent, ExecutionsRequestBody.class).getRunExecutions();
             executionsFromAllSubmissions.addAll(executionsFromOneSubmission);
         }
         return executionsFromAllSubmissions;

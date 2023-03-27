@@ -29,8 +29,9 @@ import io.dockstore.common.TestingPostgres;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.WorkflowsApi;
-import io.dockstore.openapi.client.model.Execution;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
+import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowVersion;
 import io.dockstore.webservice.DockstoreWebserviceApplication;
@@ -54,10 +55,10 @@ import uk.org.webcompere.systemstubs.stream.SystemOut;
 import static io.dockstore.client.cli.BaseIT.ADMIN_USERNAME;
 import static io.dockstore.metricsaggregator.common.TestUtilities.BUCKET_NAME;
 import static io.dockstore.metricsaggregator.common.TestUtilities.CONFIG_FILE_PATH;
-import static io.dockstore.metricsaggregator.common.TestUtilities.createExecution;
-import static io.dockstore.openapi.client.model.Execution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
-import static io.dockstore.openapi.client.model.Execution.ExecutionStatusEnum.FAILED_SEMANTIC_INVALID;
-import static io.dockstore.openapi.client.model.Execution.ExecutionStatusEnum.SUCCESSFUL;
+import static io.dockstore.metricsaggregator.common.TestUtilities.createRunExecution;
+import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
+import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_SEMANTIC_INVALID;
+import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
 import static org.junit.jupiter.api.Assertions.*;
 import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
 
@@ -119,12 +120,13 @@ class MetricsAggregatorClientTest {
         String id = "#workflow/" + workflow.getFullWorkflowPath();
         String versionId = version.getName();
 
-        // A successful execution that ran for 5 minutes, requires 2 CPUs and 2 GBs of memory
-        Execution execution = createExecution(SUCCESSFUL, "PT5M", 2, 2.0);
+        // A successful run execution that ran for 5 minutes, requires 2 CPUs and 2 GBs of memory
+        List<RunExecution> runExecutions = List.of(createRunExecution(SUCCESSFUL, "PT5M", 2, 2.0));
 
         // Submit metrics for two platforms
-        extendedGa4GhApi.executionMetricsPost(List.of(execution), platform1, id, versionId, "");
-        extendedGa4GhApi.executionMetricsPost(List.of(execution), platform2, id, versionId, "");
+        ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(runExecutions);
+        extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, id, versionId, "");
+        extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform2, id, versionId, "");
         int expectedNumberOfPlatforms = 2;
         // Aggregate metrics
         MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
@@ -191,10 +193,11 @@ class MetricsAggregatorClientTest {
         assertEquals(300, platform2Metrics.getExecutionTime().getAverage());
         assertEquals(ExecutionTimeStatisticMetric.UNIT, platform2Metrics.getExecutionTime().getUnit());
 
-        // A failed execution that ran for 1 second, requires 2 CPUs and 4.5 GBs of memory
-        execution = createExecution(Execution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID, "PT1S", 4, 4.5);
+        // A failed run execution that ran for 1 second, requires 2 CPUs and 4.5 GBs of memory
+        runExecutions = List.of(createRunExecution(FAILED_RUNTIME_INVALID, "PT1S", 4, 4.5));
+        executionsRequestBody.setRunExecutions(runExecutions);
         // Submit metrics for the same workflow version for platform 2
-        extendedGa4GhApi.executionMetricsPost(List.of(execution), platform1, id, versionId, "");
+        extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, id, versionId, "");
         // Aggregate metrics
         MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
         // Get workflow version to verify aggregated metrics

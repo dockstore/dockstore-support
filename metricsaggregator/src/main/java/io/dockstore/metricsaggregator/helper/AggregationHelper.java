@@ -1,15 +1,15 @@
 package io.dockstore.metricsaggregator.helper;
 
-import static io.dockstore.webservice.core.metrics.Execution.checkExecutionTimeISO8601Format;
+import static io.dockstore.webservice.core.metrics.RunExecution.checkExecutionTimeISO8601Format;
 import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.metricsaggregator.Statistics;
 import io.dockstore.openapi.client.model.CpuMetric;
-import io.dockstore.openapi.client.model.Execution;
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
 import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metrics;
+import io.dockstore.openapi.client.model.RunExecution;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -26,11 +26,11 @@ public final class AggregationHelper {
     private AggregationHelper() {}
 
     /**
-     * Aggregate metrics from the list of executions.
+     * Aggregate metrics from the list of run executions.
      * @param executions
      * @return Metrics object containing aggregated metrics
      */
-    public static Optional<Metrics> getAggregatedMetrics(List<Execution> executions) {
+    public static Optional<Metrics> getAggregatedMetrics(List<RunExecution> executions) {
         Optional<ExecutionStatusMetric> aggregatedExecutionStatus = getAggregatedExecutionStatus(executions);
         if (getAggregatedExecutionStatus(executions).isPresent()) {
             Metrics aggregatedMetrics = new Metrics();
@@ -48,7 +48,7 @@ public final class AggregationHelper {
      * @param executions
      * @return
      */
-    public static Optional<ExecutionStatusMetric> getAggregatedExecutionStatus(List<Execution> executions) {
+    public static Optional<ExecutionStatusMetric> getAggregatedExecutionStatus(List<RunExecution> executions) {
         Map<String, Integer> statusCount = executions.stream()
                 .map(execution -> execution.getExecutionStatus().toString())
                 .collect(groupingBy(Function.identity(), Collectors.reducing(0, e -> 1, Integer::sum)));
@@ -65,9 +65,9 @@ public final class AggregationHelper {
      * @param executions
      * @return
      */
-    public static Optional<ExecutionTimeMetric> getAggregatedExecutionTime(List<Execution> executions) {
+    public static Optional<ExecutionTimeMetric> getAggregatedExecutionTime(List<RunExecution> executions) {
         List<String> executionTimes = executions.stream()
-                .map(Execution::getExecutionTime)
+                .map(RunExecution::getExecutionTime)
                 .filter(Objects::nonNull)
                 .toList();
 
@@ -103,9 +103,9 @@ public final class AggregationHelper {
      * @param executions
      * @return
      */
-    public static Optional<CpuMetric> getAggregatedCpu(List<Execution> executions) {
+    public static Optional<CpuMetric> getAggregatedCpu(List<RunExecution> executions) {
         List<Double> cpuRequirements = executions.stream()
-                .map(Execution::getCpuRequirements)
+                .map(RunExecution::getCpuRequirements)
                 .filter(Objects::nonNull)
                 .map(Integer::doubleValue)
                 .toList();
@@ -125,9 +125,9 @@ public final class AggregationHelper {
      * @param executions
      * @return
      */
-    public static Optional<MemoryMetric> getAggregatedMemory(List<Execution> executions) {
+    public static Optional<MemoryMetric> getAggregatedMemory(List<RunExecution> executions) {
         List<Double> memoryRequirements = executions.stream()
-                .map(Execution::getMemoryRequirementsGB)
+                .map(RunExecution::getMemoryRequirementsGB)
                 .filter(Objects::nonNull)
                 .toList();
         if (!memoryRequirements.isEmpty()) {
