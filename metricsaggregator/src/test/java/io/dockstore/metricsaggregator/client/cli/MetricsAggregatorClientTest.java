@@ -17,12 +17,14 @@
 
 package io.dockstore.metricsaggregator.client.cli;
 
+import java.io.IOException;
 import java.util.List;
 
 import cloud.localstack.ServiceName;
 import cloud.localstack.awssdkv2.TestUtils;
 import cloud.localstack.docker.LocalstackDockerExtension;
 import cloud.localstack.docker.annotation.LocalstackDockerProperties;
+import com.google.gson.Gson;
 import io.dockstore.common.CommonTestUtilities;
 import io.dockstore.common.LocalStackTestUtilities;
 import io.dockstore.common.TestingPostgres;
@@ -32,6 +34,7 @@ import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
+import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowVersion;
 import io.dockstore.webservice.DockstoreWebserviceApplication;
@@ -39,7 +42,10 @@ import io.dockstore.webservice.DockstoreWebserviceConfiguration;
 import io.dockstore.webservice.core.Partner;
 import io.dockstore.webservice.core.metrics.ExecutionTimeStatisticMetric;
 import io.dockstore.webservice.core.metrics.MemoryStatisticMetric;
+import io.dockstore.webservice.core.metrics.MetricsData;
+import io.dockstore.webservice.core.metrics.MetricsDataS3Client;
 import io.dropwizard.testing.DropwizardTestSupport;
+import io.dropwizard.testing.ResourceHelpers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -55,10 +61,13 @@ import uk.org.webcompere.systemstubs.stream.SystemOut;
 import static io.dockstore.client.cli.BaseIT.ADMIN_USERNAME;
 import static io.dockstore.metricsaggregator.common.TestUtilities.BUCKET_NAME;
 import static io.dockstore.metricsaggregator.common.TestUtilities.CONFIG_FILE_PATH;
+import static io.dockstore.metricsaggregator.common.TestUtilities.ENDPOINT_OVERRIDE;
 import static io.dockstore.metricsaggregator.common.TestUtilities.createRunExecution;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_SEMANTIC_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
+import static io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum.MINIWDL;
+import static io.dockstore.webservice.core.Partner.DNA_STACK;
 import static org.junit.jupiter.api.Assertions.*;
 import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
 
@@ -67,6 +76,8 @@ import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
 class MetricsAggregatorClientTest {
     private static S3Client s3Client;
     private static TestingPostgres testingPostgres;
+    private static MetricsDataS3Client metricsDataS3Client;
+    private static Gson GSON = new Gson();
 
     public static DropwizardTestSupport<DockstoreWebserviceConfiguration> SUPPORT = new DropwizardTestSupport<>(
             DockstoreWebserviceApplication.class, CommonTestUtilities.PUBLIC_CONFIG_PATH);
@@ -83,6 +94,7 @@ class MetricsAggregatorClientTest {
         SUPPORT.before();
         testingPostgres = new TestingPostgres(SUPPORT);
 
+        metricsDataS3Client = new MetricsDataS3Client(BUCKET_NAME, ENDPOINT_OVERRIDE);
         s3Client = TestUtils.getClientS3V2(); // Use localstack S3Client
         // Create a bucket to be used for tests
         LocalStackTestUtilities.createBucket(s3Client, BUCKET_NAME);
@@ -232,6 +244,54 @@ class MetricsAggregatorClientTest {
         assertEquals(300, platform1Metrics.getExecutionTime().getMaximum());
         assertEquals(150.5, platform1Metrics.getExecutionTime().getAverage());
         assertEquals(ExecutionTimeStatisticMetric.UNIT, platform1Metrics.getExecutionTime().getUnit());
+    }
+
+    @Test
+    void testSubmitValidationData() throws IOException {
+        final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
+        final WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
+        final Partner platform = DNA_STACK;
+        final ValidationExecution.ValidatorToolEnum validator = MINIWDL;
+
+        Workflow workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
+        WorkflowVersion version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
+        assertNotNull(version);
+
+        String id = "#workflow/" + workflow.getFullWorkflowPath();
+        String versionId = version.getName();
+        String dataFilePath = ResourceHelpers.resourceFilePath("miniwdl-validation-workflow-names.txt");
+
+        // Submit validation data using a data file that contains workflow names of workflows that were successfully validated with miniwdl on DNAstack
+        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--data", dataFilePath,
+            "--successful", "--platform", platform.toString()});
+        List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(id, versionId);
+        assertEquals(1, metricsDataList.size());
+        MetricsData metricsData = metricsDataList.get(0);
+        // Verify the ValidationExecution that was sent to S3
+        String metricsDataContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(), metricsData.platform(), metricsData.fileName());
+        ExecutionsRequestBody executionsRequestBody = GSON.fromJson(metricsDataContent, ExecutionsRequestBody.class);
+        assertTrue(executionsRequestBody.getRunExecutions().isEmpty(), "Should not have run executions");
+        assertEquals(1, executionsRequestBody.getValidationExecutions().size(), "Should have 1 validation execution");
+        ValidationExecution validationExecution = executionsRequestBody.getValidationExecutions().get(0);
+        assertTrue(validationExecution.isValid());
+        assertEquals(validator, validationExecution.getValidatorTool());
+
+        LocalStackTestUtilities.deleteBucketContents(s3Client, BUCKET_NAME); // Clear bucket contents to start from scratch
+
+        // Submit validation data using a data file that contains workflow names of workflows that failed validation with miniwdl on DNAstack
+        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--data", dataFilePath,
+                "--platform", platform.toString()});
+        metricsDataList = metricsDataS3Client.getMetricsData(id, versionId);
+        assertEquals(1, metricsDataList.size());
+        metricsData = metricsDataList.get(0);
+        // Verify the ValidationExecution that was sent to S3
+        metricsDataContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(), metricsData.platform(), metricsData.fileName());
+        executionsRequestBody = GSON.fromJson(metricsDataContent, ExecutionsRequestBody.class);
+        assertTrue(executionsRequestBody.getRunExecutions().isEmpty(), "Should not have run executions");
+        assertEquals(1, executionsRequestBody.getValidationExecutions().size(), "Should have 1 validation execution");
+        validationExecution = executionsRequestBody.getValidationExecutions().get(0);
+        assertFalse(validationExecution.isValid());
+        assertEquals(validator, validationExecution.getValidatorTool());
     }
 
     @Test
