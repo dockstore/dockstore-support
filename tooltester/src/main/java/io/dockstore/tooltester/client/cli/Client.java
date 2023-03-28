@@ -85,7 +85,7 @@ import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
  */
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
-    private static final int WAIT_TIME = 10;
+    private static final int WAIT_TIME = 15;
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4Ghv20Api ga4Ghv20Api;
@@ -348,15 +348,18 @@ public class Client {
             }
         }
 
+        TimeUnit.MINUTES.sleep(WAIT_TIME);
+        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
+            workflow.uploadRunInfo();
+        }
+
         printLine();
+
         for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
             workflow.printRunStatistics();
             printLine();
         }
 
-        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
-            workflow.uploadRunInfo();
-        }
     }
 
     void setupTesters() {
