@@ -43,7 +43,7 @@ public class CommandLineArgs {
 
     @Parameters(commandNames = { "submit-validation-data" }, commandDescription = "Formats workflow validation data specified in a file then submits it to Dockstore")
     public static class SubmitValidationData extends  CommandLineArgs {
-        @Parameter(names = {"-c", "--config"}, description = "The config file path.", required = true)
+        @Parameter(names = {"-c", "--config"}, description = "The config file path.")
         private File config = new File("./" + MetricsAggregatorClient.CONFIG_FILE_NAME);
 
         @Parameter(names = {"-v", "--validator"}, description = "The validator tool used to validate the workflows", required = true)

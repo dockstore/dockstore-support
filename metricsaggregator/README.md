@@ -44,7 +44,7 @@ Usage: <main class> [options] [command] [command options]
     aggregate-metrics      Aggregate metrics in S3
       Usage: aggregate-metrics [options]
         Options:
-        * -c, --config
+          -c, --config
             The config file path.
             Default: ./metrics-aggregator.config
           --help
@@ -54,7 +54,7 @@ Usage: <main class> [options] [command] [command options]
             a file then submits it to Dockstore
       Usage: submit-validation-data [options]
         Options:
-        * -c, --config
+          -c, --config
             The config file path.
             Default: ./metrics-aggregator.config
         * -d, --data
