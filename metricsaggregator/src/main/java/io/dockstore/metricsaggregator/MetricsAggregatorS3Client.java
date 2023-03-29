@@ -98,6 +98,13 @@ public class MetricsAggregatorS3Client {
         }
     }
 
+    /**
+     * Get all executions from all submissions for the specific tool, version, and platform.
+     * @param toolId
+     * @param versionName
+     * @param platform
+     * @return
+     */
     private ExecutionsRequestBody getExecutions(String toolId, String versionName, String platform) throws IOException, JsonSyntaxException {
         List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(toolId, versionName, Partner.valueOf(platform));
         List<RunExecution> runExecutionsFromAllSubmissions = new ArrayList<>();
