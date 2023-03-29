@@ -85,10 +85,15 @@ public class MetricsAggregatorS3Client {
                 continue; // Continue aggregating metrics for other directories
             }
 
-            getAggregatedMetrics(executions).ifPresent(metrics -> {
-                extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, toolId, versionName);
-                System.out.printf("Aggregated metrics for tool ID %s, version %s, platform %s from S3 directory %s%n", toolId, versionName, platform, directory);
-            });
+            try {
+                getAggregatedMetrics(executions).ifPresent(metrics -> {
+                    extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, toolId, versionName);
+                    System.out.printf("Aggregated metrics for tool ID %s, version %s, platform %s from S3 directory %s%n", toolId, versionName, platform, directory);
+                });
+            } catch (Exception e) {
+                LOG.error("Error aggregating metrics: Could not put all executions from directory {}", directory, e);
+                continue; // Continue aggregating metrics for other directories
+            }
         }
     }
 
