@@ -134,9 +134,11 @@ class MetricsAggregatorClientTest {
 
         // A successful run execution that ran for 5 minutes, requires 2 CPUs and 2 GBs of memory
         List<RunExecution> runExecutions = List.of(createRunExecution(SUCCESSFUL, "PT5M", 2, 2.0));
+        // A successful miniwdl validation
+        List<ValidationExecution> validationExecutions = List.of(new ValidationExecution().validatorTool(MINIWDL).valid(true));
 
         // Submit metrics for two platforms
-        ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(runExecutions);
+        ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(runExecutions).validationExecutions(validationExecutions);
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, id, versionId, "");
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform2, id, versionId, "");
         int expectedNumberOfPlatforms = 2;
@@ -176,6 +178,10 @@ class MetricsAggregatorClientTest {
         assertEquals(300, platform1Metrics.getExecutionTime().getAverage());
         assertEquals(ExecutionTimeStatisticMetric.UNIT, platform1Metrics.getExecutionTime().getUnit());
 
+        assertEquals(1, platform1Metrics.getValidationStatus().getValidatorToolToIsValid().size());
+        assertTrue(platform1Metrics.getValidationStatus().getValidatorToolToIsValid().containsKey(MINIWDL.toString()));
+        assertTrue(platform1Metrics.getValidationStatus().getValidatorToolToIsValid().get(MINIWDL.toString()), "miniwdl validation should be valid");
+
         Metrics platform2Metrics = version.getMetricsByPlatform().get(platform2);
         assertNotNull(platform1Metrics);
 
@@ -205,9 +211,15 @@ class MetricsAggregatorClientTest {
         assertEquals(300, platform2Metrics.getExecutionTime().getAverage());
         assertEquals(ExecutionTimeStatisticMetric.UNIT, platform2Metrics.getExecutionTime().getUnit());
 
+        assertEquals(1, platform2Metrics.getValidationStatus().getValidatorToolToIsValid().size());
+        assertTrue(platform2Metrics.getValidationStatus().getValidatorToolToIsValid().containsKey(MINIWDL.toString()));
+        assertTrue(platform2Metrics.getValidationStatus().getValidatorToolToIsValid().get(MINIWDL.toString()), "miniwdl validation should be valid");
+
         // A failed run execution that ran for 1 second, requires 2 CPUs and 4.5 GBs of memory
         runExecutions = List.of(createRunExecution(FAILED_RUNTIME_INVALID, "PT1S", 4, 4.5));
-        executionsRequestBody.setRunExecutions(runExecutions);
+        // A failed miniwdl validation
+        validationExecutions = List.of(new ValidationExecution().validatorTool(MINIWDL).valid(false));
+        executionsRequestBody = new ExecutionsRequestBody().runExecutions(runExecutions).validationExecutions(validationExecutions);
         // Submit metrics for the same workflow version for platform 2
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, id, versionId, "");
         // Aggregate metrics
@@ -244,6 +256,10 @@ class MetricsAggregatorClientTest {
         assertEquals(300, platform1Metrics.getExecutionTime().getMaximum());
         assertEquals(150.5, platform1Metrics.getExecutionTime().getAverage());
         assertEquals(ExecutionTimeStatisticMetric.UNIT, platform1Metrics.getExecutionTime().getUnit());
+
+        assertEquals(1, platform1Metrics.getValidationStatus().getValidatorToolToIsValid().size());
+        assertTrue(platform1Metrics.getValidationStatus().getValidatorToolToIsValid().containsKey(MINIWDL.toString()));
+        assertFalse(platform1Metrics.getValidationStatus().getValidatorToolToIsValid().get(MINIWDL.toString()), "miniwdl validation should be invalid");
     }
 
     @Test

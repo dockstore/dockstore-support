@@ -9,10 +9,13 @@ import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
 import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.RunExecution;
+import io.dockstore.openapi.client.model.ValidationExecution;
+import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import org.junit.jupiter.api.Test;
 
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AggregationHelperTest {
@@ -97,5 +100,25 @@ class AggregationHelperTest {
         assertEquals(memoryInGB, memoryMetric.get().getMaximum());
         assertEquals(memoryInGB, memoryMetric.get().getAverage());
         assertEquals(1, memoryMetric.get().getNumberOfDataPointsForAverage());
+    }
+
+    @Test
+    void testGetAggregatedValidationStatus() {
+        List<ValidationExecution> executions = new ArrayList<>();
+        Optional<ValidationStatusMetric> validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(executions);
+        assertTrue(validationStatusMetric.isEmpty());
+
+        // Add an execution with validation data
+        final ValidationExecution.ValidatorToolEnum validatorTool = ValidationExecution.ValidatorToolEnum.MINIWDL;
+        executions.add(new ValidationExecution().validatorTool(validatorTool).valid(true));
+        validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(executions);
+        assertTrue(validationStatusMetric.isPresent());
+        assertTrue(validationStatusMetric.get().getValidatorToolToIsValid().get(validatorTool.toString()));
+
+        // Add an execution that isn't valid for the same validator
+        executions.add(new ValidationExecution().validatorTool(validatorTool).valid(false));
+        validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(executions);
+        assertTrue(validationStatusMetric.isPresent());
+        assertFalse(validationStatusMetric.get().getValidatorToolToIsValid().get(validatorTool.toString()));
     }
 }

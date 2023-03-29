@@ -10,6 +10,8 @@ import io.dockstore.openapi.client.model.ExecutionTimeMetric;
 import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
+import io.dockstore.openapi.client.model.ValidationExecution;
+import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -26,25 +28,39 @@ public final class AggregationHelper {
     private AggregationHelper() {}
 
     /**
-     * Aggregate metrics from the list of run executions.
-     * @param executions
+     * Aggregate metrics from the list of executions.
+     *
+     * @param runExecutions
+     * @param validationExecutions
      * @return Metrics object containing aggregated metrics
      */
-    public static Optional<Metrics> getAggregatedMetrics(List<RunExecution> executions) {
-        Optional<ExecutionStatusMetric> aggregatedExecutionStatus = getAggregatedExecutionStatus(executions);
-        if (getAggregatedExecutionStatus(executions).isPresent()) {
-            Metrics aggregatedMetrics = new Metrics();
+    public static Optional<Metrics> getAggregatedMetrics(List<RunExecution> runExecutions, List<ValidationExecution> validationExecutions) {
+        Metrics aggregatedMetrics = new Metrics();
+        // Set run metrics
+        Optional<ExecutionStatusMetric> aggregatedExecutionStatus = getAggregatedExecutionStatus(runExecutions);
+        boolean containsRunMetrics = aggregatedExecutionStatus.isPresent();
+        if (aggregatedExecutionStatus.isPresent()) {
             aggregatedMetrics.setExecutionStatusCount(aggregatedExecutionStatus.get());
-            getAggregatedExecutionTime(executions).ifPresent(aggregatedMetrics::setExecutionTime);
-            getAggregatedCpu(executions).ifPresent(aggregatedMetrics::setCpu);
-            getAggregatedMemory(executions).ifPresent(aggregatedMetrics::setMemory);
+            getAggregatedExecutionTime(runExecutions).ifPresent(aggregatedMetrics::setExecutionTime);
+            getAggregatedCpu(runExecutions).ifPresent(aggregatedMetrics::setCpu);
+            getAggregatedMemory(runExecutions).ifPresent(aggregatedMetrics::setMemory);
+        }
+
+        // Set validation metrics
+        Optional<ValidationStatusMetric> aggregatedValidationStatus = getAggregatedValidationStatus(validationExecutions);
+        boolean containsValidationMetrics = aggregatedValidationStatus.isPresent();
+        aggregatedValidationStatus.ifPresent(aggregatedMetrics::setValidationStatus);
+
+        // Only return aggregated metrics if it contains either run metrics or validation metrics
+        if (containsRunMetrics || containsValidationMetrics) {
             return Optional.of(aggregatedMetrics);
         }
+
         return Optional.empty();
     }
 
     /**
-     * Aggregate Execution Status metrics from the list of executions by summing up the count of each Execution Status encountered in the list of executions.
+     * Aggregate Execution Status metrics from the list of run executions by summing up the count of each Execution Status encountered in the list of executions.
      * @param executions
      * @return
      */
@@ -61,7 +77,7 @@ public final class AggregationHelper {
     }
 
     /**
-     * Aggregate Execution Time metrics from the list of executions by calculating the minimum, maximum, and average.
+     * Aggregate Execution Time metrics from the list of run executions by calculating the minimum, maximum, and average.
      * @param executions
      * @return
      */
@@ -99,7 +115,7 @@ public final class AggregationHelper {
     }
 
     /**
-     * Aggregate CPU metrics from the list of executions by calculating the minimum, maximum, and average.
+     * Aggregate CPU metrics from the list of run executions by calculating the minimum, maximum, and average.
      * @param executions
      * @return
      */
@@ -121,7 +137,7 @@ public final class AggregationHelper {
     }
 
     /**
-     * Aggregate Memory metrics from the list of executions by calculating the minimum, maximum, and average.
+     * Aggregate Memory metrics from the list of run executions by calculating the minimum, maximum, and average.
      * @param executions
      * @return
      */
@@ -139,5 +155,26 @@ public final class AggregationHelper {
                     .numberOfDataPointsForAverage(statistics.numberOfDataPoints()));
         }
         return Optional.empty();
+    }
+
+    /**
+     * Aggregate Validation metrics from the list of validation executions by performing a logical AND.
+     * @param executions
+     * @return
+     */
+    public static Optional<ValidationStatusMetric> getAggregatedValidationStatus(List<ValidationExecution> executions) {
+        if (executions.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Map<String, Boolean> validatorToolToIsValid = executions.stream()
+                .collect(groupingBy(execution -> execution.getValidatorTool().toString(),
+                        Collectors.reducing(true, ValidationExecution::isValid, Boolean::logicalAnd)));
+
+        // This shouldn't happen because all validation executions should the required fields, but check anyway
+        if (validatorToolToIsValid.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(new ValidationStatusMetric().validatorToolToIsValid(validatorToolToIsValid));
     }
 }
