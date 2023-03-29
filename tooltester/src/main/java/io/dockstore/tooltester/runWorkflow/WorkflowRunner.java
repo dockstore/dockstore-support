@@ -471,7 +471,7 @@ public class WorkflowRunner {
             sumOfDataPoints += datapoint.average();
             maxDataPoint = max(maxDataPoint, datapoint.average());
             // datapoint.average() is not actually obtaining the average. This is because the ECS container is only
-            // collecting metrics every minute and I have asked for a minute by minute metric breakdown.
+            // collecting metrics every minute, and we have asked for a minute by minute metric breakdown.
             // So, we are getting the only statistic collected for each minute.
         }
         Double averageOfDataPoints = sumOfDataPoints / response.datapoints().size();
