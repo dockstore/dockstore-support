@@ -292,7 +292,7 @@ public class WorkflowRunner {
         if (timesForEachTask == null) {
             setTimeForEachTask();
         }
-        if (workflowStartTime != null || workflowStartTime != null) {
+        if (workflowStartTime != null || workflowEndTime != null) {
             Log.debug("workflowStartTime or workflowStartTime has already been set");
             return;
         }
