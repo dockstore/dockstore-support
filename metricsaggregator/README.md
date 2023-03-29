@@ -1,6 +1,7 @@
 # Metrics Aggregator
 
-This is a Java program that aggregates metrics from S3 and puts the results into the webservice.
+This is a Java program that aggregates metrics from S3 and puts the results into the webservice. It also can submit workflow validation
+information to Dockstore.
 
 ## Setup
 
@@ -43,12 +44,38 @@ Usage: <main class> [options] [command] [command options]
     aggregate-metrics      Aggregate metrics in S3
       Usage: aggregate-metrics [options]
         Options:
-          -c, --config
+        * -c, --config
             The config file path.
             Default: ./metrics-aggregator.config
           --help
             Prints help for metricsaggregator
+
+    submit-validation-data      Formats workflow validation data specified in 
+            a file then submits it to Dockstore
+      Usage: submit-validation-data [options]
+        Options:
+        * -c, --config
+            The config file path.
+            Default: ./metrics-aggregator.config
+        * -d, --data
+            The file path to the file containing the TRS ID and version names, 
+            in the form of <TRS-ID>:<version-name>, of the workflows that were 
+            validated by the validator specified
+          --help
+            Prints help for metricsaggregator
+        * -p, --platform
+            The platform that the workflow was validated on
+            Possible Values: [GALAXY, TERRA, DNA_STACK, DNA_NEXUS, CGC, NHLBI_BIODATA_CATALYST, ANVIL, CAVATICA, NEXTFLOW_TOWER, ELWAZI, AGC, OTHER]
+          -s, --successful
+            Boolean indicating if the workflows in the data file were 
+            validated successfully
+            Default: false
+        * -v, --validator
+            The validator tool used to validate the workflows
+            Possible Values: [MINIWDL, WOMTOOL, OTHER]
 ```
+
+### aggregate-metrics
 
 **Using the default configuration file path:**
 
@@ -58,3 +85,10 @@ Usage: <main class> [options] [command] [command options]
 
 `java -jar target/metricsaggregator-*-SNAPSHOT.jar aggregate-metrics --config my-custom-config`
 
+### submit-validation-data
+
+The following is an example command that submits validation data for a file that contains the names of workflow versions that validated successfully
+with miniwdl on DNAstack:
+
+`java -jar target/metricsaggregator-*-SNAPSHOT.jar aggregate-metrics --config my-custom-config --data <path-to-my-data-file> 
+--validator MINIWDL --successful --platform DNA_STACK`
