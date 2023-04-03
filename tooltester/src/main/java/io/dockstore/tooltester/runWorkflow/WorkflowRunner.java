@@ -39,6 +39,7 @@ import software.amazon.awssdk.services.cloudwatch.model.GetMetricStatisticsReque
 import software.amazon.awssdk.services.cloudwatch.model.GetMetricStatisticsResponse;
 import software.amazon.awssdk.services.cloudwatch.model.Statistic;
 import software.amazon.awssdk.services.ecs.EcsClient;
+import software.amazon.awssdk.services.ecs.model.DeregisterTaskDefinitionRequest;
 import software.amazon.awssdk.services.ecs.model.DescribeTaskDefinitionRequest;
 import software.amazon.awssdk.services.ecs.model.DescribeTaskDefinitionResponse;
 import software.amazon.awssdk.services.ecs.model.ListTaskDefinitionsRequest;
@@ -74,6 +75,7 @@ import static org.apache.commons.lang3.time.DurationFormatUtils.formatDuration;
 public class WorkflowRunner {
 
     private static final String COMPLETE = "COMPLETE";
+    private static final int MAX_NUMBER_OF_TRIES = 10;
     private String entry;
     private String version;
     private String runID = null;
@@ -90,7 +92,8 @@ public class WorkflowRunner {
     private Date workflowEndTime = null;
     private Execution runMetrics;
     private EcsClient ecsClient;
-    private String taskDefinitionFamily;
+    private String taskDefinitionFamily = null;
+    private String taskDefinitionArn = null;
     private String clusterName;
 
 
@@ -357,6 +360,9 @@ public class WorkflowRunner {
     }
 
     private void printStatisticsInRunMetrics() {
+        if (taskDefinitionArn == null || taskDefinitionFamily == null) {
+            return;
+        }
         for (Map.Entry<String, Object> additionalProperty: runMetrics.getAdditionalProperties().entrySet()) {
             out("");
             out("Property Name: " + additionalProperty.getKey());
@@ -402,7 +408,9 @@ public class WorkflowRunner {
 
 
     private void setTaskFamily(final List<String> listOfEcsTasksBeforeNewOneWasAdded) {
-        while (true) {
+        int numberOfAttempts = 0;
+        while (numberOfAttempts < MAX_NUMBER_OF_TRIES) {
+            numberOfAttempts++;
             List<String> ecsTasks = new ArrayList<>();
             ecsTasks.addAll(getListOfEcsTasks());
             ecsTasks.removeAll(listOfEcsTasksBeforeNewOneWasAdded);
@@ -417,6 +425,7 @@ public class WorkflowRunner {
                 DescribeTaskDefinitionRequest request = DescribeTaskDefinitionRequest.builder().taskDefinition(ecsTaskArn).build();
                 DescribeTaskDefinitionResponse response = ecsClient.describeTaskDefinition(request);
                 taskDefinitionFamily = response.taskDefinition().family();
+                taskDefinitionArn = response.taskDefinition().taskDefinitionArn();
                 break;
             }
 
@@ -445,6 +454,9 @@ public class WorkflowRunner {
     }
 
     private void addSingleMetricToQa(String metricName) {
+        if (taskDefinitionArn == null || taskDefinitionFamily == null) {
+            return;
+        }
         CloudWatchClient cloudWatchClient = CloudWatchClient.builder().build();
         Dimension clusterNameDimension = Dimension.builder()
                 .name("ClusterName")
@@ -480,6 +492,12 @@ public class WorkflowRunner {
 
     }
 
+    public void deregisterTasks() {
+        if (Workflow.DescriptorTypeEnum.WDL == descriptorType && taskDefinitionArn != null) {
+            DeregisterTaskDefinitionRequest request = DeregisterTaskDefinitionRequest.builder().taskDefinition(taskDefinitionArn).build();
+            ecsClient.deregisterTaskDefinition(request);
+        }
+    }
 
     public static void printLine() {
         out("-----------------------------------");

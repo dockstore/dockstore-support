@@ -170,7 +170,7 @@ public class Client {
                         printJCommanderHelp(jc, "autotool", "run-workflows");
                     } else {
                         client.runToolTesterOnWorkflows(commandRunWorkflows.configWDL, commandRunWorkflows.configCWL,
-                                commandRunWorkflows.configWDL, commandRunWorkflows.clusterNameCWL);
+                                commandRunWorkflows.clusterNameWDL, commandRunWorkflows.clusterNameCWL);
 
 
                     }
@@ -349,7 +349,7 @@ public class Client {
             }
         }
 
-        TimeUnit.MINUTES.sleep(WAIT_TIME);
+       TimeUnit.MINUTES.sleep(WAIT_TIME);
         for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
             workflow.uploadRunInfo();
         }
@@ -359,6 +359,10 @@ public class Client {
         for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
             workflow.printRunStatistics();
             printLine();
+        }
+
+        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
+            workflow.deregisterTasks();
         }
 
     }
