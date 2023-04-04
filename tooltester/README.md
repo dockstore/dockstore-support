@@ -59,6 +59,7 @@ In this step you will want to fill in the `server-url` field. This will most lik
 You also need to ensure that the `server-url` field is set on your `~/.dockstore/config` file. The `server-url` must be the same across all three files.
 
 Then you will want to get your token from whatever site you chose in the above step, and fill it in, in the `token` field.
+You will need to have either admin or curator access to the appropriate dockstore site to use this command due to this [PR](https://github.com/dockstore/dockstore/pull/5357).
 
 You have now successfully set up your config files. They should look something like:
 ```
