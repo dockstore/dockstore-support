@@ -1,6 +1,7 @@
 package io.dockstore.metricsaggregator.helper;
 
 import static io.dockstore.webservice.core.metrics.RunExecution.checkExecutionTimeISO8601Format;
+import static io.dockstore.webservice.core.metrics.ValidationExecution.checkExecutionDateISO8601Format;
 import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.metricsaggregator.Statistics;
@@ -11,8 +12,13 @@ import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.ValidationExecution;
+import io.dockstore.openapi.client.model.ValidationInfo;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -167,14 +173,84 @@ public final class AggregationHelper {
             return Optional.empty();
         }
 
-        Map<String, Boolean> validatorToolToIsValid = executions.stream()
-                .collect(groupingBy(execution -> execution.getValidatorTool().toString(),
-                        Collectors.reducing(true, ValidationExecution::isValid, Boolean::logicalAnd)));
+        // Group executions by validator tool
+        Map<ValidationExecution.ValidatorToolEnum, List<ValidationExecution>> validatorToolToValidations = executions.stream()
+                .collect(groupingBy(ValidationExecution::getValidatorTool));
+
+        // For each validator tool, aggregate validation metrics for it
+        Map<String, ValidationInfo> validatorToolToValidationInfo = new HashMap<>();
+        validatorToolToValidations.forEach((validatorTool, validatorToolExecutions) -> {
+            Optional<ValidationExecution> latestValidation = getLatestValidation(validatorToolExecutions);
+
+            if (latestValidation.isPresent()) {
+                // Group the validation executions for the validator tool by version
+                Map<String, List<ValidationExecution>> validatorToolVersionToValidations = validatorToolExecutions.stream()
+                        .collect(groupingBy(ValidationExecution::getValidatorToolVersion));
+
+                // Get the most recent isValid value for the validator tool version
+                Map<String, Boolean> validatorToolVersionToMostRecentIsValid = new HashMap<>();
+                validatorToolVersionToValidations.forEach((validatorToolVersion, validatorToolVersionExecutions) -> {
+                    Optional<ValidationExecution> latestValidationExecutionForVersion = getLatestValidation(validatorToolVersionExecutions);
+                    latestValidationExecutionForVersion.ifPresent(
+                            validationExecution -> validatorToolVersionToMostRecentIsValid.put(validatorToolVersion, validationExecution.isIsValid()));
+                });
+
+                List<String> successfulValidationVersions = validatorToolVersionToMostRecentIsValid.entrySet().stream()
+                        .filter(Map.Entry::getValue) // Filter for successful validations
+                        .map(Map.Entry::getKey) // Map to validator version
+                        .distinct()
+                        .toList();
+
+                List<String> failedValidationVersions = validatorToolVersionToMostRecentIsValid.entrySet().stream()
+                        .filter(e -> !e.getValue()) // Filter for failed validations
+                        .map(Map.Entry::getKey) // Map to validator version
+                        .distinct()
+                        .toList();
+
+                ValidationInfo validationInfo = new ValidationInfo()
+                        .mostRecentIsValid(latestValidation.get().isIsValid())
+                        .mostRecentVersion(latestValidation.get().getValidatorToolVersion())
+                        .successfulValidationVersions(successfulValidationVersions)
+                        .failedValidationVersions(failedValidationVersions)
+                        .numberOfRuns(validatorToolExecutions.size())
+                        .passingRate(getPassingRate(validatorToolExecutions));
+
+                validatorToolToValidationInfo.put(validatorTool.toString(), validationInfo);
+            }
+        });
 
         // This shouldn't happen because all validation executions should the required fields, but check anyway
-        if (validatorToolToIsValid.isEmpty()) {
+        if (validatorToolToValidationInfo.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(new ValidationStatusMetric().validatorToolToIsValid(validatorToolToIsValid));
+        return Optional.of(new ValidationStatusMetric().validatorToolToIsValid(validatorToolToValidationInfo));
+    }
+
+    static Optional<ValidationExecution> getLatestValidation(List<ValidationExecution> executions) {
+        if (executions.isEmpty()) {
+            return Optional.empty();
+        }
+
+        boolean containsInvalidDate = executions.stream().anyMatch(execution -> checkExecutionDateISO8601Format(execution.getDateExecuted()).isEmpty());
+        if (containsInvalidDate) {
+            return Optional.empty();
+        }
+
+        return executions.stream()
+                .max(Comparator.comparing(execution -> checkExecutionDateISO8601Format(execution.getDateExecuted()).get(), Date::compareTo));
+    }
+
+    /**
+     * Gets the percentage of executions that passed validation
+     * @param executions
+     * @return
+     */
+    @SuppressWarnings("checkstyle:magicnumber")
+    static double getPassingRate(List<ValidationExecution> executions) {
+        final double numberOfPassingExecutions = executions.stream()
+                .filter(ValidationExecution::isIsValid)
+                .count();
+
+        return (numberOfPassingExecutions / executions.size()) * 100;
     }
 }

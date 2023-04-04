@@ -1,7 +1,9 @@
 package io.dockstore.metricsaggregator.helper;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import io.dockstore.openapi.client.model.CpuMetric;
@@ -10,6 +12,7 @@ import io.dockstore.openapi.client.model.ExecutionTimeMetric;
 import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.ValidationExecution;
+import io.dockstore.openapi.client.model.ValidationInfo;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import org.junit.jupiter.api.Test;
 
@@ -110,15 +113,51 @@ class AggregationHelperTest {
 
         // Add an execution with validation data
         final ValidationExecution.ValidatorToolEnum validatorTool = ValidationExecution.ValidatorToolEnum.MINIWDL;
-        executions.add(new ValidationExecution().validatorTool(validatorTool).valid(true));
+        executions.add(new ValidationExecution()
+                .validatorTool(validatorTool)
+                .validatorToolVersion("1.0")
+                .isValid(true)
+                .dateExecuted(Instant.now().toString()));
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(executions);
         assertTrue(validationStatusMetric.isPresent());
-        assertTrue(validationStatusMetric.get().getValidatorToolToIsValid().get(validatorTool.toString()));
+        ValidationInfo validationInfo = validationStatusMetric.get().getValidatorToolToIsValid().get(validatorTool.toString());
+        assertTrue(validationInfo.isMostRecentIsValid());
+        assertEquals("1.0", validationInfo.getMostRecentVersion());
+        assertEquals(List.of("1.0"), validationInfo.getSuccessfulValidationVersions());
+        assertTrue(validationInfo.getFailedValidationVersions().isEmpty());
+        assertEquals(100, validationInfo.getPassingRate());
+        assertEquals(1, validationInfo.getNumberOfRuns());
 
         // Add an execution that isn't valid for the same validator
-        executions.add(new ValidationExecution().validatorTool(validatorTool).valid(false));
+        executions.add(new ValidationExecution()
+                .validatorTool(validatorTool)
+                .validatorToolVersion("2.0")
+                .isValid(false)
+                .dateExecuted(Instant.now().toString()));
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(executions);
         assertTrue(validationStatusMetric.isPresent());
-        assertFalse(validationStatusMetric.get().getValidatorToolToIsValid().get(validatorTool.toString()));
+        validationInfo = validationStatusMetric.get().getValidatorToolToIsValid().get(validatorTool.toString());
+        assertFalse(validationInfo.isMostRecentIsValid());
+        assertEquals("2.0", validationInfo.getMostRecentVersion());
+        assertEquals(List.of("1.0"), validationInfo.getSuccessfulValidationVersions());
+        assertEquals(List.of("2.0"), validationInfo.getFailedValidationVersions());
+        assertEquals(50, validationInfo.getPassingRate());
+        assertEquals(2, validationInfo.getNumberOfRuns());
+
+        // Add an execution that is valid for the same validator
+        executions.add(new ValidationExecution()
+                .validatorTool(validatorTool)
+                .validatorToolVersion("1.0")
+                .isValid(true)
+                .dateExecuted(Instant.now().toString()));
+        validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(executions);
+        assertTrue(validationStatusMetric.isPresent());
+        validationInfo = validationStatusMetric.get().getValidatorToolToIsValid().get(validatorTool.toString());
+        assertTrue(validationInfo.isMostRecentIsValid(), "Should be true because the latest validation is valid");
+        assertEquals("1.0", validationInfo.getMostRecentVersion());
+        assertEquals(List.of("1.0"), validationInfo.getSuccessfulValidationVersions());
+        assertEquals(List.of("2.0"), validationInfo.getFailedValidationVersions());
+        assertEquals(66.66666666666666, validationInfo.getPassingRate());
+        assertEquals(3, validationInfo.getNumberOfRuns());
     }
 }

@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.configuration2.INIConfiguration;
@@ -166,7 +167,8 @@ public class MetricsAggregatorClient {
                 .toList();
 
         // Workflows that are listed in the data file are workflows that were validated using the validator. They all have the same result, indicated by isSuccessful
-        List<ValidationExecution> validationExecutions = List.of(new ValidationExecution().validatorTool(validator).valid(isSuccessful));
+        List<ValidationExecution> validationExecutions = List.of(new ValidationExecution().validatorTool(validator).isValid(isSuccessful).dateExecuted(
+                Instant.now().toString()));
         ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().validationExecutions(validationExecutions);
 
         for (String validatedWorkflow : validatedWorkflows) {

@@ -18,6 +18,7 @@
 package io.dockstore.metricsaggregator.client.cli;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 
 import cloud.localstack.ServiceName;
@@ -35,6 +36,7 @@ import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.ValidationExecution;
+import io.dockstore.openapi.client.model.ValidationInfo;
 import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowVersion;
 import io.dockstore.webservice.DockstoreWebserviceApplication;
@@ -135,7 +137,11 @@ class MetricsAggregatorClientTest {
         // A successful run execution that ran for 5 minutes, requires 2 CPUs and 2 GBs of memory
         List<RunExecution> runExecutions = List.of(createRunExecution(SUCCESSFUL, "PT5M", 2, 2.0));
         // A successful miniwdl validation
-        List<ValidationExecution> validationExecutions = List.of(new ValidationExecution().validatorTool(MINIWDL).valid(true));
+        List<ValidationExecution> validationExecutions = List.of(new ValidationExecution()
+                .validatorTool(MINIWDL)
+                .validatorToolVersion("1.0")
+                .isValid(true)
+                .dateExecuted(Instant.now().toString()));
 
         // Submit metrics for two platforms
         ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(runExecutions).validationExecutions(validationExecutions);
@@ -179,8 +185,14 @@ class MetricsAggregatorClientTest {
         assertEquals(ExecutionTimeStatisticMetric.UNIT, platform1Metrics.getExecutionTime().getUnit());
 
         assertEquals(1, platform1Metrics.getValidationStatus().getValidatorToolToIsValid().size());
-        assertTrue(platform1Metrics.getValidationStatus().getValidatorToolToIsValid().containsKey(MINIWDL.toString()));
-        assertTrue(platform1Metrics.getValidationStatus().getValidatorToolToIsValid().get(MINIWDL.toString()), "miniwdl validation should be valid");
+        ValidationInfo validationInfo = platform1Metrics.getValidationStatus().getValidatorToolToIsValid().get(MINIWDL.toString());
+        assertNotNull(validationInfo);
+        assertTrue(validationInfo.isMostRecentIsValid(), "miniwdl validation should be valid");
+        assertEquals("1.0", validationInfo.getMostRecentVersion());
+        assertEquals(List.of("1.0"), validationInfo.getSuccessfulValidationVersions());
+        assertTrue(validationInfo.getFailedValidationVersions().isEmpty());
+        assertEquals(100d, validationInfo.getPassingRate());
+        assertEquals(1, validationInfo.getNumberOfRuns());
 
         Metrics platform2Metrics = version.getMetricsByPlatform().get(platform2);
         assertNotNull(platform1Metrics);
@@ -212,13 +224,19 @@ class MetricsAggregatorClientTest {
         assertEquals(ExecutionTimeStatisticMetric.UNIT, platform2Metrics.getExecutionTime().getUnit());
 
         assertEquals(1, platform2Metrics.getValidationStatus().getValidatorToolToIsValid().size());
-        assertTrue(platform2Metrics.getValidationStatus().getValidatorToolToIsValid().containsKey(MINIWDL.toString()));
-        assertTrue(platform2Metrics.getValidationStatus().getValidatorToolToIsValid().get(MINIWDL.toString()), "miniwdl validation should be valid");
+        validationInfo = platform2Metrics.getValidationStatus().getValidatorToolToIsValid().get(MINIWDL.toString());
+        assertNotNull(validationInfo);
+        assertTrue(validationInfo.isMostRecentIsValid(), "miniwdl validation should be valid");
+        assertEquals("1.0", validationInfo.getMostRecentVersion());
+        assertEquals(List.of("1.0"), validationInfo.getSuccessfulValidationVersions());
+        assertTrue(validationInfo.getFailedValidationVersions().isEmpty());
+        assertEquals(100d, validationInfo.getPassingRate());
+        assertEquals(1, validationInfo.getNumberOfRuns());
 
         // A failed run execution that ran for 1 second, requires 2 CPUs and 4.5 GBs of memory
         runExecutions = List.of(createRunExecution(FAILED_RUNTIME_INVALID, "PT1S", 4, 4.5));
-        // A failed miniwdl validation
-        validationExecutions = List.of(new ValidationExecution().validatorTool(MINIWDL).valid(false));
+        // A failed miniwdl validation for the same validator version
+        validationExecutions = List.of(new ValidationExecution().validatorTool(MINIWDL).validatorToolVersion("1.0").isValid(false).dateExecuted(Instant.now().toString()));
         executionsRequestBody = new ExecutionsRequestBody().runExecutions(runExecutions).validationExecutions(validationExecutions);
         // Submit metrics for the same workflow version for platform 2
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, id, versionId, "");
@@ -258,8 +276,14 @@ class MetricsAggregatorClientTest {
         assertEquals(ExecutionTimeStatisticMetric.UNIT, platform1Metrics.getExecutionTime().getUnit());
 
         assertEquals(1, platform1Metrics.getValidationStatus().getValidatorToolToIsValid().size());
-        assertTrue(platform1Metrics.getValidationStatus().getValidatorToolToIsValid().containsKey(MINIWDL.toString()));
-        assertFalse(platform1Metrics.getValidationStatus().getValidatorToolToIsValid().get(MINIWDL.toString()), "miniwdl validation should be invalid");
+        validationInfo = platform1Metrics.getValidationStatus().getValidatorToolToIsValid().get(MINIWDL.toString());
+        assertNotNull(validationInfo);
+        assertFalse(validationInfo.isMostRecentIsValid(), "miniwdl validation should be invalid");
+        assertEquals("1.0", validationInfo.getMostRecentVersion());
+        assertEquals(List.of("1.0"), validationInfo.getFailedValidationVersions());
+        assertTrue(validationInfo.getSuccessfulValidationVersions().isEmpty());
+        assertEquals(50d, validationInfo.getPassingRate());
+        assertEquals(2, validationInfo.getNumberOfRuns());
     }
 
     @Test
@@ -289,7 +313,7 @@ class MetricsAggregatorClientTest {
         assertTrue(executionsRequestBody.getRunExecutions().isEmpty(), "Should not have run executions");
         assertEquals(1, executionsRequestBody.getValidationExecutions().size(), "Should have 1 validation execution");
         ValidationExecution validationExecution = executionsRequestBody.getValidationExecutions().get(0);
-        assertTrue(validationExecution.isValid());
+        assertTrue(validationExecution.isIsValid());
         assertEquals(validator, validationExecution.getValidatorTool());
 
         LocalStackTestUtilities.deleteBucketContents(s3Client, BUCKET_NAME); // Clear bucket contents to start from scratch
@@ -306,7 +330,7 @@ class MetricsAggregatorClientTest {
         assertTrue(executionsRequestBody.getRunExecutions().isEmpty(), "Should not have run executions");
         assertEquals(1, executionsRequestBody.getValidationExecutions().size(), "Should have 1 validation execution");
         validationExecution = executionsRequestBody.getValidationExecutions().get(0);
-        assertFalse(validationExecution.isValid());
+        assertFalse(validationExecution.isIsValid());
         assertEquals(validator, validationExecution.getValidatorTool());
     }
 
