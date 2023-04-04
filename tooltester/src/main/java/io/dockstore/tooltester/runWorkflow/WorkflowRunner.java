@@ -24,13 +24,26 @@ import io.dockstore.common.Utilities;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.api.WorkflowsApi;
-import io.dockstore.openapi.client.model.Execution;
 import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowSubClass;
-import org.apache.commons.lang3.StringUtils;
+import io.dockstore.openapi.client.model.Execution;
 import io.dockstore.webservice.core.Partner;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.jline.utils.Log;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
+import software.amazon.awssdk.services.cloudwatch.model.Datapoint;
+import software.amazon.awssdk.services.cloudwatch.model.Dimension;
+import software.amazon.awssdk.services.cloudwatch.model.GetMetricStatisticsRequest;
+import software.amazon.awssdk.services.cloudwatch.model.GetMetricStatisticsResponse;
+import software.amazon.awssdk.services.cloudwatch.model.Statistic;
+import software.amazon.awssdk.services.ecs.EcsClient;
+import software.amazon.awssdk.services.ecs.model.DeregisterTaskDefinitionRequest;
+import software.amazon.awssdk.services.ecs.model.DescribeTaskDefinitionRequest;
+import software.amazon.awssdk.services.ecs.model.DescribeTaskDefinitionResponse;
+import software.amazon.awssdk.services.ecs.model.ListTaskDefinitionsRequest;
+import software.amazon.awssdk.services.ecs.model.ListTaskDefinitionsResponse;
 
 
 import java.io.BufferedWriter;
@@ -42,6 +55,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.amazonaws.util.DateUtils.parseISO8601Date;
 import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
@@ -51,6 +66,7 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static java.util.UUID.randomUUID;
+import static org.apache.commons.lang3.math.NumberUtils.max;
 import static org.apache.commons.lang3.time.DurationFormatUtils.formatDuration;
 
 /**
@@ -59,6 +75,7 @@ import static org.apache.commons.lang3.time.DurationFormatUtils.formatDuration;
 public class WorkflowRunner {
 
     private static final String COMPLETE = "COMPLETE";
+    private static final int MAX_NUMBER_OF_TRIES = 10;
     private String entry;
     private String version;
     private String runID = null;
@@ -71,6 +88,14 @@ public class WorkflowRunner {
     private ExtendedGa4GhApi extendedGa4GhApi;
     private WorkflowsApi workflowsApi;
     private String configFilePath;
+    private Date workflowStartTime = null;
+    private Date workflowEndTime = null;
+    private Execution runMetrics;
+    private EcsClient ecsClient;
+    private String taskDefinitionFamily = null;
+    private String taskDefinitionArn = null;
+    private String clusterName;
+
 
     private final List<String> inProgressStates = Arrays.asList("RUNNING", "INITIALIZING");
 
@@ -83,13 +108,16 @@ public class WorkflowRunner {
      * @param pathOfTestParameter A relative path to the location of the test parameter (e.g. test/test-parameter-file.json)
      * @param extendedGa4GhApi
      */
-    public WorkflowRunner(String entry, String version, String pathOfTestParameter, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String wdlConfigFilePath, String cwlConfigFilePath) {
+    @SuppressWarnings("checkstyle:parameternumber")
+    public WorkflowRunner(String entry, String version, String pathOfTestParameter, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String wdlConfigFilePath, String cwlConfigFilePath, String clusterNameWDL, String clusterNameCWL) {
         this.entry = entry;
         this.version = version;
         this.pathOfTestParameter = pathOfTestParameter;
         this.extendedGa4GhApi = extendedGa4GhApi;
         this.workflowsApi = workflowsApi;
-        setDescriptorLanguage(wdlConfigFilePath, cwlConfigFilePath);
+        this.runMetrics = new Execution();
+        this.ecsClient = EcsClient.builder().build();
+        setDescriptorLanguage(wdlConfigFilePath, cwlConfigFilePath, clusterNameWDL, clusterNameCWL);
     }
 
     /** Construct the WorkflowRunner with a test parameter file found on Dockstore site
@@ -101,8 +129,8 @@ public class WorkflowRunner {
      * @param extendedGa4GhApi
      */
     @SuppressWarnings("checkstyle:parameternumber")
-    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String wdlConfigFilePath, String cwlConfigFilePath)  {
-        this(entry, version, relativePathToTestParameterFile, extendedGa4GhApi, workflowsApi, wdlConfigFilePath, cwlConfigFilePath);
+    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String wdlConfigFilePath, String cwlConfigFilePath, String clusterNameWDL, String clusterNameCWL)  {
+        this(entry, version, relativePathToTestParameterFile, extendedGa4GhApi, workflowsApi, wdlConfigFilePath, cwlConfigFilePath, clusterNameWDL, clusterNameCWL);
 
         File testParameterFile = new File("test-parameter-file-" + randomUUID() + ".json");
         testParameterFile.deleteOnExit();
@@ -125,17 +153,19 @@ public class WorkflowRunner {
         }
     }
 
-    private void setDescriptorLanguage(String wdlConfigFilePath, String cwlConfigFilePath) {
+    private void setDescriptorLanguage(String wdlConfigFilePath, String cwlConfigFilePath, String clusterNameWDL, String clusterNameCWL) {
         // Get the workflow object associated with the provided entry path
         final Workflow workflow = workflowsApi.getPublishedWorkflowByPath(entry, WorkflowSubClass.BIOWORKFLOW, null, version);
         descriptorType = workflow.getDescriptorType();
         switch (descriptorType) {
             case WDL:
                 configFilePath = wdlConfigFilePath;
+                clusterName = clusterNameWDL;
                 break;
 
             case CWL:
                 configFilePath = cwlConfigFilePath;
+                clusterName = clusterNameCWL;
                 break;
 
             default:
@@ -166,6 +196,9 @@ public class WorkflowRunner {
     }
     public void runWorkflow() {
         ImmutablePair<String, String> result = null;
+
+        final List<String> ecsTasksBeforeWorkflowWasRun = getListOfEcsTasks();
+
         switch (descriptorType) {
             case WDL:
                 createAgcWrapper();
@@ -182,6 +215,7 @@ public class WorkflowRunner {
                 errorMessage("The descriptor type of this workflow is not supported", GENERIC_ERROR);
         }
         runID = StringUtils.deleteWhitespace(result.getLeft());
+        setTaskFamily(ecsTasksBeforeWorkflowWasRun);
     }
 
     public Boolean isWorkflowFinished() {
@@ -256,38 +290,52 @@ public class WorkflowRunner {
         return first.getTime() < second.getTime();
     }
 
-    private Long getWallClockTimeInMilliseconds() {
+
+    private void setStartAndEndTime() {
         if (timesForEachTask == null) {
             setTimeForEachTask();
         }
-        Date timeFirstWorkflowStarted = null;
-        Date timeLastWorkflowFinished = null;
+        if (workflowStartTime != null || workflowEndTime != null) {
+            Log.debug("workflowStartTime or workflowEndTime has already been set");
+            return;
+        }
+        Date timeFirstTaskStarted = null;
+        Date timeLastTaskFinished = null;
         for (TimeStatisticForOneTask time: timesForEachTask) {
             if (time.getStartTime() == null) {
                 continue;
             }
-            if (timeFirstWorkflowStarted == null) {
-                timeFirstWorkflowStarted = time.getStartTime();
+            if (timeFirstTaskStarted == null) {
+                timeFirstTaskStarted = time.getStartTime();
             }
             if (time.getEndTime() == null) {
                 continue;
             }
-            if (timeLastWorkflowFinished == null) {
-                timeLastWorkflowFinished = time.getEndTime();
+            if (timeLastTaskFinished == null) {
+                timeLastTaskFinished = time.getEndTime();
             }
-            if (isFirstDateBeforeSecondDate(time.getStartTime(), timeFirstWorkflowStarted)) {
-                timeFirstWorkflowStarted = time.getStartTime();
-            }
-
-            if (isFirstDateBeforeSecondDate(timeLastWorkflowFinished, time.getEndTime())) {
-                timeLastWorkflowFinished = time.getEndTime();
+            if (isFirstDateBeforeSecondDate(time.getStartTime(), timeFirstTaskStarted)) {
+                timeFirstTaskStarted = time.getStartTime();
             }
 
+            if (isFirstDateBeforeSecondDate(timeLastTaskFinished, time.getEndTime())) {
+                timeLastTaskFinished = time.getEndTime();
+            }
         }
-        if (timeLastWorkflowFinished == null || timeFirstWorkflowStarted == null) {
+
+        workflowStartTime = timeFirstTaskStarted;
+        workflowEndTime = timeLastTaskFinished;
+
+    }
+    private Long getWallClockTimeInMilliseconds() {
+        if (timesForEachTask == null) {
+            setTimeForEachTask();
+        }
+        setStartAndEndTime();
+        if (workflowStartTime == null || workflowEndTime == null) {
             return null;
         }
-        return timeLastWorkflowFinished.getTime() - timeFirstWorkflowStarted.getTime();
+        return workflowEndTime.getTime() - workflowStartTime.getTime();
     }
 
 
@@ -311,12 +359,25 @@ public class WorkflowRunner {
         out("SUM OF TIMES TAKEN TO COMPLETE EACH TASK: " + formatDuration(getSumOfTimeForEachTaskInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
     }
 
+    private void printStatisticsInRunMetrics() {
+        if (taskDefinitionArn == null || taskDefinitionFamily == null) {
+            return;
+        }
+        for (Map.Entry<String, Object> additionalProperty: runMetrics.getAdditionalProperties().entrySet()) {
+            out("");
+            out("Property Name: " + additionalProperty.getKey());
+            out("Property Value: " + additionalProperty.getValue());
+        }
+    }
+
     public void printRunStatistics() {
         if (isWorkflowFinished()) {
             out("RUN STATISTICS:");
             out("ENTRY NAME: " + getCompleteEntryName());
             out("END STATE: " + state);
             printTimeStatistic();
+            printStatisticsInRunMetrics();
+
         } else {
             errorMessage("Workflow is not finished, statistics are not available yet", COMMAND_ERROR);
         }
@@ -339,18 +400,103 @@ public class WorkflowRunner {
         }
     }
 
+    private List<String> getListOfEcsTasks() {
+        ListTaskDefinitionsRequest request = ListTaskDefinitionsRequest.builder().build();
+        ListTaskDefinitionsResponse response = ecsClient.listTaskDefinitions(request);
+        return response.taskDefinitionArns();
+    }
+
+
+    private void setTaskFamily(final List<String> listOfEcsTasksBeforeNewOneWasAdded) {
+        int numberOfAttempts = 0;
+        while (numberOfAttempts < MAX_NUMBER_OF_TRIES) {
+            numberOfAttempts++;
+            List<String> ecsTasks = new ArrayList<>();
+            ecsTasks.addAll(getListOfEcsTasks());
+            ecsTasks.removeAll(listOfEcsTasksBeforeNewOneWasAdded);
+
+            if (!ecsTasks.isEmpty()) {
+                String ecsTaskArn = ecsTasks.get(0);
+                if (ecsTasks.size() != 1) {
+                    Log.warn("More than one ECS task has been created, assuming the first one is the ECS task"
+                            + " for this workflow, the following were discovered: " + System.lineSeparator()
+                            + ecsTasks);
+                }
+                DescribeTaskDefinitionRequest request = DescribeTaskDefinitionRequest.builder().taskDefinition(ecsTaskArn).build();
+                DescribeTaskDefinitionResponse response = ecsClient.describeTaskDefinition(request);
+                taskDefinitionFamily = response.taskDefinition().family();
+                taskDefinitionArn = response.taskDefinition().taskDefinitionArn();
+                break;
+            }
+
+            try {
+                final Long waitTime = 20L;
+                TimeUnit.SECONDS.sleep(waitTime);
+            } catch (Exception ex) {
+                exceptionMessage(ex, "time error", COMMAND_ERROR);
+            }
+        }
+    }
+
     public void uploadRunInfo() {
         List<Execution> executions = new ArrayList<>();
-        Execution execution = new Execution();
-        execution.setExecutionStatus(getExecutionStatus());
+        runMetrics.setExecutionStatus(getExecutionStatus());
 
         if (getTotalWallClockTimeInISO861Standard() != null) {
-            execution.setExecutionTime(getTotalWallClockTimeInISO861Standard());
+            runMetrics.setExecutionTime(getTotalWallClockTimeInISO861Standard());
         }
 
-        executions.add(execution);
+        executions.add(runMetrics);
 
+        addSingleMetricToQa("CpuUtilized");
+        addSingleMetricToQa("MemoryUtilized");
         extendedGa4GhApi.executionMetricsPost(executions, Partner.AGC.name(), getEntryNameForApi(), version, "generated with tooltester ('run-workflows' command)");
+    }
+
+    private void addSingleMetricToQa(String metricName) {
+        if (taskDefinitionArn == null || taskDefinitionFamily == null) {
+            return;
+        }
+        CloudWatchClient cloudWatchClient = CloudWatchClient.builder().build();
+        Dimension clusterNameDimension = Dimension.builder()
+                .name("ClusterName")
+                .value(clusterName)
+                .build();
+        Dimension clusterTaskDefinitionFamily = Dimension.builder()
+                .name("TaskDefinitionFamily")
+                .value(taskDefinitionFamily)
+                .build();
+        final int period = 60;
+        GetMetricStatisticsRequest request = GetMetricStatisticsRequest.builder()
+                .namespace("ECS/ContainerInsights")
+                .metricName(metricName)
+                .dimensions(clusterNameDimension, clusterTaskDefinitionFamily)
+                .period(period)
+                .statistics(Statistic.AVERAGE)
+                .startTime(workflowStartTime.toInstant())
+                .endTime(workflowEndTime.toInstant())
+                .build();
+        GetMetricStatisticsResponse response = cloudWatchClient.getMetricStatistics(request);
+        Double sumOfDataPoints = 0D;
+        Double maxDataPoint = 0D;
+        for (Datapoint datapoint: response.datapoints()) {
+            sumOfDataPoints += datapoint.average();
+            maxDataPoint = max(maxDataPoint, datapoint.average());
+            // datapoint.average() is not actually obtaining the average. This is because the ECS container is only
+            // collecting metrics every minute, and we have asked for a minute by minute metric breakdown.
+            // So, we are getting the only statistic collected for each minute.
+        }
+        Double averageOfDataPoints = sumOfDataPoints / response.datapoints().size();
+        runMetrics.putAdditionalPropertiesItem(metricName + "_AVERAGE", averageOfDataPoints);
+        runMetrics.putAdditionalPropertiesItem(metricName + "_MAX", maxDataPoint);
+
+    }
+
+    public void deregisterTasks() {
+        if (Workflow.DescriptorTypeEnum.WDL == descriptorType && taskDefinitionArn != null) {
+            DeregisterTaskDefinitionRequest request = DeregisterTaskDefinitionRequest.builder().taskDefinition(taskDefinitionArn).build();
+            ecsClient.deregisterTaskDefinition(request);
+        }
     }
 
     public static void printLine() {

@@ -1,128 +1,116 @@
-Last tested with ansible 2.2.1.0
-
-# How is ToolTester used?
-
-Right before every major or minor release, ToolTester (without s3 report upload) is run with a Dockstore CLI and Dockstore web service that is
-as close as possible to the actual release. For example, if 1.10.0 is about to be created and pushed to production
-then ToolTester will use something like 1.10.0-beta.7 (usually on staging). This will test all our previously verified entries to see if
-it still works with the changes made since the last time it was run.
-
-Once ToolTester is done running, the results are checked. If there is no new failing entry, then proceed with the
-release as normal. Otherwise, identify the issue. 
-- If it's a problem with the entry because it does not support a new
-version of cwltool, changes should be made to the entry so that it does support it if possible. 
-- If there is an issue with Dockstore, then changes should be made to Dockstore prior to the actual release.
-  A new alpha/beta Dockstore should then be created and ToolTester should be repeated until there are no issues with Dockstore.
-  
-The non-working entry versions should then be added to the BlackList.java to prevent ToolTester from running entry 
-  versions that are known to fail.
-
-After the Dockstore release, ToolTester should be run again on the actual production release. There should be
-no surprises and everything should be successful. This time however, the reports should be uploaded to s3 so that
-the actual production release is shown to the users in the logs.
-
-PS: There is currently no set verification process. The number of verified entry versions that ToolTester runs is getting
-shorter and shorter because of more and more versions are getting blacklisted but none are added.
-
-# General info
-
-The general idea is to only have the `jenkins` user talk to each other, never using the `ubuntu` user.
-
-For simplicity, always SSH into the jump server directly to get to the master and slaves.
-
-# Master Setup:
-1. Login to [Collaboratory console](https://console.cancercollaboratory.org/)
-1. Launch a new instance with the following properties
-    1. Flavour - c2.micro
-    1. Source - Ubuntu 18.04 image
-    1. Security groups - Jenkins, Default
-1. SSH into jump server and from there SSH into master. Run the setupMaster.sh in master (download from this repository)
-1. Log out and log back in
-
-Follow these steps if there is a backup
 
 ---
-1. Configure the aws cli using `aws configure`. Ask around for the credentials (~/.aws/credentials)
-1. aws s3 --endpoint-url https://object.cancercollaboratory.org:9080 cp s3://dockstore/jenkinsMaster2/jenkins_home.tar.gz jenkins_home.tar.gz
-1. Extract with `tar xvzf jenkins_home.tar.gz` and then remove the far file
-1. Run the Jenkins container
-    `docker run --restart=always -u root -d -p 8080:8080 -p 50000:50000 -v $PWD/jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/blueocean:1.13.1`
-1. Make the .ssh directory and copy the id_rsa into it
+**NOTE:**
+
+This `README.md` only shows users how to use the `run-workflows` command. As of April 3, 2023 all other 
+commands are no longer working and will require a non-trivial amount of work to get working.
+
+The README for these features can be found here: https://github.com/dockstore/dockstore-support/blob/8775ecadaec8b5fa36d03bc6ba962509ea38ca29/tooltester/README.md
+
 ---
 
-Follow these setups if there is not a backup
-1. Run the Jenkins container
-    `docker run -u root --rm -d -p 8080:8080 -p 50000:50000 -v $PWD/jenkins_home:/var/jenkins_home -v /var/run/docker.sock:/var/run/docker.sock jenkinsci/blueocean:1.13.1`
-1. Create a pipeline called PipelineTest
-1. Copy the contents of resources/PipelineTest.groovy into the Pipeline Script textbox
-1. Check the checkbox:  "This project is parameterized"
-1. Create the String Parameters mentioned in the [constructParameterMap](https://github.com/ga4gh/dockstore-support/blob/develop/tooltester/src/main/java/io/dockstore/tooltester/client/cli/Client.java#L609) function. These string parameters are used to configure the Jenkins pipelines to run the correct tool/workflow, versions, etc.
-1. Make sure "Use Groovy Sandbox" is NOT checked
-1. Change master node to not be used (0 executors)
-1. Make the .ssh directory and copy the id_rsa into it
+# The Tooltester `run-workflows` Command
 
-# Slave Setup:
-1. Login to [Collaboratory console](https://console.cancercollaboratory.org/)
-1. Launch a new instance with the following properties
-    1. Flavour - c2.large
-    1. Source - Ubuntu 18.04 image
-    1. Key Pair - JenkinsMaster2 (may need to ask someone on the team for this)
-1. SSH into the jump server and from there SSH into the master and then to slave. 
-1. wget https://raw.githubusercontent.com/dockstore/dockstore-support/develop/tooltester/src/main/resources/setupSlave.sh
-1. bash setupSlave.sh
-1. Configure the aws cli using `sudo -u jenkins -i` and then `aws configure`. Use the credentials in the jenkins@jenkins-master's ~/.aws/credentials
-1. Configure slave on master Jenkin: 
-    1. Go to ({master-floating-ip}:8080 (you may need to configure security group)
-    1. Log in with your Jenkins credentials (ask around for it if you don't have it)
-    1. Manage Jenkins => Manage Nodes
-        1. If there are no nodes (because it's a new master or another reason):
-            1. => New Node ({master-floating-ip}:8080/computer/new)
-            1. Type in the name for the node and select permanent agent. Click Ok.
-            1. Fill in the \# of executors (the amount of Jenkins slaves spun up already)
-            1. Remote root directory - /home/jenkins
-            1. Host - {ip-address-slave}
-            1. If it's a new master, add credentials (Kind: SSH Username with private key, Username: jenkins, private key: <same one as before, ask around for it>)
-            1. Credentials - Jenkins
-            1. Host Key Verification Strategy - Non verifying Verification Strategy
-        1. If it's not a new master and there are already nodes, configure and set the host to the new Jenkins slave IP address then save.
+The purpose of the `run-workflows` command, is to be able to run (in an automated fashion) workflows found on a Dockstore site 
+(ie. [dockstore.org](https://dockstore.org/) or [qa.dockstore.org](https://qa.dockstore.org/)), and 
+- Determine what the end state of the workflow (ie. SUCCESS or EXECUTOR_ERROR)
+- Determine how long it takes for a workflow to reach its end state.
+- Gather metrics such as CPU usage of the workflow during its run.
 
-# Running tooltester:
-1. On your local machine, fill in ~/.tooltester/config with the appropriate values
-    1. In particular, ensure that `server-url`, `runners`, and `dockstore-version` are properly set
-A sample config file is shown below. This one will run tool tester with staging and dockstore-version 1.7.0-beta.6.
+All of the above information is then posted to an `S3` container via the [Execution class](https://github.com/dockstore/dockstore/blob/290bc2c68640e82a44bdb8fe58c8629814739dfa/dockstore-webservice/src/main/java/io/dockstore/webservice/core/metrics/Execution.java#L36-L127).
 
-Ensure that these fields are filled out correctly. Note that the dockstore-version below is for the Dockstore CLI version (not webservice)
+## What is Required to run `run-workflows`
 
+### Set up AGC
+You will need to do this twice, once to create a context that runs `WDL` workflows, and one to create a context that
+runs `CWL` workflows. Currently, this feature is only tested using Cromwell to run `WDL` workflows and using
+Toil to run `CWL` workflows.
+
+First, install AGC using the instructions found [here](https://aws.github.io/amazon-genomics-cli/docs/getting-started/installation/).
+
+Next, activate your `agc` account (you only need to do this once, so if you have done this before you can skip this step).
 ```
-runner = cromwell cwltool cwl-runner
-
-server-url = https://staging.dockstore.org/api
-jenkins-server-url = http://<find-on-collab>:8080/
-jenkins-username = <username>
-jenkins-password = <password>
-development = true
-dockstore-version = 1.7.0-beta.6
-
+agc account activate
 ```
-1. Tooltester will try to find the CLI based on the dockstore-version above, ensure it's available at https://github.com/dockstore/dockstore-cli/releases/download/{{dockstore-version}}/dockstore
-1. Clone https://github.com/dockstore/dockstore-support.git. Open in Intellij: Import project -> pom.xml as project
-1. In the resources directory, modify the 4 config files (cromwell.config, cwlrunner.config, cwltool.config, toil.config),as needed.
-1. Optional: Modify the [cwltoolPlaybook](https://github.com/dockstore/dockstore-support/blob/feature/playbook/tooltester/src/main/resources/cwltoolPlaybook.yml) and [toilPlaybook](https://github.com/dockstore/dockstore-support/blob/feature/playbook/tooltester/src/main/resources/toilPlaybook.yml) in the feature/playbook branch to have the right apt/pip dependencies if needed (i.e. check the [dockstore website /onboarding](https://dockstore.org/onboarding) or [GitHub](https://github.com/dockstore/dockstore-ui2/blob/develop/src/app/loginComponents/onboarding/downloadcliclient/downloadcliclient.component.ts#L81) Step 2 Part 3 to see if changes are needed).
-1. Optional: Modify the [cromwellPlaybook](https://github.com/dockstore/dockstore-support/blob/feature/playbook/tooltester/src/main/resources/cromwellPlaybook.yml) in the feature/playbook branch (though it's unlikely to change because the Dockstore CLI takes care of versioning)
-1. If there are significant breaking changes in the webservice, tooltester may not be able to retrieve tools. In that case code changes may be required.
-1. IMPORTANT: If using old slave, check that the slave has enough disk space, remove /tmp and /home/jenkins/workspace/* (workspace `@tmp` folders aren't removed with cleanup plugin) if needed
-1. Run the ClientTest.createJenkinsTests by pressing the green run button (basically the sync commmand)
-1. Run the ClientTest.enqueue by pressing the green run button (basically the enqueue command)
-1. Immediately check up on Jenkins master and see if there are jobs running and not instantly failing. Code/config changes may be required if everything is failing.
-1. Wait until it finishes running (may take 10 hours, check Jenkins master for status).
-1. io/dockstore/tooltester/client/cli/ReportCommand.java has a SEND_LOGS boolean.  Check that your S3 credentials work (using aws cli) if sending logs to S3. Otherwise, change the boolean to false.
-1. Run the ClientTest.report (basically the report command)
-    1. You can view running jobs at {master-floating-ip}:8080
 
-# Master Backup
-1. Double check that aws is installed and has the correct credentials
-1. docker cp `$ID:/var/jenkins_home .` where ID is the container ID (eventually just use a volume instead)
-1. `tar cvzf jenkins_home.tar.gz jenkins_home`
-1. aws s3 --endpoint-url https://object.cancercollaboratory.org:9080 cp jenkins_home.tar.gz s3://dockstore/jenkinsMaster2/jenkins_home.tar.gz
+Now, you will want to deploy both the context to run `WDL` workflows and the context to run `CWL` workflows. To do this you
+need to be in the same directory as `agc-project.yaml`, and run the following commands (each command may take up to 20 minutes to run).
+```
+agc context deploy wdlContext
+```
+```
+agc context deploy cwlContext
+```
 
+Now, run 
+```
+agc context describe <CONTEXT NAME>
+```
+on `wdlContext` and `cwlContext`, and get the `WESENDPOINT` value from the result and append `ga4gh/wes/v1` to the end of it and place
+the resulting string in the `url` field in `WDLConfigFile` and `CWLConfigFile` respectively.
+
+Now, you will want to add your AWS profile name to both `wdlContext` and `cwlContext` in the `authorization` field. For example,
+mine is `fhembroff`.
+
+### Finish writing Config Files
+Do the following to both `WDLConfigFile` and `CWLConfigFile`.
+
+In this step you will want to fill in the `server-url` field. This will most likely be either https://qa.dockstore.org/api or https://dockstore.org/api.
+You also need to ensure that the `server-url` field is set on your `~/.dockstore/config` file. The `server-url` must be the same across all three files.
+
+Then you will want to get your token from whatever site you chose in the above step, and fill it in, in the `token` field on all three files.
+You will need to have either admin or curator access to the appropriate Dockstore site to use this command because it calls
+an endpoint the requires either admin or curator access.
+
+You have now successfully set up your config files. They should look something like:
+```
+token = 000000000000000000000000000000000000000000000
+server-url = https://qa.dockstore.org/api
+[WES]
+url: https://example.execute-api.us-east-1.amazonaws.com/prod/ga4gh/wes/v1
+authorization: fhembroff
+type: aws
+```
+
+### Obtain the Names of the Compute Environments
+Each AGC context that we set up before runs on its own ECS Cluster. We need to determine to what the name of each Cluster is in order
+to get the metrics for each run from Cloudwatch.
+
+We will need to do the following steps twice, once for our context that runs `WDL` workflows and once for our context that runs `CWL` workflows.
+
+After you determine the name of the ECS Cluster, please save it, as it will be needed in the future.
+
+To determine the cluster name for each context you do the following on the AWS web console:
+
+1. Go to the "Batch" [section](https://us-east-1.console.aws.amazon.com/batch) of the AWS Console
+2. Go to the "Compute Environment" [menu](https://us-east-1.console.aws.amazon.com/batch/home?region=us-east-1#console-settings/compute-environments) of the Batch section of the AWS console.
+3. Find the Batch Compute Environment associated with your context. If you click on each compute environment and look under tags, you will see the name you chose for the context when you set it up. As an example, the batch compute environment for one of my contexts is `BatchTaskBatchComputeEnv-0FxjUpJuXVowThgf`.
+4. Go to the "ECS" section of the AWS console
+5. Go to the "Clusters" [menu](https://us-east-1.console.aws.amazon.com/ecs/v2/clusters?region=us-east-1)
+6. Find the ECS cluster that starts with your Batch Computer Environment that you identified before. For example, in my case, the ECS cluster is called, `BatchTaskBatchComputeEnv-0FxjUpJuXVowThgf_Batch_2d94d28c-ccaa-3dd5-865c-faad50e542eb`.
+
+### Workflows
+In order to run this command, you of course need workflows to run it on. You can add workflows for the `run-workflows` command to run [here](https://github.com/dockstore/dockstore-support/blob/8775ecadaec8b5fa36d03bc6ba962509ea38ca29/tooltester/src/main/java/io/dockstore/tooltester/runWorkflow/WorkflowList.java#L48-L55).
+
+When you add workflows, you can either have them run using the test parameter file found on the appropriate site, such as what is done [here](https://github.com/dockstore/dockstore-support/blob/8775ecadaec8b5fa36d03bc6ba962509ea38ca29/tooltester/src/main/java/io/dockstore/tooltester/runWorkflow/WorkflowList.java#L49). 
+You can also have them run using a test parameter file found locally. Such as what is done [here](https://github.com/dockstore/dockstore-support/blob/8775ecadaec8b5fa36d03bc6ba962509ea38ca29/tooltester/src/main/java/io/dockstore/tooltester/runWorkflow/WorkflowList.java#L48).
+
+## Running the `run-workflows` command
+To do this you must first compile the project with the following command,
+```
+mvn clean install -DskipTests
+```
+
+Then you simply run (assuming you are in the directory this file is located in)
+```
+java -jar target/tooltester-0.1-alpha.0-SNAPSHOT.jar run-workflows --CWL-config-file-path CWLConfigFile --WDL-config-file-path WDLConfigFile  --CWL-cluster-name <Name of CWL Cluster Identified Earlier>  --WDL-cluster-name <Name of WDL Cluster Identified Earlier>
+```
+
+
+## Important Notes
+- Currently, not all `WDL` workflows generate an ECS task when ran (this is required for cloudwatch metrics) and this means 
+that for some `WDL` workflows, we are unable to gather metrics that rely on Cloudwatch (such as CPU usage), but we can still gather their end state and run time. It is not entirely known as to why some `WDL` workflows do
+not create ECS tasks, but it is always consistent (ie. if a `WDL` workflow doesn't create an ECS task on one run, it will never create an ECS task, and vice versa).
+- Any file referenced in a `WDL` workflow **must** have an `S3` address.
+- You will want to set your aws credentials both as environment variables and in the file `~/.aws/credentials`. You can obtain these credentials using [this tutorial](https://wiki.oicr.on.ca/display/DOC/Access+AWS+CLI+with+MFA).
 
