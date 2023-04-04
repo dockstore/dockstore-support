@@ -34,7 +34,7 @@ agc account activate
 ```
 
 Now, you will want to deploy both the context to run `WDL` workflows and the context to run `CWL` workflows. To do this you
-need to be in the same directory as `agc-project.yaml`, and run the following commands (each command may take up to 20 minutes to run)
+need to be in the same directory as `agc-project.yaml`, and run the following commands (each command may take up to 20 minutes to run).
 ```
 agc context deploy wdlContext
 ```
@@ -110,4 +110,5 @@ java -jar target/tooltester-0.1-alpha.0-SNAPSHOT.jar run-workflows --CWL-config-
 that for some `WDL` workflows, we are unable to gather metrics that rely on Cloudwatch (such as CPU usage), but we can still gather their end state and run time. It is not entirely known as to why some `WDL` workflows do
 not create ECS tasks, but it is always consistent (ie. if a `WDL` workflow doesn't create an ECS task on one run, it will never create an ECS task, and vice versa).
 - Any file referenced in a `WDL` workflow **must** have an `S3` address.
+- You will want to set your aws credentials both as environment variables and in the file `~/.aws/credentials`. You can obtain these credentials using [this tutorial](https://wiki.oicr.on.ca/display/DOC/Access+AWS+CLI+with+MFA).
 
