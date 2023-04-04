@@ -11,7 +11,7 @@ The README for these features can be found here: https://github.com/dockstore/do
 
 # The Tooltester `run-workflows` Command
 
-The purpose of the `run-workflows` command, is to be able to run (in an automated fashion) workflows found on a dockstore site 
+The purpose of the `run-workflows` command, is to be able to run (in an automated fashion) workflows found on a Dockstore site 
 (ie. [dockstore.org](https://dockstore.org/) or [qa.dockstore.org](https://qa.dockstore.org/)), and 
 - Determine what the end state of the workflow (ie. SUCCESS or EXECUTOR_ERROR)
 - Determine how long it takes for a workflow to reach its end state.
@@ -58,8 +58,9 @@ Do the following to both `WDLConfigFile` and `CWLConfigFile`.
 In this step you will want to fill in the `server-url` field. This will most likely be either https://qa.dockstore.org/api or https://dockstore.org/api.
 You also need to ensure that the `server-url` field is set on your `~/.dockstore/config` file. The `server-url` must be the same across all three files.
 
-Then you will want to get your token from whatever site you chose in the above step, and fill it in, in the `token` field.
-You will need to have either admin or curator access to the appropriate dockstore site to use this command due to this [PR](https://github.com/dockstore/dockstore/pull/5357).
+Then you will want to get your token from whatever site you chose in the above step, and fill it in, in the `token` field on all three files.
+You will need to have either admin or curator access to the appropriate Dockstore site to use this command because it calls
+an endpoint the requires either admin or curator access.
 
 You have now successfully set up your config files. They should look something like:
 ```
