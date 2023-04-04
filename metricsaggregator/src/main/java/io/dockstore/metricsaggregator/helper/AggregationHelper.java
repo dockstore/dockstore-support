@@ -15,7 +15,6 @@ import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.openapi.client.model.ValidationInfo;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
