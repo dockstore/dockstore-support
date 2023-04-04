@@ -1,3 +1,0 @@
-#workflow/github.com/garyluu/testWorkflow
-
-#workflow/github.com/garyluu/testWorkflow:master

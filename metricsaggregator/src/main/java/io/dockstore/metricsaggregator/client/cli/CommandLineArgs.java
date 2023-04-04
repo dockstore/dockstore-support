@@ -52,17 +52,11 @@ public class CommandLineArgs {
         @Parameter(names = {"-vv", "--validatorVersion"}, description = "The version of the validator tool used to validate the workflows", required = true)
         private String validatorVersion;
 
-        @Parameter(names = {"-s", "--successful"}, description = "Boolean indicating if the workflows in the data file were validated successfully")
-        private boolean isSuccessful = false;
-
-        @Parameter(names = {"-d", "--data"}, description = "The file path to the file containing the TRS ID and version names, in the form of <TRS-ID>:<version-name>, of the workflows that were validated by the validator specified", required = true)
+        @Parameter(names = {"-d", "--data"}, description = "The file path to the CSV file containing the TRS ID, version name, isValid boolean value, and date executed in ISO 8601 UTC date format of the workflows that were validated by the validator specified. The first line of the file should contain the CSV fields: trsID,versionName,isValid,dateExecuted", required = true)
         private String dataFilePath;
 
         @Parameter(names = {"-p", "--platform"}, description = "The platform that the workflow was validated on", required = true)
         private Partner platform;
-
-        @Parameter(names = {"-de", "--dateExecuted"}, description = "The date that the validator tool was executed on the workflows in ISO 8601 UTC date format", required = true)
-        private String dateExecuted;
 
         public File getConfig() {
             return config;
@@ -76,20 +70,12 @@ public class CommandLineArgs {
             return validatorVersion;
         }
 
-        public boolean isSuccessful() {
-            return isSuccessful;
-        }
-
         public String getDataFilePath() {
             return dataFilePath;
         }
 
         public Partner getPlatform() {
             return platform;
-        }
-
-        public String getDateExecuted() {
-            return dateExecuted;
         }
     }
 }

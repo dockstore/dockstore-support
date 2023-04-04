@@ -58,21 +58,16 @@ Usage: <main class> [options] [command] [command options]
             The config file path.
             Default: ./metrics-aggregator.config
         * -d, --data
-            The file path to the file containing the TRS ID and version names, 
-            in the form of <TRS-ID>:<version-name>, of the workflows that were 
-            validated by the validator specified
-        * -de, --dateExecuted
-            The date that the validator tool was executed on the workflows in 
-            ISO 8601 UTC date format
+            The file path to the CSV file containing the TRS ID, version name, 
+            isValid boolean value, and date executed in ISO 8601 UTC date 
+            format of the workflows that were validated by the validator 
+            specified. The first line of the file should contain the CSV 
+            fields: trsID,versionName,isValid,dateExecuted
           --help
             Prints help for metricsaggregator
         * -p, --platform
             The platform that the workflow was validated on
             Possible Values: [GALAXY, TERRA, DNA_STACK, DNA_NEXUS, CGC, NHLBI_BIODATA_CATALYST, ANVIL, CAVATICA, NEXTFLOW_TOWER, ELWAZI, AGC, OTHER]
-          -s, --successful
-            Boolean indicating if the workflows in the data file were 
-            validated successfully
-            Default: false
         * -v, --validator
             The validator tool used to validate the workflows
             Possible Values: [MINIWDL, WOMTOOL, CWLTOOL, NF_VALIDATION, OTHER]
@@ -97,6 +92,5 @@ with miniwdl on DNAstack:
 
 ```
 java -jar target/metricsaggregator-*-SNAPSHOT.jar submit-validation-data --config my-custom-config \
---data <path-to-my-data-file> --validator MINIWDL --validatorVersion 1.0 \
---successful --platform DNA_STACK --dateExecuted 2023-03-31T15:06:49Z
+--data <path-to-my-data-file> --validator MINIWDL --validatorVersion 1.0 --platform DNA_STACK 
 ```
