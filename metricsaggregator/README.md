@@ -61,6 +61,9 @@ Usage: <main class> [options] [command] [command options]
             The file path to the file containing the TRS ID and version names, 
             in the form of <TRS-ID>:<version-name>, of the workflows that were 
             validated by the validator specified
+        * -de, --dateExecuted
+            The date that the validator tool was executed on the workflows in 
+            ISO 8601 UTC date format
           --help
             Prints help for metricsaggregator
         * -p, --platform
@@ -72,7 +75,9 @@ Usage: <main class> [options] [command] [command options]
             Default: false
         * -v, --validator
             The validator tool used to validate the workflows
-            Possible Values: [MINIWDL, WOMTOOL, OTHER]
+            Possible Values: [MINIWDL, WOMTOOL, CWLTOOL, NF_VALIDATION, OTHER]
+        * -vv, --validatorVersion
+            The version of the validator tool used to validate the workflows
 ```
 
 ### aggregate-metrics
@@ -90,5 +95,8 @@ Usage: <main class> [options] [command] [command options]
 The following is an example command that submits validation data for a file that contains the names of workflow versions that validated successfully
 with miniwdl on DNAstack:
 
-`java -jar target/metricsaggregator-*-SNAPSHOT.jar aggregate-metrics --config my-custom-config --data <path-to-my-data-file> 
---validator MINIWDL --successful --platform DNA_STACK`
+```
+java -jar target/metricsaggregator-*-SNAPSHOT.jar submit-validation-data --config my-custom-config \
+--data <path-to-my-data-file> --validator MINIWDL --validatorVersion 1.0 \
+--successful --platform DNA_STACK --dateExecuted 2023-03-31T15:06:49Z
+```

@@ -17,6 +17,8 @@
 
 package io.dockstore.metricsaggregator.client.cli;
 
+import static io.dockstore.webservice.core.metrics.ValidationExecution.checkExecutionDateISO8601Format;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
@@ -35,7 +37,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.configuration2.INIConfiguration;
@@ -110,10 +111,17 @@ public class MetricsAggregatorClient {
                     System.exit(FAILURE_EXIT_CODE);
                 }
 
+                if (checkExecutionDateISO8601Format(submitValidationData.getDateExecuted()).isEmpty()) {
+                    LOG.error("--dateExecuted is not in ISO 8601 UTC date format");
+                    System.exit(FAILURE_EXIT_CODE);
+                }
+
                 try {
                     final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config.get());
                     metricsAggregatorClient.submitValidationData(metricsAggregatorConfig, submitValidationData.getValidator(),
-                            submitValidationData.isSuccessful(), submitValidationData.getDataFilePath(), submitValidationData.getPlatform());
+                            submitValidationData.getValidatorVersion(), submitValidationData.isSuccessful(),
+                            submitValidationData.getDataFilePath(), submitValidationData.getPlatform(),
+                            submitValidationData.getDateExecuted());
                 } catch (Exception e) {
                     LOG.error("Could not submit validation metrics to Dockstore", e);
                     System.exit(FAILURE_EXIT_CODE);
@@ -156,7 +164,7 @@ public class MetricsAggregatorClient {
     }
 
 
-    private void submitValidationData(MetricsAggregatorConfig config, ValidatorToolEnum validator, boolean isSuccessful, String dataFilePath, Partner platform) throws IOException {
+    private void submitValidationData(MetricsAggregatorConfig config, ValidatorToolEnum validator, String validatorVersion, boolean isSuccessful, String dataFilePath, Partner platform, String dateExecuted) throws IOException {
         ApiClient apiClient = setupApiClient(config.getDockstoreServerUrl(), config.getDockstoreToken());
         ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
 
@@ -167,8 +175,11 @@ public class MetricsAggregatorClient {
                 .toList();
 
         // Workflows that are listed in the data file are workflows that were validated using the validator. They all have the same result, indicated by isSuccessful
-        List<ValidationExecution> validationExecutions = List.of(new ValidationExecution().validatorTool(validator).isValid(isSuccessful).dateExecuted(
-                Instant.now().toString()));
+        List<ValidationExecution> validationExecutions = List.of(new ValidationExecution()
+                .validatorTool(validator)
+                .validatorToolVersion(validatorVersion)
+                .isValid(isSuccessful)
+                .dateExecuted(dateExecuted));
         ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().validationExecutions(validationExecutions);
 
         for (String validatedWorkflow : validatedWorkflows) {

@@ -287,11 +287,19 @@ class MetricsAggregatorClientTest {
     }
 
     @Test
+    void testAggregateMetricsErrors() throws Exception {
+        int exitCode = catchSystemExit(() -> MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", "thisdoesntexist"}));
+        assertEquals(MetricsAggregatorClient.FAILURE_EXIT_CODE, exitCode);
+    }
+
+    @Test
     void testSubmitValidationData() throws IOException {
         final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
         final WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
         final Partner platform = DNA_STACK;
         final ValidationExecution.ValidatorToolEnum validator = MINIWDL;
+        final String validatorVersion = "1.0";
+        final String dateExecuted = Instant.now().toString();
 
         Workflow workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
         WorkflowVersion version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
@@ -302,8 +310,8 @@ class MetricsAggregatorClientTest {
         String dataFilePath = ResourceHelpers.resourceFilePath("miniwdl-validation-workflow-names.txt");
 
         // Submit validation data using a data file that contains workflow names of workflows that were successfully validated with miniwdl on DNAstack
-        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--data", dataFilePath,
-            "--successful", "--platform", platform.toString()});
+        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--validatorVersion", validatorVersion, "--data", dataFilePath,
+            "--successful", "--platform", platform.toString(), "--dateExecuted", dateExecuted});
         List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(id, versionId);
         assertEquals(1, metricsDataList.size());
         MetricsData metricsData = metricsDataList.get(0);
@@ -319,8 +327,8 @@ class MetricsAggregatorClientTest {
         LocalStackTestUtilities.deleteBucketContents(s3Client, BUCKET_NAME); // Clear bucket contents to start from scratch
 
         // Submit validation data using a data file that contains workflow names of workflows that failed validation with miniwdl on DNAstack
-        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--data", dataFilePath,
-                "--platform", platform.toString()});
+        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--validatorVersion", validatorVersion, "--data", dataFilePath,
+                "--platform", platform.toString(), "--dateExecuted", dateExecuted});
         metricsDataList = metricsDataS3Client.getMetricsData(id, versionId);
         assertEquals(1, metricsDataList.size());
         metricsData = metricsDataList.get(0);
@@ -335,8 +343,11 @@ class MetricsAggregatorClientTest {
     }
 
     @Test
-    void testClientErrors() throws Exception {
-        int exitCode = catchSystemExit(() -> MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", "thisdoesntexist"}));
+    void testSubmitValidationDataErrors() throws Exception {
+        final String dataFilePath = ResourceHelpers.resourceFilePath("miniwdl-validation-workflow-names.txt");
+        // Verify that providing a date that is not in ISO 8601 UTC date format fails
+        int exitCode = catchSystemExit(() -> MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", MINIWDL.toString(), "--validatorVersion", "1.0", "--data", dataFilePath,
+                "--successful", "--platform", DNA_STACK.toString(), "--dateExecuted", "January 1, 2023"}));
         assertEquals(MetricsAggregatorClient.FAILURE_EXIT_CODE, exitCode);
     }
 }

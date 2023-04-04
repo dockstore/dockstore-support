@@ -49,6 +49,9 @@ public class CommandLineArgs {
         @Parameter(names = {"-v", "--validator"}, description = "The validator tool used to validate the workflows", required = true)
         private ValidatorToolEnum validator;
 
+        @Parameter(names = {"-vv", "--validatorVersion"}, description = "The version of the validator tool used to validate the workflows", required = true)
+        private String validatorVersion;
+
         @Parameter(names = {"-s", "--successful"}, description = "Boolean indicating if the workflows in the data file were validated successfully")
         private boolean isSuccessful = false;
 
@@ -58,12 +61,19 @@ public class CommandLineArgs {
         @Parameter(names = {"-p", "--platform"}, description = "The platform that the workflow was validated on", required = true)
         private Partner platform;
 
+        @Parameter(names = {"-de", "--dateExecuted"}, description = "The date that the validator tool was executed on the workflows in ISO 8601 UTC date format", required = true)
+        private String dateExecuted;
+
         public File getConfig() {
             return config;
         }
 
         public ValidatorToolEnum getValidator() {
             return validator;
+        }
+
+        public String getValidatorVersion() {
+            return validatorVersion;
         }
 
         public boolean isSuccessful() {
@@ -76,6 +86,10 @@ public class CommandLineArgs {
 
         public Partner getPlatform() {
             return platform;
+        }
+
+        public String getDateExecuted() {
+            return dateExecuted;
         }
     }
 }
