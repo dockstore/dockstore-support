@@ -65,6 +65,7 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+import static java.lang.Math.min;
 import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.math.NumberUtils.max;
 import static org.apache.commons.lang3.time.DurationFormatUtils.formatDuration;
@@ -479,9 +480,12 @@ public class WorkflowRunner {
         GetMetricStatisticsResponse response = cloudWatchClient.getMetricStatistics(request);
         Double sumOfDataPoints = 0D;
         Double maxDataPoint = 0D;
+        Double minDataPoint = 0D;
+        final int totalDataPoints = response.datapoints().size();
         for (Datapoint datapoint: response.datapoints()) {
             sumOfDataPoints += datapoint.average();
             maxDataPoint = max(maxDataPoint, datapoint.average());
+            minDataPoint = min(minDataPoint, datapoint.average());
             // datapoint.average() is not actually obtaining the average. This is because the ECS container is only
             // collecting metrics every minute, and we have asked for a minute by minute metric breakdown.
             // So, we are getting the only statistic collected for each minute.
@@ -489,6 +493,8 @@ public class WorkflowRunner {
         Double averageOfDataPoints = sumOfDataPoints / response.datapoints().size();
         runMetrics.putAdditionalPropertiesItem(metricName + "_AVERAGE", averageOfDataPoints);
         runMetrics.putAdditionalPropertiesItem(metricName + "_MAX", maxDataPoint);
+        runMetrics.putAdditionalPropertiesItem(metricName + "_MIN", minDataPoint);
+        runMetrics.putAdditionalPropertiesItem(metricName + "_NUMBER_OF_DATAPOINTS", totalDataPoints);
 
     }
 
