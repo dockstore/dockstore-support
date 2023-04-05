@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -213,6 +214,10 @@ public final class AggregationHelper {
                         .failedValidationVersions(failedValidationVersions)
                         .numberOfRuns(validatorToolExecutions.size())
                         .passingRate(getPassingRate(validatorToolExecutions));
+
+                if (!latestValidation.get().isIsValid() && StringUtils.isNotBlank(latestValidation.get().getErrorMessage())) {
+                    validationInfo.mostRecentErrorMessage(latestValidation.get().getErrorMessage());
+                }
 
                 validatorToolToValidationInfo.put(validatorTool.toString(), validationInfo);
             }

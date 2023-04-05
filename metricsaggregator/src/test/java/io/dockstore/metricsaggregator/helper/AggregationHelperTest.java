@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AggregationHelperTest {
@@ -124,6 +125,7 @@ class AggregationHelperTest {
         assertTrue(validationInfo.isMostRecentIsValid());
         assertEquals("1.0", validationInfo.getMostRecentVersion());
         assertEquals(List.of("1.0"), validationInfo.getSuccessfulValidationVersions());
+        assertNull(validationInfo.getMostRecentErrorMessage());
         assertTrue(validationInfo.getFailedValidationVersions().isEmpty());
         assertEquals(100, validationInfo.getPassingRate());
         assertEquals(1, validationInfo.getNumberOfRuns());
@@ -133,12 +135,14 @@ class AggregationHelperTest {
                 .validatorTool(validatorTool)
                 .validatorToolVersion("2.0")
                 .isValid(false)
-                .dateExecuted(Instant.now().toString()));
+                .dateExecuted(Instant.now().toString())
+                .errorMessage("This is an error message"));
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(executions);
         assertTrue(validationStatusMetric.isPresent());
         validationInfo = validationStatusMetric.get().getValidatorToolToIsValid().get(validatorTool.toString());
         assertFalse(validationInfo.isMostRecentIsValid());
         assertEquals("2.0", validationInfo.getMostRecentVersion());
+        assertEquals("This is an error message", validationInfo.getMostRecentErrorMessage());
         assertEquals(List.of("1.0"), validationInfo.getSuccessfulValidationVersions());
         assertEquals(List.of("2.0"), validationInfo.getFailedValidationVersions());
         assertEquals(50, validationInfo.getPassingRate());
@@ -155,6 +159,7 @@ class AggregationHelperTest {
         validationInfo = validationStatusMetric.get().getValidatorToolToIsValid().get(validatorTool.toString());
         assertTrue(validationInfo.isMostRecentIsValid(), "Should be true because the latest validation is valid");
         assertEquals("1.0", validationInfo.getMostRecentVersion());
+        assertNull(validationInfo.getMostRecentErrorMessage());
         assertEquals(List.of("1.0"), validationInfo.getSuccessfulValidationVersions());
         assertEquals(List.of("2.0"), validationInfo.getFailedValidationVersions());
         assertEquals(66.66666666666666, validationInfo.getPassingRate());

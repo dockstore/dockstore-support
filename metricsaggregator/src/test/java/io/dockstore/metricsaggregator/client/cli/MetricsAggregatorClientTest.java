@@ -306,7 +306,7 @@ class MetricsAggregatorClientTest {
 
         String id = "#workflow/" + workflow.getFullWorkflowPath();
         String versionId = version.getName();
-        String successfulDataFilePath = ResourceHelpers.resourceFilePath("miniwdl-successful-validation-workflow-names.txt");
+        String successfulDataFilePath = ResourceHelpers.resourceFilePath("miniwdl-successful-validation-workflow-names.csv");
 
         // Submit validation data using a data file that contains workflow names of workflows that were successfully validated with miniwdl on DNAstack
         MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--validatorVersion", validatorVersion, "--data", successfulDataFilePath, "--platform", platform.toString()});
@@ -325,7 +325,7 @@ class MetricsAggregatorClientTest {
         LocalStackTestUtilities.deleteBucketContents(s3Client, BUCKET_NAME); // Clear bucket contents to start from scratch
 
         // Submit validation data using a data file that contains workflow names of workflows that failed validation with miniwdl on DNAstack
-        String failedDataFilePath = ResourceHelpers.resourceFilePath("miniwdl-failed-validation-workflow-names.txt");
+        String failedDataFilePath = ResourceHelpers.resourceFilePath("miniwdl-failed-validation-workflow-names.csv");
         MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--validatorVersion", validatorVersion, "--data", failedDataFilePath,
                 "--platform", platform.toString()});
         metricsDataList = metricsDataS3Client.getMetricsData(id, versionId);

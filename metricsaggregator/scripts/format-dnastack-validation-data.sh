@@ -13,7 +13,7 @@ DELIMITER=','
 IS_VALID=true # DNAstack provided a file with workflow names that validated successfully with miniwdl
 
 DATE=$(date +%Y-%m-%dT%H-%M-%S%z)
-FORMATTED_DATA_FILE=formattedData_"${DATE}".txt
+FORMATTED_DATA_FILE=formattedData_"${DATE}".csv
 echo "trsId,versionName,isValid,dateExecuted" > "${FORMATTED_DATA_FILE}"
 
 while read -r LINE
