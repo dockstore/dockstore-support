@@ -85,7 +85,7 @@ import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
  */
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
-    private static final int WAIT_TIME = 10;
+    private static final int WAIT_TIME = 15;
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4Ghv20Api ga4Ghv20Api;
@@ -169,7 +169,8 @@ public class Client {
                     if (commandRunWorkflows.help) {
                         printJCommanderHelp(jc, "autotool", "run-workflows");
                     } else {
-                        client.runToolTesterOnWorkflows(commandRunWorkflows.configWDL, commandRunWorkflows.configCWL);
+                        client.runToolTesterOnWorkflows(commandRunWorkflows.configWDL, commandRunWorkflows.configCWL,
+                                commandRunWorkflows.clusterNameWDL, commandRunWorkflows.clusterNameCWL);
 
 
                     }
@@ -323,11 +324,11 @@ public class Client {
         defaultApiClient.setBasePath(this.tooltesterConfig.getServerUrl());
         setWorkflowsApi(new WorkflowsApi(defaultApiClient));
     }
-    private void runToolTesterOnWorkflows(String wdlConfigFilePath, String cwlConfigFilePath) throws InterruptedException {
+    private void runToolTesterOnWorkflows(String wdlConfigFilePath, String cwlConfigFilePath, String clusterNameWDL, String clusterNameCWL) throws InterruptedException {
         setUpGa4Ghv20Api();
         setUpExtendedGa4GhApi();
         setUpWorkflowApi();
-        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api(), getExtendedGa4GhApi(), getWorkflowsApi(), wdlConfigFilePath, cwlConfigFilePath);
+        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api(), getExtendedGa4GhApi(), getWorkflowsApi(), wdlConfigFilePath, cwlConfigFilePath, clusterNameWDL, clusterNameCWL);
 
         for (WorkflowRunner workflow : workflowsToRun.getWorkflowsToRun()) {
             workflow.runWorkflow();
@@ -348,15 +349,22 @@ public class Client {
             }
         }
 
+       TimeUnit.MINUTES.sleep(WAIT_TIME);
+        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
+            workflow.uploadRunInfo();
+        }
+
         printLine();
+
         for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
             workflow.printRunStatistics();
             printLine();
         }
 
         for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
-            workflow.uploadRunInfo();
+            workflow.deregisterTasks();
         }
+
     }
 
     void setupTesters() {
@@ -692,6 +700,12 @@ public class Client {
 
         @Parameter(names = "--CWL-config-file-path", description = "The config file used to run CWL workflows", required = true)
         private String configCWL;
+
+        @Parameter(names = "--WDL-cluster-name", description = "The Cluster used to run WDL workflows", required = true)
+        private String clusterNameWDL;
+        @Parameter(names = "--CWL-cluster-name", description = "The Cluster used to run CWL workflows", required = true)
+        private String clusterNameCWL;
+
     }
 }
 
