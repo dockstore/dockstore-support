@@ -49,6 +49,8 @@ agc context describe <CONTEXT NAME>
 on `wdlContext` and `cwlContext`, and get the `WESENDPOINT` value from the result and append `ga4gh/wes/v1` to the end of it and place
 the resulting string in the `url` field in `WDLConfigFile` and `CWLConfigFile` respectively.
 
+NOTE: All contexts on AGC are user-scoped, so having a context with the same name as a context created by someone else is not a problem.
+
 Now, you will want to add your AWS profile name to both `wdlContext` and `cwlContext` in the `authorization` field. For example,
 mine is `fhembroff`.
 
