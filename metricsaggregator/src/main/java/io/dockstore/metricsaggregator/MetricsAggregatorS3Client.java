@@ -22,7 +22,9 @@ import static io.dockstore.metricsaggregator.helper.AggregationHelper.getAggrega
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
-import io.dockstore.openapi.client.model.Execution;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
+import io.dockstore.openapi.client.model.RunExecution;
+import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.webservice.core.Partner;
 import io.dockstore.webservice.core.metrics.MetricsData;
 import io.dockstore.webservice.core.metrics.MetricsDataS3Client;
@@ -74,9 +76,9 @@ public class MetricsAggregatorS3Client {
         for (String directory : metricsDirectories) {
             String toolId = S3ClientHelper.getToolId(directory); // Check if we should just give the full key
             String versionName = S3ClientHelper.getVersionName(directory);
-            String platform = S3ClientHelper.getPlatform(directory);
+            String platform = S3ClientHelper.getMetricsPlatform(directory);
 
-            List<Execution> executions;
+            ExecutionsRequestBody executions;
             try {
                 executions = getExecutions(toolId, versionName, platform);
             } catch (Exception e) {
@@ -85,13 +87,13 @@ public class MetricsAggregatorS3Client {
             }
 
             try {
-                getAggregatedMetrics(executions).ifPresent(metrics -> {
+                getAggregatedMetrics(executions.getRunExecutions(), executions.getValidationExecutions()).ifPresent(metrics -> {
                     extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, toolId, versionName);
                     System.out.printf("Aggregated metrics for tool ID %s, version %s, platform %s from S3 directory %s%n", toolId, versionName, platform, directory);
                 });
             } catch (Exception e) {
                 LOG.error("Error aggregating metrics: Could not put all executions from directory {}", directory, e);
-                continue; // Continue aggregating metrics for other directories
+                // Continue aggregating metrics for other directories
             }
         }
     }
@@ -103,16 +105,22 @@ public class MetricsAggregatorS3Client {
      * @param platform
      * @return
      */
-    private List<Execution> getExecutions(String toolId, String versionName, String platform) throws IOException, JsonSyntaxException {
+    private ExecutionsRequestBody getExecutions(String toolId, String versionName, String platform) throws IOException, JsonSyntaxException {
         List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(toolId, versionName, Partner.valueOf(platform));
-        List<Execution> executionsFromAllSubmissions = new ArrayList<>();
+        List<RunExecution> runExecutionsFromAllSubmissions = new ArrayList<>();
+        List<ValidationExecution> validationExecutionsFromAllSubmissions = new ArrayList<>();
+
         for (MetricsData metricsData : metricsDataList) {
             String fileContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(),
                     metricsData.platform(), metricsData.fileName());
-            List<Execution> executionsFromOneSubmission = List.of(GSON.fromJson(fileContent, Execution[].class));
-            executionsFromAllSubmissions.addAll(executionsFromOneSubmission);
+            ExecutionsRequestBody executionsFromOneSubmission = GSON.fromJson(fileContent, ExecutionsRequestBody.class);
+            runExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getRunExecutions());
+            validationExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getValidationExecutions());
         }
-        return executionsFromAllSubmissions;
+
+        return new ExecutionsRequestBody()
+                .runExecutions(runExecutionsFromAllSubmissions)
+                .validationExecutions(validationExecutionsFromAllSubmissions);
     }
 
     /**

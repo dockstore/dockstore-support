@@ -22,7 +22,7 @@ import java.util.Optional;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
 import io.dockstore.metricsaggregator.client.cli.MetricsAggregatorClient;
-import io.dockstore.openapi.client.model.Execution;
+import io.dockstore.openapi.client.model.RunExecution;
 import io.dropwizard.testing.ResourceHelpers;
 import org.apache.commons.configuration2.INIConfiguration;
 
@@ -34,8 +34,8 @@ public final class TestUtilities {
 
     private TestUtilities() {}
 
-    public static Execution createExecution(Execution.ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB) {
-        return new Execution()
+    public static RunExecution createRunExecution(RunExecution.ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB) {
+        return new RunExecution()
                 .executionStatus(executionStatus)
                 .executionTime(executionTime)
                 .cpuRequirements(cpuRequirements)

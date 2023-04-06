@@ -31,7 +31,8 @@ import io.dockstore.openapi.client.api.ContainertagsApi;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.DockstoreTool;
-import io.dockstore.openapi.client.model.Execution;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
+import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.Tag;
 import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowVersion;
@@ -51,8 +52,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import static io.dockstore.client.cli.BaseIT.ADMIN_USERNAME;
 import static io.dockstore.metricsaggregator.common.TestUtilities.BUCKET_NAME;
 import static io.dockstore.metricsaggregator.common.TestUtilities.ENDPOINT_OVERRIDE;
-import static io.dockstore.metricsaggregator.common.TestUtilities.createExecution;
-import static io.dockstore.openapi.client.model.Execution.ExecutionStatusEnum.SUCCESSFUL;
+import static io.dockstore.metricsaggregator.common.TestUtilities.createRunExecution;
+import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -118,10 +119,11 @@ class MetricsAggregatorS3ClientTest {
         final String workflowVersionId = version.getName();
 
         // A successful execution that ran for 5 minutes, requires 2 CPUs and 2 GBs of memory
-        Execution execution = createExecution(SUCCESSFUL, "PT5M", 2, 2.0);
-        extendedGa4GhApi.executionMetricsPost(List.of(execution), platform1, workflowId, workflowVersionId, "");
-        extendedGa4GhApi.executionMetricsPost(List.of(execution), platform2, workflowId, workflowVersionId, "");
-        extendedGa4GhApi.executionMetricsPost(List.of(execution), platform1, toolId, toolVersionId, "");
+        RunExecution execution = createRunExecution(SUCCESSFUL, "PT5M", 2, 2.0);
+        ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(List.of(execution));
+        extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, workflowId, workflowVersionId, "");
+        extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform2, workflowId, workflowVersionId, "");
+        extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, toolId, toolVersionId, "");
 
         List<String> directories = metricsAggregatorS3Client.getDirectories();
         assertEquals(3, directories.size());
