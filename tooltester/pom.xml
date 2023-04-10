@@ -40,7 +40,7 @@
         <system-stubs.version>2.0.1</system-stubs.version>
         <jackson.version>2.14.1</jackson.version>
         <aws.version>1.12.387</aws.version>
-        <dockstore.core.version>1.14.0-alpha.9</dockstore.core.version>
+        <dockstore.core.version>1.14.0-alpha.10</dockstore.core.version>
         <maven-surefire.version>3.0.0-M5</maven-surefire.version>
         <maven-failsafe.version>2.22.2</maven-failsafe.version>
     </properties>
@@ -405,6 +405,13 @@
             <artifactId>jcommander</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>1.33</version>
+        </dependency>
+
+
         <!-- For AWS integration START -->
         <dependency>
             <groupId>com.amazonaws</groupId>
@@ -713,6 +720,7 @@
                             <usedDependencies>
                                 <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
                                 <usedDependency>org.slf4j:slf4j-api</usedDependency>
+                                <usedDependency>org.yaml:snakeyaml</usedDependency>
                             </usedDependencies>
                             <ignoredDependencies>
                                 <ignoredDependency>com.fasterxml.jackson.core:jackson-databind</ignoredDependency>
