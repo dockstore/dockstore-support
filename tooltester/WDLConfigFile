@@ -1,6 +1,0 @@
-token = <ENTER DOCKSTORE TOKEN HERE>
-server-url = <ENTER SERVER URL HERE>
-[WES]
-url: <ENTER URL RETRIEVED FROM RUNNING agc context describe HERE>ga4gh/wes/v1
-authorization: <ENTER AWS PROFILE NAME HERE>
-type: aws
