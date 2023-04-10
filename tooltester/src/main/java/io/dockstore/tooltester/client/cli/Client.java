@@ -357,6 +357,8 @@ public class Client {
             workflow.deregisterTasks();
         }
 
+        printLine();
+
         for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
             workflow.printRunStatistics();
             printLine();
