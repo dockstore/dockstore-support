@@ -354,15 +354,13 @@ public class Client {
             workflow.uploadRunInfo();
         }
 
-        printLine();
+        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
+            workflow.deregisterTasks();
+        }
 
         for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
             workflow.printRunStatistics();
             printLine();
-        }
-
-        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
-            workflow.deregisterTasks();
         }
 
     }
