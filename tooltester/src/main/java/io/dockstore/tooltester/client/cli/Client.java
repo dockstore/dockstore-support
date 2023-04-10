@@ -120,7 +120,7 @@ public class Client {
         jc.addCommand("enqueue", commandEnqueue);
         jc.addCommand("file-report", commandFileReport);
         jc.addCommand("sync", commandSync);
-        jc.addCommand("run-workflows", commandRunWorkflows);
+        jc.addCommand("run-workflows-through-wes", commandRunWorkflows);
         try {
             jc.parse(argv);
         } catch (MissingCommandException e) {
@@ -167,9 +167,9 @@ public class Client {
                         client.handleCreateTests(commandSync.tools, commandSync.source);
                     }
                     break;
-                case "run-workflows":
+                case "run-workflows-through-wes":
                     if (commandRunWorkflows.help) {
-                        printJCommanderHelp(jc, "autotool", "run-workflows");
+                        printJCommanderHelp(jc, "autotool", "run-workflows-through-wes");
                     } else {
                         client.runToolTesterOnWorkflows(commandRunWorkflows.configFilePath);
 
@@ -689,7 +689,7 @@ public class Client {
 
     @Parameters(separators = "=", commandDescription = "Runs workflows through the Dockstore CLI and AGC, then both prints and uploads to Dockstore the execution statistics.")
     private static class CommandRunWorkflows {
-        @Parameter(names = "--help", description = "Prints help for run-workflows", help = true)
+        @Parameter(names = "--help", description = "Prints help for run-workflows-through-wes", help = true)
         private boolean help = false;
         @Parameter(names = "--config-file-path", description = "Path to config file (default ./tooltesterConfig.yml")
         private String configFilePath = "tooltesterConfig.yml";
