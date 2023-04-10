@@ -65,6 +65,7 @@ import io.dockstore.tooltester.report.FileReport;
 import io.dockstore.tooltester.runWorkflow.WorkflowList;
 import io.dockstore.tooltester.runWorkflow.WorkflowRunner;
 import io.dockstore.openapi.client.ApiClient;
+import io.dockstore.tooltester.runWorkflow.WorkflowRunnerConfig;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,6 +93,7 @@ public class Client {
     private FileReport fileReport;
     private PipelineTester pipelineTester;
     private TooltesterConfig tooltesterConfig;
+    private WorkflowRunnerConfig workflowRunnerConfig;
     private ExtendedGa4GhApi extendedGa4GhApi;
     private Utilities utilities;
 
@@ -169,8 +171,7 @@ public class Client {
                     if (commandRunWorkflows.help) {
                         printJCommanderHelp(jc, "autotool", "run-workflows");
                     } else {
-                        client.runToolTesterOnWorkflows(commandRunWorkflows.configWDL, commandRunWorkflows.configCWL,
-                                commandRunWorkflows.clusterNameWDL, commandRunWorkflows.clusterNameCWL);
+                        client.runToolTesterOnWorkflows(commandRunWorkflows.configFilePath);
 
 
                     }
@@ -304,31 +305,29 @@ public class Client {
 
 
     private void setUpGa4Ghv20Api() {
-        this.tooltesterConfig = new TooltesterConfig();
         io.dockstore.openapi.client.ApiClient defaultApiClient = io.dockstore.openapi.client.Configuration.getDefaultApiClient();
-        defaultApiClient.setBasePath(this.tooltesterConfig.getServerUrl());
+        defaultApiClient.setBasePath(this.workflowRunnerConfig.getServerUrl());
         setGa4Ghv20Api(new Ga4Ghv20Api(defaultApiClient));
     }
 
     private void setUpExtendedGa4GhApi() {
-        this.tooltesterConfig = new TooltesterConfig();
         io.dockstore.openapi.client.ApiClient defaultApiClient = io.dockstore.openapi.client.Configuration.getDefaultApiClient();
-        defaultApiClient.setBasePath(this.tooltesterConfig.getServerUrl());
-        defaultApiClient.setAccessToken(this.tooltesterConfig.getDockstoreAuthorizationToken());
+        defaultApiClient.setBasePath(this.workflowRunnerConfig.getServerUrl());
+        defaultApiClient.setAccessToken(this.workflowRunnerConfig.getDockstoreToken());
         setExtendedGa4GhApi(new ExtendedGa4GhApi(defaultApiClient));
     }
 
     private void setUpWorkflowApi() {
-        this.tooltesterConfig = new TooltesterConfig();
         ApiClient defaultApiClient = Configuration.getDefaultApiClient();
-        defaultApiClient.setBasePath(this.tooltesterConfig.getServerUrl());
+        defaultApiClient.setBasePath(this.workflowRunnerConfig.getServerUrl());
         setWorkflowsApi(new WorkflowsApi(defaultApiClient));
     }
-    private void runToolTesterOnWorkflows(String wdlConfigFilePath, String cwlConfigFilePath, String clusterNameWDL, String clusterNameCWL) throws InterruptedException {
+    private void runToolTesterOnWorkflows(String pathToConfigFile) throws InterruptedException {
+        this.workflowRunnerConfig = new WorkflowRunnerConfig(pathToConfigFile);
         setUpGa4Ghv20Api();
         setUpExtendedGa4GhApi();
         setUpWorkflowApi();
-        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api(), getExtendedGa4GhApi(), getWorkflowsApi(), wdlConfigFilePath, cwlConfigFilePath, clusterNameWDL, clusterNameCWL);
+        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api(), getExtendedGa4GhApi(), getWorkflowsApi(), this.workflowRunnerConfig);
 
         for (WorkflowRunner workflow : workflowsToRun.getWorkflowsToRun()) {
             workflow.runWorkflow();
@@ -692,17 +691,8 @@ public class Client {
     private static class CommandRunWorkflows {
         @Parameter(names = "--help", description = "Prints help for run-workflows", help = true)
         private boolean help = false;
-
-        @Parameter(names = "--WDL-config-file-path", description = "The config file used to run WDL workflows", required = true)
-        private String configWDL;
-
-        @Parameter(names = "--CWL-config-file-path", description = "The config file used to run CWL workflows", required = true)
-        private String configCWL;
-
-        @Parameter(names = "--WDL-cluster-name", description = "The Cluster used to run WDL workflows", required = true)
-        private String clusterNameWDL;
-        @Parameter(names = "--CWL-cluster-name", description = "The Cluster used to run CWL workflows", required = true)
-        private String clusterNameCWL;
+        @Parameter(names = "--config-file-path", description = "Path to config file (default ./tooltesterConfig.yml")
+        private String configFilePath = "tooltesterConfig.yml";
 
     }
 }
