@@ -17,7 +17,7 @@ The purpose of the `run-workflows-through-wes` command, is to be able to run (in
 - Determine how long it takes for a workflow to reach its end state.
 - Gather metrics such as CPU usage of the workflow during its run.
 
-All of the above information is then posted to an `S3` container via the [RunExecution class](https://github.com/dockstore/dockstore/blob/a5e7f12b8768ee57f9ce9401d4912e2bd3ec9889/dockstore-webservice/src/main/java/io/dockstore/webservice/core/metrics/RunExecution.java#L37).
+All of the above information is then posted to an `S3` container via the [RunExecution class](https://github.com/dockstore/dockstore/blob/develop/dockstore-webservice/src/main/java/io/dockstore/webservice/core/metrics/RunExecution.java).
 
 ## What is Required to run `run-workflows-through-wes`
 To run the `run-workflows-through-wes` we have to set a few things up first. This can either be done manually or with the `setUpTooltester.sh` script.
@@ -131,10 +131,10 @@ CWL-ECS-CLUSTER: BatchTaskBatchComputeEnv-1111111111111111_Batch_11111111-1111-1
 </details>
 
 ### Workflows
-In order to run this command, you of course need workflows to run it on. You can add workflows for the `run-workflows-through-wes` command to run [here](https://github.com/dockstore/dockstore-support/blob/8775ecadaec8b5fa36d03bc6ba962509ea38ca29/tooltester/src/main/java/io/dockstore/tooltester/runWorkflow/WorkflowList.java#L48-L55).
+In order to run this command, you of course need workflows to run it on. You can add workflows for the `run-workflows-through-wes` command to run [here](https://github.com/dockstore/dockstore-support/blob/develop/tooltester/src/main/java/io/dockstore/tooltester/runWorkflow/WorkflowList.java).
 
-When you add workflows, you can either have them run using the test parameter file found on the appropriate site, such as what is done [here](https://github.com/dockstore/dockstore-support/blob/8775ecadaec8b5fa36d03bc6ba962509ea38ca29/tooltester/src/main/java/io/dockstore/tooltester/runWorkflow/WorkflowList.java#L49). 
-You can also have them run using a test parameter file found locally. Such as what is done [here](https://github.com/dockstore/dockstore-support/blob/8775ecadaec8b5fa36d03bc6ba962509ea38ca29/tooltester/src/main/java/io/dockstore/tooltester/runWorkflow/WorkflowList.java#L48).
+When you add workflows, you can either have them run using the test parameter file found on the appropriate site,
+or you can also have them run using a test parameter file found locally. 
 
 ## Running the `run-workflows-through-wes` command
 To do this you must first compile the project with the following command,
