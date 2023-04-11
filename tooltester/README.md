@@ -90,7 +90,7 @@ mine is `fhembroff`.
 ### Add Server Url and Token to `tooltesterConfig.yml`
 
 In this step you must fill in the `TOKEN` and `SERVER-URL` in `tooltesterConfig.yml`. The `SERVER-URL` will most likely
-either be https://qa.dockstore.org or https://dockstore.org. The token is obtained from whatever dockstore site you chose
+either be https://qa.dockstore.org/api or https://dockstore.org/api. The token is obtained from whatever dockstore site you chose
 for the `SERVER-URL` and must have either admin or curator permissions, as that is what is required by one of the endpoints that we use.
 
 
