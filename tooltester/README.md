@@ -24,7 +24,7 @@ To run the `run-workflows-through-wes` we have to set a few things up first. Thi
 It is **highly recommended** that you use the script.
 
 ## How to use the Setup Script
-First, ensure that your `agc-project.yaml` file is in the same directory as `setUpTooltester.sh`.
+First, ensure that you are in the same directory as `agc-project.yaml` and `setUpTooltester.sh`.
 
 Then, install AGC using the instructions found [here](https://aws.github.io/amazon-genomics-cli/docs/getting-started/installation/).
 
