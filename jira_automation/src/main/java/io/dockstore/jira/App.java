@@ -10,7 +10,7 @@ import org.kohsuke.github.GHIssue;
 import org.kohsuke.github.GHRepository;
 
 /**
- * Generates a JIRA JQL query to find JIRA issues closed by Unito that are open in JIRA.
+ * Generates a JIRA JQL query to find JIRA issues closed by Unito that are open in GitHub.
  *
  * Does not generate a url, because the url will be too long for the browser; you need to input
  * the query in JIRA so it can be POSTed.
