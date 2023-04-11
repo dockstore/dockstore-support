@@ -146,5 +146,5 @@ CONTEXT_NAME="$CWL_CONTEXT_NAME"
 FIELD_TO_MODIFY_IN_YAML="CWL-ECS-CLUSTER"
 Determine_compute_environment_names_and_set_variables
 
-echo "Your config file has been correctly set up, you can now run the tooltester run workflows command"
+echo "Your config file has been correctly set up, you can now run the tooltester run-workflows-through-wes command"
 echo "When you are done with your AGC contexts, please destroy them (see the README for more info)"
