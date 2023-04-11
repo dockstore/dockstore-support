@@ -450,7 +450,7 @@ public class WorkflowRunner {
 
         addSingleMetricToQa("CpuUtilized");
         addSingleMetricToQa("MemoryUtilized");
-        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().addRunExecutionsItem(runMetrics), Partner.AGC.name(), getEntryNameForApi(), version, "generated with tooltester ('run-workflows' command)");
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().addRunExecutionsItem(runMetrics), Partner.AGC.name(), getEntryNameForApi(), version, "generated with tooltester ('run-workflows-through-wes' command)");
     }
 
     private void addSingleMetricToQa(String metricName) {
