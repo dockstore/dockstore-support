@@ -33,8 +33,6 @@ Next, activate your `agc` account (you only need to do this once, so if you have
 agc account activate
 ```
 
-
-Next ensure that your `agc-project.yaml` contains **exactly** two contexts named `wdlContext` and `cwlContext`, which are set up to run `WDL` and `CWL` workflows respectively.
 Next we need to deploy these contexts, this can be done with the command (if you have already deployed these contexts, you can skip this step),
 ```
 agc context deploy wdlContext cwlContext
