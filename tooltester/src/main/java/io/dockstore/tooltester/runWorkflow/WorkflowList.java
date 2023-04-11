@@ -48,9 +48,9 @@ public class WorkflowList {
                         new WorkflowRunner("github.com/gatk-workflows/seq-format-conversion/BAM-to-Unmapped-BAM", "3.0.0", "test-parameter-files/BAM-to-Unmapped-BAM-test-parameter-file.json", extendedGa4GhApi, workflowsApi, workflowRunnerConfig),
                         new WorkflowRunner("github.com/manning-lab/vcfToGds", "main", "test-parameter-files/vcfToGds-test-parameter-file.json", extendedGa4GhApi, workflowsApi, workflowRunnerConfig),
                         new WorkflowRunner("github.com/DataBiosphere/analysis_pipeline_WDL/assocation-aggregate-wdl", "v7.1.1", "test-parameter-files/assocation-aggregate-wdl-test-parameter-file.json", extendedGa4GhApi, workflowsApi, workflowRunnerConfig),
-                        new WorkflowRunner("github.com/fhembroff/wes-testing/nontrivial", "stable-version-for-testing-v1", "test-parameter-files/nontrivial-test-parameter-file.json", extendedGa4GhApi, workflowsApi, workflowRunnerConfig),
-                        new WorkflowRunner("github.com/fhembroff/wes-testing/manyJobs", "stable-version-for-testing-v1", "manyjobs/inputs.tiny.json", ga4Ghv20Api, extendedGa4GhApi, workflowsApi, workflowRunnerConfig),
-                        new WorkflowRunner("github.com/fhembroff/wes-testing/manyJobs", "stable-version-for-testing-v1", "manyjobs/inputs.json", ga4Ghv20Api, extendedGa4GhApi, workflowsApi, workflowRunnerConfig)
+                        new WorkflowRunner("github.com/dockstore-testing/tooltester-wes-testing/nontrivial", "stable-version-for-testing-v2", "test-parameter-files/nontrivial-test-parameter-file.json", extendedGa4GhApi, workflowsApi, workflowRunnerConfig),
+                        new WorkflowRunner("github.com/dockstore-testing/tooltester-wes-testing/manyJobs", "stable-version-for-testing-v2", "manyjobs/inputs.tiny.json", ga4Ghv20Api, extendedGa4GhApi, workflowsApi, workflowRunnerConfig)//,
+                        new WorkflowRunner("github.com/dockstore-testing/tooltester-wes-testing/manyJobs", "stable-version-for-testing-v2", "manyjobs/inputs.json", ga4Ghv20Api, extendedGa4GhApi, workflowsApi, workflowRunnerConfig)
                 );
     }
 
