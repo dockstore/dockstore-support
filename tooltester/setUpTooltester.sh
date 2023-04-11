@@ -66,7 +66,7 @@ fi
 CONTEXT_NAME=""
 
 Determine_compute_environment_names_and_set_variables() {
-  local NUMBER_OF_ENGINES_IN_CONTEXT=$(yq ".contexts.$CONTEXT_NAME.engines | length" "$AGC_CONFIG_FILE")
+  local NUMBER_OF_ENGINES_IN_CONTEXT=$(yq ".contexts.$CONTEXT_NAME.engines | length" "$AGC_CONFIG_FILE" | grep -cv ^$)
   if [[ $NUMBER_OF_ENGINES_IN_CONTEXT -eq 0 ]]
   then
     echo "You do not have any engines listed for $CONTEXT_NAME, you must have exactly one engine for this context"
@@ -90,8 +90,7 @@ Determine_compute_environment_names_and_set_variables() {
   and (.computeResources.tags.\"agc-project\" == \"$PROJECT_NAME\")
   and (.computeResources.tags.\"agc-engine-type\" == \"$ENGINE_TYPE\")) | .computeEnvironmentName")
 
-  local NUMBER_OF_MATCHING_COMPUTE_ENVIRONMENTS=$(echo "$BATCH_COMPUTE_ENVIRONMENT_NAME" | wc -l)
-
+  local NUMBER_OF_MATCHING_COMPUTE_ENVIRONMENTS=$(echo "$BATCH_COMPUTE_ENVIRONMENT_NAME" | grep -cv ^$)
   if [[ $NUMBER_OF_MATCHING_COMPUTE_ENVIRONMENTS -gt 1 ]]
   then
     echo "The script has detected more than one matching compute environment"
@@ -107,7 +106,7 @@ Determine_compute_environment_names_and_set_variables() {
 
   local ECS_CLUSTER_ARN=$(aws ecs list-clusters | jq ".clusterArns[] | select(.|test($BATCH_COMPUTE_ENVIRONMENT_NAME))" | tr -d '"')
 
-  local NUMBER_OF_MATCHING_ECS_ARNS=$(echo "$ECS_CLUSTER_ARN" | wc -l)
+  local NUMBER_OF_MATCHING_ECS_ARNS=$(echo "$ECS_CLUSTER_ARN" | grep -cv ^$)
 
   if [[ $NUMBER_OF_MATCHING_ECS_ARNS -gt 1 ]]
   then
