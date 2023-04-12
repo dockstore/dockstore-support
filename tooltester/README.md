@@ -23,6 +23,48 @@ All of the above information is then posted to an `S3` container via the [RunExe
 To run the `run-workflows-through-wes` we have to set a few things up first. This can either be done manually or with the `setUpTooltester.sh` script.
 It is **highly recommended** that you use the script.
 
+## AWS Permissions Required
+To run the `run-workflows-through-wes` you need the following permissions in addition to the ones listed [here](https://aws.github.io/amazon-genomics-cli/docs/best-practices/iam-permissions/).
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "cloudwatch:DescribeInsightRules",
+                "ecs:UpdateCluster",
+                "cloudwatch:GetDashboard",
+                "ecs:UpdateClusterSettings",
+                "cloudwatch:GetInsightRuleReport",
+                "cloudwatch:GetMetricData",
+                "cloudwatch:GetMetricStatistics",
+                "cloudwatch:ListManagedInsightRules",
+                "cloudwatch:ListMetrics",
+                "cloudwatch:DescribeAnomalyDetectors",
+                "cloudwatch:DescribeAlarmHistory",
+                "cloudwatch:ListMetricStreams",
+                "cloudwatch:DescribeAlarmsForMetric",
+                "cloudwatch:ListDashboards",
+                "cloudwatch:ListTagsForResource",
+                "cloudwatch:DescribeAlarms",
+                "cloudwatch:GetMetricStream",
+                "cloudwatch:GetMetricWidgetImage"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+As well as,
+```
+ECSReadAccess
+AWSCloudShellFullAccess
+AmazonS3ReadOnlyAccess
+```
+
 ## How to use the Setup Script
 First, ensure that you are in the same directory as `agc-project.yaml` and `setUpTooltester.sh`.
 
