@@ -24,10 +24,11 @@ import io.dockstore.common.Utilities;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.api.WorkflowsApi;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.FileWrapper;
+import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowSubClass;
-import io.dockstore.openapi.client.model.Execution;
 import io.dockstore.webservice.core.Partner;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -67,6 +68,7 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.math.NumberUtils.max;
+import static org.apache.commons.lang3.math.NumberUtils.min;
 import static org.apache.commons.lang3.time.DurationFormatUtils.formatDuration;
 
 /**
@@ -75,7 +77,7 @@ import static org.apache.commons.lang3.time.DurationFormatUtils.formatDuration;
 public class WorkflowRunner {
 
     private static final String COMPLETE = "COMPLETE";
-    private static final int MAX_NUMBER_OF_TRIES = 10;
+    private static final int MAX_NUMBER_OF_TRIES = 15;
     private String entry;
     private String version;
     private String runID = null;
@@ -90,7 +92,7 @@ public class WorkflowRunner {
     private String configFilePath;
     private Date workflowStartTime = null;
     private Date workflowEndTime = null;
-    private Execution runMetrics;
+    private RunExecution runMetrics;
     private EcsClient ecsClient;
     private String taskDefinitionFamily = null;
     private String taskDefinitionArn = null;
@@ -109,15 +111,15 @@ public class WorkflowRunner {
      * @param extendedGa4GhApi
      */
     @SuppressWarnings("checkstyle:parameternumber")
-    public WorkflowRunner(String entry, String version, String pathOfTestParameter, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String wdlConfigFilePath, String cwlConfigFilePath, String clusterNameWDL, String clusterNameCWL) {
+    public WorkflowRunner(String entry, String version, String pathOfTestParameter, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, WorkflowRunnerConfig workflowRunnerConfig) {
         this.entry = entry;
         this.version = version;
         this.pathOfTestParameter = pathOfTestParameter;
         this.extendedGa4GhApi = extendedGa4GhApi;
         this.workflowsApi = workflowsApi;
-        this.runMetrics = new Execution();
+        this.runMetrics = new RunExecution();
         this.ecsClient = EcsClient.builder().build();
-        setDescriptorLanguage(wdlConfigFilePath, cwlConfigFilePath, clusterNameWDL, clusterNameCWL);
+        setDescriptorLanguage(workflowRunnerConfig);
     }
 
     /** Construct the WorkflowRunner with a test parameter file found on Dockstore site
@@ -129,8 +131,8 @@ public class WorkflowRunner {
      * @param extendedGa4GhApi
      */
     @SuppressWarnings("checkstyle:parameternumber")
-    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, String wdlConfigFilePath, String cwlConfigFilePath, String clusterNameWDL, String clusterNameCWL)  {
-        this(entry, version, relativePathToTestParameterFile, extendedGa4GhApi, workflowsApi, wdlConfigFilePath, cwlConfigFilePath, clusterNameWDL, clusterNameCWL);
+    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, WorkflowRunnerConfig workflowRunnerConfig)  {
+        this(entry, version, relativePathToTestParameterFile, extendedGa4GhApi, workflowsApi, workflowRunnerConfig);
 
         File testParameterFile = new File("test-parameter-file-" + randomUUID() + ".json");
         testParameterFile.deleteOnExit();
@@ -153,19 +155,19 @@ public class WorkflowRunner {
         }
     }
 
-    private void setDescriptorLanguage(String wdlConfigFilePath, String cwlConfigFilePath, String clusterNameWDL, String clusterNameCWL) {
+    private void setDescriptorLanguage(WorkflowRunnerConfig workflowRunnerConfig) {
         // Get the workflow object associated with the provided entry path
         final Workflow workflow = workflowsApi.getPublishedWorkflowByPath(entry, WorkflowSubClass.BIOWORKFLOW, null, version);
         descriptorType = workflow.getDescriptorType();
         switch (descriptorType) {
             case WDL:
-                configFilePath = wdlConfigFilePath;
-                clusterName = clusterNameWDL;
+                configFilePath = workflowRunnerConfig.getPathToWdlConfigFIle();
+                clusterName = workflowRunnerConfig.getWdlEcsCluster();
                 break;
 
             case CWL:
-                configFilePath = cwlConfigFilePath;
-                clusterName = clusterNameCWL;
+                configFilePath = workflowRunnerConfig.getPathToCwlConfigFile();
+                clusterName = workflowRunnerConfig.getCwlEcsCluster();
                 break;
 
             default:
@@ -392,11 +394,11 @@ public class WorkflowRunner {
         return duration.toString();
     }
 
-    private Execution.ExecutionStatusEnum getExecutionStatus() {
+    private RunExecution.ExecutionStatusEnum getExecutionStatus() {
         if (COMPLETE.equals(state)) {
-            return Execution.ExecutionStatusEnum.SUCCESSFUL;
+            return RunExecution.ExecutionStatusEnum.SUCCESSFUL;
         } else {
-            return Execution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
+            return RunExecution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
         }
     }
 
@@ -439,18 +441,16 @@ public class WorkflowRunner {
     }
 
     public void uploadRunInfo() {
-        List<Execution> executions = new ArrayList<>();
         runMetrics.setExecutionStatus(getExecutionStatus());
 
         if (getTotalWallClockTimeInISO861Standard() != null) {
             runMetrics.setExecutionTime(getTotalWallClockTimeInISO861Standard());
         }
 
-        executions.add(runMetrics);
 
         addSingleMetricToQa("CpuUtilized");
         addSingleMetricToQa("MemoryUtilized");
-        extendedGa4GhApi.executionMetricsPost(executions, Partner.AGC.name(), getEntryNameForApi(), version, "generated with tooltester ('run-workflows' command)");
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().addRunExecutionsItem(runMetrics), Partner.AGC.name(), getEntryNameForApi(), version, "generated with tooltester ('run-workflows-through-wes' command)");
     }
 
     private void addSingleMetricToQa(String metricName) {
@@ -478,17 +478,23 @@ public class WorkflowRunner {
                 .build();
         GetMetricStatisticsResponse response = cloudWatchClient.getMetricStatistics(request);
         Double sumOfDataPoints = 0D;
-        Double maxDataPoint = 0D;
+        Double maxDataPoint = response.datapoints().get(0).average();
+        Double minDataPoint = response.datapoints().get(0).average();
+        final int numberOfDataPoints = response.datapoints().size();
         for (Datapoint datapoint: response.datapoints()) {
             sumOfDataPoints += datapoint.average();
             maxDataPoint = max(maxDataPoint, datapoint.average());
+            minDataPoint = min(minDataPoint, datapoint.average());
             // datapoint.average() is not actually obtaining the average. This is because the ECS container is only
             // collecting metrics every minute, and we have asked for a minute by minute metric breakdown.
             // So, we are getting the only statistic collected for each minute.
         }
-        Double averageOfDataPoints = sumOfDataPoints / response.datapoints().size();
+        final Double averageOfDataPoints = sumOfDataPoints / numberOfDataPoints;
+
         runMetrics.putAdditionalPropertiesItem(metricName + "_AVERAGE", averageOfDataPoints);
         runMetrics.putAdditionalPropertiesItem(metricName + "_MAX", maxDataPoint);
+        runMetrics.putAdditionalPropertiesItem(metricName + "_MIN", minDataPoint);
+        runMetrics.putAdditionalPropertiesItem(metricName + "_NUMBER_OF_DATAPOINTS", numberOfDataPoints);
 
     }
 

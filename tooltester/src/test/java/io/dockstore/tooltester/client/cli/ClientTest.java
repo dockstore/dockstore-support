@@ -295,7 +295,7 @@ public class ClientTest {
      */
     @Test
     public void runWorkflowHelp() throws InterruptedException {
-        String[] argv = { "run-workflows", "--help" };
+        String[] argv = { "run-workflows-through-wes", "--help" };
         main(argv);
         assertTrue(systemOut.getText().contains("Runs workflows through the Dockstore CLI and AGC, then both prints and uploads to Dockstore the execution statistics."));
     }
