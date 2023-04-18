@@ -761,9 +761,9 @@ public class Client {
 
     }
 
-    @Parameters(separators = "=", commandDescription = "Allows you to upload run results to different APIs")
+    @Parameters(separators = "=", commandDescription = "Uploads run results from the `run-workflows-through-wes` command to a specified dockstore site.")
     private static class CommandUploadRunResults {
-        @Parameter(names = "--help", description = "Prints help for run-workflows-through-wes", help = true)
+        @Parameter(names = "--help", description = "Prints help for upload-results", help = true)
         private boolean help = false;
         @Parameter(names = "--config-file-path", description = "Path to config file")
         private String configFilePath = "tooltesterConfig.yml";
