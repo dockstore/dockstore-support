@@ -220,4 +220,4 @@ You must also have a config file set up, to create this config file you can foll
 You must also provide the name of the directory where the result files are located, by default the result files are saved to the directory `results` (all file paths must be relative).
 It should be noted that all result files located in the specified directory will be uploaded.
 
-You must also provide the url of the API that you want to upload the results, this will most likely be https://qa.dockstore.org/api or https://dockstore.org/api.
+You must also provide the url of the API that you want to upload the results to, this will most likely be https://qa.dockstore.org/api or https://dockstore.org/api.
