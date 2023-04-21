@@ -452,7 +452,7 @@ public class WorkflowRunner {
         try {
             extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().addRunExecutionsItem(runExecution), partnerName, entryNameForApi, version, message);
         } catch (Exception e) {
-            LOGGER.error("Error uploading the metrics for {0} to {1} through extendedGa4GhApi.executionMetricsPost", entryNameForApi, extendedGa4GhApi.getApiClient().getBasePath(), e);
+            LOGGER.error("Error uploading the metrics for {} to {} through extendedGa4GhApi.executionMetricsPost", entryNameForApi, extendedGa4GhApi.getApiClient().getBasePath(), e);
         }
     }
 
@@ -464,7 +464,7 @@ public class WorkflowRunner {
         try {
             runFile.createNewFile();
         } catch (IOException e) {
-            LOGGER.error("Error creating directory {0}", runFile.getParentFile(), e);
+            LOGGER.error("Error creating directory {}", runFile.getParentFile(), e);
         }
 
         try (
@@ -472,7 +472,7 @@ public class WorkflowRunner {
         ) {
             writer.write(GSON.toJson(runMetrics));
         } catch (IOException e) {
-            LOGGER.error("There as an error writing to {0}", filePath, e);
+            LOGGER.error("There as an error writing to {}", filePath, e);
         }
     }
 
