@@ -217,7 +217,6 @@ To run this command, you must first have run the `run-workflows-through-wes` com
 You must also have a config file set up, to create this config file you can follow the process specified in the instructions for running the command 
 `run-workflows-through-wes`.
 
-You must also provide the name of the directory where the result files are located, by default the result files are saved to the directory `results` (all file paths must be relative).
-It should be noted that all result files located in the specified directory will be uploaded.
+You may also provide the name of the directory where the result files are located, otherwise by default it will be the directory `results`.
 
 You must also provide the url of the API that you want to upload the results to, this will most likely be https://qa.dockstore.org/api or https://dockstore.org/api.
