@@ -365,7 +365,7 @@ public class Client {
             try {
                 fileContent = Files.readString(path);
             } catch (IOException e) {
-                exceptionMessage(e, "There was an error reading " + path + " to a string", IO_ERROR);
+                LOG.error("There was an error reading {0} to a string", path, e);
             }
 
             final RunExecution runMetrics = gson.fromJson(fileContent, RunExecution.class);
