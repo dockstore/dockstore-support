@@ -32,7 +32,8 @@ import io.dockstore.openapi.client.model.WorkflowSubClass;
 import io.dockstore.webservice.core.Partner;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.jline.utils.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.cloudwatch.model.Datapoint;
 import software.amazon.awssdk.services.cloudwatch.model.Dimension;
@@ -52,7 +53,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -65,10 +65,10 @@ import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static io.dockstore.webservice.core.metrics.MetricsDataS3Client.generateKey;
+import static io.dockstore.webservice.helpers.S3ClientHelper.createFileName;
 import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.math.NumberUtils.max;
 import static org.apache.commons.lang3.math.NumberUtils.min;
@@ -101,6 +101,8 @@ public class WorkflowRunner {
     private String taskDefinitionArn = null;
     private String clusterName;
     private String resultDirectory;
+    private static final Gson GSON = new Gson();
+    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowRunner.class);
 
 
     private final List<String> inProgressStates = Arrays.asList("RUNNING", "INITIALIZING");
@@ -232,7 +234,7 @@ public class WorkflowRunner {
         ImmutablePair<String, String> result = Utilities.executeCommand("dockstore workflow wes logs --id " + runID
                 + " --config " + configFilePath + " --script");
         String logJson = result.getLeft();
-        log = new Gson().fromJson(logJson, JsonObject.class);
+        log = GSON.fromJson(logJson, JsonObject.class);
         state = log.get("state").getAsString();
         if (inProgressStates.contains(state)) {
             return false;
@@ -303,7 +305,7 @@ public class WorkflowRunner {
             setTimeForEachTask();
         }
         if (workflowStartTime != null || workflowEndTime != null) {
-            Log.debug("workflowStartTime or workflowEndTime has already been set");
+            LOGGER.debug("workflowStartTime or workflowEndTime has already been set");
             return;
         }
         Date timeFirstTaskStarted = null;
@@ -425,7 +427,7 @@ public class WorkflowRunner {
             if (!ecsTasks.isEmpty()) {
                 String ecsTaskArn = ecsTasks.get(0);
                 if (ecsTasks.size() != 1) {
-                    Log.warn("More than one ECS task has been created, assuming the first one is the ECS task"
+                    LOGGER.warn("More than one ECS task has been created, assuming the first one is the ECS task"
                             + " for this workflow, the following were discovered: " + System.lineSeparator()
                             + ecsTasks);
                 }
@@ -445,28 +447,32 @@ public class WorkflowRunner {
         }
     }
 
-    private void uploadRunInfo() {
-        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().addRunExecutionsItem(runMetrics), Partner.AGC.name(), getEntryNameForApi(), version, "generated with tooltester ('run-workflows-through-wes' command)");
+    public static void uploadRunInfo(ExtendedGa4GhApi extendedGa4GhApi, RunExecution runExecution, String partnerName,
+                                     String entryNameForApi, String version, String message) {
+        try {
+            extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().addRunExecutionsItem(runExecution), partnerName, entryNameForApi, version, message);
+        } catch (Exception e) {
+            LOGGER.error("Error uploading the metrics for {0} to {1} through extendedGa4GhApi.executionMetricsPost", entryNameForApi, extendedGa4GhApi.getApiClient().getBasePath(), e);
+        }
     }
 
     private void saveRunInfo() {
-        String fileName = Instant.now().toEpochMilli() + ".json";
+        final String fileName = createFileName();
         final String filePath = resultDirectory + "/" + generateKey(getEntryNameForApi(), version, Partner.AGC.name(), fileName);
         File runFile = new File(filePath);
-        Gson gson = new Gson();
         runFile.getParentFile().mkdirs();
         try {
             runFile.createNewFile();
         } catch (IOException e) {
-            exceptionMessage(e, "Error creating file", IO_ERROR);
+            LOGGER.error("Error creating directory {0}", runFile.getParentFile(), e);
         }
 
         try (
                 BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))
         ) {
-            writer.write(gson.toJson(runMetrics));
+            writer.write(GSON.toJson(runMetrics));
         } catch (IOException e) {
-            exceptionMessage(e, "There as an error writing to " + filePath, COMMAND_ERROR);
+            LOGGER.error("There as an error writing to {0}", filePath, e);
         }
     }
 
@@ -479,7 +485,7 @@ public class WorkflowRunner {
         addDataFromSingleMetric("CpuUtilized");
         addDataFromSingleMetric("MemoryUtilized");
 
-        uploadRunInfo();
+        uploadRunInfo(extendedGa4GhApi, runMetrics, Partner.AGC.name(), getEntryNameForApi(), version, "generated with tooltester ('run-workflows-through-wes' command)");
         saveRunInfo();
     }
 

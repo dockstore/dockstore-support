@@ -48,7 +48,6 @@ import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.DockstoreTool;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.SourceFile;
 import io.dockstore.openapi.client.model.Tag;
@@ -85,6 +84,7 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
 import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
+import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.uploadRunInfo;
 import static io.dockstore.webservice.helpers.S3ClientHelper.getMetricsPlatform;
 import static io.dockstore.webservice.helpers.S3ClientHelper.getToolId;
 import static io.dockstore.webservice.helpers.S3ClientHelper.getVersionName;
@@ -377,7 +377,8 @@ public class Client {
             final String metricsPlatform = getMetricsPlatform(fileKey);
 
             LOG.info("Uploading run metrics for: " + fileKey);
-            extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().addRunExecutionsItem(runMetrics), metricsPlatform, toolID, versionName, "metrics from a previous run of the tooltester 'run-workflows-through-wes' command");
+            uploadRunInfo(extendedGa4GhApi, runMetrics, metricsPlatform, toolID, versionName,
+                    "metrics from a previous run of the tooltester 'run-workflows-through-wes' command");
         }
 
     }
