@@ -37,6 +37,7 @@ import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.openapi.client.model.ValidationInfo;
+import io.dockstore.openapi.client.model.ValidationVersionInfo;
 import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowVersion;
 import io.dockstore.webservice.DockstoreWebserviceApplication;
@@ -137,9 +138,10 @@ class MetricsAggregatorClientTest {
         // A successful run execution that ran for 5 minutes, requires 2 CPUs and 2 GBs of memory
         List<RunExecution> runExecutions = List.of(createRunExecution(SUCCESSFUL, "PT5M", 2, 2.0));
         // A successful miniwdl validation
+        final String validatorToolVersion = "1.0";
         List<ValidationExecution> validationExecutions = List.of(new ValidationExecution()
                 .validatorTool(MINIWDL)
-                .validatorToolVersion("1.0")
+                .validatorToolVersion(validatorToolVersion)
                 .isValid(true)
                 .dateExecuted(Instant.now().toString()));
 
@@ -184,13 +186,15 @@ class MetricsAggregatorClientTest {
         assertEquals(300, platform1Metrics.getExecutionTime().getAverage());
         assertEquals(ExecutionTimeStatisticMetric.UNIT, platform1Metrics.getExecutionTime().getUnit());
 
-        assertEquals(1, platform1Metrics.getValidationStatus().getValidatorToolToIsValid().size());
-        ValidationInfo validationInfo = platform1Metrics.getValidationStatus().getValidatorToolToIsValid().get(MINIWDL.toString());
+        assertEquals(1, platform1Metrics.getValidationStatus().getValidatorToolToValidationInfo().size());
+        ValidationInfo validationInfo = platform1Metrics.getValidationStatus().getValidatorToolToValidationInfo().get(MINIWDL.toString());
         assertNotNull(validationInfo);
-        assertTrue(validationInfo.isMostRecentIsValid(), "miniwdl validation should be valid");
-        assertEquals("1.0", validationInfo.getMostRecentVersion());
-        assertEquals(List.of("1.0"), validationInfo.getSuccessfulValidationVersions());
-        assertTrue(validationInfo.getFailedValidationVersions().isEmpty());
+        assertNotNull(validationInfo.getMostRecentVersionName());
+        ValidationVersionInfo mostRecentValidationVersionInfo = validationInfo.getValidationVersions().stream().filter(validationVersion -> validatorToolVersion.equals(validationVersion.getName())).findFirst().get();
+        assertTrue(mostRecentValidationVersionInfo.isIsValid(), "miniwdl validation should be valid");
+        assertEquals(validatorToolVersion, mostRecentValidationVersionInfo.getName());
+        assertEquals(100d, mostRecentValidationVersionInfo.getPassingRate());
+        assertEquals(1, mostRecentValidationVersionInfo.getNumberOfRuns());
         assertEquals(100d, validationInfo.getPassingRate());
         assertEquals(1, validationInfo.getNumberOfRuns());
 
@@ -223,13 +227,15 @@ class MetricsAggregatorClientTest {
         assertEquals(300, platform2Metrics.getExecutionTime().getAverage());
         assertEquals(ExecutionTimeStatisticMetric.UNIT, platform2Metrics.getExecutionTime().getUnit());
 
-        assertEquals(1, platform2Metrics.getValidationStatus().getValidatorToolToIsValid().size());
-        validationInfo = platform2Metrics.getValidationStatus().getValidatorToolToIsValid().get(MINIWDL.toString());
+        assertEquals(1, platform2Metrics.getValidationStatus().getValidatorToolToValidationInfo().size());
+        validationInfo = platform2Metrics.getValidationStatus().getValidatorToolToValidationInfo().get(MINIWDL.toString());
         assertNotNull(validationInfo);
-        assertTrue(validationInfo.isMostRecentIsValid(), "miniwdl validation should be valid");
-        assertEquals("1.0", validationInfo.getMostRecentVersion());
-        assertEquals(List.of("1.0"), validationInfo.getSuccessfulValidationVersions());
-        assertTrue(validationInfo.getFailedValidationVersions().isEmpty());
+        assertNotNull(validationInfo.getMostRecentVersionName());
+        mostRecentValidationVersionInfo = validationInfo.getValidationVersions().stream().filter(validationVersion -> validatorToolVersion.equals(validationVersion.getName())).findFirst().get();
+        assertTrue(mostRecentValidationVersionInfo.isIsValid(), "miniwdl validation should be valid");
+        assertEquals(validatorToolVersion, mostRecentValidationVersionInfo.getName());
+        assertEquals(100d, mostRecentValidationVersionInfo.getPassingRate());
+        assertEquals(1, mostRecentValidationVersionInfo.getNumberOfRuns());
         assertEquals(100d, validationInfo.getPassingRate());
         assertEquals(1, validationInfo.getNumberOfRuns());
 
@@ -275,13 +281,15 @@ class MetricsAggregatorClientTest {
         assertEquals(150.5, platform1Metrics.getExecutionTime().getAverage());
         assertEquals(ExecutionTimeStatisticMetric.UNIT, platform1Metrics.getExecutionTime().getUnit());
 
-        assertEquals(1, platform1Metrics.getValidationStatus().getValidatorToolToIsValid().size());
-        validationInfo = platform1Metrics.getValidationStatus().getValidatorToolToIsValid().get(MINIWDL.toString());
+        assertEquals(1, platform1Metrics.getValidationStatus().getValidatorToolToValidationInfo().size());
+        validationInfo = platform1Metrics.getValidationStatus().getValidatorToolToValidationInfo().get(MINIWDL.toString());
         assertNotNull(validationInfo);
-        assertFalse(validationInfo.isMostRecentIsValid(), "miniwdl validation should be invalid");
-        assertEquals("1.0", validationInfo.getMostRecentVersion());
-        assertEquals(List.of("1.0"), validationInfo.getFailedValidationVersions());
-        assertTrue(validationInfo.getSuccessfulValidationVersions().isEmpty());
+        assertNotNull(validationInfo.getMostRecentVersionName());
+        mostRecentValidationVersionInfo = validationInfo.getValidationVersions().stream().filter(validationVersion -> validatorToolVersion.equals(validationVersion.getName())).findFirst().get();
+        assertFalse(mostRecentValidationVersionInfo.isIsValid(), "miniwdl validation should be invalid");
+        assertEquals(validatorToolVersion, mostRecentValidationVersionInfo.getName());
+        assertEquals(50d, mostRecentValidationVersionInfo.getPassingRate());
+        assertEquals(2, mostRecentValidationVersionInfo.getNumberOfRuns());
         assertEquals(50d, validationInfo.getPassingRate());
         assertEquals(2, validationInfo.getNumberOfRuns());
     }

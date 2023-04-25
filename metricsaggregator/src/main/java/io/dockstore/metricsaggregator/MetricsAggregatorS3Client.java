@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
+import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.webservice.core.Partner;
@@ -74,20 +75,20 @@ public class MetricsAggregatorS3Client {
 
         // Each directory contains metrics for a specific tool version and platform
         for (String directory : metricsDirectories) {
-            String toolId = S3ClientHelper.getToolId(directory); // Check if we should just give the full key
+            String toolId = S3ClientHelper.getToolId(directory);
             String versionName = S3ClientHelper.getVersionName(directory);
             String platform = S3ClientHelper.getMetricsPlatform(directory);
 
-            ExecutionsRequestBody executions;
+            ExecutionsRequestBody allSubmissions;
             try {
-                executions = getExecutions(toolId, versionName, platform);
+                allSubmissions = getExecutions(toolId, versionName, platform);
             } catch (Exception e) {
                 LOG.error("Error aggregating metrics: Could not get all executions from directory {}", directory, e);
                 continue; // Continue aggregating metrics for other directories
             }
 
             try {
-                getAggregatedMetrics(executions.getRunExecutions(), executions.getValidationExecutions()).ifPresent(metrics -> {
+                getAggregatedMetrics(allSubmissions).ifPresent(metrics -> {
                     extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, toolId, versionName);
                     System.out.printf("Aggregated metrics for tool ID %s, version %s, platform %s from S3 directory %s%n", toolId, versionName, platform, directory);
                 });
@@ -109,6 +110,7 @@ public class MetricsAggregatorS3Client {
         List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(toolId, versionName, Partner.valueOf(platform));
         List<RunExecution> runExecutionsFromAllSubmissions = new ArrayList<>();
         List<ValidationExecution> validationExecutionsFromAllSubmissions = new ArrayList<>();
+        List<Metrics> aggregatedExecutionsFromAllSubmissions = new ArrayList<>();
 
         for (MetricsData metricsData : metricsDataList) {
             String fileContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(),
@@ -116,11 +118,13 @@ public class MetricsAggregatorS3Client {
             ExecutionsRequestBody executionsFromOneSubmission = GSON.fromJson(fileContent, ExecutionsRequestBody.class);
             runExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getRunExecutions());
             validationExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getValidationExecutions());
+            aggregatedExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getAggregatedExecutions());
         }
 
         return new ExecutionsRequestBody()
                 .runExecutions(runExecutionsFromAllSubmissions)
-                .validationExecutions(validationExecutionsFromAllSubmissions);
+                .validationExecutions(validationExecutionsFromAllSubmissions)
+                .aggregatedExecutions(aggregatedExecutionsFromAllSubmissions);
     }
 
     /**
