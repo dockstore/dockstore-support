@@ -465,6 +465,7 @@ public class WorkflowRunner {
             runFile.createNewFile();
         } catch (IOException e) {
             LOGGER.error("Error creating directory {}", runFile.getParentFile(), e);
+            return;
         }
 
         try (
