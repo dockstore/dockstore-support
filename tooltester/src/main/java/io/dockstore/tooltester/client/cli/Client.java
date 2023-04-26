@@ -96,6 +96,8 @@ import static io.dockstore.webservice.helpers.S3ClientHelper.getVersionName;
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
     private static final int WAIT_TIME = 15;
+    private static final String DEFAULT_SAVE_DIRECTORY = "results";
+    private static final String RESULT_DIRECTORY_FLAG = "--results-dir";
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4Ghv20Api ga4Ghv20Api;
@@ -757,8 +759,8 @@ public class Client {
         @Parameter(names = "--config-file-path", description = "Path to config file")
         private String configFilePath = "tooltesterConfig.yml";
 
-        @Parameter(names = "--directory-to-save-results-to", description = "Name of the directory you want to save the run results to")
-        private String resultDirectory = "results";
+        @Parameter(names = RESULT_DIRECTORY_FLAG, description = "Name of the directory you want to save the run results to")
+        private String resultDirectory = DEFAULT_SAVE_DIRECTORY;
 
     }
 
@@ -772,8 +774,8 @@ public class Client {
         @Parameter(names = "--url-to-upload-to", description = "Where the workflow results are being uploaded to (ex. https://qa.dockstore.org/api)", required = true)
         private String url;
 
-        @Parameter(names = "--location-of-result-files", description = "Location of result files")
-        private String location = "results";
+        @Parameter(names = RESULT_DIRECTORY_FLAG, description = "Location of result files")
+        private String location = DEFAULT_SAVE_DIRECTORY;
 
     }
 }
