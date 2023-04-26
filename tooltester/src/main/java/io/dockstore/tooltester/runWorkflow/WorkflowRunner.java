@@ -101,6 +101,7 @@ public class WorkflowRunner {
     private String taskDefinitionArn = null;
     private String clusterName;
     private String resultDirectory;
+    private ExecutionsRequestBody runMetricsExecutionRequestBody = null;
     public static final Gson GSON = new Gson();
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowRunner.class);
 
@@ -447,10 +448,10 @@ public class WorkflowRunner {
         }
     }
 
-    public static void uploadRunInfo(ExtendedGa4GhApi extendedGa4GhApi, RunExecution runExecution, String partnerName,
+    public static void uploadRunInfo(ExtendedGa4GhApi extendedGa4GhApi, ExecutionsRequestBody executionsRequestBody, String partnerName,
                                      String entryNameForApi, String version, String message) {
         try {
-            extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().addRunExecutionsItem(runExecution), partnerName, entryNameForApi, version, message);
+            extendedGa4GhApi.executionMetricsPost(executionsRequestBody, partnerName, entryNameForApi, version, message);
         } catch (Exception e) {
             LOGGER.error("Error uploading the metrics for {} to {} through extendedGa4GhApi.executionMetricsPost", entryNameForApi, extendedGa4GhApi.getApiClient().getBasePath(), e);
         }
@@ -471,7 +472,7 @@ public class WorkflowRunner {
         try (
                 BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))
         ) {
-            writer.write(GSON.toJson(runMetrics));
+            writer.write(GSON.toJson(runMetricsExecutionRequestBody));
         } catch (IOException e) {
             LOGGER.error("There as an error writing to {}", filePath, e);
         }
@@ -486,7 +487,9 @@ public class WorkflowRunner {
         addDataFromSingleMetric("CpuUtilized");
         addDataFromSingleMetric("MemoryUtilized");
 
-        uploadRunInfo(extendedGa4GhApi, runMetrics, Partner.AGC.name(), getEntryNameForApi(), version, "generated with tooltester ('run-workflows-through-wes' command)");
+        runMetricsExecutionRequestBody = new ExecutionsRequestBody().addRunExecutionsItem(runMetrics);
+
+        uploadRunInfo(extendedGa4GhApi, runMetricsExecutionRequestBody, Partner.AGC.name(), getEntryNameForApi(), version, "generated with tooltester ('run-workflows-through-wes' command)");
         saveRunInfo();
     }
 

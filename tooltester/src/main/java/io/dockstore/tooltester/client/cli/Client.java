@@ -48,7 +48,7 @@ import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.DockstoreTool;
-import io.dockstore.openapi.client.model.RunExecution;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.SourceFile;
 import io.dockstore.openapi.client.model.Tag;
 import io.dockstore.openapi.client.model.Tool;
@@ -370,8 +370,13 @@ public class Client {
                 LOG.error("There was an error reading {} to a string", path, e);
                 continue;
             }
-
-            final RunExecution runMetrics = GSON.fromJson(fileContent, RunExecution.class);
+            ExecutionsRequestBody runMetricsExecutionsRequestBody = null;
+            try {
+                runMetricsExecutionsRequestBody = GSON.fromJson(fileContent, ExecutionsRequestBody.class);
+            } catch (Exception e) {
+                LOG.error("There was an error converting the contents of {} to a ExecutionsRequestBody Class", path, e);
+                continue;
+            }
 
             final String fileKey = resultsDirectoryPath.relativize(path).toString();
 
@@ -380,7 +385,7 @@ public class Client {
             final String metricsPlatform = getMetricsPlatform(fileKey);
 
             LOG.info("Uploading run metrics for: " + fileKey);
-            uploadRunInfo(extendedGa4GhApi, runMetrics, metricsPlatform, toolID, versionName,
+            uploadRunInfo(extendedGa4GhApi, runMetricsExecutionsRequestBody, metricsPlatform, toolID, versionName,
                     "metrics from a previous run of the tooltester 'run-workflows-through-wes' command");
         }
 
