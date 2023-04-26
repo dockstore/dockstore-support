@@ -101,7 +101,7 @@ public class WorkflowRunner {
     private String taskDefinitionArn = null;
     private String clusterName;
     private String resultDirectory;
-    private static final Gson GSON = new Gson();
+    public static final Gson GSON = new Gson();
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowRunner.class);
 
 

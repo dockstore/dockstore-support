@@ -83,6 +83,7 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
+import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.GSON;
 import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
 import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.uploadRunInfo;
 import static io.dockstore.webservice.helpers.S3ClientHelper.getMetricsPlatform;
@@ -353,7 +354,6 @@ public class Client {
     private void uploadResults(String urlToUploadTo, String resultsDirectoryString, String pathToConfigFile) {
         this.workflowRunnerConfig = new WorkflowRunnerConfig(pathToConfigFile);
         setUpExtendedGa4GhApi(urlToUploadTo);
-        Gson gson = new Gson();
 
         Path resultsDirectoryPath = Path.of(resultsDirectoryString);
         File resultsDirectory = new File(resultsDirectoryString);
@@ -368,7 +368,7 @@ public class Client {
                 LOG.error("There was an error reading {} to a string", path, e);
             }
 
-            final RunExecution runMetrics = gson.fromJson(fileContent, RunExecution.class);
+            final RunExecution runMetrics = GSON.fromJson(fileContent, RunExecution.class);
 
             final String fileKey = resultsDirectoryPath.relativize(path).toString();
 
