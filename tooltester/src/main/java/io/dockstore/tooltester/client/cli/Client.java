@@ -15,11 +15,14 @@
  */
 package io.dockstore.tooltester.client.cli;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -45,6 +48,7 @@ import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.DockstoreTool;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.SourceFile;
 import io.dockstore.openapi.client.model.Tag;
 import io.dockstore.openapi.client.model.Tool;
@@ -79,7 +83,12 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
+import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.GSON;
 import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
+import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.uploadRunInfo;
+import static io.dockstore.webservice.helpers.S3ClientHelper.getMetricsPlatform;
+import static io.dockstore.webservice.helpers.S3ClientHelper.getToolId;
+import static io.dockstore.webservice.helpers.S3ClientHelper.getVersionName;
 
 /**
  * Prototype for testing service
@@ -87,6 +96,8 @@ import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
 public class Client {
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
     private static final int WAIT_TIME = 15;
+    private static final String DEFAULT_SAVE_DIRECTORY = "results";
+    private static final String RESULT_DIRECTORY_FLAG = "--results-dir";
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4Ghv20Api ga4Ghv20Api;
@@ -116,11 +127,13 @@ public class Client {
         CommandFileReport commandFileReport = new CommandFileReport();
         CommandSync commandSync = new CommandSync();
         CommandRunWorkflows commandRunWorkflows = new CommandRunWorkflows();
+        CommandUploadRunResults commandUploadRunResults = new CommandUploadRunResults();
         jc.addCommand("report", commandReport);
         jc.addCommand("enqueue", commandEnqueue);
         jc.addCommand("file-report", commandFileReport);
         jc.addCommand("sync", commandSync);
         jc.addCommand("run-workflows-through-wes", commandRunWorkflows);
+        jc.addCommand("upload-results", commandUploadRunResults);
         try {
             jc.parse(argv);
         } catch (MissingCommandException e) {
@@ -171,9 +184,14 @@ public class Client {
                     if (commandRunWorkflows.help) {
                         printJCommanderHelp(jc, "autotool", "run-workflows-through-wes");
                     } else {
-                        client.runToolTesterOnWorkflows(commandRunWorkflows.configFilePath);
-
-
+                        client.runToolTesterOnWorkflows(commandRunWorkflows.configFilePath, commandRunWorkflows.resultDirectory);
+                    }
+                    break;
+                case "upload-results":
+                    if (commandUploadRunResults.help) {
+                        printJCommanderHelp(jc, "autotool", "upload-results");
+                    } else {
+                        client.uploadResults(commandUploadRunResults.url, commandUploadRunResults.location, commandUploadRunResults.configFilePath);
                     }
                     break;
                 default:
@@ -310,9 +328,9 @@ public class Client {
         setGa4Ghv20Api(new Ga4Ghv20Api(defaultApiClient));
     }
 
-    private void setUpExtendedGa4GhApi() {
+    private void setUpExtendedGa4GhApi(String serverUrl) {
         io.dockstore.openapi.client.ApiClient defaultApiClient = io.dockstore.openapi.client.Configuration.getDefaultApiClient();
-        defaultApiClient.setBasePath(this.workflowRunnerConfig.getServerUrl());
+        defaultApiClient.setBasePath(serverUrl);
         defaultApiClient.setAccessToken(this.workflowRunnerConfig.getDockstoreToken());
         setExtendedGa4GhApi(new ExtendedGa4GhApi(defaultApiClient));
     }
@@ -322,12 +340,62 @@ public class Client {
         defaultApiClient.setBasePath(this.workflowRunnerConfig.getServerUrl());
         setWorkflowsApi(new WorkflowsApi(defaultApiClient));
     }
-    private void runToolTesterOnWorkflows(String pathToConfigFile) throws InterruptedException {
+
+    private List<File> getAllFilesInDirectory(File directory) {
+        List<File> filesInDirectory = new ArrayList<>();
+        for (File file: directory.listFiles()) {
+            if (file.isDirectory()) {
+                filesInDirectory.addAll(getAllFilesInDirectory(file));
+            } else {
+                filesInDirectory.add(file);
+            }
+        }
+        return filesInDirectory;
+    }
+
+    private void uploadResults(String urlToUploadTo, String resultsDirectoryString, String pathToConfigFile) {
+        this.workflowRunnerConfig = new WorkflowRunnerConfig(pathToConfigFile);
+        setUpExtendedGa4GhApi(urlToUploadTo);
+
+        Path resultsDirectoryPath = Path.of(resultsDirectoryString);
+        File resultsDirectory = new File(resultsDirectoryString);
+        List <File> allResultFiles = getAllFilesInDirectory(resultsDirectory);
+        for (File file: allResultFiles) {
+
+            Path path = Path.of(file.getPath());
+            String fileContent = null;
+            try {
+                fileContent = Files.readString(path);
+            } catch (IOException e) {
+                LOG.error("There was an error reading {} to a string", path, e);
+                continue;
+            }
+            ExecutionsRequestBody runMetricsExecutionsRequestBody = null;
+            try {
+                runMetricsExecutionsRequestBody = GSON.fromJson(fileContent, ExecutionsRequestBody.class);
+            } catch (Exception e) {
+                LOG.error("There was an error converting the contents of {} to a ExecutionsRequestBody Class", path, e);
+                continue;
+            }
+
+            final String fileKey = resultsDirectoryPath.relativize(path).toString();
+
+            final String toolID = getToolId(fileKey);
+            final String versionName = getVersionName(fileKey);
+            final String metricsPlatform = getMetricsPlatform(fileKey);
+
+            LOG.info("Uploading run metrics for: " + fileKey);
+            uploadRunInfo(extendedGa4GhApi, runMetricsExecutionsRequestBody, metricsPlatform, toolID, versionName,
+                    "metrics from a previous run of the tooltester 'run-workflows-through-wes' command");
+        }
+
+    }
+    private void runToolTesterOnWorkflows(String pathToConfigFile, String resultDirectory) throws InterruptedException {
         this.workflowRunnerConfig = new WorkflowRunnerConfig(pathToConfigFile);
         setUpGa4Ghv20Api();
-        setUpExtendedGa4GhApi();
+        setUpExtendedGa4GhApi(this.workflowRunnerConfig.getServerUrl());
         setUpWorkflowApi();
-        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api(), getExtendedGa4GhApi(), getWorkflowsApi(), this.workflowRunnerConfig);
+        WorkflowList workflowsToRun = new WorkflowList(getGa4Ghv20Api(), getExtendedGa4GhApi(), getWorkflowsApi(), this.workflowRunnerConfig, resultDirectory);
 
         for (WorkflowRunner workflow : workflowsToRun.getWorkflowsToRun()) {
             workflow.runWorkflow();
@@ -349,10 +417,11 @@ public class Client {
         }
 
        TimeUnit.MINUTES.sleep(WAIT_TIME);
-        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
-            workflow.uploadRunInfo();
-        }
 
+
+        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
+            workflow.uploadAndSaveRunInfo();
+        }
         for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
             workflow.deregisterTasks();
         }
@@ -693,8 +762,26 @@ public class Client {
     private static class CommandRunWorkflows {
         @Parameter(names = "--help", description = "Prints help for run-workflows-through-wes", help = true)
         private boolean help = false;
-        @Parameter(names = "--config-file-path", description = "Path to config file (default ./tooltesterConfig.yml")
+        @Parameter(names = "--config-file-path", description = "Path to config file")
         private String configFilePath = "tooltesterConfig.yml";
+
+        @Parameter(names = RESULT_DIRECTORY_FLAG, description = "Name of the directory you want to save the run results to")
+        private String resultDirectory = DEFAULT_SAVE_DIRECTORY;
+
+    }
+
+    @Parameters(separators = "=", commandDescription = "Uploads run results from the `run-workflows-through-wes` command to a specified dockstore site.")
+    private static class CommandUploadRunResults {
+        @Parameter(names = "--help", description = "Prints help for upload-results", help = true)
+        private boolean help = false;
+        @Parameter(names = "--config-file-path", description = "Path to config file")
+        private String configFilePath = "tooltesterConfig.yml";
+
+        @Parameter(names = "--url-to-upload-to", description = "Where the workflow results are being uploaded to (ex. https://qa.dockstore.org/api)", required = true)
+        private String url;
+
+        @Parameter(names = RESULT_DIRECTORY_FLAG, description = "Location of result files")
+        private String location = DEFAULT_SAVE_DIRECTORY;
 
     }
 }

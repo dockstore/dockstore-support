@@ -32,7 +32,8 @@ import io.dockstore.openapi.client.model.WorkflowSubClass;
 import io.dockstore.webservice.core.Partner;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.jline.utils.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.cloudwatch.model.Datapoint;
 import software.amazon.awssdk.services.cloudwatch.model.Dimension;
@@ -66,6 +67,8 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+import static io.dockstore.webservice.core.metrics.MetricsDataS3Client.generateKey;
+import static io.dockstore.webservice.helpers.S3ClientHelper.createFileName;
 import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.math.NumberUtils.max;
 import static org.apache.commons.lang3.math.NumberUtils.min;
@@ -97,6 +100,10 @@ public class WorkflowRunner {
     private String taskDefinitionFamily = null;
     private String taskDefinitionArn = null;
     private String clusterName;
+    private String resultDirectory;
+    private ExecutionsRequestBody runMetricsExecutionRequestBody = null;
+    public static final Gson GSON = new Gson();
+    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowRunner.class);
 
 
     private final List<String> inProgressStates = Arrays.asList("RUNNING", "INITIALIZING");
@@ -111,7 +118,7 @@ public class WorkflowRunner {
      * @param extendedGa4GhApi
      */
     @SuppressWarnings("checkstyle:parameternumber")
-    public WorkflowRunner(String entry, String version, String pathOfTestParameter, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, WorkflowRunnerConfig workflowRunnerConfig) {
+    public WorkflowRunner(String entry, String version, String pathOfTestParameter, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, WorkflowRunnerConfig workflowRunnerConfig, String resultDirectory) {
         this.entry = entry;
         this.version = version;
         this.pathOfTestParameter = pathOfTestParameter;
@@ -119,6 +126,7 @@ public class WorkflowRunner {
         this.workflowsApi = workflowsApi;
         this.runMetrics = new RunExecution();
         this.ecsClient = EcsClient.builder().build();
+        this.resultDirectory = resultDirectory;
         setDescriptorLanguage(workflowRunnerConfig);
     }
 
@@ -131,8 +139,8 @@ public class WorkflowRunner {
      * @param extendedGa4GhApi
      */
     @SuppressWarnings("checkstyle:parameternumber")
-    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, WorkflowRunnerConfig workflowRunnerConfig)  {
-        this(entry, version, relativePathToTestParameterFile, extendedGa4GhApi, workflowsApi, workflowRunnerConfig);
+    public WorkflowRunner(String entry, String version, String relativePathToTestParameterFile, Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, WorkflowRunnerConfig workflowRunnerConfig, String resultDirectory)  {
+        this(entry, version, relativePathToTestParameterFile, extendedGa4GhApi, workflowsApi, workflowRunnerConfig, resultDirectory);
 
         File testParameterFile = new File("test-parameter-file-" + randomUUID() + ".json");
         testParameterFile.deleteOnExit();
@@ -227,7 +235,7 @@ public class WorkflowRunner {
         ImmutablePair<String, String> result = Utilities.executeCommand("dockstore workflow wes logs --id " + runID
                 + " --config " + configFilePath + " --script");
         String logJson = result.getLeft();
-        log = new Gson().fromJson(logJson, JsonObject.class);
+        log = GSON.fromJson(logJson, JsonObject.class);
         state = log.get("state").getAsString();
         if (inProgressStates.contains(state)) {
             return false;
@@ -298,7 +306,7 @@ public class WorkflowRunner {
             setTimeForEachTask();
         }
         if (workflowStartTime != null || workflowEndTime != null) {
-            Log.debug("workflowStartTime or workflowEndTime has already been set");
+            LOGGER.debug("workflowStartTime or workflowEndTime has already been set");
             return;
         }
         Date timeFirstTaskStarted = null;
@@ -420,7 +428,7 @@ public class WorkflowRunner {
             if (!ecsTasks.isEmpty()) {
                 String ecsTaskArn = ecsTasks.get(0);
                 if (ecsTasks.size() != 1) {
-                    Log.warn("More than one ECS task has been created, assuming the first one is the ECS task"
+                    LOGGER.warn("More than one ECS task has been created, assuming the first one is the ECS task"
                             + " for this workflow, the following were discovered: " + System.lineSeparator()
                             + ecsTasks);
                 }
@@ -440,20 +448,52 @@ public class WorkflowRunner {
         }
     }
 
-    public void uploadRunInfo() {
-        runMetrics.setExecutionStatus(getExecutionStatus());
+    public static void uploadRunInfo(ExtendedGa4GhApi extendedGa4GhApi, ExecutionsRequestBody executionsRequestBody, String partnerName,
+                                     String entryNameForApi, String version, String message) {
+        try {
+            extendedGa4GhApi.executionMetricsPost(executionsRequestBody, partnerName, entryNameForApi, version, message);
+        } catch (Exception e) {
+            LOGGER.error("Error uploading the metrics for {} to {} through extendedGa4GhApi.executionMetricsPost", entryNameForApi, extendedGa4GhApi.getApiClient().getBasePath(), e);
+        }
+    }
 
+    private void saveRunInfo() {
+        final String fileName = createFileName();
+        final String filePath = resultDirectory + "/" + generateKey(getEntryNameForApi(), version, Partner.AGC.name(), fileName);
+        File runFile = new File(filePath);
+        runFile.getParentFile().mkdirs();
+        try {
+            runFile.createNewFile();
+        } catch (IOException e) {
+            LOGGER.error("Error creating directory {}", runFile.getParentFile(), e);
+            return;
+        }
+
+        try (
+                BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))
+        ) {
+            writer.write(GSON.toJson(runMetricsExecutionRequestBody));
+        } catch (IOException e) {
+            LOGGER.error("There as an error writing to {}", filePath, e);
+        }
+    }
+
+
+    public void uploadAndSaveRunInfo() {
+        runMetrics.setExecutionStatus(getExecutionStatus());
         if (getTotalWallClockTimeInISO861Standard() != null) {
             runMetrics.setExecutionTime(getTotalWallClockTimeInISO861Standard());
         }
+        addDataFromSingleMetric("CpuUtilized");
+        addDataFromSingleMetric("MemoryUtilized");
 
+        runMetricsExecutionRequestBody = new ExecutionsRequestBody().addRunExecutionsItem(runMetrics);
 
-        addSingleMetricToQa("CpuUtilized");
-        addSingleMetricToQa("MemoryUtilized");
-        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().addRunExecutionsItem(runMetrics), Partner.AGC.name(), getEntryNameForApi(), version, "generated with tooltester ('run-workflows-through-wes' command)");
+        uploadRunInfo(extendedGa4GhApi, runMetricsExecutionRequestBody, Partner.AGC.name(), getEntryNameForApi(), version, "generated with tooltester ('run-workflows-through-wes' command)");
+        saveRunInfo();
     }
 
-    private void addSingleMetricToQa(String metricName) {
+    private void addDataFromSingleMetric(String metricName) {
         if (taskDefinitionArn == null || taskDefinitionFamily == null) {
             return;
         }
@@ -504,6 +544,7 @@ public class WorkflowRunner {
             ecsClient.deregisterTaskDefinition(request);
         }
     }
+
 
     public static void printLine() {
         out("-----------------------------------");

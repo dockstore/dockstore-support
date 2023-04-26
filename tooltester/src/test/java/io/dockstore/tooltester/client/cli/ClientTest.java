@@ -291,13 +291,23 @@ public class ClientTest {
     }
 
     /**
-     * This displays the help menu for the report command
+     * This displays the help menu for the run-workflows-through-wes command
      */
     @Test
     public void runWorkflowHelp() throws InterruptedException {
         String[] argv = { "run-workflows-through-wes", "--help" };
         main(argv);
         assertTrue(systemOut.getText().contains("Runs workflows through the Dockstore CLI and AGC, then both prints and uploads to Dockstore the execution statistics."));
+    }
+
+    /**
+     * This displays the help menu for the upload-results command
+     */
+    @Test
+    public void runUploadResultsHelp() throws InterruptedException {
+        String[] argv = { "upload-results", "--help" };
+        main(argv);
+        assertTrue(systemOut.getText().contains("Uploads run results from the `run-workflows-through-wes` command to a specified dockstore site."));
     }
 
     /**
