@@ -87,7 +87,7 @@ public class MetricsAggregatorClient {
             System.exit(FAILURE_EXIT_CODE);
         }
 
-        if (commandLineArgs.isHelp()) {
+        if (jCommander.getParsedCommand() == null || commandLineArgs.isHelp()) {
             jCommander.usage();
         } else if ("aggregate-metrics".equals(jCommander.getParsedCommand())) {
             if (aggregateMetricsCommand.isHelp()) {
