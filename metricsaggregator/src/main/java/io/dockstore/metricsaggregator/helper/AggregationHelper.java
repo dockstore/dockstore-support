@@ -13,9 +13,9 @@ import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.ValidationExecution;
-import io.dockstore.openapi.client.model.ValidationInfo;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
-import io.dockstore.openapi.client.model.ValidationVersionInfo;
+import io.dockstore.openapi.client.model.ValidatorInfo;
+import io.dockstore.openapi.client.model.ValidatorVersionInfo;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Comparator;
@@ -266,53 +266,53 @@ public final class AggregationHelper {
                 .collect(Collectors.toList());
         getAggregatedValidationStatusFromExecutions(allSubmissions.getValidationExecutions()).ifPresent(validationStatusMetrics::add);
 
-        Map<String, ValidationInfo> newValidatorToolToValidationInfo = new HashMap<>();
+        Map<String, ValidatorInfo> newValidatorToolToValidatorInfo = new HashMap<>();
         if (!validationStatusMetrics.isEmpty()) {
             // Go through all the ValidationStatusMetrics and group the ValidationVersionInfos by validator tool
-            Map<String, List<ValidationVersionInfo>> validatorToolToValidationVersionInfos = validationStatusMetrics.stream()
-                    .map(ValidationStatusMetric::getValidatorToolToValidationInfo)
-                    .flatMap(validatorToolToValidationInfoMap -> validatorToolToValidationInfoMap.entrySet().stream())
+            Map<String, List<ValidatorVersionInfo>> validatorToolToValidationVersionInfos = validationStatusMetrics.stream()
+                    .map(ValidationStatusMetric::getValidatorTools)
+                    .flatMap(validatorToolToValidatorInfoMap -> validatorToolToValidatorInfoMap.entrySet().stream())
                     .collect(groupingBy(Map.Entry::getKey, Collectors.flatMapping(entry -> {
-                        ValidationInfo validationInfoForValidatorTool = entry.getValue();
-                        return validationInfoForValidatorTool.getValidationVersions().stream();
+                        ValidatorInfo validationInfoForValidatorTool = entry.getValue();
+                        return validationInfoForValidatorTool.getValidatorVersions().stream();
                     }, Collectors.toList())));
 
-            // For each validator tool, find the most recent ValidationVersionInfo for each version
+            // For each validator tool, find the most recent ValidatorVersionInfo for each version
             validatorToolToValidationVersionInfos.forEach((validatorTool, validationVersionInfosByValidatorTool) -> {
                 // Number of runs across all versions
-                final int numberOfRuns = validationVersionInfosByValidatorTool.stream().map(ValidationVersionInfo::getNumberOfRuns)
+                final int numberOfRuns = validationVersionInfosByValidatorTool.stream().map(ValidatorVersionInfo::getNumberOfRuns)
                         .mapToInt(Integer::intValue)
                         .sum();
                 final double passingRate = Statistics.getWeightedAverage(validationVersionInfosByValidatorTool.stream()
-                        .map(validationVersionInfo -> new Statistics(validationVersionInfo.getPassingRate(), validationVersionInfo.getNumberOfRuns()))
+                        .map(validatorVersionInfo -> new Statistics(validatorVersionInfo.getPassingRate(), validatorVersionInfo.getNumberOfRuns()))
                         .toList());
-                final Optional<ValidationVersionInfo> mostRecentValidationVersion = getLatestValidationVersionInfo(validationVersionInfosByValidatorTool);
+                final Optional<ValidatorVersionInfo> mostRecentValidationVersion = getLatestValidationVersionInfo(validationVersionInfosByValidatorTool);
 
                 if (mostRecentValidationVersion.isPresent()) {
-                    // Group ValidationVersionInfo by version name
-                    Map<String, List<ValidationVersionInfo>> versionNameToValidationVersionInfos = validationVersionInfosByValidatorTool.stream()
-                            .collect(Collectors.groupingBy(ValidationVersionInfo::getName));
+                    // Group ValidatorVersionInfo by version name
+                    Map<String, List<ValidatorVersionInfo>> versionNameToValidationVersionInfos = validationVersionInfosByValidatorTool.stream()
+                            .collect(Collectors.groupingBy(ValidatorVersionInfo::getName));
 
-                    // Get a list of the most recent ValidationVersionInfo for each version
-                    List<ValidationVersionInfo> mostRecentValidationVersionInfos = versionNameToValidationVersionInfos.values().stream().map(AggregationHelper::getLatestValidationVersionInfo).filter(Optional::isPresent).map(Optional::get).toList();
+                    // Get a list of the most recent ValidatorVersionInfo for each version
+                    List<ValidatorVersionInfo> mostRecentValidationVersionInfos = versionNameToValidationVersionInfos.values().stream().map(AggregationHelper::getLatestValidationVersionInfo).filter(Optional::isPresent).map(Optional::get).toList();
 
                     // Set validation info for the validator tool
-                    ValidationInfo validationInfo = new ValidationInfo()
+                    ValidatorInfo validatorInfo = new ValidatorInfo()
                             .mostRecentVersionName(mostRecentValidationVersion.get().getName())
-                            .validationVersions(mostRecentValidationVersionInfos)
+                            .validatorVersions(mostRecentValidationVersionInfos)
                             .numberOfRuns(numberOfRuns)
                             .passingRate(passingRate);
 
-                    newValidatorToolToValidationInfo.put(validatorTool, validationInfo);
+                    newValidatorToolToValidatorInfo.put(validatorTool, validatorInfo);
                 }
             });
         }
 
-        if (newValidatorToolToValidationInfo.isEmpty()) {
+        if (newValidatorToolToValidatorInfo.isEmpty()) {
             return Optional.empty();
         }
 
-        return Optional.of(new ValidationStatusMetric().validatorToolToValidationInfo(newValidatorToolToValidationInfo));
+        return Optional.of(new ValidationStatusMetric().validatorTools(newValidatorToolToValidatorInfo));
     }
 
     /**
@@ -331,7 +331,7 @@ public final class AggregationHelper {
                 .collect(groupingBy(ValidationExecution::getValidatorTool));
 
         // For each validator tool, aggregate validation metrics for it
-        Map<String, ValidationInfo> validatorToolToValidationInfo = new HashMap<>();
+        Map<String, ValidatorInfo> validatorToolToValidationInfo = new HashMap<>();
         validatorToolToValidations.forEach((validatorTool, validatorToolExecutions) -> {
             Optional<ValidationExecution> latestValidationExecution = getLatestValidationExecution(validatorToolExecutions);
 
@@ -341,12 +341,12 @@ public final class AggregationHelper {
                         .collect(groupingBy(ValidationExecution::getValidatorToolVersion));
 
                 // Get the validation information for the most recent execution for each validator tool version
-                Map<String, ValidationVersionInfo> validatorVersionNameToVersionInfo = new HashMap<>();
+                Map<String, ValidatorVersionInfo> validatorVersionNameToVersionInfo = new HashMap<>();
                 validatorVersionNameToValidationExecutions.forEach((validatorVersionName, validatorVersionExecutions) -> {
                     Optional<ValidationExecution> latestValidationExecutionForVersion = getLatestValidationExecution(validatorVersionExecutions);
 
                     latestValidationExecutionForVersion.ifPresent(validationExecution -> {
-                        ValidationVersionInfo validationVersionInfo = new ValidationVersionInfo()
+                        ValidatorVersionInfo validatorVersionInfo = new ValidatorVersionInfo()
                                 .name(validatorVersionName)
                                 .isValid(validationExecution.isIsValid())
                                 .dateExecuted(validationExecution.getDateExecuted())
@@ -354,21 +354,21 @@ public final class AggregationHelper {
                                 .passingRate(getPassingRate(validatorVersionExecutions));
 
                         if (!validationExecution.isIsValid() && StringUtils.isNotBlank(validationExecution.getErrorMessage())) {
-                            validationVersionInfo.errorMessage(validationExecution.getErrorMessage());
+                            validatorVersionInfo.errorMessage(validationExecution.getErrorMessage());
                         }
 
-                        validatorVersionNameToVersionInfo.put(validatorVersionName, validationVersionInfo);
+                        validatorVersionNameToVersionInfo.put(validatorVersionName, validatorVersionInfo);
                     });
                 });
 
                 // Set validation info for the validator tool
-                ValidationInfo validationInfo = new ValidationInfo()
+                ValidatorInfo validatorInfo = new ValidatorInfo()
                         .mostRecentVersionName(validatorVersionNameToVersionInfo.get(latestValidationExecution.get().getValidatorToolVersion()).getName())
-                        .validationVersions(validatorVersionNameToVersionInfo.values().stream().toList())
+                        .validatorVersions(validatorVersionNameToVersionInfo.values().stream().toList())
                         .numberOfRuns(validatorToolExecutions.size())
                         .passingRate(getPassingRate(validatorToolExecutions));
 
-                validatorToolToValidationInfo.put(validatorTool.toString(), validationInfo);
+                validatorToolToValidationInfo.put(validatorTool.toString(), validatorInfo);
             }
         });
 
@@ -376,7 +376,7 @@ public final class AggregationHelper {
         if (validatorToolToValidationInfo.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(new ValidationStatusMetric().validatorToolToValidationInfo(validatorToolToValidationInfo));
+        return Optional.of(new ValidationStatusMetric().validatorTools(validatorToolToValidationInfo));
     }
 
     static Optional<ValidationExecution> getLatestValidationExecution(List<ValidationExecution> executions) {
@@ -393,7 +393,7 @@ public final class AggregationHelper {
                 .max(Comparator.comparing(execution -> checkExecutionDateISO8601Format(execution.getDateExecuted()).get(), Date::compareTo));
     }
 
-    static Optional<ValidationVersionInfo> getLatestValidationVersionInfo(List<ValidationVersionInfo> validationVersionInfos) {
+    static Optional<ValidatorVersionInfo> getLatestValidationVersionInfo(List<ValidatorVersionInfo> validationVersionInfos) {
         if (validationVersionInfos.isEmpty()) {
             return Optional.empty();
         }
@@ -404,7 +404,7 @@ public final class AggregationHelper {
         }
 
         return validationVersionInfos.stream()
-                .max(Comparator.comparing(validationVersionInfo -> checkExecutionDateISO8601Format(validationVersionInfo.getDateExecuted()).get(), Date::compareTo));
+                .max(Comparator.comparing(validatorVersionInfo -> checkExecutionDateISO8601Format(validatorVersionInfo.getDateExecuted()).get(), Date::compareTo));
     }
 
     /**

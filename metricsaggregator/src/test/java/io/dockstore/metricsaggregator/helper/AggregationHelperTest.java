@@ -14,9 +14,9 @@ import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.ValidationExecution;
-import io.dockstore.openapi.client.model.ValidationInfo;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
-import io.dockstore.openapi.client.model.ValidationVersionInfo;
+import io.dockstore.openapi.client.model.ValidatorInfo;
+import io.dockstore.openapi.client.model.ValidatorVersionInfo;
 import org.junit.jupiter.api.Test;
 
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
@@ -183,18 +183,18 @@ class AggregationHelperTest {
                 .dateExecuted(Instant.now().toString()));
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isPresent());
-        ValidationInfo validationInfo = validationStatusMetric.get().getValidatorToolToValidationInfo().get(validatorTool.toString());
-        assertNotNull(validationInfo);
-        assertNotNull(validationInfo.getMostRecentVersionName());
-        ValidationVersionInfo mostRecentValidationVersion = validationInfo.getValidationVersions().stream().filter(validationVersion -> validatorToolVersion1.equals(validationVersion.getName())).findFirst().get();
-        assertTrue(mostRecentValidationVersion.isIsValid());
-        assertEquals(validatorToolVersion1, mostRecentValidationVersion.getName());
-        assertNull(mostRecentValidationVersion.getErrorMessage());
-        assertEquals(1, mostRecentValidationVersion.getNumberOfRuns());
-        assertEquals(100, mostRecentValidationVersion.getPassingRate());
-        assertEquals(1, validationInfo.getValidationVersions().size(), "There should be 2 ValidationVersionInfo objects because 1 version was ran");
-        assertEquals(1, validationInfo.getNumberOfRuns());
-        assertEquals(100, validationInfo.getPassingRate());
+        ValidatorInfo validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
+        assertNotNull(validatorInfo);
+        assertNotNull(validatorInfo.getMostRecentVersionName());
+        ValidatorVersionInfo mostRecentValidatorVersion = validatorInfo.getValidatorVersions().stream().filter(validationVersion -> validatorToolVersion1.equals(validationVersion.getName())).findFirst().get();
+        assertTrue(mostRecentValidatorVersion.isIsValid());
+        assertEquals(validatorToolVersion1, mostRecentValidatorVersion.getName());
+        assertNull(mostRecentValidatorVersion.getErrorMessage());
+        assertEquals(1, mostRecentValidatorVersion.getNumberOfRuns());
+        assertEquals(100, mostRecentValidatorVersion.getPassingRate());
+        assertEquals(1, validatorInfo.getValidatorVersions().size(), "There should be 2 ValidatorVersionInfo objects because 1 version was ran");
+        assertEquals(1, validatorInfo.getNumberOfRuns());
+        assertEquals(100, validatorInfo.getPassingRate());
 
         // Add an execution that isn't valid for the same validator
         final String validatorToolVersion2 = "2.0";
@@ -206,16 +206,16 @@ class AggregationHelperTest {
                 .errorMessage("This is an error message"));
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isPresent());
-        validationInfo = validationStatusMetric.get().getValidatorToolToValidationInfo().get(validatorTool.toString());
-        mostRecentValidationVersion = validationInfo.getValidationVersions().stream().filter(validationVersion -> validatorToolVersion2.equals(validationVersion.getName())).findFirst().get();
-        assertFalse(mostRecentValidationVersion.isIsValid());
-        assertEquals(validatorToolVersion2, mostRecentValidationVersion.getName());
-        assertEquals("This is an error message", mostRecentValidationVersion.getErrorMessage());
-        assertEquals(1, mostRecentValidationVersion.getNumberOfRuns());
-        assertEquals(0, mostRecentValidationVersion.getPassingRate());
-        assertEquals(2, validationInfo.getValidationVersions().size(), "There should be 2 ValidationVersionInfo objects because 2 versions were ran");
-        assertEquals(2, validationInfo.getNumberOfRuns());
-        assertEquals(50, validationInfo.getPassingRate());
+        validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
+        mostRecentValidatorVersion = validatorInfo.getValidatorVersions().stream().filter(validatorVersion -> validatorToolVersion2.equals(validatorVersion.getName())).findFirst().get();
+        assertFalse(mostRecentValidatorVersion.isIsValid());
+        assertEquals(validatorToolVersion2, mostRecentValidatorVersion.getName());
+        assertEquals("This is an error message", mostRecentValidatorVersion.getErrorMessage());
+        assertEquals(1, mostRecentValidatorVersion.getNumberOfRuns());
+        assertEquals(0, mostRecentValidatorVersion.getPassingRate());
+        assertEquals(2, validatorInfo.getValidatorVersions().size(), "There should be 2 ValidatorVersionInfo objects because 2 versions were ran");
+        assertEquals(2, validatorInfo.getNumberOfRuns());
+        assertEquals(50, validatorInfo.getPassingRate());
 
         // Add an execution that is valid for the same validator
         String expectedDateExecuted = Instant.now().toString();
@@ -226,45 +226,45 @@ class AggregationHelperTest {
                 .dateExecuted(expectedDateExecuted));
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isPresent());
-        validationInfo = validationStatusMetric.get().getValidatorToolToValidationInfo().get(validatorTool.toString());
-        mostRecentValidationVersion = validationInfo.getValidationVersions().stream().filter(validationVersion -> validatorToolVersion1.equals(validationVersion.getName())).findFirst().get();
-        assertTrue(mostRecentValidationVersion.isIsValid(), "Should be true because the latest validation is valid");
-        assertEquals(validatorToolVersion1, mostRecentValidationVersion.getName());
-        assertNull(mostRecentValidationVersion.getErrorMessage());
-        assertEquals(2, mostRecentValidationVersion.getNumberOfRuns());
-        assertEquals(100, mostRecentValidationVersion.getPassingRate());
-        assertEquals(expectedDateExecuted, mostRecentValidationVersion.getDateExecuted()); // Check that this is the most recent ValidationVersionInfo for this version because it was executed twice
-        assertEquals(2, validationInfo.getValidationVersions().size(), "There should be 2 ValidationVersionInfo objects because 2 versions ran");
-        assertEquals(3, validationInfo.getNumberOfRuns());
-        assertEquals(66.66666666666666, validationInfo.getPassingRate());
+        validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
+        mostRecentValidatorVersion = validatorInfo.getValidatorVersions().stream().filter(validationVersion -> validatorToolVersion1.equals(validationVersion.getName())).findFirst().get();
+        assertTrue(mostRecentValidatorVersion.isIsValid(), "Should be true because the latest validation is valid");
+        assertEquals(validatorToolVersion1, mostRecentValidatorVersion.getName());
+        assertNull(mostRecentValidatorVersion.getErrorMessage());
+        assertEquals(2, mostRecentValidatorVersion.getNumberOfRuns());
+        assertEquals(100, mostRecentValidatorVersion.getPassingRate());
+        assertEquals(expectedDateExecuted, mostRecentValidatorVersion.getDateExecuted()); // Check that this is the most recent ValidatorVersionInfo for this version because it was executed twice
+        assertEquals(2, validatorInfo.getValidatorVersions().size(), "There should be 2 ValidatorVersionInfo objects because 2 versions ran");
+        assertEquals(3, validatorInfo.getNumberOfRuns());
+        assertEquals(66.66666666666666, validatorInfo.getPassingRate());
 
         // Aggregate submissions containing run executions and aggregated metrics
         expectedDateExecuted = Instant.now().toString();
-        ValidationVersionInfo validationVersionInfo = new ValidationVersionInfo()
+        ValidatorVersionInfo validationVersionInfo = new ValidatorVersionInfo()
                 .name(validatorToolVersion1)
                 .isValid(true)
                 .passingRate(100d)
                 .numberOfRuns(4)
                 .dateExecuted(expectedDateExecuted);
         Metrics submittedAggregatedMetrics = new Metrics()
-                .validationStatus(new ValidationStatusMetric().validatorToolToValidationInfo(
-                        Map.of(validatorTool.toString(), new ValidationInfo()
-                                .validationVersions(List.of(validationVersionInfo))
+                .validationStatus(new ValidationStatusMetric().validatorTools(
+                        Map.of(validatorTool.toString(), new ValidatorInfo()
+                                .validatorVersions(List.of(validationVersionInfo))
                                 .numberOfRuns(4)
                                 .passingRate(100d))));
 
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(validationStatusMetric.isPresent());
-        validationInfo = validationStatusMetric.get().getValidatorToolToValidationInfo().get(validatorTool.toString());
-        mostRecentValidationVersion = validationInfo.getValidationVersions().stream().filter(validationVersion -> validatorToolVersion1.equals(validationVersion.getName())).findFirst().get();
-        assertTrue(mostRecentValidationVersion.isIsValid(), "Should be true because the latest validation is valid");
-        assertEquals(validatorToolVersion1, mostRecentValidationVersion.getName());
-        assertNull(mostRecentValidationVersion.getErrorMessage());
-        assertEquals(4, mostRecentValidationVersion.getNumberOfRuns());
-        assertEquals(100, mostRecentValidationVersion.getPassingRate());
-        assertEquals(expectedDateExecuted, mostRecentValidationVersion.getDateExecuted()); // Check that this is the most recent ValidationVersionInfo for this version because it was executed more than once
-        assertEquals(2, validationInfo.getValidationVersions().size(), "There should be 2 ValidationVersionInfo objects because 2 versions were ran");
-        assertEquals(7, validationInfo.getNumberOfRuns());
-        assertEquals(85.71428571428571, validationInfo.getPassingRate());
+        validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
+        mostRecentValidatorVersion = validatorInfo.getValidatorVersions().stream().filter(validationVersion -> validatorToolVersion1.equals(validationVersion.getName())).findFirst().get();
+        assertTrue(mostRecentValidatorVersion.isIsValid(), "Should be true because the latest validation is valid");
+        assertEquals(validatorToolVersion1, mostRecentValidatorVersion.getName());
+        assertNull(mostRecentValidatorVersion.getErrorMessage());
+        assertEquals(4, mostRecentValidatorVersion.getNumberOfRuns());
+        assertEquals(100, mostRecentValidatorVersion.getPassingRate());
+        assertEquals(expectedDateExecuted, mostRecentValidatorVersion.getDateExecuted()); // Check that this is the most recent ValidatorVersionInfo for this version because it was executed more than once
+        assertEquals(2, validatorInfo.getValidatorVersions().size(), "There should be 2 ValidatorVersionInfo objects because 2 versions were ran");
+        assertEquals(7, validatorInfo.getNumberOfRuns());
+        assertEquals(85.71428571428571, validatorInfo.getPassingRate());
     }
 }
