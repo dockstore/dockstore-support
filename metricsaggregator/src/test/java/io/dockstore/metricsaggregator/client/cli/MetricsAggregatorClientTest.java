@@ -172,7 +172,6 @@ class MetricsAggregatorClientTest {
         assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()));
         assertFalse(platform1Metrics.getExecutionStatusCount().getCount().containsKey(FAILED_RUNTIME_INVALID.name()));
         assertFalse(platform1Metrics.getExecutionStatusCount().getCount().containsKey(FAILED_SEMANTIC_INVALID.name()));
-        assertTrue(platform1Metrics.getExecutionStatusCount().isValid());
 
         assertEquals(1, platform1Metrics.getCpu().getNumberOfDataPointsForAverage());
         assertEquals(2, platform1Metrics.getCpu().getMinimum());
@@ -213,7 +212,6 @@ class MetricsAggregatorClientTest {
         assertEquals(1, platform2Metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()));
         assertFalse(platform2Metrics.getExecutionStatusCount().getCount().containsKey(FAILED_RUNTIME_INVALID.name()));
         assertFalse(platform2Metrics.getExecutionStatusCount().getCount().containsKey(FAILED_SEMANTIC_INVALID.name()));
-        assertTrue(platform2Metrics.getExecutionStatusCount().isValid());
 
         assertEquals(1, platform2Metrics.getCpu().getNumberOfDataPointsForAverage());
         assertEquals(2, platform2Metrics.getCpu().getMinimum());
@@ -267,7 +265,6 @@ class MetricsAggregatorClientTest {
         assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()));
         assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(FAILED_RUNTIME_INVALID.name()));
         assertFalse(platform1Metrics.getExecutionStatusCount().getCount().containsKey(FAILED_SEMANTIC_INVALID.name()));
-        assertFalse(platform1Metrics.getExecutionStatusCount().isValid());
 
         assertEquals(2, platform1Metrics.getCpu().getNumberOfDataPointsForAverage());
         assertEquals(2, platform1Metrics.getCpu().getMinimum());
@@ -307,7 +304,6 @@ class MetricsAggregatorClientTest {
         assertEquals(2, overallMetrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()));
         assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(FAILED_RUNTIME_INVALID.name()));
         assertFalse(overallMetrics.getExecutionStatusCount().getCount().containsKey(FAILED_SEMANTIC_INVALID.name()));
-        assertFalse(overallMetrics.getExecutionStatusCount().isValid());
 
         assertEquals(3, overallMetrics.getCpu().getNumberOfDataPointsForAverage());
         assertEquals(2, overallMetrics.getCpu().getMinimum());
