@@ -306,6 +306,7 @@ class MetricsAggregatorClientTest {
 
         String id = "#workflow/" + workflow.getFullWorkflowPath();
         String versionId = version.getName();
+        // This file contains 1 valid CSV line and 2 invalid CSV lines (one doesn't have all the required columns, and the other has a non-boolean value for the isValid column)
         String successfulDataFilePath = ResourceHelpers.resourceFilePath("miniwdl-successful-validation-workflow-names.csv");
 
         // Submit validation data using a data file that contains workflow names of workflows that were successfully validated with miniwdl on DNAstack

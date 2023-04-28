@@ -29,12 +29,12 @@ workflows:
   version: 2
   everything:
     jobs:
-      - build:
+      - build-metrics-aggregator:
           <<: *common_filters
       - metrics-aggregator-tests:
           <<: *common_filters
           requires:
-            - build
+            - build-metrics-aggregator
 
 jobs:
   metrics-aggregator-tests:
@@ -46,7 +46,7 @@ jobs:
     steps:
       - setup_and_run_integration_tests
 
-  build:
+  build-metrics-aggregator:
     docker: # run the steps with Docker
       - image: cimg/openjdk:<< pipeline.parameters.java-tag >>
         environment:
@@ -58,7 +58,7 @@ jobs:
       - checkout # check out source code to working directory
       - install-git-secrets
       - run:
-          name: build
+          name: build-metrics-aggregator
           command: cd metricsaggregator && mvn -B clean install -DskipTests
 
         # Running scan must occur after build
