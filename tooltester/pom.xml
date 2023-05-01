@@ -40,7 +40,7 @@
         <system-stubs.version>2.0.1</system-stubs.version>
         <jackson.version>2.14.1</jackson.version>
         <aws.version>1.12.387</aws.version>
-        <dockstore.core.version>1.14.0-alpha.10</dockstore.core.version>
+        <dockstore.core.version>1.14.0-alpha.11</dockstore.core.version>
         <maven-surefire.version>3.0.0-M5</maven-surefire.version>
         <maven-failsafe.version>2.22.2</maven-failsafe.version>
     </properties>
@@ -241,11 +241,6 @@
             <version>2.11.0</version>
         </dependency>
         <dependency>
-            <groupId>org.jline</groupId>
-            <artifactId>jline</artifactId>
-            <version>3.21.0</version>
-        </dependency>
-        <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>cloudwatch</artifactId>
             <version>2.17.186</version>
@@ -408,7 +403,6 @@
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>1.33</version>
         </dependency>
 
 

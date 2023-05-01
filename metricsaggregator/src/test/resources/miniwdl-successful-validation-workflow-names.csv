@@ -1,3 +1,4 @@
 trsId,versionName,isValid,dateExecuted
-#workflow/github.com/garyluu/testWorkflow
 #workflow/github.com/garyluu/testWorkflow,master,true,2023-04-04T14:52:42Z
+#workflow/github.com/garyluu/testWorkflow
+#workflow/github.com/garyluu/testWorkflow,master,THIS_IS_NOT_A_BOOLEAN,2023-04-04T14:52:42Z

@@ -7,7 +7,7 @@ information to Dockstore.
 
 ### Configuration file
 
-Create a configuration file like the following:
+Create a configuration file like the following. A template `metrics-aggregator.config` file can be found [here](templates/metrics-aggregator.config).
 
 ```
 [dockstore]
@@ -20,13 +20,19 @@ endpointOverride: <Optional S3 endpoint override>
 ```
 **Required:**
 - `server-url`: The Dockstore server URL that's used to send API requests to.
+  - Examples:
+    - `https://qa.dockstore.org/api`
+    - `https://staging.dockstore.org/api`
+    - `https://dockstore.org/api`
 - `token`: The Dockstore token of a Dockstore user. This user must be an admin or curator in order to be able to post aggregated metrics to Dockstore.
 - `bucketName`: The S3 bucket name storing metrics data. This is the bucket that the metrics aggregator will go through in order
   to aggregate metrics.
 
 **Optional:**
 - `endpointOverride`: Endpoint override to use when creating the S3 clients. This is typically only used for local testing so that a LocalStack endpoint 
-override can be used.
+override can be used. Omit this key completely if you're running the metrics aggregator against non-local Dockstore environments like prod, staging, and QA. View the [template](templates/metrics-aggregator.config) for an example of a config file without this key.
+
+Note that if the configuration file path is not passed as an argument via `--config` or `-c`, then the default location is set to `./metrics-aggregator.config`. 
 
 ### AWS credentials
 
@@ -94,3 +100,5 @@ with miniwdl on DNAstack:
 java -jar target/metricsaggregator-*-SNAPSHOT.jar submit-validation-data --config my-custom-config \
 --data <path-to-my-data-file> --validator MINIWDL --validatorVersion 1.0 --platform DNA_STACK 
 ```
+
+After running this command, you will want to run the `aggregate-metrics` command to aggregate the new validation data submitted.

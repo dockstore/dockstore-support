@@ -87,7 +87,7 @@ public class MetricsAggregatorClient {
             System.exit(FAILURE_EXIT_CODE);
         }
 
-        if (commandLineArgs.isHelp()) {
+        if (jCommander.getParsedCommand() == null || commandLineArgs.isHelp()) {
             jCommander.usage();
         } else if ("aggregate-metrics".equals(jCommander.getParsedCommand())) {
             if (aggregateMetricsCommand.isHelp()) {
@@ -181,7 +181,16 @@ public class MetricsAggregatorClient {
 
             String trsId = lineComponents[TRS_ID_INDEX];
             String versionName = lineComponents[VERSION_NAME_INDEX];
-            boolean isValid = Boolean.parseBoolean(lineComponents[IS_VALID_INDEX]);
+
+            // Parse boolean value for isValid column
+            String isValidValue = lineComponents[IS_VALID_INDEX];
+            boolean isValid;
+            if ("true".equalsIgnoreCase(isValidValue) || "false".equalsIgnoreCase(isValidValue)) {
+                isValid = Boolean.parseBoolean(isValidValue);
+            } else {
+                LOG.error("isValid column value '{}' is not a boolean value, skipping line '{}'", isValidValue, csvLine);
+                continue;
+            }
             String dateExecuted = lineComponents[DATE_EXECUTED_INDEX];
             ValidationExecution validationExecution = new ValidationExecution()
                     .validatorTool(validator)

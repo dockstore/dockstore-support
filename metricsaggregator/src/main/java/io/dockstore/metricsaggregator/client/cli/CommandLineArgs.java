@@ -33,7 +33,7 @@ public class CommandLineArgs {
 
     @Parameters(commandNames = { "aggregate-metrics" }, commandDescription = "Aggregate metrics in S3")
     public static class AggregateMetricsCommand extends CommandLineArgs {
-        @Parameter(names = {"-c", "--config"}, description = "The config file path.", required = true)
+        @Parameter(names = {"-c", "--config"}, description = "The config file path.")
         private File config = new File("./" + MetricsAggregatorClient.CONFIG_FILE_NAME);
 
         public File getConfig() {
