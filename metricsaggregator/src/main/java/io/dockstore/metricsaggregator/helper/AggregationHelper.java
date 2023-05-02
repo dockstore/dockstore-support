@@ -81,7 +81,9 @@ public final class AggregationHelper {
 
         // Calculate the status count from the aggregated metrics submitted
         Map<String, Integer> metricsStatusCount = allSubmissions.getAggregatedExecutions().stream()
-                .map(m -> m.getExecutionStatusCount().getCount().entrySet())
+                .map(Metrics::getExecutionStatusCount)
+                .filter(Objects::nonNull)
+                .map(executionStatusMetric -> executionStatusMetric.getCount().entrySet())
                 .flatMap(Collection::stream)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, Integer::sum));
 
@@ -107,6 +109,7 @@ public final class AggregationHelper {
         // Get aggregated Execution Time metrics that were submitted to Dockstore
         List<ExecutionTimeMetric> executionTimeMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getExecutionTime)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         getAggregatedExecutionTimeFromExecutions(allSubmissions.getRunExecutions()).ifPresent(executionTimeMetrics::add);
 
@@ -169,6 +172,7 @@ public final class AggregationHelper {
         // Get aggregated Execution Time metrics that were submitted to Dockstore
         List<CpuMetric> cpuMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getCpu)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         getAggregatedCpuFromExecutions(allSubmissions.getRunExecutions()).ifPresent(cpuMetrics::add);
 
@@ -216,6 +220,7 @@ public final class AggregationHelper {
         // Get aggregated Execution Time metrics that were submitted to Dockstore
         List<MemoryMetric> memoryMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getMemory)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         getAggregatedMemoryFromExecutions(allSubmissions.getRunExecutions()).ifPresent(memoryMetrics::add);
 
@@ -263,6 +268,7 @@ public final class AggregationHelper {
         // Get aggregated ValidationStatus metrics that were submitted to Dockstore
         List<ValidationStatusMetric> validationStatusMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getValidationStatus)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         getAggregatedValidationStatusFromExecutions(allSubmissions.getValidationExecutions()).ifPresent(validationStatusMetrics::add);
 
