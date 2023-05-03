@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
+import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.webservice.core.Partner;
@@ -65,35 +66,56 @@ public class MetricsAggregatorS3Client {
     }
 
     public void aggregateMetrics(ExtendedGa4GhApi extendedGa4GhApi) {
-        List<String> metricsDirectories = getDirectories();
+        List<S3DirectoryInfo> metricsDirectories = getDirectories();
 
         if (metricsDirectories.isEmpty()) {
             System.out.println("No directories found to aggregate metrics");
             return;
         }
 
-        // Each directory contains metrics for a specific tool version and platform
-        for (String directory : metricsDirectories) {
-            String toolId = S3ClientHelper.getToolId(directory); // Check if we should just give the full key
-            String versionName = S3ClientHelper.getVersionName(directory);
-            String platform = S3ClientHelper.getMetricsPlatform(directory);
+        for (S3DirectoryInfo directoryInfo : metricsDirectories) {
+            String toolId = directoryInfo.toolId();
+            String versionName = directoryInfo.versionId();
+            List<String> platforms = directoryInfo.platforms();
+            String platformsString = String.join(", ", platforms);
+            String versionS3KeyPrefix = directoryInfo.versionS3KeyPrefix();
 
-            ExecutionsRequestBody executions;
-            try {
-                executions = getExecutions(toolId, versionName, platform);
-            } catch (Exception e) {
-                LOG.error("Error aggregating metrics: Could not get all executions from directory {}", directory, e);
-                continue; // Continue aggregating metrics for other directories
+            // Collect metrics for each platform, so we can calculate metrics across all platforms
+            List<Metrics> allMetrics = new ArrayList<>();
+            for (String platform : platforms) {
+                ExecutionsRequestBody allSubmissions;
+                try {
+                    allSubmissions = getExecutions(toolId, versionName, platform);
+                } catch (Exception e) {
+                    LOG.error("Error aggregating metrics: Could not get all executions from directory {}", versionS3KeyPrefix, e);
+                    continue; // Continue aggregating metrics for other directories
+                }
+
+                try {
+                    getAggregatedMetrics(allSubmissions).ifPresent(metrics -> {
+                        extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, toolId, versionName);
+                        System.out.printf("Aggregated metrics for tool ID %s, version %s, platform %s from directory %s%n", toolId, versionName, platform, versionS3KeyPrefix);
+                        allMetrics.add(metrics);
+                    });
+                } catch (Exception e) {
+                    LOG.error("Error aggregating metrics: Could not put all executions from directory {}", versionS3KeyPrefix, e);
+                    // Continue aggregating metrics for other platforms
+                }
             }
 
-            try {
-                getAggregatedMetrics(executions.getRunExecutions(), executions.getValidationExecutions()).ifPresent(metrics -> {
-                    extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, toolId, versionName);
-                    System.out.printf("Aggregated metrics for tool ID %s, version %s, platform %s from S3 directory %s%n", toolId, versionName, platform, directory);
-                });
-            } catch (Exception e) {
-                LOG.error("Error aggregating metrics: Could not put all executions from directory {}", directory, e);
-                // Continue aggregating metrics for other directories
+            if (!allMetrics.isEmpty()) {
+                // Calculate metrics across all platforms by aggregating the aggregated metrics from each platform
+                try {
+                    getAggregatedMetrics(new ExecutionsRequestBody().aggregatedExecutions(allMetrics)).ifPresent(metrics -> {
+                        extendedGa4GhApi.aggregatedMetricsPut(metrics, Partner.ALL.name(), toolId, versionName);
+                        System.out.printf("Aggregated metrics across all platforms (%s) for tool ID %s, version %s from directory %s%n",
+                                platformsString, toolId, versionName, versionS3KeyPrefix);
+                        allMetrics.add(metrics);
+                    });
+                } catch (Exception e) {
+                    LOG.error("Error aggregating metrics across all platforms ({}) for tool ID {}, version {} from directory {}", platformsString, toolId, versionName, versionS3KeyPrefix, e);
+                    // Continue aggregating metrics for other directories
+                }
             }
         }
     }
@@ -109,6 +131,7 @@ public class MetricsAggregatorS3Client {
         List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(toolId, versionName, Partner.valueOf(platform));
         List<RunExecution> runExecutionsFromAllSubmissions = new ArrayList<>();
         List<ValidationExecution> validationExecutionsFromAllSubmissions = new ArrayList<>();
+        List<Metrics> aggregatedExecutionsFromAllSubmissions = new ArrayList<>();
 
         for (MetricsData metricsData : metricsDataList) {
             String fileContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(),
@@ -116,11 +139,13 @@ public class MetricsAggregatorS3Client {
             ExecutionsRequestBody executionsFromOneSubmission = GSON.fromJson(fileContent, ExecutionsRequestBody.class);
             runExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getRunExecutions());
             validationExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getValidationExecutions());
+            aggregatedExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getAggregatedExecutions());
         }
 
         return new ExecutionsRequestBody()
                 .runExecutions(runExecutionsFromAllSubmissions)
-                .validationExecutions(validationExecutionsFromAllSubmissions);
+                .validationExecutions(validationExecutionsFromAllSubmissions)
+                .aggregatedExecutions(aggregatedExecutionsFromAllSubmissions);
     }
 
     /**
@@ -163,25 +188,33 @@ public class MetricsAggregatorS3Client {
      *
      * @return
      */
-    public List<String> getDirectories() {
-        List<String> commonPrefixes = new ArrayList<>();
+    public List<S3DirectoryInfo> getDirectories() {
         ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucketName).delimiter("/").build();
         ListObjectsV2Response listObjectsV2Response = s3Client.listObjectsV2(request);
         Queue<CommonPrefix> commonPrefixesToProcess = new ArrayDeque<>(listObjectsV2Response.commonPrefixes());
+        List<S3DirectoryInfo> s3DirectoryInfos = new ArrayList<>();
 
         while (!commonPrefixesToProcess.isEmpty()) {
             String prefix = commonPrefixesToProcess.remove().prefix();
             request = ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).delimiter("/").build();
             listObjectsV2Response = s3Client.listObjectsV2(request);
 
-            if (listObjectsV2Response.commonPrefixes().isEmpty()) {
-                // Reached the end of the key, add the previous prefix
-                commonPrefixes.add(prefix);
+            boolean isVersionDirectory = !S3ClientHelper.getVersionName(prefix).isEmpty();
+            if (isVersionDirectory) {
+                String toolId = S3ClientHelper.getToolId(prefix);
+                String versionId = S3ClientHelper.getVersionName(prefix);
+                List<String> platforms = listObjectsV2Response.commonPrefixes().stream()
+                        .map(commonPrefix -> S3ClientHelper.getMetricsPlatform(commonPrefix.prefix()))
+                        .toList();
+                s3DirectoryInfos.add(new S3DirectoryInfo(toolId, versionId, platforms, prefix));
             } else {
                 commonPrefixesToProcess.addAll(listObjectsV2Response.commonPrefixes());
             }
         }
 
-        return commonPrefixes;
+        return s3DirectoryInfos;
+    }
+
+    public record S3DirectoryInfo(String toolId, String versionId, List<String> platforms, String versionS3KeyPrefix) {
     }
 }

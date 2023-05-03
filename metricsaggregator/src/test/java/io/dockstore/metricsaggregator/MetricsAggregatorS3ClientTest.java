@@ -18,6 +18,8 @@
 package io.dockstore.metricsaggregator;
 
 import java.util.List;
+import java.util.Objects;
+
 import cloud.localstack.ServiceName;
 import cloud.localstack.awssdkv2.TestUtils;
 import cloud.localstack.docker.LocalstackDockerExtension;
@@ -125,10 +127,26 @@ class MetricsAggregatorS3ClientTest {
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform2, workflowId, workflowVersionId, "");
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, toolId, toolVersionId, "");
 
-        List<String> directories = metricsAggregatorS3Client.getDirectories();
-        assertEquals(3, directories.size());
-        assertTrue(directories.contains(String.join("/", S3ClientHelper.convertToolIdToPartialKey(workflowId), workflowVersionId, platform1 + "/")));
-        assertTrue(directories.contains(String.join("/", S3ClientHelper.convertToolIdToPartialKey(workflowId), workflowVersionId, platform2 + "/")));
-        assertTrue(directories.contains(String.join("/", S3ClientHelper.convertToolIdToPartialKey(toolId), toolVersionId, platform1 + "/")));
+        List<MetricsAggregatorS3Client.S3DirectoryInfo> s3DirectoryInfos = metricsAggregatorS3Client.getDirectories();
+        assertEquals(2, s3DirectoryInfos.size());
+        MetricsAggregatorS3Client.S3DirectoryInfo s3DirectoryInfo = s3DirectoryInfos.stream()
+                .filter(directoryInfo -> Objects.equals(directoryInfo.versionS3KeyPrefix(), String.join("/", S3ClientHelper.convertToolIdToPartialKey(workflowId), workflowVersionId + "/")))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(s3DirectoryInfo);
+        assertEquals(workflowId, s3DirectoryInfo.toolId());
+        assertEquals(workflowVersionId, s3DirectoryInfo.versionId());
+        assertEquals(2, s3DirectoryInfo.platforms().size());
+        assertTrue(s3DirectoryInfo.platforms().contains(platform1) && s3DirectoryInfo.platforms().contains(platform2));
+
+        s3DirectoryInfo = s3DirectoryInfos.stream()
+                .filter(directoryInfo -> Objects.equals(directoryInfo.versionS3KeyPrefix(), String.join("/", S3ClientHelper.convertToolIdToPartialKey(toolId), toolVersionId + "/")))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(s3DirectoryInfo);
+        assertEquals(toolId, s3DirectoryInfo.toolId());
+        assertEquals(toolVersionId, s3DirectoryInfo.versionId());
+        assertEquals(1, s3DirectoryInfo.platforms().size());
+        assertTrue(s3DirectoryInfo.platforms().contains(platform1));
     }
 }
