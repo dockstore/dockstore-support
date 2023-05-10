@@ -19,7 +19,7 @@
 
     <groupId>io.dockstore</groupId>
     <artifactId>metricsaggregator</artifactId>
-    <version>0.1-zeta.0-SNAPSHOT</version>
+    <version>0.1-zeta.0</version>
     <packaging>jar</packaging>
 
     <name>metricsaggregator</name>
@@ -50,7 +50,7 @@
         <connection>${github.url}</connection>
         <developerConnection>${github.url}</developerConnection>
         <url>${github.url}</url>
-      <tag>HEAD</tag>
+      <tag>0.1-zeta.0</tag>
   </scm>
 
     <repositories>
