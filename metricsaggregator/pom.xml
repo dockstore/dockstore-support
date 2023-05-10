@@ -379,7 +379,7 @@
                                 <artifacts>
                                     <artifact>
                                         <file>scripts/format-dnastack-validation-data.sh</file>
-                                        <type>format-dnastack-validation-data.sh</type>
+                                        <type>sh</type>
                                         <classifier>dist</classifier>
                                     </artifact>
                                 </artifacts>
