@@ -1,17 +1,22 @@
 package io.dockstore.toolbackup.client.cli;
 
+import static io.dockstore.toolbackup.client.cli.Client.CLIENT_ERROR;
+import static io.dockstore.toolbackup.client.cli.Client.IO_ERROR;
+
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import static io.dockstore.toolbackup.client.cli.Client.CLIENT_ERROR;
-import static io.dockstore.toolbackup.client.cli.Client.IO_ERROR;
-
 /**
  * Created by kcao on 11/01/17.
  */
-public class DirectoryGenerator {
+public final class DirectoryGenerator {
+
+    private DirectoryGenerator() {
+        // hidden constructor
+    }
+
     public static void createDir(String dirPath) {
         try {
             Files.createDirectories(Paths.get(dirPath));

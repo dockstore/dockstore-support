@@ -1,5 +1,15 @@
 package io.dockstore.tooltester.helper;
 
+import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+
+import io.dockstore.openapi.client.ApiException;
+import io.dockstore.openapi.client.api.Ga4Ghv20Api;
+import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.ToolVersion;
+import io.dockstore.tooltester.CommandObject;
+import io.dockstore.tooltester.blacklist.BlackList;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -7,27 +17,21 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import io.dockstore.openapi.client.ApiException;
-import io.dockstore.openapi.client.model.Tool;
-import io.dockstore.openapi.client.model.ToolVersion;
-import io.dockstore.tooltester.CommandObject;
-import io.dockstore.tooltester.blacklist.BlackList;
-import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 
 /**
  * A variety of helper methods to filter TRS Tool and TRS ToolVersion
  * @author gluu
  * @since 23/03/18
  */
-public class GA4GHHelper {
+public final class GA4GHHelper {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(GA4GHHelper.class);
+
+    private GA4GHHelper() {
+        // hidden constructor
+    }
     /**
      * Gets all tools from the GA4GH API
      * @param ga4Ghv20Api  The GA4GH API
@@ -36,7 +40,7 @@ public class GA4GHHelper {
     private static List<Tool> getAllTools(Ga4Ghv20Api ga4Ghv20Api) {
         List<Tool> tools = new ArrayList<>();
         try {
-            tools = ga4Ghv20Api.toolsGet(null, null, null, null, null, null, null, null,null, null, null, null, null);
+            tools = ga4Ghv20Api.toolsGet(null, null, null, null, null, null, null, null, null, null, null, null, null);
         } catch (ApiException e) {
             exceptionMessage(e, "Could not get all tools", API_ERROR);
         }
@@ -145,12 +149,12 @@ public class GA4GHHelper {
      * @param allTools      List of all GA4GH tools
      */
     private static void addCheckerWorkflows(List<Tool> filteredTools, List<Tool> allTools) {
-        List<Tool> filteredToolsWithChecker = filteredTools.stream().filter(Tool::isHasChecker).collect(Collectors.toList());
+        List<Tool> filteredToolsWithChecker = filteredTools.stream().filter(Tool::isHasChecker).toList();
 
         String segment = "api/ga4gh/v2/tools/";
         filteredToolsWithChecker.forEach(tool -> {
             String checkerUrl = tool.getCheckerUrl();
-            List<String> versionNames = tool.getVersions().stream().map(ToolVersion::getName).collect(Collectors.toList());
+            List<String> versionNames = tool.getVersions().stream().map(ToolVersion::getName).toList();
             String checkerId;
             checkerId = URLDecoder.decode(checkerUrl.substring(checkerUrl.indexOf(segment) + segment.length()), StandardCharsets.UTF_8);
             if (filteredTools.stream().noneMatch(tool1 -> tool1.getId().equals(checkerId))) {
@@ -202,7 +206,7 @@ public class GA4GHHelper {
     public static List<CommandObject> getCommandObjects(Tool tool, String[] runners) {
         String toolId = tool.getId();
         List<CommandObject> commandObjects = new ArrayList<>();
-        tool.getVersions().stream()
+        tool.getVersions()
                 .forEach(toolVersion -> Arrays.stream(runners).forEach(runner -> {
                     if (toolVersion.getDescriptorType().stream()
                             .anyMatch(descriptorTypeEnum -> runnerSupportsDescriptorType(runner, descriptorTypeEnum))) {

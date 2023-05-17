@@ -4,7 +4,6 @@ package io.dockstore.tooltester.blueOceanJsonObjects;
  * @author gluu
  * @since 22/02/17
  */
-
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 

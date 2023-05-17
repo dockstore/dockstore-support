@@ -1,6 +1,5 @@
 package io.dockstore.tooltester;
 
-
 import io.dockstore.openapi.client.model.ToolVersion;
 
 /**

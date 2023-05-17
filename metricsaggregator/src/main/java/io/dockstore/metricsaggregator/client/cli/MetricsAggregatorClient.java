@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
 public class MetricsAggregatorClient {
 
     public static final String CONFIG_FILE_NAME = "metrics-aggregator.config";
-    private static final Logger LOG = LoggerFactory.getLogger(MetricsAggregatorClient.class);
     public static final int SUCCESS_EXIT_CODE = 0;
     public static final int FAILURE_EXIT_CODE = 1;
     public static final String CONFIG_FILE_ERROR = "Could not get configuration file";
@@ -56,6 +55,8 @@ public class MetricsAggregatorClient {
     public static final int IS_VALID_INDEX = 2;
     public static final int DATE_EXECUTED_INDEX = 3;
     public static final List<String> VALIDATION_FILE_CSV_FIELDS = List.of("trsId", "versionName", "isValid", "dateExecuted");
+
+    private static final Logger LOG = LoggerFactory.getLogger(MetricsAggregatorClient.class);
 
 
     public MetricsAggregatorClient() {

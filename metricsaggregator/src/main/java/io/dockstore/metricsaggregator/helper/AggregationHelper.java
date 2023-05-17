@@ -35,7 +35,8 @@ import org.slf4j.LoggerFactory;
 public final class AggregationHelper {
     private static final Logger LOG = LoggerFactory.getLogger(AggregationHelper.class);
 
-    private AggregationHelper() {}
+    private AggregationHelper() {
+    }
 
     /**
      * Aggregate metrics from all submissions.

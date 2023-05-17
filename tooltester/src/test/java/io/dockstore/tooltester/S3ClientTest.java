@@ -1,10 +1,9 @@
 package io.dockstore.tooltester;
 
-import java.io.UnsupportedEncodingException;
-
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.io.UnsupportedEncodingException;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author gluu

@@ -7,18 +7,7 @@ import java.util.List;
  * @author gluu
  * @since 04/04/19
  */
-public class BlackList {
-    /**
-     * Determines whether an entry and its version has been blacklisted or not
-     * @param entryId   The entry's ID (e.g. #workflow/github.com/dockstore/hello_world)
-     * @param version   The entry's version name (e.g. master)
-     * @return Whether or not the tool and toolversion is blacklisted
-     */
-    public static boolean isNotBlacklisted(String entryId, String version) {
-        boolean blacklisted = BlackList.BLACKLIST.stream()
-                .anyMatch(object -> object.getToolId().equals(entryId) && object.getToolVersionName().equals(version));
-        return !blacklisted;
-    }
+public final class BlackList {
 
     private static final List<BlackListObject> BLACKLIST = List
             .of(
@@ -50,4 +39,21 @@ public class BlackList {
                     new BlackListObject("#workflow/github.com/Barski-lab/ga4gh_challenge", "v0.0.3", "Just doesn't work with new cwltool"),
                     new BlackListObject("#workflow/github.com/dockstore/hello_world/_cwl_checker:v1.0.0", "v1.0.0",
                             "not actually a checker workflow"));
+
+    private BlackList() {
+        // hidden constructor
+    }
+
+    /**
+     * Determines whether an entry and its version has been blacklisted or not
+     * @param entryId   The entry's ID (e.g. #workflow/github.com/dockstore/hello_world)
+     * @param version   The entry's version name (e.g. master)
+     * @return Whether or not the tool and toolversion is blacklisted
+     */
+    public static boolean isNotBlacklisted(String entryId, String version) {
+        boolean blacklisted = BlackList.BLACKLIST.stream()
+            .anyMatch(object -> object.getToolId().equals(entryId) && object.getToolVersionName().equals(version));
+        return !blacklisted;
+    }
+
 }

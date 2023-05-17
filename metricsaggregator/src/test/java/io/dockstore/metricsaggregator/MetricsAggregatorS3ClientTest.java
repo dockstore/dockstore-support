@@ -17,8 +17,14 @@
 
 package io.dockstore.metricsaggregator;
 
-import java.util.List;
-import java.util.Objects;
+import static io.dockstore.client.cli.BaseIT.ADMIN_USERNAME;
+import static io.dockstore.metricsaggregator.common.TestUtilities.BUCKET_NAME;
+import static io.dockstore.metricsaggregator.common.TestUtilities.ENDPOINT_OVERRIDE;
+import static io.dockstore.metricsaggregator.common.TestUtilities.createRunExecution;
+import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import cloud.localstack.ServiceName;
 import cloud.localstack.awssdkv2.TestUtils;
@@ -43,6 +49,8 @@ import io.dockstore.webservice.DockstoreWebserviceConfiguration;
 import io.dockstore.webservice.core.Partner;
 import io.dockstore.webservice.helpers.S3ClientHelper;
 import io.dropwizard.testing.DropwizardTestSupport;
+import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -51,15 +59,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awssdk.services.s3.S3Client;
 
-import static io.dockstore.client.cli.BaseIT.ADMIN_USERNAME;
-import static io.dockstore.metricsaggregator.common.TestUtilities.BUCKET_NAME;
-import static io.dockstore.metricsaggregator.common.TestUtilities.ENDPOINT_OVERRIDE;
-import static io.dockstore.metricsaggregator.common.TestUtilities.createRunExecution;
-import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ExtendWith(LocalstackDockerExtension.class)
 @LocalstackDockerProperties(imageTag = LocalStackTestUtilities.IMAGE_TAG, services = { ServiceName.S3 }, environmentVariableProvider = LocalStackTestUtilities.LocalStackEnvironmentVariables.class)
 class MetricsAggregatorS3ClientTest {
@@ -67,7 +66,7 @@ class MetricsAggregatorS3ClientTest {
     private static S3Client s3Client;
     private static TestingPostgres testingPostgres;
 
-    public static DropwizardTestSupport<DockstoreWebserviceConfiguration> SUPPORT = new DropwizardTestSupport<>(
+    private static final DropwizardTestSupport<DockstoreWebserviceConfiguration> SUPPORT = new DropwizardTestSupport<>(
             DockstoreWebserviceApplication.class, CommonTestUtilities.PUBLIC_CONFIG_PATH);
 
     @BeforeAll

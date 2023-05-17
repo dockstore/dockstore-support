@@ -1,22 +1,20 @@
 package io.dockstore.tooltester.client.cli;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import io.dockstore.tooltester.helper.PipelineTester;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
+
+import io.dockstore.tooltester.helper.PipelineTester;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import uk.org.webcompere.systemstubs.stream.SystemErr;
 import uk.org.webcompere.systemstubs.stream.output.NoopStream;
-
-import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
 
 /**
  * @author gluu

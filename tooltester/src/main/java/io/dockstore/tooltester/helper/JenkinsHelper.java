@@ -1,17 +1,10 @@
 package io.dockstore.tooltester.helper;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.MediaType;
+import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 
 import com.google.gson.Gson;
 import com.offbytwo.jenkins.JenkinsServer;
@@ -24,16 +17,21 @@ import com.offbytwo.jenkins.model.JobWithDetails;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineImpl;
 import io.dockstore.tooltester.blueOceanJsonObjects.PipelineNodeImpl;
 import io.dockstore.tooltester.jenkins.CrumbJsonResult;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.MediaType;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
-import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 
 //import com.offbytwo.jenkins.model.Artifact;
 
@@ -98,7 +96,7 @@ public abstract class JenkinsHelper {
     public String getEntity(String uri) {
         String entity = null;
         try {
-            String crumb = getCrumb();
+            String localCrumb = getCrumb();
 
             // The configuration file is only used for production.  Otherwise it defaults to the travis ones.
             String username = config.getString("jenkins-username", "travis");
@@ -106,7 +104,7 @@ public abstract class JenkinsHelper {
             String serverUrl = config.getString("jenkins-server-url", "http://172.18.0.22:8080");
             HttpAuthenticationFeature feature = HttpAuthenticationFeature.basic(username, password);
             javax.ws.rs.client.Client client = ClientBuilder.newClient().register(feature);
-            entity = client.target(serverUrl).path(uri).request(MediaType.TEXT_PLAIN_TYPE).header("crumbRequestField", crumb)
+            entity = client.target(serverUrl).path(uri).request(MediaType.TEXT_PLAIN_TYPE).header("crumbRequestField", localCrumb)
                     .get(String.class);
         } catch (Exception e) {
             LOG.warn("Could not get Jenkins stage: " + uri);
@@ -137,12 +135,12 @@ public abstract class JenkinsHelper {
      * Constructs the name of the Pipeline on Jenkins based on several properties
      *
      * @param runner        The runner (cwltool, toil, cromwell)
-     * @param ToolVersionId The ToolVersion ID, which is also equivalent to the Tool ID + version name
+     * @param toolVersionId The ToolVersion ID, which is also equivalent to the Tool ID + version name
      * @return
      */
-    public static String buildName(String runner, String ToolVersionId) {
+    public static String buildName(String runner, String toolVersionId) {
         String prefix = PipelineTester.PREFIX;
-        String name = String.join("-", prefix, runner, ToolVersionId);
+        String name = String.join("-", prefix, runner, toolVersionId);
         name = JenkinsHelper.cleanSuffx(name);
         return name;
     }

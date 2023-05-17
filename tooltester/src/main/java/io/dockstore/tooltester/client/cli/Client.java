@@ -15,21 +15,21 @@
  */
 package io.dockstore.tooltester.client.cli;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Type;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
+import static io.dockstore.tooltester.client.cli.JCommanderUtility.printJCommanderHelp;
+import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.DEBUG;
+import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
+import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.GSON;
+import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
+import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.uploadRunInfo;
+import static io.dockstore.webservice.helpers.S3ClientHelper.getMetricsPlatform;
+import static io.dockstore.webservice.helpers.S3ClientHelper.getToolId;
+import static io.dockstore.webservice.helpers.S3ClientHelper.getVersionName;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
@@ -41,6 +41,7 @@ import com.offbytwo.jenkins.model.Artifact;
 import com.offbytwo.jenkins.model.Build;
 import com.offbytwo.jenkins.model.JobWithDetails;
 import io.dockstore.common.Utilities;
+import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.Configuration;
 import io.dockstore.openapi.client.api.ContainersApi;
@@ -68,32 +69,30 @@ import io.dockstore.tooltester.jenkins.OutputFile;
 import io.dockstore.tooltester.report.FileReport;
 import io.dockstore.tooltester.runWorkflow.WorkflowList;
 import io.dockstore.tooltester.runWorkflow.WorkflowRunner;
-import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.tooltester.runWorkflow.WorkflowRunnerConfig;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Type;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
-import static io.dockstore.tooltester.client.cli.JCommanderUtility.printJCommanderHelp;
-import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.DEBUG;
-import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
-import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
-import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.GSON;
-import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
-import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.uploadRunInfo;
-import static io.dockstore.webservice.helpers.S3ClientHelper.getMetricsPlatform;
-import static io.dockstore.webservice.helpers.S3ClientHelper.getToolId;
-import static io.dockstore.webservice.helpers.S3ClientHelper.getVersionName;
 
 /**
  * Prototype for testing service
  */
 public class Client {
+
     private static final Logger LOG = LoggerFactory.getLogger(Client.class);
     private static final int WAIT_TIME = 15;
     private static final String DEFAULT_SAVE_DIRECTORY = "results";
@@ -152,52 +151,52 @@ public class Client {
             jc.usage();
         } else {
             switch (jc.getParsedCommand()) {
-                case "report":
-                    if (commandReport.help) {
-                        printJCommanderHelp(jc, "autotool", "report");
-                    } else {
-                        client.handleReport(commandReport.tools, commandEnqueue.source);
-                    }
-                    break;
-                case "enqueue":
-                    if (commandEnqueue.help) {
-                        printJCommanderHelp(jc, "autotool", "enqueue");
-                    } else {
-                        client.handleRunTests(commandEnqueue.tools, commandEnqueue.source);
-                    }
-                    break;
-                case "file-report":
-                    if (commandFileReport.help) {
-                        printJCommanderHelp(jc, "autotool", "file-report");
-                    } else {
-                        client.handleFileReport(commandFileReport.tool);
-                    }
-                    break;
-                case "sync":
-                    if (commandSync.help) {
-                        printJCommanderHelp(jc, "autotool", "sync");
-                    } else {
-                        client.handleCreateTests(commandSync.tools, commandSync.source);
-                    }
-                    break;
-                case "run-workflows-through-wes":
-                    if (commandRunWorkflows.help) {
-                        printJCommanderHelp(jc, "autotool", "run-workflows-through-wes");
-                    } else {
-                        client.runToolTesterOnWorkflows(commandRunWorkflows.configFilePath, commandRunWorkflows.resultDirectory);
-                    }
-                    break;
-                case "upload-results":
-                    if (commandUploadRunResults.help) {
-                        printJCommanderHelp(jc, "autotool", "upload-results");
-                    } else {
-                        client.uploadResults(commandUploadRunResults.url, commandUploadRunResults.location, commandUploadRunResults.configFilePath);
-                    }
-                    break;
-                default:
-                    jc.usage();
-                    // This line should never get called, as this case would've been caught when
-                    // jc.parse(argv) was called
+            case "report":
+                if (commandReport.help) {
+                    printJCommanderHelp(jc, "autotool", "report");
+                } else {
+                    client.handleReport(commandReport.tools, commandEnqueue.source);
+                }
+                break;
+            case "enqueue":
+                if (commandEnqueue.help) {
+                    printJCommanderHelp(jc, "autotool", "enqueue");
+                } else {
+                    client.handleRunTests(commandEnqueue.tools, commandEnqueue.source);
+                }
+                break;
+            case "file-report":
+                if (commandFileReport.help) {
+                    printJCommanderHelp(jc, "autotool", "file-report");
+                } else {
+                    client.handleFileReport(commandFileReport.tool);
+                }
+                break;
+            case "sync":
+                if (commandSync.help) {
+                    printJCommanderHelp(jc, "autotool", "sync");
+                } else {
+                    client.handleCreateTests(commandSync.tools, commandSync.source);
+                }
+                break;
+            case "run-workflows-through-wes":
+                if (commandRunWorkflows.help) {
+                    printJCommanderHelp(jc, "autotool", "run-workflows-through-wes");
+                } else {
+                    client.runToolTesterOnWorkflows(commandRunWorkflows.configFilePath, commandRunWorkflows.resultDirectory);
+                }
+                break;
+            case "upload-results":
+                if (commandUploadRunResults.help) {
+                    printJCommanderHelp(jc, "autotool", "upload-results");
+                } else {
+                    client.uploadResults(commandUploadRunResults.url, commandUploadRunResults.location, commandUploadRunResults.configFilePath);
+                }
+                break;
+            default:
+                jc.usage();
+                // This line should never get called, as this case would've been caught when
+                // jc.parse(argv) was called
             }
         }
     }
@@ -245,7 +244,7 @@ public class Client {
                                 String size = file.getValue().getSize().toString();
                                 String basename = file.getValue().getBasename();
                                 List<String> record = Arrays
-                                        .asList(String.valueOf(buildId), tag.getName(), cwlID, basename, checksum, size);
+                                    .asList(String.valueOf(buildId), tag.getName(), cwlID, basename, checksum, size);
                                 fileReport.printAndWriteLine(record);
                                 try {
                                     inputStream.close();
@@ -343,7 +342,7 @@ public class Client {
 
     private List<File> getAllFilesInDirectory(File directory) {
         List<File> filesInDirectory = new ArrayList<>();
-        for (File file: directory.listFiles()) {
+        for (File file : directory.listFiles()) {
             if (file.isDirectory()) {
                 filesInDirectory.addAll(getAllFilesInDirectory(file));
             } else {
@@ -359,8 +358,8 @@ public class Client {
 
         Path resultsDirectoryPath = Path.of(resultsDirectoryString);
         File resultsDirectory = new File(resultsDirectoryString);
-        List <File> allResultFiles = getAllFilesInDirectory(resultsDirectory);
-        for (File file: allResultFiles) {
+        List<File> allResultFiles = getAllFilesInDirectory(resultsDirectory);
+        for (File file : allResultFiles) {
 
             Path path = Path.of(file.getPath());
             String fileContent = null;
@@ -386,10 +385,11 @@ public class Client {
 
             LOG.info("Uploading run metrics for: " + fileKey);
             uploadRunInfo(extendedGa4GhApi, runMetricsExecutionsRequestBody, metricsPlatform, toolID, versionName,
-                    "metrics from a previous run of the tooltester 'run-workflows-through-wes' command");
+                "metrics from a previous run of the tooltester 'run-workflows-through-wes' command");
         }
 
     }
+
     private void runToolTesterOnWorkflows(String pathToConfigFile, String resultDirectory) throws InterruptedException {
         this.workflowRunnerConfig = new WorkflowRunnerConfig(pathToConfigFile);
         setUpGa4Ghv20Api();
@@ -409,26 +409,25 @@ public class Client {
             TimeUnit.SECONDS.sleep(WAIT_TIME);
             List<WorkflowRunner> workflowsToCheck = new ArrayList<>();
             workflowsToCheck.addAll(workflowsStillRunning);
-            for (WorkflowRunner workflow: workflowsToCheck) {
+            for (WorkflowRunner workflow : workflowsToCheck) {
                 if (workflow.isWorkflowFinished()) {
                     workflowsStillRunning.remove(workflow);
                 }
             }
         }
 
-       TimeUnit.MINUTES.sleep(WAIT_TIME);
+        TimeUnit.MINUTES.sleep(WAIT_TIME);
 
-
-        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
+        for (WorkflowRunner workflow : workflowsToRun.getWorkflowsToRun()) {
             workflow.uploadAndSaveRunInfo();
         }
-        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
+        for (WorkflowRunner workflow : workflowsToRun.getWorkflowsToRun()) {
             workflow.deregisterTasks();
         }
 
         printLine();
 
-        for (WorkflowRunner workflow: workflowsToRun.getWorkflowsToRun()) {
+        for (WorkflowRunner workflow : workflowsToRun.getWorkflowsToRun()) {
             workflow.printRunStatistics();
             printLine();
         }
@@ -466,7 +465,7 @@ public class Client {
         for (String runner : tooltesterConfig.getRunner()) {
             List<ToolVersion> toolVersions = tool.getVersions();
             List<ToolVersion> notBlacklistedToolVersions = toolVersions.stream()
-                    .filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName())).collect(Collectors.toList());
+                .filter(toolVersion -> BlackList.isNotBlacklisted(toolId, toolVersion.getName())).toList();
             for (ToolVersion toolversion : notBlacklistedToolVersions) {
                 String name = buildName(runner, toolversion.getId());
                 pipelineTester.createTest(name, jobTemplate);
@@ -476,7 +475,7 @@ public class Client {
 
     @SuppressWarnings("checkstyle:parameternumber")
     private Map<String, String> constructParameterMap(String url, String referenceName, String entryType, String dockerfilePath,
-            String parameterPath, String descriptorPath, String synapseCache, String runner, String commands) {
+        String parameterPath, String descriptorPath, String synapseCache, String runner, String commands) {
         Map<String, String> parameter = new HashMap<>();
         parameter.put("URL", url);
         parameter.put("ParameterPath", parameterPath);
@@ -488,7 +487,7 @@ public class Client {
         parameter.put("Config", DockstoreConfigHelper.getConfig(tooltesterConfig.getServerUrl(), runner));
         parameter.put("DockstoreVersion", this.tooltesterConfig.getDockstoreVersion());
         parameter.put("Commands", commands);
-        if (runner == "toil") {
+        if ("toil".equals(runner)) {
             parameter.put("AnsiblePlaybook", "toilPlaybook");
         } else {
             parameter.put("AnsiblePlaybook", "cwltoolPlaybook");
@@ -497,9 +496,7 @@ public class Client {
     }
 
     /**
-     * test the workflow by
-     * 1) Running available parameter files
-     * 2) Storing results for each workflow as it finishes
+     * test the workflow by 1) Running available parameter files 2) Storing results for each workflow as it finishes
      *
      * @param tool The tool to test
      * @return boolean  Returns true
@@ -509,14 +506,14 @@ public class Client {
         String toolId = tool.getId();
         Workflow workflow = DockstoreEntryHelper.convertTRSToolToDockstoreEntry(tool, workflowsApi);
         String url = DockstoreEntryHelper.convertGitSSHUrlToGitHTTPSUrl(workflow.getGitUrl());
-        List<String> versionsToRun = tool.getVersions().stream().map(ToolVersion::getName).collect(Collectors.toList());
+        List<String> versionsToRun = tool.getVersions().stream().map(ToolVersion::getName).toList();
         if (url == null) {
             return false;
         }
         Long entryId = workflow.getId();
         for (String runner : tooltesterConfig.getRunner()) {
             List<WorkflowVersion> matchingVersions = workflow.getWorkflowVersions().stream()
-                    .filter(version -> versionsToRun.contains(version.getName())).collect(Collectors.toList());
+                .filter(version -> versionsToRun.contains(version.getName())).toList();
             for (WorkflowVersion version : matchingVersions) {
                 List<String> commandsList = new ArrayList<>();
                 List<String> descriptorsList = new ArrayList<>();
@@ -536,11 +533,11 @@ public class Client {
                     String descriptorPath = DockstoreEntryHelper.convertDockstoreAbsolutePathToJenkinsRelativePath(descriptor.getPath());
                     testParameterFiles = workflowsApi.getTestParameterFiles1(entryId, tagName);
                     testParameterFiles.stream().map(testParameterFile -> DockstoreEntryHelper
-                            .convertDockstoreAbsolutePathToJenkinsRelativePath(testParameterFile.getPath())).forEach(parameterPath -> {
-                        parametersList.add(parameterPath);
-                        descriptorsList.add(descriptorPath);
-                        commandsList.add(DockstoreEntryHelper.generateLaunchEntryCommand(workflow, version, parameterPath));
-                    });
+                        .convertDockstoreAbsolutePathToJenkinsRelativePath(testParameterFile.getPath())).forEach(parameterPath -> {
+                            parametersList.add(parameterPath);
+                            descriptorsList.add(descriptorPath);
+                            commandsList.add(DockstoreEntryHelper.generateLaunchEntryCommand(workflow, version, parameterPath));
+                        });
 
                 } catch (ApiException e) {
                     exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the workflows API for " + name, API_ERROR);
@@ -550,8 +547,8 @@ public class Client {
                     throw new RuntimeException();
                 }
                 Map<String, String> parameter = constructParameterMap(url, tagName, "workflow", dockerfilePath,
-                        parametersList.stream().collect(Collectors.joining(" ")), descriptorsList.stream().collect(Collectors.joining(" ")),
-                        synapseCache, runner, String.join("%20", commandsList));
+                    String.join(" ", parametersList), String.join(" ", descriptorsList),
+                    synapseCache, runner, String.join("%20", commandsList));
                 if (!runTest(name, parameter)) {
                     status = false;
                     continue;
@@ -563,15 +560,16 @@ public class Client {
 
     /**
      * Checks whether the runner is compatible with the descriptor type
-     * @param runner    The runner ("cwltool", "cwlrunner", "cromwell")
-     * @param descriptorType    The descriptor type in upper case ("CWL", "WDL", "NFL")
-     * @return  Whether the runner is compatible with the descriptor type or not
+     *
+     * @param runner         The runner ("cwltool", "cwlrunner", "cromwell")
+     * @param descriptorType The descriptor type in upper case ("CWL", "WDL", "NFL")
+     * @return Whether the runner is compatible with the descriptor type or not
      */
     private boolean compatibleRunner(String runner, String descriptorType) {
         // Run CWL on anything except Cromwell
-        boolean cwlOnAnythingExceptCromwell = !runner.equals("cromwell") && descriptorType.equals(Workflow.DescriptorTypeEnum.CWL.toString());
+        boolean cwlOnAnythingExceptCromwell = !"cromwell".equals(runner) && descriptorType.equals(Workflow.DescriptorTypeEnum.CWL.toString());
         // Run WDL on Cromwell only
-        boolean wdlOnOnlyCromwell = runner.equals("cromwell") && descriptorType.equals(Workflow.DescriptorTypeEnum.WDL.toString());
+        boolean wdlOnOnlyCromwell = "cromwell".equals(runner) && descriptorType.equals(Workflow.DescriptorTypeEnum.WDL.toString());
         return cwlOnAnythingExceptCromwell || wdlOnOnlyCromwell;
     }
 
@@ -618,14 +616,10 @@ public class Client {
     }
 
     /**
-     * test the tool by
-     * 1) Running available parameter files
-     * 2) Rebuilding docker images
-     * 3) Storing results for each tool as it finishes
+     * test the tool by 1) Running available parameter files 2) Rebuilding docker images 3) Storing results for each tool as it finishes
      * <p>
-     * in the early phases of the project, we can try to run these locally sequentially
-     * however, due to system requirements, it will quickly become necessary to hook this up to
-     * either a fixed network of slaves or Consonance on-demand hosts
+     * in the early phases of the project, we can try to run these locally sequentially however, due to system requirements, it will quickly become necessary to hook this up to either a fixed network
+     * of slaves or Consonance on-demand hosts
      *
      * @param tool The tool to test
      * @return boolean  Returns true
@@ -635,20 +629,20 @@ public class Client {
         String toolId = tool.getId();
         DockstoreTool dockstoreTool = DockstoreEntryHelper.convertTRSToolToDockstoreEntry(tool, containersApi);
         String url = DockstoreEntryHelper.convertGitSSHUrlToGitHTTPSUrl(dockstoreTool.getGitUrl());
-        List<String> versionsToRun = tool.getVersions().stream().map(ToolVersion::getName).collect(Collectors.toList());
+        List<String> versionsToRun = tool.getVersions().stream().map(ToolVersion::getName).toList();
         if (url == null) {
             return false;
         }
         Long entryId = dockstoreTool.getId();
         for (String runner : tooltesterConfig.getRunner()) {
             List<Tag> matchingVersions = dockstoreTool.getWorkflowVersions().stream()
-                    .filter(version -> versionsToRun.contains(version.getName())).collect(Collectors.toList());
+                .filter(version -> versionsToRun.contains(version.getName())).toList();
             for (Tag tag : matchingVersions) {
                 List<String> commandsList = new ArrayList<>();
                 List<String> descriptorsList = new ArrayList<>();
                 List<String> parametersList = new ArrayList<>();
                 String dockerfilePath = tag.getDockerfilePath() != null ? DockstoreEntryHelper
-                        .convertDockstoreAbsolutePathToJenkinsRelativePath(tag.getDockerfilePath()) : null;
+                    .convertDockstoreAbsolutePathToJenkinsRelativePath(tag.getDockerfilePath()) : null;
                 String tagName = tag.getName();
                 String referenceName = tag.getReference();
                 try {
@@ -661,14 +655,14 @@ public class Client {
                             continue;
                         }
                         String descriptorPath = DockstoreEntryHelper
-                                .convertDockstoreAbsolutePathToJenkinsRelativePath(descriptor.getPath());
+                            .convertDockstoreAbsolutePathToJenkinsRelativePath(descriptor.getPath());
                         testParameterFiles = containersApi.getTestParameterFiles(entryId, descriptorType, tagName);
                         testParameterFiles.stream().map(testParameterFile -> DockstoreEntryHelper
-                                .convertDockstoreAbsolutePathToJenkinsRelativePath(testParameterFile.getPath())).forEach(parameterPath -> {
-                            parametersList.add(parameterPath);
-                            descriptorsList.add(descriptorPath);
-                            commandsList.add(DockstoreEntryHelper.generateLaunchEntryCommand(dockstoreTool, tag, parameterPath));
-                        });
+                            .convertDockstoreAbsolutePathToJenkinsRelativePath(testParameterFile.getPath())).forEach(parameterPath -> {
+                                parametersList.add(parameterPath);
+                                descriptorsList.add(descriptorPath);
+                                commandsList.add(DockstoreEntryHelper.generateLaunchEntryCommand(dockstoreTool, tag, parameterPath));
+                            });
                     }
                 } catch (ApiException e) {
                     exceptionMessage(e, "Could not get cwl or wdl and test parameter files using the container API", API_ERROR);
@@ -677,7 +671,7 @@ public class Client {
                     throw new RuntimeException();
                 }
                 Map<String, String> parameter = constructParameterMap(url, referenceName, "tool", dockerfilePath,
-                        String.join(" ", parametersList), String.join(" ", descriptorsList), "", runner, String.join("%20", commandsList));
+                    String.join(" ", parametersList), String.join(" ", descriptorsList), "", runner, String.join("%20", commandsList));
                 String name = buildName(runner, toolId + "-" + tagName);
                 if (!runTest(name, parameter)) {
                     status = false;
@@ -695,6 +689,7 @@ public class Client {
     private ExtendedGa4GhApi getExtendedGa4GhApi() {
         return extendedGa4GhApi;
     }
+
     private void setExtendedGa4GhApi(ExtendedGa4GhApi extendedGa4GhApi) {
         this.extendedGa4GhApi = extendedGa4GhApi;
     }
@@ -716,72 +711,79 @@ public class Client {
     }
 
     private static class CommandMain {
+
         @Parameter(names = "--help", description = "Prints help for tooltester", help = true)
-        private boolean help = false;
+        private final boolean help = false;
     }
 
     @Parameters(separators = "=", commandDescription = "Synchronizes with Jenkins to create tests for verified tools.")
     private static class CommandSync {
-        @Parameter(names = { "--source" }, description = "Tester Group")
-        private List<String> source = new ArrayList<>();
+
+        @Parameter(names = {"--source"}, description = "Tester Group")
+        private final List<String> source = new ArrayList<>();
         @Parameter(names = "--tools", description = "The specific tools to sync", variableArity = true)
         private List<String> tools;
         @Parameter(names = "--help", description = "Prints help for sync", help = true)
-        private boolean help = false;
+        private final boolean help = false;
     }
 
     @Parameters(separators = "=", commandDescription = "Test verified tools on Jenkins.")
     private static class CommandEnqueue {
-        @Parameter(names = { "--source" }, description = "Tester Group")
-        private List<String> source = new ArrayList<>();
+
+        @Parameter(names = {"--source"}, description = "Tester Group")
+        private final List<String> source = new ArrayList<>();
         @Parameter(names = "--tool", description = "The specific tools to test", variableArity = true)
         private List<String> tools;
         @Parameter(names = "--help", description = "Prints help for enqueue", help = true)
-        private boolean help = false;
+        private final boolean help = false;
     }
 
     @Parameters(separators = "=", commandDescription = "Report status of verified tools tested.")
     private static class CommandReport {
-        @Parameter(names = { "--source" }, description = "Tester Group")
-        private List<String> source = new ArrayList<>();
+
+        @Parameter(names = {"--source"}, description = "Tester Group")
+        private final List<String> source = new ArrayList<>();
         @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
-        private List<String> tools = new ArrayList<>();
+        private final List<String> tools = new ArrayList<>();
         @Parameter(names = "--help", description = "Prints help for report", help = true)
-        private boolean help = false;
+        private final boolean help = false;
     }
 
     @Parameters(separators = "=", commandDescription = "Reports the file sizes and checksum of a verified tool across all tested versions.")
     private static class CommandFileReport {
+
         @Parameter(names = "--tool", description = "The specific tool to report", required = true)
         private String tool;
         @Parameter(names = "--help", description = "Prints help for file-report", help = true)
-        private boolean help = false;
+        private final boolean help = false;
     }
 
     @Parameters(separators = "=", commandDescription = "Runs workflows through the Dockstore CLI and AGC, then both prints and uploads to Dockstore the execution statistics.")
     private static class CommandRunWorkflows {
+
         @Parameter(names = "--help", description = "Prints help for run-workflows-through-wes", help = true)
-        private boolean help = false;
+        private final boolean help = false;
         @Parameter(names = "--config-file-path", description = "Path to config file")
-        private String configFilePath = "tooltesterConfig.yml";
+        private final String configFilePath = "tooltesterConfig.yml";
 
         @Parameter(names = RESULT_DIRECTORY_FLAG, description = "Name of the directory you want to save the run results to")
-        private String resultDirectory = DEFAULT_SAVE_DIRECTORY;
+        private final String resultDirectory = DEFAULT_SAVE_DIRECTORY;
 
     }
 
     @Parameters(separators = "=", commandDescription = "Uploads run results from the `run-workflows-through-wes` command to a specified dockstore site.")
     private static class CommandUploadRunResults {
+
         @Parameter(names = "--help", description = "Prints help for upload-results", help = true)
-        private boolean help = false;
+        private final boolean help = false;
         @Parameter(names = "--config-file-path", description = "Path to config file")
-        private String configFilePath = "tooltesterConfig.yml";
+        private final String configFilePath = "tooltesterConfig.yml";
 
         @Parameter(names = "--url-to-upload-to", description = "Where the workflow results are being uploaded to (ex. https://qa.dockstore.org/api)", required = true)
         private String url;
 
         @Parameter(names = RESULT_DIRECTORY_FLAG, description = "Location of result files")
-        private String location = DEFAULT_SAVE_DIRECTORY;
+        private final String location = DEFAULT_SAVE_DIRECTORY;
 
     }
 }

@@ -17,13 +17,12 @@
 
 package io.dockstore.metricsaggregator.common;
 
-import java.io.File;
-import java.util.Optional;
-
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
 import io.dockstore.metricsaggregator.client.cli.MetricsAggregatorClient;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dropwizard.testing.ResourceHelpers;
+import java.io.File;
+import java.util.Optional;
 import org.apache.commons.configuration2.INIConfiguration;
 
 public final class TestUtilities {
@@ -32,7 +31,8 @@ public final class TestUtilities {
     public static final String BUCKET_NAME = METRICS_AGGREGATOR_CONFIG.getS3Bucket();
     public static final String ENDPOINT_OVERRIDE = METRICS_AGGREGATOR_CONFIG.getS3EndpointOverride();
 
-    private TestUtilities() {}
+    private TestUtilities() {
+    }
 
     public static RunExecution createRunExecution(RunExecution.ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB) {
         return new RunExecution()

@@ -1,5 +1,14 @@
 package io.dockstore.tooltester.report;
 
+import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import de.vandermeer.asciitable.v2.RenderedTable;
+import de.vandermeer.asciitable.v2.V2_AsciiTable;
+import de.vandermeer.asciitable.v2.render.V2_AsciiTableRenderer;
+import de.vandermeer.asciitable.v2.render.WidthLongestLine;
+import de.vandermeer.asciitable.v2.themes.V2_E_TableThemes;
 import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
@@ -9,18 +18,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import de.vandermeer.asciitable.v2.RenderedTable;
-import de.vandermeer.asciitable.v2.V2_AsciiTable;
-import de.vandermeer.asciitable.v2.render.V2_AsciiTableRenderer;
-import de.vandermeer.asciitable.v2.render.WidthLongestLine;
-import de.vandermeer.asciitable.v2.themes.V2_E_TableThemes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * @author gluu
@@ -29,9 +28,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public abstract class Report implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(Report.class);
     private static final CharSequence COMMA_SEPARATOR = ",";
-    private BufferedWriter writer;
-    private V2_AsciiTable at;
     private static final String REPORT_DIRECTORY = "Reports";
+
+    private BufferedWriter writer;
+    private final V2_AsciiTable at;
     Report(String name) {
         at = new V2_AsciiTable();
         List<String> header = getHeader();

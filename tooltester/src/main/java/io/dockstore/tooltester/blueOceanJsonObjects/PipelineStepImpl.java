@@ -1,9 +1,8 @@
 package io.dockstore.tooltester.blueOceanJsonObjects;
 
-import java.util.List;
-
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import java.util.List;
 
 /**
  * @author gluu

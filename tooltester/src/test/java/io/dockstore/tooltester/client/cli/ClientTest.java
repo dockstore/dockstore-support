@@ -1,15 +1,18 @@
 package io.dockstore.tooltester.client.cli;
 
-import java.io.File;
+import static io.dockstore.tooltester.client.cli.Client.main;
+import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
 
 import com.beust.jcommander.ParameterException;
 import io.dockstore.tooltester.helper.JenkinsHelper;
 import io.dockstore.tooltester.helper.PipelineTester;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.io.File;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -19,16 +22,13 @@ import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 import uk.org.webcompere.systemstubs.stream.SystemErr;
 import uk.org.webcompere.systemstubs.stream.SystemOut;
 
-import static io.dockstore.tooltester.client.cli.Client.main;
-import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
-import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
-
 /**
  * Many tests ignored due to reasons explained in this PR https://github.com/dockstore/dockstore-support/pull/448
  */
 
 @ExtendWith(SystemStubsExtension.class)
 public class ClientTest {
+
     @SystemStub
     private SystemOut systemOut;
 
@@ -67,7 +67,7 @@ public class ClientTest {
      */
     @Test
     public void unknownCommand() throws Exception {
-        String[] argv = { "mmmrrrggglll" };
+        String[] argv = {"mmmrrrggglll"};
         int exitCode = catchSystemExit(() -> {
             main(argv);
         });
@@ -80,7 +80,7 @@ public class ClientTest {
     @Disabled
     @Test
     public void enqueue() throws InterruptedException {
-        String[] argv = { "enqueue" };
+        String[] argv = {"enqueue"};
         main(argv);
         assertTrue(systemOut.getText().isEmpty());
     }
@@ -90,7 +90,7 @@ public class ClientTest {
      */
     @Test
     public void enqueueHelp() throws InterruptedException {
-        String[] argv = { "enqueue", "--help" };
+        String[] argv = {"enqueue", "--help"};
         main(argv);
         assertTrue(systemOut.getText().contains("Test verified tools on Jenkins."));
     }
@@ -101,7 +101,7 @@ public class ClientTest {
     @Disabled
     @Test
     public void enqueueTool() throws InterruptedException {
-        String[] argv = { "enqueue", "--tool", "quay.io/pancancer/pcawg_delly_workflow" };
+        String[] argv = {"enqueue", "--tool", "quay.io/pancancer/pcawg_delly_workflow"};
         main(argv);
         assertTrue(systemOut.getText().isEmpty());
     }
@@ -112,7 +112,7 @@ public class ClientTest {
     @Disabled
     @Test
     public void enqueueToolSource() throws InterruptedException {
-        String[] argv = { "enqueue", "--source", "Docktesters group" };
+        String[] argv = {"enqueue", "--source", "Docktesters group"};
         main(argv);
         assertTrue(systemOut.getText().isEmpty());
     }
@@ -123,7 +123,7 @@ public class ClientTest {
     @Disabled
     @Test
     public void createJenkinsTests() throws InterruptedException {
-        String[] argv = { "sync" };
+        String[] argv = {"sync"};
         main(argv);
         assertTrue(systemOut.getText().isEmpty());
     }
@@ -133,7 +133,7 @@ public class ClientTest {
      */
     @Test
     public void syncHelp() throws InterruptedException {
-        String[] argv = { "sync", "--help" };
+        String[] argv = {"sync", "--help"};
         main(argv);
         assertTrue(systemOut.getText().contains("Synchronizes with Jenkins to create tests for verified tools."));
     }
@@ -144,7 +144,7 @@ public class ClientTest {
     @Disabled
     @Test
     public void createJenkinsTestsSource() throws InterruptedException {
-        String[] argv = { "sync", "--source", "Docktesters group"};
+        String[] argv = {"sync", "--source", "Docktesters group"};
         main(argv);
         assertTrue(systemOut.getText().isEmpty());
     }
@@ -155,7 +155,7 @@ public class ClientTest {
     @Disabled
     @Test
     public void createUnverifiedJenkinsTests() throws InterruptedException {
-        String[] argv = { "sync", "--source", "Docktesters group", "--tools", "quay.io/ucsc_cgl/dockstore_tool_adtex" };
+        String[] argv = {"sync", "--source", "Docktesters group", "--tools", "quay.io/ucsc_cgl/dockstore_tool_adtex"};
         main(argv);
         assertTrue(systemOut.getText().isEmpty());
     }
@@ -165,14 +165,14 @@ public class ClientTest {
      */
     @Test
     public void emptyOne() throws InterruptedException {
-        String[] argv = { "" };
+        String[] argv = {""};
         main(argv);
         assertTrue(systemOut.getText().contains("Usage: autotool [options] [command] [command options]"));
-     }
+    }
 
     @Test
     public void emptyTwo() throws InterruptedException {
-        String[] argv = { };
+        String[] argv = {};
         main(argv);
         assertTrue(systemOut.getText().contains("Usage: autotool [options] [command] [command options]"));
     }
@@ -183,7 +183,7 @@ public class ClientTest {
     @Disabled
     @Test
     public void report() throws InterruptedException {
-        String[] argv = { "report" };
+        String[] argv = {"report"};
         main(argv);
         assertReport();
     }
@@ -194,7 +194,7 @@ public class ClientTest {
     @Disabled
     @Test
     public void reportTool() throws InterruptedException {
-        String[] argv = new String[] { "report", "--tool", "quay.io/briandoconnor/dockstore-tool-md5sum" };
+        String[] argv = new String[]{"report", "--tool", "quay.io/briandoconnor/dockstore-tool-md5sum"};
         main(argv);
         assertReport();
     }
@@ -205,8 +205,8 @@ public class ClientTest {
     @Disabled
     @Test
     public void reportTools() throws InterruptedException {
-        String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow",
-                "quay.io/briandoconnor/dockstore-tool-md5sum" };
+        String[] argv = new String[]{"report", "--tool", "quay.io/pancancer/pcawg-bwa-mem-workflow",
+            "quay.io/briandoconnor/dockstore-tool-md5sum"};
         main(argv);
         assertReport();
 
@@ -236,7 +236,7 @@ public class ClientTest {
     @Disabled
     @Test
     public void reportInvalidTool() throws InterruptedException {
-        String[] argv = new String[] { "report", "--tool", "quay.io/pancancer/pcawg-bwa" };
+        String[] argv = new String[]{"report", "--tool", "quay.io/pancancer/pcawg-bwa"};
         main(argv);
         assertReport();
     }
@@ -254,7 +254,7 @@ public class ClientTest {
      */
     @Test
     public void fileReport() {
-        String[] argv = new String[] { "file-report" };
+        String[] argv = new String[]{"file-report"};
         assertThrows(ParameterException.class, () -> main(argv));
     }
 
@@ -264,7 +264,7 @@ public class ClientTest {
     @Disabled
     @Test
     public void fileReportTool() throws InterruptedException {
-        String[] argv = new String[] { "file-report", "--tool", "quay.io/briandoconnor/dockstore-tool-md5sum" };
+        String[] argv = new String[]{"file-report", "--tool", "quay.io/briandoconnor/dockstore-tool-md5sum"};
         main(argv);
         assertFileReport();
     }
@@ -274,10 +274,10 @@ public class ClientTest {
      */
     @Test
     public void fileReportHelp() throws InterruptedException {
-        String[] argv = new String[] { "file-report", "--help" };
+        String[] argv = new String[]{"file-report", "--help"};
         main(argv);
         assertTrue(
-                systemOut.getText().contains("Reports the file sizes and checksum of a verified tool across all tested versions."));
+            systemOut.getText().contains("Reports the file sizes and checksum of a verified tool across all tested versions."));
     }
 
     /**
@@ -285,7 +285,7 @@ public class ClientTest {
      */
     @Test
     public void reportHelp() throws InterruptedException {
-        String[] argv = { "report", "--help" };
+        String[] argv = {"report", "--help"};
         main(argv);
         assertTrue(systemOut.getText().contains("Report status of verified tools tested."));
     }
@@ -295,7 +295,7 @@ public class ClientTest {
      */
     @Test
     public void runWorkflowHelp() throws InterruptedException {
-        String[] argv = { "run-workflows-through-wes", "--help" };
+        String[] argv = {"run-workflows-through-wes", "--help"};
         main(argv);
         assertTrue(systemOut.getText().contains("Runs workflows through the Dockstore CLI and AGC, then both prints and uploads to Dockstore the execution statistics."));
     }
@@ -305,7 +305,7 @@ public class ClientTest {
      */
     @Test
     public void runUploadResultsHelp() throws InterruptedException {
-        String[] argv = { "upload-results", "--help" };
+        String[] argv = {"upload-results", "--help"};
         main(argv);
         assertTrue(systemOut.getText().contains("Uploads run results from the `run-workflows-through-wes` command to a specified dockstore site."));
     }
@@ -315,7 +315,7 @@ public class ClientTest {
      */
     @Test
     public void mainHelp() throws InterruptedException {
-        String[] argv = { "--help" };
+        String[] argv = {"--help"};
         main(argv);
         assertTrue(systemOut.getText().contains("Usage: autotool [options] [command] [command options]"));
     }

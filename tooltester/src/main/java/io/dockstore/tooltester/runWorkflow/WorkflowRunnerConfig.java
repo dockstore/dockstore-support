@@ -1,7 +1,9 @@
 package io.dockstore.tooltester.runWorkflow;
 
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
+import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+import static java.util.UUID.randomUUID;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -11,11 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
-
-import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
-import static java.util.UUID.randomUUID;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 public class WorkflowRunnerConfig {
 

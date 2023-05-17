@@ -1,11 +1,14 @@
 package io.dockstore.tooltester.client.cli;
 
-import java.text.ParseException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
+import static io.dockstore.tooltester.client.cli.Client.getApiClient;
+import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
+import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
 
 import com.google.gson.Gson;
+import io.dockstore.openapi.client.api.Ga4Ghv20Api;
+import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.ToolVersion;
 import io.dockstore.tooltester.CommandObject;
 import io.dockstore.tooltester.S3Client;
 import io.dockstore.tooltester.TooltesterConfig;
@@ -16,16 +19,12 @@ import io.dockstore.tooltester.helper.PipelineTester;
 import io.dockstore.tooltester.helper.TimeHelper;
 import io.dockstore.tooltester.helper.TinyUrl;
 import io.dockstore.tooltester.report.StatusReport;
-import io.dockstore.openapi.client.api.Ga4Ghv20Api;
-import io.dockstore.openapi.client.model.Tool;
-import io.dockstore.openapi.client.model.ToolVersion;
+import java.text.ParseException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static io.dockstore.tooltester.client.cli.Client.getApiClient;
-import static io.dockstore.tooltester.helper.ExceptionHandler.CLIENT_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
-import static io.dockstore.tooltester.helper.JenkinsHelper.buildName;
 
 /**
  * @author gluu

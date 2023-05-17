@@ -1,13 +1,10 @@
 package io.dockstore.tooltester.client.cli;
 
-import java.text.ParseException;
-import java.util.Objects;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.dockstore.tooltester.helper.TimeHelper;
+import java.text.ParseException;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author gluu
@@ -15,9 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class TimeHelperTest {
     @Test
-    public void durationToString() throws Exception {
-        String durationString = TimeHelper.durationToString(Long.valueOf(3700000));
-        assertTrue(durationString.equals("1h 2m"), "Incorrect time calculated, expected \"1h 2m\" but got " + durationString);
+    public void durationToString() {
+        String durationString = TimeHelper.durationToString(3700000L);
+        assertEquals("1h 2m", durationString, "Incorrect time calculated, expected \"1h 2m\" but got " + durationString);
     }
 
     @Test
@@ -28,7 +25,7 @@ public class TimeHelperTest {
         } catch (ParseException e) {
             System.out.println("Could not convert date");
         }
-        assertTrue(Objects.equals(time, "2017-02-22 15:36"), "Incorrect date calculated, expected \"2017-02-22 15:36\" but got " + time);
+        assertEquals("2017-02-22 15:36", time, "Incorrect date calculated, expected \"2017-02-22 15:36\" but got " + time);
     }
 
     @Test
