@@ -29,20 +29,20 @@ workflows:
   version: 2
   everything:
     jobs:
-      - build-metrics-all:
+      - build-all:
           <<: *common_filters
       - metrics-aggregator-tests:
           <<: *common_filters
           requires:
-            - build-metrics-all
+            - build-all
       - tooltester-tests:
           <<: *common_filters
           requires:
-            - build-metrics-all
+            - build-all
       - toolbackup-tests:
           <<: *common_filters
           requires:
-            - build-metrics-all
+            - build-all
 
 jobs:
   metrics-aggregator-tests:
