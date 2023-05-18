@@ -153,7 +153,7 @@
             <dependency>
                 <groupId>io.dropwizard</groupId>
                 <artifactId>dropwizard-migrations</artifactId>
-                <scope>test</scope>
+                <scope>compile</scope>
             </dependency>
             <!--  cwl management -->
             <dependency>
