@@ -52,15 +52,27 @@ jobs:
       DIRECTORY: metricsaggregator
       MAVEN_GOAL: verify
     steps:
-      - setup_and_run_integration_tests
+      - get_workspace_and_dependencies
+      - setup_machine
+      - setup_for_tests
+      - setup_for_postgres
+      - wait_for_elastic_search
+      - run_tests
+      - save_test_results
+      - send_coverage
   tooltester-tests:
-    executor: machine_integration_test_exec
+    docker: # run the steps with Docker
+      - image: cimg/openjdk:<< pipeline.parameters.java-tag >>
     parallelism: 1
     environment:
-      DIRECTORY: tooltesteer
+      DIRECTORY: tooltester
       MAVEN_GOAL: verify
     steps:
-      - setup_and_run_integration_tests
+      - get_workspace_and_dependencies
+      - setup_for_tests
+      - run_tests
+      - save_test_results
+      - send_coverage
   toolbackup-tests:
     executor: machine_integration_test_exec
     parallelism: 1
@@ -68,7 +80,12 @@ jobs:
       DIRECTORY: toolbackup
       MAVEN_GOAL: verify
     steps:
-      - setup_and_run_integration_tests
+      - get_workspace_and_dependencies
+      - setup_machine
+      - setup_for_tests
+      - run_tests
+      - save_test_results
+      - send_coverage
 
   build-all:
     docker: # run the steps with Docker
@@ -184,14 +201,7 @@ commands:
           command: |
             sudo rm -rf /var/lib/apt/lists/*
             sudo apt update
-            sudo apt install -y postgresql-client
-
-  setup_for_integration_tests:
-    steps:
-      - get_workspace_and_dependencies
-      - setup_machine
-      - setup_for_tests
-      - wait_for_elastic_search
+            sudo apt install -y postgresql-client 
 
   get_workspace_and_dependencies:
     steps:
@@ -201,9 +211,12 @@ commands:
   setup_for_tests:
     steps:
       - install-git-secrets
+      - install_dockerize
+
+  setup_for_postgres:
+    steps:
       - install_postgres_sql_client
       - setup_postgres
-      - install_dockerize
       - wait_for_db
 
   run_tests:
@@ -222,10 +235,3 @@ commands:
           when: always
       - store_test_results:
           path: ~/test-results
-
-  setup_and_run_integration_tests:
-    steps:
-      - setup_for_integration_tests
-      - run_tests
-      - save_test_results
-      - send_coverage
