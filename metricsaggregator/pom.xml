@@ -253,6 +253,8 @@
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
+                                <!-- not sure why this results in error unline our other repos  if not excluded -->
+                                <exclude>migrations.xml</exclude>
                             </excludes>
                         </filter>
                     </filters>
