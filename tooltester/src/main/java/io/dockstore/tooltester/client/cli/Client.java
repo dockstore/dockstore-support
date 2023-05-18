@@ -713,40 +713,40 @@ public class Client {
     private static class CommandMain {
 
         @Parameter(names = "--help", description = "Prints help for tooltester", help = true)
-        private final boolean help = false;
+        private boolean help = false;
     }
 
     @Parameters(separators = "=", commandDescription = "Synchronizes with Jenkins to create tests for verified tools.")
     private static class CommandSync {
 
         @Parameter(names = {"--source"}, description = "Tester Group")
-        private final List<String> source = new ArrayList<>();
+        private List<String> source = new ArrayList<>();
         @Parameter(names = "--tools", description = "The specific tools to sync", variableArity = true)
         private List<String> tools;
         @Parameter(names = "--help", description = "Prints help for sync", help = true)
-        private final boolean help = false;
+        private boolean help = false;
     }
 
     @Parameters(separators = "=", commandDescription = "Test verified tools on Jenkins.")
     private static class CommandEnqueue {
 
         @Parameter(names = {"--source"}, description = "Tester Group")
-        private final List<String> source = new ArrayList<>();
+        private List<String> source = new ArrayList<>();
         @Parameter(names = "--tool", description = "The specific tools to test", variableArity = true)
         private List<String> tools;
         @Parameter(names = "--help", description = "Prints help for enqueue", help = true)
-        private final boolean help = false;
+        private boolean help = false;
     }
 
     @Parameters(separators = "=", commandDescription = "Report status of verified tools tested.")
     private static class CommandReport {
 
         @Parameter(names = {"--source"}, description = "Tester Group")
-        private final List<String> source = new ArrayList<>();
+        private List<String> source = new ArrayList<>();
         @Parameter(names = "--tool", description = "The specific tools to report", variableArity = true)
-        private final List<String> tools = new ArrayList<>();
+        private List<String> tools = new ArrayList<>();
         @Parameter(names = "--help", description = "Prints help for report", help = true)
-        private final boolean help = false;
+        private boolean help = false;
     }
 
     @Parameters(separators = "=", commandDescription = "Reports the file sizes and checksum of a verified tool across all tested versions.")
@@ -755,19 +755,19 @@ public class Client {
         @Parameter(names = "--tool", description = "The specific tool to report", required = true)
         private String tool;
         @Parameter(names = "--help", description = "Prints help for file-report", help = true)
-        private final boolean help = false;
+        private boolean help = false;
     }
 
     @Parameters(separators = "=", commandDescription = "Runs workflows through the Dockstore CLI and AGC, then both prints and uploads to Dockstore the execution statistics.")
     private static class CommandRunWorkflows {
 
         @Parameter(names = "--help", description = "Prints help for run-workflows-through-wes", help = true)
-        private final boolean help = false;
+        private boolean help = false;
         @Parameter(names = "--config-file-path", description = "Path to config file")
-        private final String configFilePath = "tooltesterConfig.yml";
+        private String configFilePath = "tooltesterConfig.yml";
 
         @Parameter(names = RESULT_DIRECTORY_FLAG, description = "Name of the directory you want to save the run results to")
-        private final String resultDirectory = DEFAULT_SAVE_DIRECTORY;
+        private String resultDirectory = DEFAULT_SAVE_DIRECTORY;
 
     }
 
@@ -775,15 +775,15 @@ public class Client {
     private static class CommandUploadRunResults {
 
         @Parameter(names = "--help", description = "Prints help for upload-results", help = true)
-        private final boolean help = false;
+        private boolean help = false;
         @Parameter(names = "--config-file-path", description = "Path to config file")
-        private final String configFilePath = "tooltesterConfig.yml";
+        private String configFilePath = "tooltesterConfig.yml";
 
         @Parameter(names = "--url-to-upload-to", description = "Where the workflow results are being uploaded to (ex. https://qa.dockstore.org/api)", required = true)
         private String url;
 
         @Parameter(names = RESULT_DIRECTORY_FLAG, description = "Location of result files")
-        private final String location = DEFAULT_SAVE_DIRECTORY;
+        private String location = DEFAULT_SAVE_DIRECTORY;
 
     }
 }

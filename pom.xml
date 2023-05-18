@@ -39,8 +39,8 @@
         <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dockstore-core.version>1.14.0-beta.0</dockstore-core.version>
-        <maven-failsafe.version>2.22.2</maven-failsafe.version>
-        <maven-surefire.version>2.22.2</maven-surefire.version>
+        <maven-failsafe.version>3.0.0-M5</maven-failsafe.version>
+        <maven-surefire.version>3.0.0-M5</maven-surefire.version>
         <skipTests>false</skipTests>
         <skipITs>true</skipITs>
         <!-- for sonarcloud -->
@@ -384,8 +384,6 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire.version}</version>
                     <configuration>
-                        <excludedGroups>${excludeGroups}</excludedGroups>
-                        <skipTests>${skipTests}</skipTests>
                         <!-- enforce that tests should be independent -->
                         <runOrder>random</runOrder>
                         <!-- re-run flaky tests once -->
@@ -397,7 +395,6 @@
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${maven-failsafe.version}</version>
                     <configuration>
-                        <excludedGroups>${excludeGroups}</excludedGroups>
                         <!-- enforce that tests should be independent -->
                         <runOrder>random</runOrder>
                         <!-- re-run flaky tests once -->
