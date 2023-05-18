@@ -21,7 +21,7 @@ import org.junit.Test;
 /**
  * Created by kcao on 24/01/17.
  */
-public class S3CommunicatorTest {
+public class S3CommunicatorIT {
 
     private static S3Communicator s3Communicator;
 

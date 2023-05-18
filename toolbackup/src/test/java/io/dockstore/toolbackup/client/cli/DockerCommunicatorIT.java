@@ -14,7 +14,7 @@ import org.junit.Test;
 /**
  * Created by kcao on 25/01/17.
  */
-public class DockerCommunicatorTest {
+public class DockerCommunicatorIT {
     private static final DockerCommunicator DOCKER_COMMUNICATOR = new DockerCommunicator();
     private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
 

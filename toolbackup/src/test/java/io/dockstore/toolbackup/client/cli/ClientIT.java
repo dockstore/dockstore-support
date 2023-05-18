@@ -35,7 +35,7 @@ import org.junit.Test;
 /**
  * Created by kcao on 25/01/17.
  */
-public class ClientTest {
+public class ClientIT {
 
     private static Client client;
     private final ByteArrayOutputStream outputContent = new ByteArrayOutputStream();

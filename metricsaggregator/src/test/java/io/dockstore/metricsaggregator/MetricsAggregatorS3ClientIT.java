@@ -61,7 +61,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 @ExtendWith(LocalstackDockerExtension.class)
 @LocalstackDockerProperties(imageTag = LocalStackTestUtilities.IMAGE_TAG, services = { ServiceName.S3 }, environmentVariableProvider = LocalStackTestUtilities.LocalStackEnvironmentVariables.class)
-class MetricsAggregatorS3ClientTest {
+class MetricsAggregatorS3ClientIT {
     private static MetricsAggregatorS3Client metricsAggregatorS3Client;
     private static S3Client s3Client;
     private static TestingPostgres testingPostgres;

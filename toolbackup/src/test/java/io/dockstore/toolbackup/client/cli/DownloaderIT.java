@@ -16,7 +16,7 @@ import org.junit.Test;
 /**
  * Created by kcao on 25/01/17.
 */
-public class DownloaderTest {
+public class DownloaderIT {
     @BeforeClass
     public static void setUp() {
         AWSConfig.generateCredentials();
