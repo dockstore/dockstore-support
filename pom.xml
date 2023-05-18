@@ -215,7 +215,26 @@
                 <artifactId>log4j-core</artifactId>
                 <version>2.17.1</version>
             </dependency>
-
+            <dependency>
+                <groupId>jakarta.inject</groupId>
+                <artifactId>jakarta.inject-api</artifactId>
+                <version>2.0.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.hk2</groupId>
+                <artifactId>hk2-utils</artifactId>
+                <version>3.0.4</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.hk2.external</groupId>
+                <artifactId>aopalliance-repackaged</artifactId>
+                <version>3.0.4</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.annotation</groupId>
+                <artifactId>jakarta.annotation-api</artifactId>
+                <version>2.1.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -570,7 +589,7 @@
                                         <!-- superceded by org.apache.httpcomponents:httpclient -->
                                         <exclude>commons-httpclient:commons-httpclient</exclude>
                                         <!-- see https://github.com/dropwizard/dropwizard/pull/3069 -->
-                                        <exclude>javax.annotation:javax.annotation-api</exclude>
+                                        <!-- used by toolbackup <exclude>javax.annotation:javax.annotation-api</exclude> -->
                                         <!-- still used by tooltester <exclude>javax.activation:activation</exclude> -->
                                         <!-- still used by tooltester <exclude>javax.ws.rs:javax.ws.rs-api</exclude> -->
                                         <!-- Replaced with jakarta.activation:jakarta.activation-api -->
