@@ -56,10 +56,26 @@ jobs:
           JAVA_TOOL_OPTIONS: -Xmx512m
     steps: # a collection of executable commands
       - checkout # check out source code to working directory
+      - restore_cache:
+          keys:
+            # Find a cache corresponding to this specific licenses file checksum
+            # when this file is changed, this key will fail
+            - dockstore-support-aggregator-java-{{ checksum "THIRD-PARTY-LICENSES.txt" }}
+            # Find the most recent cache used from any branch
+            - dockstore-java-
       - install-git-secrets
       - run:
           name: build-metrics-aggregator
           command: cd metricsaggregator && mvn -B clean install -DskipTests
+      - run:
+          name: clean the cache
+          command: |
+            rm -rf ~/.m2/repository/io/dockstore
+            rm -rf ~/.m2/repository/.cache/download-maven-plugin directory
+      - save_cache: # saves the project dependencies
+          paths:
+            - ~/.m2
+          key: dockstore-support-aggregator-java-{{ checksum "THIRD-PARTY-LICENSES.txt" }}
 
         # Running scan must occur after build
       - run_git_secrets_scan
