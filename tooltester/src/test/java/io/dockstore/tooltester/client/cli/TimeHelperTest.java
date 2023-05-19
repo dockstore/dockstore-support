@@ -12,13 +12,13 @@ import org.junit.jupiter.api.Test;
  */
 public class TimeHelperTest {
     @Test
-    public void durationToString() {
+    void durationToString() {
         String durationString = TimeHelper.durationToString(3700000L);
         assertEquals("1h 2m", durationString, "Incorrect time calculated, expected \"1h 2m\" but got " + durationString);
     }
 
     @Test
-    public void dateFormatConvert() {
+    void dateFormatConvert() {
         String time = "2017-02-22T15:36:34.551+0000";
         try {
             time = TimeHelper.timeFormatConvert(time);
@@ -29,7 +29,7 @@ public class TimeHelperTest {
     }
 
     @Test
-    public void datetimeToEpoch() {
+    void datetimeToEpoch() {
         String startTime = "2019-04-05T15:21:44.219+0000";
         String epochTimeString = TimeHelper.timeFormatToEpoch(startTime);
         assertEquals("1554477704219", epochTimeString);
