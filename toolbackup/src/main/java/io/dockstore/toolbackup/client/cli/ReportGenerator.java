@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -30,13 +29,12 @@ final class ReportGenerator {
 
     static {
 
-        STYLE = "<!DOCTYPE html><html>" + "<head>"
-            + "<style type=\"text/css\">\n"
-            + "\t\t.err { color: #ff0000; }\n"
-            + "\t\ttable { font-family: arial, sans-serif; border-collapse: collapse; width: 100%; }\n"
-            + "\t\ttd, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }\n"
-            + "\t</style><title></title></head>"
-            + "<body><table>";
+        STYLE = """
+            <!DOCTYPE html><html><head><style type="text/css">
+            \t\t.err { color: #ff0000; }
+            \t\ttable { font-family: arial, sans-serif; border-collapse: collapse; width: 100%; }
+            \t\ttd, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }
+            \t</style><title></title></head><body><table>""";
     }
 
     private ReportGenerator() {
@@ -79,7 +77,7 @@ final class ReportGenerator {
                 }.getType();
                 List<JSONMapper> mapperList = new Gson().fromJson(json, listType);
                 for (JSONMapper mapEntry : mapperList) {
-                    toolsToVersions.put(mapEntry.toolname(), mapEntry.versions());
+                    toolsToVersions.put(mapEntry.getToolname(), mapEntry.getVersions());
                 }
             }
         } catch (IOException e) {
@@ -118,7 +116,7 @@ final class ReportGenerator {
 
             fileReportBuilder.append("</td><td>");
             List<String> times = row.getTimesOfExecution();
-            Collections.sort(times, Comparator.comparing(FormattedTimeGenerator::strToDate));
+            times.sort(Comparator.comparing(FormattedTimeGenerator::strToDate));
             int timesSize = times.size();
             if (timesSize > 2) {
                 fileReportBuilder.append(times.subList(timesSize - 2, timesSize));
@@ -166,7 +164,22 @@ final class ReportGenerator {
         return mainMenu.toString();
     }
 
-    private record JSONMapper(String toolname, List<VersionDetail> versions) {
+    private static class JSONMapper {
 
+        final String toolname;
+        final List<VersionDetail> versions;
+
+        JSONMapper(String toolname, List<VersionDetail> versions) {
+            this.toolname = toolname;
+            this.versions = versions;
+        }
+
+        public String getToolname() {
+            return toolname;
+        }
+
+        public List<VersionDetail> getVersions() {
+            return versions;
+        }
     }
 }

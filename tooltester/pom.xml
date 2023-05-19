@@ -329,8 +329,12 @@
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
         </dependency>
-
         <!-- For AWS integration END -->
+        <!-- https://mvnrepository.com/artifact/org.glassfish.hk2/hk2-api -->
+        <dependency>
+            <groupId>org.glassfish.hk2</groupId>
+            <artifactId>hk2-api</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -430,6 +434,7 @@
                             <ignoreNonCompile>true</ignoreNonCompile>
                             <usedDependencies>
                                 <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
+                                <usedDependency>org.glassfish.hk2:hk2-api</usedDependency>
                                 <usedDependency>org.slf4j:slf4j-api</usedDependency>
                                 <usedDependency>org.yaml:snakeyaml</usedDependency>
                             </usedDependencies>
