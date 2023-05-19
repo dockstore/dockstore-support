@@ -133,7 +133,7 @@ jobs:
       - install-git-secrets
       - run:
           name: build-all
-          command: mvn -B clean install -DskipTests
+          command: ./mvnw -B clean install -DskipTests
       - run:
           name: clean the cache
           command: |
@@ -250,7 +250,7 @@ commands:
       - run:
           name: run tests
           command: |
-            cd $DIRECTORY && mvn -B clean install -DskipITs=false -ntp | grep  -v "^Running Changeset:"
+            cd $DIRECTORY && ./mvnw -B org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate clean install -DskipITs=false -ntp | grep  -v "^Running Changeset:"
   save_test_results:
     steps:
       - run:
