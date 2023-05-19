@@ -254,6 +254,10 @@
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>javax.activation</groupId>
+            <artifactId>activation</artifactId>
+        </dependency>
 
     </dependencies>
 
@@ -376,6 +380,7 @@
                             <ignoreNonCompile>true</ignoreNonCompile>
                             <usedDependencies>
                                 <usedDependency>javax.annotation:javax.annotation-api</usedDependency>
+                                <usedDependency>javax.activation:activation</usedDependency>
                                 <usedDependency>org.glassfish.hk2:hk2-api</usedDependency>
                             </usedDependencies>
                         </configuration>

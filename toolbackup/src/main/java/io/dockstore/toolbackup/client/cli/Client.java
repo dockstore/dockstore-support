@@ -352,7 +352,7 @@ public class Client {
 
         // pull out the variables from the config
         String token = config.getString("token", "");
-        String serverUrl = config.getString("server-url", "https://www.dockstore.org:8443");
+        String serverUrl = config.getString("server-url", "https://www.dockstore.org:443/api");
 
         try {
             endpoint = config.getString("endpoint");
