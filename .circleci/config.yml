@@ -250,7 +250,7 @@ commands:
       - run:
           name: run tests
           command: |
-            cd $DIRECTORY && ./mvnw -B org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate clean install -DskipITs=false -ntp | grep  -v "^Running Changeset:"
+            cd $DIRECTORY && ../mvnw -B org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate clean install -DskipITs=false -ntp | grep  -v "^Running Changeset:"
   save_test_results:
     steps:
       - run:
