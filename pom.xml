@@ -39,8 +39,8 @@
         <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dockstore-core.version>1.14.0-beta.0</dockstore-core.version>
-        <maven-failsafe.version>3.0.0-M5</maven-failsafe.version>
         <maven-surefire.version>3.0.0-M5</maven-surefire.version>
+        <maven-failsafe.version>2.22.2</maven-failsafe.version>
         <skipTests>false</skipTests>
         <skipITs>true</skipITs>
         <!-- for sonarcloud -->
@@ -649,24 +649,25 @@
                 </configuration>
                 <executions>
                     <execution>
+                        <id>default-prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
                     <execution>
-                        <id>report</id>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>prepare-agent-integration</id>
+                        <id>default-prepare-agent-integration</id>
                         <goals>
                             <goal>prepare-agent-integration</goal>
                         </goals>
                     </execution>
                     <execution>
-                        <id>report-integration</id>
+                        <id>default-report</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-report-integration</id>
                         <goals>
                             <goal>report-integration</goal>
                         </goals>
