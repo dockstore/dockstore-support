@@ -672,6 +672,13 @@
                             <goal>report-integration</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>report-aggregate</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>report-aggregate</goal>
+                        </goals>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>

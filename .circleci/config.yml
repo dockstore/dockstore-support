@@ -169,6 +169,9 @@ commands:
       - run:
           name: send coverage
           command: bash <(curl -s https://codecov.io/bash) -F ${DIRECTORY//-} || echo "Codecov did not collect coverage reports"
+      - store_artifacts:
+          path: target/site
+
 
   install_dockerize:
     steps:
