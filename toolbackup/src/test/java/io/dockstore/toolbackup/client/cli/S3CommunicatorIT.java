@@ -1,10 +1,10 @@
 package io.dockstore.toolbackup.client.cli;
 
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.bucket;
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.dir;
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.nonexistingBucket;
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.nonexistingDir;
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.prefix;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.BUCKET;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.NON_EXISTING_BUCKET;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.NON_EXISTING_DIR;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.PREFIX;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -29,43 +29,43 @@ public class S3CommunicatorIT {
     public static void setUp() {
         AWSConfig.generateCredentials();
 
-        DirectoryGenerator.createDir(dir);
+        DirectoryGenerator.createDir(DIR);
 
         s3Communicator = new S3Communicator();
 
-        s3Communicator.createBucket(bucket);
+        s3Communicator.createBucket(BUCKET);
     }
 
     @Test
     public void uploadDirectory() throws Exception {
         List<File> files = new ArrayList<>();
-        File file = new File(dir + File.separator + "helloworld.txt");
+        File file = new File(DIR + File.separator + "helloworld.txt");
         assumeTrue(file.isFile() || !file.exists());
         file.createNewFile();
         files.add(file);
 
-        s3Communicator.uploadDirectory(bucket, prefix, dir, files, false);
+        s3Communicator.uploadDirectory(BUCKET, PREFIX, DIR, files, false);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void uploadDirectoryNonexistentDirectory() {
-        s3Communicator.uploadDirectory(bucket, prefix, nonexistingDir, null, false);
+        s3Communicator.uploadDirectory(BUCKET, PREFIX, NON_EXISTING_DIR, null, false);
     }
 
     @Test(expected = RuntimeException.class)
     public void downloadDirectoryNotDir() {
-        s3Communicator.downloadDirectory(bucket, prefix, nonexistingDir);
+        s3Communicator.downloadDirectory(BUCKET, PREFIX, NON_EXISTING_DIR);
     }
 
     @Test(expected = AmazonS3Exception.class)
     public void downloadDirectoryNoBucket() {
-        assumeFalse(s3Communicator.doesBucketExist(nonexistingBucket));
-        s3Communicator.downloadDirectory(nonexistingBucket, "", dir);
+        assumeFalse(s3Communicator.doesBucketExist(NON_EXISTING_BUCKET));
+        s3Communicator.downloadDirectory(NON_EXISTING_BUCKET, "", DIR);
     }
 
     @AfterClass
     public static void shutDownS3() {
         s3Communicator.shutDown();
-        DirCleaner.deleteDir(dir);
+        DirCleaner.deleteDir(DIR);
     }
 }

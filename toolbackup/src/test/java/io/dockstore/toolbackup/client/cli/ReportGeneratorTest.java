@@ -1,9 +1,9 @@
 package io.dockstore.toolbackup.client.cli;
 
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.TAG;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.TIME;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.TOOL_NAME;
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.dir;
 import static org.junit.Assert.assertTrue;
 
 import com.google.gson.Gson;
@@ -33,8 +33,8 @@ public class ReportGeneratorTest {
 
     @BeforeClass
     public static void setUpFiles() {
-        DirectoryGenerator.createDir(dir);
-        VERSION_DETAILS.add(new VersionDetail(TAG, TIME, 2000, 0, TIME, true, dir));
+        DirectoryGenerator.createDir(DIR);
+        VERSION_DETAILS.add(new VersionDetail(TAG, TIME, 2000, 0, TIME, true, DIR));
     }
 
     @Test
@@ -42,10 +42,10 @@ public class ReportGeneratorTest {
         Map<String, List<VersionDetail>> toolsToVersions = new HashMap<>();
         toolsToVersions.put(TOOL_NAME, VERSION_DETAILS);
 
-        ReportGenerator.generateJSONMap(toolsToVersions, dir);
+        ReportGenerator.generateJSONMap(toolsToVersions, DIR);
 
         Gson gson = new Gson();
-        File map = new File(dir + File.separator + "map.JSON");
+        File map = new File(DIR + File.separator + "map.JSON");
         gson.fromJson(FileUtils.readFileToString(map, "UTF-8"), Object.class);
     }
 
@@ -53,7 +53,7 @@ public class ReportGeneratorTest {
     public void generateToolReport() throws Exception {
         List<String> headings = new ArrayList<>();
 
-        File html = new File(dir + File.separator + "tool.html");
+        File html = new File(DIR + File.separator + "tool.html");
         FileUtils.writeStringToFile(html, ReportGenerator.generateToolReport(VERSION_DETAILS), "UTF-8");
 
         Document doc = Jsoup.parse(html, "UTF-8");
@@ -73,7 +73,7 @@ public class ReportGeneratorTest {
         Set<String> tools = new HashSet<>();
         tools.add(TOOL_NAME);
 
-        File html = new File(dir + File.separator + "index.html");
+        File html = new File(DIR + File.separator + "index.html");
         FileUtils.writeStringToFile(html, ReportGenerator.generateMainMenu(tools, 1000, 2000), "UTF-8");
 
         Document doc = Jsoup.parse(html, "UTF-8");
@@ -88,6 +88,6 @@ public class ReportGeneratorTest {
 
     @AfterClass
     public static void cleanUpDIR() {
-        DirCleaner.deleteDir(dir);
+        DirCleaner.deleteDir(DIR);
     }
 }

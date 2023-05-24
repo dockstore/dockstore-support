@@ -1,7 +1,7 @@
 package io.dockstore.toolbackup.client.cli;
 
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.img;
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.nonexistingImg;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.IMG;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.NON_EXISTING_IMG;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -20,7 +20,7 @@ public class DockerCommunicatorIT {
 
     @Test
     public void pullDockerImage() {
-        DOCKER_COMMUNICATOR.pullDockerImage(img);
+        DOCKER_COMMUNICATOR.pullDockerImage(IMG);
     }
 
     /**
@@ -28,9 +28,9 @@ public class DockerCommunicatorIT {
      */
     @Test
     public void pullDockerImageNonexistent() {
-        assumeFalse(DOCKER_COMMUNICATOR.pullDockerImage(nonexistingImg));
+        assumeFalse(DOCKER_COMMUNICATOR.pullDockerImage(NON_EXISTING_IMG));
         System.setErr(new PrintStream(errContent));
-        DOCKER_COMMUNICATOR.pullDockerImage(nonexistingImg);
+        DOCKER_COMMUNICATOR.pullDockerImage(NON_EXISTING_IMG);
         assertTrue(errContent.toString().contains("Unable to pull"));
     }
 
@@ -39,8 +39,8 @@ public class DockerCommunicatorIT {
      */
     @Test
     public void saveDockerImage() {
-        assumeTrue(DOCKER_COMMUNICATOR.pullDockerImage(img));
-        DOCKER_COMMUNICATOR.saveDockerImage(img);
+        assumeTrue(DOCKER_COMMUNICATOR.pullDockerImage(IMG));
+        DOCKER_COMMUNICATOR.saveDockerImage(IMG);
     }
 
     /**
@@ -48,8 +48,8 @@ public class DockerCommunicatorIT {
      */
     @Test (expected = RuntimeException.class)
     public void saveDockerImageNonexistent() {
-        assumeFalse(DOCKER_COMMUNICATOR.pullDockerImage(nonexistingImg));
-        DOCKER_COMMUNICATOR.saveDockerImage(nonexistingImg);
+        assumeFalse(DOCKER_COMMUNICATOR.pullDockerImage(NON_EXISTING_IMG));
+        DOCKER_COMMUNICATOR.saveDockerImage(NON_EXISTING_IMG);
     }
 
     @AfterClass

@@ -1,6 +1,6 @@
 package io.dockstore.toolbackup.client.cli;
 
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.dir;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
 import static org.junit.Assume.assumeTrue;
 
 import io.dockstore.toolbackup.client.cli.common.DirCleaner;
@@ -20,7 +20,7 @@ public class DirectoryGeneratorTest {
 
     @BeforeClass
     public static void setUp() {
-        DirectoryGenerator.createDir(dir);
+        DirectoryGenerator.createDir(DIR);
     }
 
     /**
@@ -30,7 +30,7 @@ public class DirectoryGeneratorTest {
     @Test
     public void createDirExistingFile() throws Exception {
         exit.expectSystemExit();
-        File file = new File(dir + File.separator + "sameName.txt");
+        File file = new File(DIR + File.separator + "sameName.txt");
         assumeTrue(file.isFile() || !file.exists());
         file.createNewFile();
         DirectoryGenerator.createDir(file.getAbsolutePath());
@@ -38,6 +38,6 @@ public class DirectoryGeneratorTest {
 
     @AfterClass
     public static void shutDown() {
-        DirCleaner.deleteDir(dir);
+        DirCleaner.deleteDir(DIR);
     }
 }

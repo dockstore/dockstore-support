@@ -34,7 +34,7 @@ public final class FormattedTimeGenerator {
     public static String elapsedTime(LocalDateTime start, LocalDateTime end) {
         long totalMinutes = ChronoUnit.MINUTES.between(start, end);
         int minutes = (int) totalMinutes % MIN_IN_H;
-        int hours = ((int) totalMinutes - minutes) / MIN_IN_H;
+        int hours = (int) totalMinutes / MIN_IN_H;
         return hours + " hours and " + minutes + " minutes";
     }
 }

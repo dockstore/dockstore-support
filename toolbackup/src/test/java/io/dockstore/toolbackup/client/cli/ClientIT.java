@@ -1,12 +1,12 @@
 package io.dockstore.toolbackup.client.cli;
 
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR_CHECK_SIZE;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.ID;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.IMG;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.TAG;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.TIME;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.TOOL_NAME;
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.dir;
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.dirCheckSize;
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.img;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -64,16 +64,16 @@ public class ClientIT {
      */
     @Test
     public void getFilesTotalSizeB() {
-        File newFile = new File(dirCheckSize + File.separator + "helloworld.txt");
+        File newFile = new File(DIR_CHECK_SIZE + File.separator + "helloworld.txt");
         try {
             FileUtils.writeStringToFile(newFile, "Hello world!", "UTF-8");
         } catch (IOException e) {
             throw new RuntimeException("Could not create " + newFile.getAbsolutePath());
         }
-        File dir = new File(dirCheckSize);
+        File dir = new File(DIR_CHECK_SIZE);
         long directorySize = client.getFilesTotalSizeB((List<File>) FileUtils.listFiles(dir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE));
         assertEquals(FileUtils.sizeOfDirectory(dir), directorySize);
-        DirCleaner.deleteDir(dirCheckSize);
+        DirCleaner.deleteDir(DIR_CHECK_SIZE);
     }
 
     private List<Tool> setUpTools() {
@@ -89,7 +89,7 @@ public class ClientIT {
 
         toolVersion.setId(ID + ":" + TAG);
         toolVersion.setMetaVersion(TIME);
-        toolVersion.setImage(img);
+        toolVersion.setImage(IMG);
         toolVersions.add(toolVersion);
 
         tool.setVersions(toolVersions);
@@ -101,16 +101,16 @@ public class ClientIT {
     private void setUpMap(int offset, DockerCommunicator dockerCommunicator) {
         Map<String, List<VersionDetail>> toolsToVersions = new HashMap<>();
         List<VersionDetail> versionsDetails = new ArrayList<>();
-        versionsDetails.add(new VersionDetail(TAG, TIME, dockerCommunicator.getImageSize(img) + offset, 0, TIME, true, dir));
+        versionsDetails.add(new VersionDetail(TAG, TIME, dockerCommunicator.getImageSize(IMG) + offset, 0, TIME, true, DIR));
         toolsToVersions.put(TOOL_NAME, versionsDetails);
-        ReportGenerator.generateJSONMap(toolsToVersions, dir);
+        ReportGenerator.generateJSONMap(toolsToVersions, DIR);
     }
 
     @Test
     public void saveToLocalNewImage() {
         DockerCommunicator dockerCommunicator = new DockerCommunicator();
-        client.saveToLocal(dir, dir, setUpTools(), dockerCommunicator);
-        assertTrue(new File(dir + File.separator + ID + File.separator + TAG + ".tar").isFile());
+        client.saveToLocal(DIR, DIR, setUpTools(), dockerCommunicator);
+        assertTrue(new File(DIR + File.separator + ID + File.separator + TAG + ".tar").isFile());
     }
 
     @Test
@@ -120,7 +120,7 @@ public class ClientIT {
 
         System.setOut(new PrintStream(outputContent));
 
-        client.saveToLocal(dir, dir, setUpTools(), dockerCommunicator);
+        client.saveToLocal(DIR, DIR, setUpTools(), dockerCommunicator);
         assertTrue(outputContent.toString().contains("had changed"));
     }
 
@@ -128,12 +128,12 @@ public class ClientIT {
     public void saveToLocalNoChange() {
         DockerCommunicator dockerCommunicator = new DockerCommunicator();
 
-        dockerCommunicator.pullDockerImage(img);
+        dockerCommunicator.pullDockerImage(IMG);
         setUpMap(0, dockerCommunicator);
 
         System.setOut(new PrintStream(outputContent));
 
-        client.saveToLocal(dir, dir, setUpTools(), dockerCommunicator);
+        client.saveToLocal(DIR, DIR, setUpTools(), dockerCommunicator);
         assertTrue(outputContent.toString().contains("did not change"));
     }
 
@@ -146,10 +146,10 @@ public class ClientIT {
         DockerCommunicator dockerCommunicator = new DockerCommunicator();
 
         // confirm image can be pulled before test start
-        assumeTrue(dockerCommunicator.pullDockerImage(img));
+        assumeTrue(dockerCommunicator.pullDockerImage(IMG));
 
-        File imgFile = new File(dir + File.separator + "dockstore-saver-img.tar");
-        client.saveDockerImage(img, imgFile, dockerCommunicator);
+        File imgFile = new File(DIR + File.separator + "dockstore-saver-img.tar");
+        client.saveDockerImage(IMG, imgFile, dockerCommunicator);
         assertTrue(imgFile.isFile());
 
         dockerCommunicator.closeDocker();
@@ -157,6 +157,6 @@ public class ClientIT {
 
     @AfterClass
     public static void closeDocker() {
-        DirCleaner.deleteDir(dir);
+        DirCleaner.deleteDir(DIR);
     }
 }
