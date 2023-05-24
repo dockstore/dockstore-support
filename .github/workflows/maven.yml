@@ -24,16 +24,6 @@ jobs:
           # An explicit key for restoring and saving the cache
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
-      - name: spin up jenkins
-        run: |
-          # Pull docker jenkins image from quay.io
-          docker pull quay.io/garyluu/jenkins
-          # Create an arbitrary subnet for the docker container to run on
-          docker network create --subnet=172.18.0.0/16 travisnet
-          # Create a docker container with a specific IP that travis can connect to during testing
-          docker run -d --net travisnet --ip 172.18.0.22 quay.io/garyluu/jenkins
-          # Sleep for 20 seconds while jenkins loads
-          sleep 20
       - uses: actions/checkout@v3
       - name: Set up JDK 17
         uses: actions/setup-java@v3
