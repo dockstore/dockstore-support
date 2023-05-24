@@ -1,5 +1,8 @@
 package io.dockstore.toolbackup.client.cli;
 
+import static io.dockstore.toolbackup.client.cli.Client.COMMAND_ERROR;
+import static java.lang.System.out;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -10,19 +13,16 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.transfer.ObjectMetadataProvider;
 import com.amazonaws.services.s3.transfer.TransferManager;
-
 import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static io.dockstore.toolbackup.client.cli.Client.COMMAND_ERROR;
-import static java.lang.System.out;
-
 /**
  * Created by kcao on 12/01/17.
  */
 class S3Communicator {
+
     private TransferManager transferManager;
     private AmazonS3Client s3Client;
 
@@ -37,7 +37,7 @@ class S3Communicator {
     S3Communicator(String section, String endpoint) {
         ClientConfiguration opts = new ClientConfiguration();
         opts.setSignerOverride("S3SignerType");
-        s3Client = new AmazonS3Client(new ProfileCredentialsProvider(section).getCredentials(),  opts);
+        s3Client = new AmazonS3Client(new ProfileCredentialsProvider(section).getCredentials(), opts);
 
         s3Client.setEndpoint(endpoint);
         s3Client.setS3ClientOptions(S3ClientOptions.builder().build());
@@ -52,7 +52,7 @@ class S3Communicator {
         List<S3ObjectSummary> objectSummaries = s3Client.listObjects(bucketName, prefix).getObjectSummaries();
         List<Long> sizes = objectSummaries.stream().map(S3ObjectSummary::getSize).collect(Collectors.toList());
 
-        for(long size : sizes) {
+        for (long size : sizes) {
             total += size;
         }
 
@@ -65,7 +65,7 @@ class S3Communicator {
     }
 
     void createBucket(String bucketName) {
-        if(!doesBucketExist(bucketName)) {
+        if (!doesBucketExist(bucketName)) {
             s3Client.createBucket(new CreateBucketRequest(bucketName));
         }
     }
@@ -79,7 +79,7 @@ class S3Communicator {
         return keysToSizes;
     }
 
-     private static ObjectMetadataProvider encrypt() {
+    private static ObjectMetadataProvider encrypt() {
         ObjectMetadataProvider objectMetadataProvider = new ObjectMetadataProvider() {
             @Override
             public void provideObjectMetadata(File file, ObjectMetadata objectMetadata) {
@@ -87,13 +87,13 @@ class S3Communicator {
             }
         };
         return objectMetadataProvider;
-     }
+    }
 
     void uploadDirectory(String bucketName, String keyPrefix, String dirPath, List<File> files, boolean encrypt) {
         createBucket(bucketName);
 
         try {
-            if(encrypt) {
+            if (encrypt) {
                 transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files, encrypt()).waitForCompletion();
             } else {
                 transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files).waitForCompletion();
@@ -110,7 +110,7 @@ class S3Communicator {
     void downloadDirectory(String bucketName, String keyPrefix, String dirPath) {
         File dir = new File(dirPath);
 
-        if(!dir.isDirectory()) {
+        if (!dir.isDirectory()) {
             throw new RuntimeException("Not a local directory thus nothing will be saved");
         } else {
             try {

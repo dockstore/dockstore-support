@@ -12,9 +12,14 @@ import java.util.concurrent.TimeUnit;
  * @author gluu
  * @since 10/02/17
  */
-public class TimeHelper {
+public final class TimeHelper {
+
     private static final double MILLISECONDS_PER_MINUTE = 60000;
     private static final long MINUTES_PER_HOUR = 60;
+
+    private TimeHelper() {
+        // hidden constructor
+    }
 
     /**
      * Generates prefix for the report name
@@ -65,7 +70,6 @@ public class TimeHelper {
      *
      * @param time Ex. 2019-04-05 15:21
      * @return
-     * @throws ParseException
      */
     public static String timeFormatConvert(String time) throws ParseException {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSZ");
@@ -79,7 +83,7 @@ public class TimeHelper {
     public static String getDurationSinceDate(String date) {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSZ");
         Date result;
-        Long diffInMillies;
+        long diffInMillies;
         String duration = null;
         try {
             result = df.parse(date);

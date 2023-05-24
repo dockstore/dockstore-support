@@ -4,68 +4,56 @@ import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.commons.io.FileUtils;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.DoubleFunction;
+import org.apache.commons.io.FileUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 
 /**
  * Created by kcao on 11/01/17.
  */
-class ReportGenerator {
+final class ReportGenerator {
+
     private static final double NUM_B_IN_GB = 1e9;
     private static final double DOUBLE_SPECIAL_NUM = 100.0;
     private static final String STYLE;
-    static {
-        StringBuilder htmlBase = new StringBuilder("<!DOCTYPE html><html>");
-        htmlBase.append("<head>");
-        htmlBase.append("<style type=\"text/css\">\n");
-        htmlBase.append("\t\t.err { color: #ff0000; }\n");
-        htmlBase.append("\t\ttable { font-family: arial, sans-serif; border-collapse: collapse; width: 100%; }\n");
-        htmlBase.append("\t\ttd, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }\n");
-        htmlBase.append("\t</style><title></title></head>");
-        htmlBase.append("<body><table>");
 
-        STYLE = htmlBase.toString();
+    static {
+
+        STYLE = """
+            <!DOCTYPE html><html><head><style type="text/css">
+            \t\t.err { color: #ff0000; }
+            \t\ttable { font-family: arial, sans-serif; border-collapse: collapse; width: 100%; }
+            \t\ttd, th { border: 1px solid #dddddd; text-align: left; padding: 8px; }
+            \t</style><title></title></head><body><table>""";
     }
 
+    private ReportGenerator() {
+        // hidden constructor
+    }
+
+
+
     private static double bToGB(long sizeInB) {
-        DoubleFunction<Double> bytesToGB = (bytes) -> bytes/NUM_B_IN_GB;
-        DoubleFunction<Double> format2DecPlaces = (num) -> Math.round(num*DOUBLE_SPECIAL_NUM)/DOUBLE_SPECIAL_NUM;
+        DoubleFunction<Double> bytesToGB = (bytes) -> bytes / NUM_B_IN_GB;
+        DoubleFunction<Double> format2DecPlaces = (num) -> Math.round(num * DOUBLE_SPECIAL_NUM) / DOUBLE_SPECIAL_NUM;
         return format2DecPlaces.apply(bytesToGB.apply(sizeInB));
     }
 
     //-----------------------JSON map generation and load-----------------------
-    private static class JSONMapper {
-        final String toolname;
-        final List<VersionDetail> versions;
-        JSONMapper(String toolname, List<VersionDetail> versions) {
-            this.toolname = toolname;
-            this.versions = versions;
-        }
-
-        public String getToolname() {
-            return toolname;
-        }
-        public List<VersionDetail> getVersions() {
-            return versions;
-        }
-    }
 
     static void generateJSONMap(Map<String, List<VersionDetail>> toolsToVersions, String basePath) {
         List<JSONMapper> mapperList = new ArrayList<>();
-        for(Map.Entry<String, List<VersionDetail>> entry: toolsToVersions.entrySet()) {
+        for (Map.Entry<String, List<VersionDetail>> entry : toolsToVersions.entrySet()) {
             JSONMapper jsonMapper = new JSONMapper(entry.getKey(), entry.getValue());
             mapperList.add(jsonMapper);
         }
@@ -83,11 +71,12 @@ class ReportGenerator {
         Map<String, List<VersionDetail>> toolsToVersions = new HashMap<>();
         File file = new File(basePath + File.separator + "map.JSON");
         try {
-            if(file.exists()) {
+            if (file.exists()) {
                 String json = FileUtils.readFileToString(file, "UTF-8");
-                Type listType = new TypeToken<ArrayList<JSONMapper>>(){}.getType();
+                Type listType = new TypeToken<ArrayList<JSONMapper>>() {
+                }.getType();
                 List<JSONMapper> mapperList = new Gson().fromJson(json, listType);
-                for(JSONMapper mapEntry: mapperList) {
+                for (JSONMapper mapEntry : mapperList) {
                     toolsToVersions.put(mapEntry.getToolname(), mapEntry.getVersions());
                 }
             }
@@ -107,9 +96,9 @@ class ReportGenerator {
 
         fileReportBuilder.append("<tr><th>Version</th><th>Meta-Version (API)</th><th>Size (GB)</th><th>Recent Executions</th><th>Availability</th><th>File Path</th></tr>");
 
-        for(VersionDetail row : report) {
+        for (VersionDetail row : report) {
 
-            if(!row.isValid()) {
+            if (!row.isValid()) {
                 fileReportBuilder.append("<tr class = 'err'><td>");
             } else {
                 fileReportBuilder.append("<tr><td>");
@@ -121,17 +110,17 @@ class ReportGenerator {
             fileReportBuilder.append(row.getMetaVersion());
 
             fileReportBuilder.append("</td><td>");
-            if(row.getFileSize() != 0) {
+            if (row.getFileSize() != 0) {
                 fileReportBuilder.append(bToGB(row.getFileSize()));
             }
 
             fileReportBuilder.append("</td><td>");
             List<String> times = row.getTimesOfExecution();
-            Collections.sort(times, Comparator.comparing(FormattedTimeGenerator::strToDate));
+            times.sort(Comparator.comparing(FormattedTimeGenerator::strToDate));
             int timesSize = times.size();
-            if(timesSize > 2) {
-                fileReportBuilder.append(times.subList(timesSize-2, timesSize));
-            }else {
+            if (timesSize > 2) {
+                fileReportBuilder.append(times.subList(timesSize - 2, timesSize));
+            } else {
                 fileReportBuilder.append(times);
             }
 
@@ -139,7 +128,7 @@ class ReportGenerator {
             fileReportBuilder.append(row.isValid());
 
             fileReportBuilder.append("</td><td>");
-            if(row.getPath() != "") {
+            if (!"".equals(row.getPath())) {
                 fileReportBuilder.append(row.getPath());
             }
 
@@ -162,7 +151,7 @@ class ReportGenerator {
         menuBuilder.append(bToGB(totalInB));
         menuBuilder.append(" GB</div>");
 
-        for(String tool : tools) {
+        for (String tool : tools) {
             menuBuilder.append("<tr><td><a href='");
             menuBuilder.append(tool);
             menuBuilder.append(".html'>");
@@ -173,5 +162,24 @@ class ReportGenerator {
 
         Document mainMenu = Jsoup.parse(menuBuilder.toString());
         return mainMenu.toString();
+    }
+
+    private static class JSONMapper {
+
+        final String toolname;
+        final List<VersionDetail> versions;
+
+        JSONMapper(String toolname, List<VersionDetail> versions) {
+            this.toolname = toolname;
+            this.versions = versions;
+        }
+
+        public String getToolname() {
+            return toolname;
+        }
+
+        public List<VersionDetail> getVersions() {
+            return versions;
+        }
     }
 }

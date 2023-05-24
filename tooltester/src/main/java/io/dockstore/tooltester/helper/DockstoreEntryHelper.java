@@ -1,5 +1,8 @@
 package io.dockstore.tooltester.helper;
 
+import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
+import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+
 import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.ContainersApi;
 import io.dockstore.openapi.client.api.WorkflowsApi;
@@ -8,19 +11,18 @@ import io.dockstore.openapi.client.model.Tag;
 import io.dockstore.openapi.client.model.Tool;
 import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowVersion;
-
 import java.util.ArrayList;
-
-
-
-import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 
 /**
  * @author gluu
  * @since 03/04/19
  */
 public final class DockstoreEntryHelper {
+
+    private DockstoreEntryHelper() {
+        // hidden constructor
+    }
+
     public static String generateLaunchEntryCommand(Workflow workflow, WorkflowVersion workflowVersion, String parameterFilePath) {
         String fileTypeFlag = "--json";
         if (parameterFilePath.endsWith(".yml") || parameterFilePath.endsWith(".yaml")) {
@@ -61,7 +63,7 @@ public final class DockstoreEntryHelper {
         String toolId = tool.getId();
         String path = toolId.replace("#workflow/", "");
         try {
-            return workflowsApi.getPublishedWorkflowByPath(path, null, null,null);
+            return workflowsApi.getPublishedWorkflowByPath(path, null, null, null);
         } catch (ApiException e) {
             exceptionMessage(e, "Could not get " + path + " using the workflowsApi API", API_ERROR);
         }
@@ -79,18 +81,19 @@ public final class DockstoreEntryHelper {
 
     /**
      * Converts the "Clone with SSH" Git URL to the "Clone with HTTPS" Git URL so Jenkins can actually clone it
-     * @param gitSSHUrl     The "Clone with SSH" Git URL
-     * @return              The "Clone with HTTPS" Git URL
+     *
+     * @param gitSSHUrl The "Clone with SSH" Git URL
+     * @return The "Clone with HTTPS" Git URL
      */
     public static String convertGitSSHUrlToGitHTTPSUrl(String gitSSHUrl) {
         return gitSSHUrl != null ? gitSSHUrl.replace("git@github.com:", "https://github.com/") : null;
     }
 
     /**
-     * Removes the leading slash from the absolute path because it is absolute within the Git repository but not the
-     * Jenkins file system.  Jenkins will need a relative path.
-     * @param uncleanDockerfilePath     Example: "/Dockerfile"
-     * @return                          Example: "Dockerfile"
+     * Removes the leading slash from the absolute path because it is absolute within the Git repository but not the Jenkins file system.  Jenkins will need a relative path.
+     *
+     * @param uncleanDockerfilePath Example: "/Dockerfile"
+     * @return Example: "Dockerfile"
      */
     public static String convertDockstoreAbsolutePathToJenkinsRelativePath(String uncleanDockerfilePath) {
         return uncleanDockerfilePath.replaceFirst("^/", "");

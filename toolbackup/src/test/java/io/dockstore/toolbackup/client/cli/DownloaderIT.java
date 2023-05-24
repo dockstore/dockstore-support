@@ -1,23 +1,22 @@
 package io.dockstore.toolbackup.client.cli;
 
-import io.dockstore.toolbackup.client.cli.common.AWSConfig;
-import io.dockstore.toolbackup.client.cli.common.DirCleaner;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.BUCKET;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.PREFIX;
 import static org.junit.Assume.assumeTrue;
 
+import io.dockstore.toolbackup.client.cli.common.AWSConfig;
+import io.dockstore.toolbackup.client.cli.common.DirCleaner;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 /**
  * Created by kcao on 25/01/17.
 */
-public class DownloaderTest {
+public class DownloaderIT {
     @BeforeClass
     public static void setUp() {
         AWSConfig.generateCredentials();

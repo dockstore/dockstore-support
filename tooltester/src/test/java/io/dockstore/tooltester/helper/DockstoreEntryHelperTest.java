@@ -1,6 +1,7 @@
 package io.dockstore.tooltester.helper;
 
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.Configuration;
@@ -11,11 +12,9 @@ import io.dockstore.openapi.client.model.Tag;
 import io.dockstore.openapi.client.model.Tool;
 import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowVersion;
+import java.util.List;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author gluu
@@ -27,13 +26,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 public class DockstoreEntryHelperTest {
     // This actually uses the real Dockstore staging server
-    private static final String serverUrl = "https://staging.dockstore.org/api";
+    private static final String SERVER_URL = "https://staging.dockstore.org/api";
     private static WorkflowsApi workflowsApi;
     private static ContainersApi containersApi;
 
     static {
         ApiClient defaultApiClient = Configuration.getDefaultApiClient();
-        defaultApiClient.setBasePath(serverUrl);
+        defaultApiClient.setBasePath(SERVER_URL);
         workflowsApi = new WorkflowsApi(defaultApiClient);
         containersApi = new ContainersApi(defaultApiClient);
     }

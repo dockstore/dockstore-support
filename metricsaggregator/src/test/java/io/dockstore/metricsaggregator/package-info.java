@@ -16,21 +16,3 @@
  */
 
 package io.dockstore.metricsaggregator;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.util.List;
-import org.junit.jupiter.api.Test;
-
-class StatisticsTest {
-
-    @Test
-    void testStatistic() {
-        List<Double> fibonacci = List.of(0.0, 1.0, 1.0, 2.0, 3.0, 5.0, 8.0, 13.0, 21.0, 34.0, 55.0, 89.0, 144.0);
-        Statistics statistics = new Statistics(fibonacci);
-        assertEquals(0, statistics.min());
-        assertEquals(144, statistics.max());
-        assertEquals(29, Math.round(statistics.average()));
-        assertEquals(13, statistics.numberOfDataPoints());
-    }
-}

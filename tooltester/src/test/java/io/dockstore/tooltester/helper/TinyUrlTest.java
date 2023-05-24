@@ -1,8 +1,8 @@
 package io.dockstore.tooltester.helper;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * @author gluu
@@ -13,7 +13,7 @@ public class TinyUrlTest {
     public void getTinyUrl() throws Exception {
         String originalURL = "https://www.google.ca";
         String tinyUrl = TinyUrl.getTinyUrl(originalURL);
-        assertTrue(tinyUrl.equals("https://tinyurl.com/d4gfaxc") || tinyUrl.equals(originalURL));
+        assertTrue("https://tinyurl.com/d4gfaxc".equals(tinyUrl) || tinyUrl.equals(originalURL));
     }
 
 }

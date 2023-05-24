@@ -1,19 +1,18 @@
 package io.dockstore.toolbackup.client.cli;
 
-import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.exceptions.DockerCertificateException;
-import com.spotify.docker.client.exceptions.DockerException;
-import com.spotify.docker.client.exceptions.DockerRequestException;
-
-import java.io.IOException;
-import java.io.InputStream;
-
 import static com.spotify.docker.client.DefaultDockerClient.fromEnv;
 import static io.dockstore.toolbackup.client.cli.Client.CONNECTION_ERROR;
 import static io.dockstore.toolbackup.client.cli.Client.GENERIC_ERROR;
 import static io.dockstore.toolbackup.client.cli.Client.IO_ERROR;
 import static java.lang.System.err;
 import static java.lang.System.out;
+
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.exceptions.DockerCertificateException;
+import com.spotify.docker.client.exceptions.DockerException;
+import com.spotify.docker.client.exceptions.DockerRequestException;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Created by kcao on 18/01/17.

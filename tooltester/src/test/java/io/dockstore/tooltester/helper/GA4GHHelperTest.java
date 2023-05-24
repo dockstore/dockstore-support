@@ -1,5 +1,12 @@
 package io.dockstore.tooltester.helper;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.ToolVersion;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -11,23 +18,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.dockstore.openapi.client.model.Tool;
-import io.dockstore.openapi.client.model.ToolVersion;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author gluu
  * @since 07/05/19
  */
 public class GA4GHHelperTest {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Test
     public void runnerSupportsDescriptorType() {
@@ -47,7 +46,7 @@ public class GA4GHHelperTest {
     @Test
     public void getTools() throws URISyntaxException, IOException {
         String json = resourceFilePathToString();
-        List<Tool> allTools = Arrays.asList(objectMapper.readValue(json, Tool[].class));
+        List<Tool> allTools = Arrays.asList(OBJECT_MAPPER.readValue(json, Tool[].class));
         List<Tool> filteredTools1 = GA4GHHelper.filterTools(allTools, false, new ArrayList<>(), new ArrayList<>(), true, true);
         assertEquals(25, filteredTools1.size());
         List<Tool> filteredTools2 = GA4GHHelper.filterTools(allTools, true, new ArrayList<>(), new ArrayList<>(), false, true);
