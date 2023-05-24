@@ -1,0 +1,16 @@
+name: dockstoreTooltesterSetUp
+data:
+  - location: s3://human-pangenomics
+    readOnly: true
+  - location: s3://flynn-test-bucket
+    readOnly: true
+schemaVersion: 1
+contexts:
+  wdlContext:
+    engines:
+      - type: wdl
+        engine: cromwell
+  cwlContext:
+    engines:
+      - type: cwl
+        engine: toil
