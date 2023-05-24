@@ -479,7 +479,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
-                    <skipITs>${skip-tooltester-ITs}</skipITs>
+                    <skipITs>${skip-toolbackup-ITs}</skipITs>
                 </configuration>
                 <executions>
                     <execution>
