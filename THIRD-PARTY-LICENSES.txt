@@ -1,5 +1,5 @@
 
-Lists of 416 third-party dependencies.
+Lists of 420 third-party dependencies.
      (Apache License, Version 2.0) akka-actor (com.typesafe.akka:akka-actor_2.13:2.5.32 - https://akka.io/)
      (Apache License, Version 2.0) akka-protobuf (com.typesafe.akka:akka-protobuf_2.13:2.5.32 - https://akka.io/)
      (Apache License, Version 2.0) akka-slf4j (com.typesafe.akka:akka-slf4j_2.13:2.5.32 - https://akka.io/)
@@ -243,6 +243,7 @@ Lists of 416 third-party dependencies.
      (CDDL + GPLv2 with classpath exception) javax.transaction API (javax.transaction:javax.transaction-api:1.3 - http://jta-spec.java.net)
      (EPL 2.0) (GPL2 w/ CPE) javax.ws.rs-api (javax.ws.rs:javax.ws.rs-api:2.1.1 - https://github.com/eclipse-ee4j/jaxrs-api)
      (Eclipse Distribution License - v 1.0) JAXB Runtime (org.glassfish.jaxb:jaxb-runtime:2.3.6 - https://eclipse-ee4j.github.io/jaxb-ri/)
+     (CDDL 1.1) (GPL2 w/ CPE) jaxb-api (javax.xml.bind:jaxb-api:2.3.1 - https://github.com/javaee/jaxb-spec/jaxb-api)
      (http://jaxen.codehaus.org/license.html) jaxen (jaxen:jaxen:1.1.6 - http://jaxen.codehaus.org/)
      (Apache License, version 2.0) JBoss Logging 3 (org.jboss.logging:jboss-logging:3.4.1.Final - http://www.jboss.org)
      (Apache License, Version 2.0) JCL 1.2 implemented over SLF4J (org.slf4j:jcl-over-slf4j:1.7.36 - http://www.slf4j.org)
@@ -332,6 +333,7 @@ Lists of 416 third-party dependencies.
      (Apache License 2.0) Metrics Utility Servlets (io.dropwizard.metrics:metrics-servlets:4.2.17 - https://metrics.dropwizard.io/metrics-servlets)
      (The Apache Software License, Version 2.0) metrics3-statsd (com.readytalk:metrics3-statsd:4.2.0 - no url defined)
      (Apache 2) metrics4-scala (nl.grons:metrics4-scala_2.13:4.2.8 - https://github.com/erikvanoosten/metrics-scala)
+     (GNU General Public License (GPLv3)) metricsaggregator (io.dockstore:metricsaggregator:1.15.0-SNAPSHOT - https://github.com/dockstore/dockstore-support)
      (Eclipse Distribution License - v 1.0) MIME streaming extension (org.jvnet.mimepull:mimepull:1.9.15 - https://github.com/eclipse-ee4j/metro-mimepull)
      (The MIT License) mockito-core (org.mockito:mockito-core:3.12.4 - https://github.com/mockito/mockito)
      (The MIT License) mockito-inline (org.mockito:mockito-inline:3.12.4 - https://github.com/mockito/mockito)
@@ -411,6 +413,8 @@ Lists of 416 third-party dependencies.
      (Apache License 2.0) Throttling Appender (io.dropwizard.logback:logback-throttling-appender:1.1.9 - https://github.com/dropwizard/logback-throttling-appender/)
      (Apache License, Version 2.0) tomcat-jdbc (org.apache.tomcat:tomcat-jdbc:9.0.72 - https://tomcat.apache.org/)
      (Apache License, Version 2.0) tomcat-juli (org.apache.tomcat:tomcat-juli:9.0.72 - https://tomcat.apache.org/)
+     (GNU General Public License (GPLv3)) toolbackup (io.dockstore:toolbackup:1.15.0-SNAPSHOT - https://github.com/dockstore/dockstore-support)
+     (GNU General Public License (GPLv3)) tooltester (io.dockstore:tooltester:1.15.0-SNAPSHOT - https://github.com/dockstore/dockstore-support)
      (Eclipse Distribution License - v 1.0) TXW2 Runtime (org.glassfish.jaxb:txw2:2.3.6 - https://eclipse-ee4j.github.io/jaxb-ri/)
      (WDL License https://github.com/openwdl/wdl/blob/master/LICENSE) wdl-biscayne (org.broadinstitute:wdl-biscayne_2.13:84 - no url defined)
      (WDL License https://github.com/openwdl/wdl/blob/master/LICENSE) wdl-draft2 (org.broadinstitute:wdl-draft2_2.13:84 - no url defined)
