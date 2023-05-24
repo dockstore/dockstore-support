@@ -19,7 +19,7 @@
 
     <groupId>io.dockstore</groupId>
     <artifactId>metricsaggregator</artifactId>
-    <version>0.1-alpha.1-SNAPSHOT</version>
+    <version>1.14.0</version>
     <packaging>jar</packaging>
 
     <name>metricsaggregator</name>
@@ -50,7 +50,7 @@
         <connection>${github.url}</connection>
         <developerConnection>${github.url}</developerConnection>
         <url>${github.url}</url>
-      <tag>HEAD</tag>
+      <tag>1.14.0</tag>
   </scm>
 
     <repositories>
