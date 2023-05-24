@@ -253,7 +253,7 @@ commands:
       - run:
           name: run tests
           command: |
-            ./mvnw -B clean install -Dskip-${DIRECTORY}-ITs=false -ntp | grep  -v "^Running Changeset:"
+            ./mvnw -B clean install -Dskip-$DIRECTORY-ITs=false -ntp | grep  -v "^Running Changeset:"
   save_test_results:
     steps:
       - run:
