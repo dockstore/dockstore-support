@@ -33,12 +33,10 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.Configuration;
-import io.dockstore.openapi.client.api.ContainersApi;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
-import io.dockstore.tooltester.TooltesterConfig;
 import io.dockstore.tooltester.runWorkflow.WorkflowList;
 import io.dockstore.tooltester.runWorkflow.WorkflowRunner;
 import io.dockstore.tooltester.runWorkflow.WorkflowRunnerConfig;
@@ -61,10 +59,8 @@ public class Client {
     private static final int WAIT_TIME = 15;
     private static final String DEFAULT_SAVE_DIRECTORY = "results";
     private static final String RESULT_DIRECTORY_FLAG = "--results-dir";
-    private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
     private Ga4Ghv20Api ga4Ghv20Api;
-    private TooltesterConfig tooltesterConfig;
     private WorkflowRunnerConfig workflowRunnerConfig;
     private ExtendedGa4GhApi extendedGa4GhApi;
 
@@ -213,14 +209,12 @@ public class Client {
             workflow.runWorkflow();
         }
 
-        List<WorkflowRunner> workflowsStillRunning = new ArrayList<>();
-        workflowsStillRunning.addAll(workflowsToRun.getWorkflowsToRun());
+        List<WorkflowRunner> workflowsStillRunning = new ArrayList<>(workflowsToRun.getWorkflowsToRun());
 
         while (!workflowsStillRunning.isEmpty()) {
             // Using sleep here as workflows take a while to run, and there is no point in continuously checking if they are finished
             TimeUnit.SECONDS.sleep(WAIT_TIME);
-            List<WorkflowRunner> workflowsToCheck = new ArrayList<>();
-            workflowsToCheck.addAll(workflowsStillRunning);
+            List<WorkflowRunner> workflowsToCheck = new ArrayList<>(workflowsStillRunning);
             for (WorkflowRunner workflow : workflowsToCheck) {
                 if (workflow.isWorkflowFinished()) {
                     workflowsStillRunning.remove(workflow);
@@ -244,19 +238,6 @@ public class Client {
             printLine();
         }
 
-    }
-
-    void setupClientEnvironment() {
-        this.tooltesterConfig = new TooltesterConfig();
-        ApiClient defaultApiClient = getApiClient(this.tooltesterConfig.getServerUrl());
-        this.containersApi = new ContainersApi(defaultApiClient);
-        this.workflowsApi = new WorkflowsApi(defaultApiClient);
-        setGa4Ghv20Api(new Ga4Ghv20Api(defaultApiClient));
-    }
-
-
-    ContainersApi getContainersApi() {
-        return containersApi;
     }
 
     private ExtendedGa4GhApi getExtendedGa4GhApi() {

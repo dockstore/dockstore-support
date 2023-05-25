@@ -3,11 +3,9 @@ package io.dockstore.tooltester.client.cli;
 import static io.dockstore.tooltester.client.cli.Client.main;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
@@ -27,23 +25,6 @@ public class ClientTest {
 
     @SystemStub
     private SystemErr systemErr;
-
-    private Client client;
-
-    @BeforeEach
-    public void initialize() {
-        this.client = new Client();
-        this.client.setupClientEnvironment();
-        assertNotNull(client.getContainersApi(), "client API could not start");
-    }
-
-    @Test
-    public void setupEnvironment() {
-        client = new Client();
-        client.setupClientEnvironment();
-        assertNotNull(client.getContainersApi(), "client API could not start");
-    }
-
 
     /**
      * Test with unknown command

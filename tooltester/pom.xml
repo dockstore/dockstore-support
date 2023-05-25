@@ -123,21 +123,12 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>cloudwatch</artifactId>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>ecs</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.inject</groupId>
-            <artifactId>jersey-hk2</artifactId>
-            <version>2.39</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -263,11 +254,6 @@
             <scope>test</scope>
         </dependency>
         <!-- For AWS integration END -->
-        <!-- https://mvnrepository.com/artifact/org.glassfish.hk2/hk2-api -->
-        <dependency>
-            <groupId>org.glassfish.hk2</groupId>
-            <artifactId>hk2-api</artifactId>
-        </dependency>
     </dependencies>
 
     <build>
@@ -347,14 +333,9 @@
                             <outputXML>true</outputXML>
                             <ignoreNonCompile>true</ignoreNonCompile>
                             <usedDependencies>
-                                <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
-                                <usedDependency>org.glassfish.hk2:hk2-api</usedDependency>
                                 <usedDependency>org.slf4j:slf4j-api</usedDependency>
                                 <usedDependency>org.yaml:snakeyaml</usedDependency>
                             </usedDependencies>
-                            <ignoredDependencies>
-                                <ignoredDependency>com.fasterxml.jackson.core:jackson-databind</ignoredDependency>
-                            </ignoredDependencies>
                         </configuration>
                     </execution>
                 </executions>

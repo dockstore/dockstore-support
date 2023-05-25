@@ -29,7 +29,7 @@ docker run -d --publish 8080:80 --env S3PROXY_AUTHORIZATION=none andrewgaul/s3pr
 To use the script, you must provide an endpoint in ~/.toolbackup/config.ini
 ```
 token = XXX
-server-url = https://dockstore.org:8443
+server-url = https://dockstore.org:443/api
 endpoint = XXX
 ```
 By default the token is empty. The default value for the server-url is shown above. These two values are for retrieving dockstore tools.Only the endpoint is mandatory.  You can set up your config like so:
