@@ -125,7 +125,7 @@
         <module>metricsaggregator</module>
         <module>toolbackup</module>
         <module>tooltester</module>
-        <module>reports</module>
+        <module>support-reports</module>
     </modules>
 
 
