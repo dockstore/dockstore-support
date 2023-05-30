@@ -1,14 +1,3 @@
-
----
-**NOTE:**
-
-This `README.md` only shows users how to use the `run-workflows-through-wes` and `upload-results` commands. As of April 3, 2023 all other 
-commands are no longer working and will require a non-trivial amount of work to get working.
-
-The README for these features can be found here: https://github.com/dockstore/dockstore-support/blob/8775ecadaec8b5fa36d03bc6ba962509ea38ca29/tooltester/README.md
-
----
-
 # The Tooltester `run-workflows-through-wes` Command
 
 The purpose of the `run-workflows-through-wes` command, is to be able to run (in an automated fashion) workflows found on a Dockstore site 

@@ -22,9 +22,9 @@ import java.util.Date;
  * Used for holding and giving information about the time it took a single task in a workflow to run.
  */
 public class TimeStatisticForOneTask {
-    private Date startTime;
-    private Date endTime;
-    private String taskName;
+    private final Date startTime;
+    private final Date endTime;
+    private final String taskName;
 
     TimeStatisticForOneTask(Date startTime, Date endTime, String taskName) {
         this.startTime = startTime;

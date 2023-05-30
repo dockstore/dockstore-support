@@ -478,7 +478,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.19.1</version>
+                <configuration>
+                    <skipITs>${skip-toolbackup-ITs}</skipITs>
+                </configuration>
                 <executions>
                     <execution>
                         <id>integration-test</id>

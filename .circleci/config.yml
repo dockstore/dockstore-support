@@ -162,7 +162,7 @@ commands:
             python3 -V
       - run:
           name: Docker-Compose (if present)
-          command: cd $DIRECTORY && docker-compose up -d || true
+          command: cd $DIRECTORY && docker-compose up -d && cd .. || true
 
   send_coverage:
     steps:
@@ -170,7 +170,7 @@ commands:
           name: send coverage
           command: bash <(curl -s https://codecov.io/bash) -F ${DIRECTORY//-} || echo "Codecov did not collect coverage reports"
       - store_artifacts:
-          path: target/site
+          path: reports/target/site
 
 
   install_dockerize:
@@ -236,6 +236,13 @@ commands:
     steps:
       - attach_workspace:
           at: .
+      - restore_cache:
+          keys:
+            # Find a cache corresponding to this specific licenses file checksum
+            # when this file is changed, this key will fail
+            - dockstore-support-java-{{ checksum "pom.xml" }}
+            # Find the most recent cache used from any branch
+            - dockstore-support-java-
 
   setup_for_tests:
     steps:
@@ -253,7 +260,7 @@ commands:
       - run:
           name: run tests
           command: |
-            cd $DIRECTORY && ../mvnw -B clean install -DskipITs=false -ntp | grep  -v "^Running Changeset:"
+            ./mvnw -B clean install -Dskip-$DIRECTORY-ITs=false | grep  -v "^Running Changeset:"
   save_test_results:
     steps:
       - run:
