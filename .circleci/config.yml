@@ -170,7 +170,7 @@ commands:
           name: send coverage
           command: bash <(curl -s https://codecov.io/bash) -F ${DIRECTORY//-} || echo "Codecov did not collect coverage reports"
       - store_artifacts:
-          path: reports/target/site
+          path: dockstore-cli-reports/target/site
 
 
   install_dockerize:
