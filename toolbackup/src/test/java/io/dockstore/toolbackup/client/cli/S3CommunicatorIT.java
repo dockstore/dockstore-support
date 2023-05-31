@@ -8,12 +8,13 @@ import static io.dockstore.toolbackup.client.cli.constants.TestConstants.PREFIX;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import com.amazonaws.services.s3.model.AmazonS3Exception;
 import io.dockstore.toolbackup.client.cli.common.AWSConfig;
 import io.dockstore.toolbackup.client.cli.common.DirCleaner;
 import java.io.File;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -26,7 +27,7 @@ public class S3CommunicatorIT {
     private static S3Communicator s3Communicator;
 
     @BeforeClass
-    public static void setUp() {
+    public static void setUp() throws URISyntaxException {
         AWSConfig.generateCredentials();
 
         DirectoryGenerator.createDir(DIR);
@@ -57,7 +58,7 @@ public class S3CommunicatorIT {
         s3Communicator.downloadDirectory(BUCKET, PREFIX, NON_EXISTING_DIR);
     }
 
-    @Test(expected = AmazonS3Exception.class)
+    @Test(expected = ExecutionException.class)
     public void downloadDirectoryNoBucket() {
         assumeFalse(s3Communicator.doesBucketExist(NON_EXISTING_BUCKET));
         s3Communicator.downloadDirectory(NON_EXISTING_BUCKET, "", DIR);

@@ -3,54 +3,77 @@ package io.dockstore.toolbackup.client.cli;
 import static io.dockstore.toolbackup.client.cli.Client.COMMAND_ERROR;
 import static java.lang.System.out;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.S3ClientOptions;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.CreateBucketRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.transfer.ObjectMetadataProvider;
-import com.amazonaws.services.s3.transfer.TransferManager;
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.transfer.s3.S3TransferManager;
+import software.amazon.awssdk.transfer.s3.config.DownloadFilter;
+import software.amazon.awssdk.transfer.s3.model.DownloadDirectoryRequest;
+import software.amazon.awssdk.transfer.s3.model.UploadDirectoryRequest;
 
 /**
  * Created by kcao on 12/01/17.
  */
 class S3Communicator {
 
-    private TransferManager transferManager;
-    private AmazonS3Client s3Client;
+    private S3TransferManager transferManager;
+    private S3Client s3Client;
 
-    S3Communicator() {
-        s3Client = new AmazonS3Client(new ProfileCredentialsProvider().getCredentials());
-        s3Client.setEndpoint("http://localhost:8080");
-        s3Client.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).disableChunkedEncoding().build());
+    S3Communicator() throws URISyntaxException {
+        S3Configuration config = S3Configuration.builder()
+            .pathStyleAccessEnabled(true)
+            .chunkedEncodingEnabled(false)
+            .build();
+        s3Client = S3Client.builder().credentialsProvider(ProfileCredentialsProvider.create()).endpointOverride(new URI("http://localhost:8080"))
+            .serviceConfiguration(config)
+            .build();
 
-        transferManager = new TransferManager(s3Client);
+        S3AsyncClient  s3AsyncClient = S3AsyncClient.builder().credentialsProvider(ProfileCredentialsProvider.create()).endpointOverride(new URI("http://localhost:8080"))
+                .serviceConfiguration(config)
+                .build();
+        transferManager = S3TransferManager.builder()
+            .s3Client(s3AsyncClient)
+            .build();
     }
 
-    S3Communicator(String section, String endpoint) {
-        ClientConfiguration opts = new ClientConfiguration();
-        opts.setSignerOverride("S3SignerType");
-        s3Client = new AmazonS3Client(new ProfileCredentialsProvider(section).getCredentials(), opts);
+    S3Communicator(String section, String endpoint) throws URISyntaxException {
+        S3Configuration config = S3Configuration.builder()
+            .pathStyleAccessEnabled(true)
+            .chunkedEncodingEnabled(false)
+            .build();
+        URI uri = new URI(endpoint);
+        s3Client = S3Client.builder().credentialsProvider(ProfileCredentialsProvider.builder().profileName(section).build()).endpointOverride(uri)
+            .serviceConfiguration(config)
+            .build();
 
-        s3Client.setEndpoint(endpoint);
-        s3Client.setS3ClientOptions(S3ClientOptions.builder().build());
-
-        transferManager = new TransferManager(s3Client);
+        S3AsyncClient  s3AsyncClient = S3AsyncClient.builder().credentialsProvider(ProfileCredentialsProvider.create()).endpointOverride(uri)
+            .serviceConfiguration(config)
+            .build();
+        transferManager = S3TransferManager.builder()
+            .s3Client(s3AsyncClient)
+            .build();
     }
 
     //-----------------------Report-----------------------
     long getCloudTotalInB(String bucketName, String prefix) {
         long total = 0;
 
-        List<S3ObjectSummary> objectSummaries = s3Client.listObjects(bucketName, prefix).getObjectSummaries();
-        List<Long> sizes = objectSummaries.stream().map(S3ObjectSummary::getSize).collect(Collectors.toList());
+        final List<S3Object> contents = s3Client.listObjects(ListObjectsRequest.builder().bucket(bucketName).prefix(prefix).build()).contents();
+        List<Long> sizes = contents.stream().map(S3Object::size).collect(Collectors.toList());
 
         for (long size : sizes) {
             total += size;
@@ -61,47 +84,55 @@ class S3Communicator {
 
     //-----------------------Upload-----------------------
     boolean doesBucketExist(String bucketName) {
-        return s3Client.doesBucketExist(bucketName);
+        try {
+            final HeadBucketResponse headBucketResponse = s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
+        } catch (NoSuchBucketException e) {
+            return false;
+        }
+        return true;
     }
 
     void createBucket(String bucketName) {
         if (!doesBucketExist(bucketName)) {
-            s3Client.createBucket(new CreateBucketRequest(bucketName));
+            s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
         }
     }
 
     Map<String, Long> getKeysToSizes(String bucketName, String prefix) {
         createBucket(bucketName);
 
-        List<S3ObjectSummary> objectSummaries = s3Client.listObjects(bucketName, prefix).getObjectSummaries();
-        Map<String, Long> keysToSizes = objectSummaries.stream().collect(Collectors.toMap(S3ObjectSummary::getKey, S3ObjectSummary::getSize));
+        List<S3Object> contents = s3Client.listObjects(ListObjectsRequest.builder().bucket(bucketName).prefix(prefix).build()).contents();
+        Map<String, Long> keysToSizes = contents.stream().collect(Collectors.toMap(S3Object::key, S3Object::size));
 
         return keysToSizes;
     }
 
-    private static ObjectMetadataProvider encrypt() {
-        ObjectMetadataProvider objectMetadataProvider = new ObjectMetadataProvider() {
-            @Override
-            public void provideObjectMetadata(File file, ObjectMetadata objectMetadata) {
-                objectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-            }
-        };
-        return objectMetadataProvider;
-    }
+    // TODO: implement encryption, but may not be too important
+    //    private static ObjectMetadataProvider encrypt() {
+    //        ObjectMetadataProvider objectMetadataProvider = new ObjectMetadataProvider() {
+    //            @Override
+    //            public void provideObjectMetadata(File file, ObjectMetadata objectMetadata) {
+    //                objectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+    //            }
+    //        };
+    //        return objectMetadataProvider;
+    //    }
 
     void uploadDirectory(String bucketName, String keyPrefix, String dirPath, List<File> files, boolean encrypt) {
         createBucket(bucketName);
 
         try {
             if (encrypt) {
-                transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files, encrypt()).waitForCompletion();
+                // transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files, encrypt()).waitForCompletion();
+                transferManager.uploadDirectory(UploadDirectoryRequest.builder().bucket(bucketName).source(new File(dirPath).toPath()).build()).completionFuture().get();
             } else {
-                transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files).waitForCompletion();
+                // transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files).waitForCompletion();
+                transferManager.uploadDirectory(UploadDirectoryRequest.builder().bucket(bucketName).source(new File(dirPath).toPath()).build()).completionFuture().get();
             }
             out.println("Uploaded necessary files in: " + dirPath);
         } catch (InterruptedException e) {
             throw new RuntimeException("Could not upload the directory: " + dirPath + " in its entirety");
-        } catch (AmazonS3Exception e) {
+        } catch (ExecutionException e) {
             ErrorExit.exceptionMessage(e, "MultiplePartUpload cannot finish. Check your keys and sign methods.", COMMAND_ERROR);
         }
     }
@@ -114,9 +145,11 @@ class S3Communicator {
             throw new RuntimeException("Not a local directory thus nothing will be saved");
         } else {
             try {
-                transferManager.downloadDirectory(bucketName, keyPrefix, new File(dirPath), true).waitForCompletion();
+                // transferManager.downloadDirectory(bucketName, keyPrefix, new File(dirPath), true).waitForCompletion();
+                transferManager.downloadDirectory(DownloadDirectoryRequest.builder().bucket(bucketName).destination(new File(dirPath).toPath()).filter(s3Object -> s3Object.key().startsWith(keyPrefix)).build()).completionFuture().get();
+
                 out.println("Downloaded the bucket(" + bucketName + ") with the prefix(" + keyPrefix + ") to the local directory: " + dirPath);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException("Could not download the bucket: " + bucketName + " in its entirety");
             }
         }
@@ -124,6 +157,6 @@ class S3Communicator {
 
     //-----------------------Shutdown-----------------------
     void shutDown() {
-        transferManager.shutdownNow();
+        transferManager.close();
     }
 }

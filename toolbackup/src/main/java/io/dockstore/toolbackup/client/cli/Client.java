@@ -29,6 +29,7 @@ import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -100,7 +101,7 @@ public class Client {
 
         try {
             client.run(dirPath, options.valueOf(bucketName), options.valueOf(keyPrefix), options.valueOf(isTestMode));
-        } catch (UnknownHostException e) {
+        } catch (UnknownHostException | URISyntaxException e) {
             ErrorExit.exceptionMessage(e, "No internet access", CONNECTION_ERROR);
         }
 
@@ -162,7 +163,7 @@ public class Client {
         return uploadList;
     }
 
-    private void run(String baseDir, String bucketName, String keyPrefix, boolean isTestMode) throws UnknownHostException {
+    private void run(String baseDir, String bucketName, String keyPrefix, boolean isTestMode) throws UnknownHostException, URISyntaxException {
         // use swagger-generated classes to talk to dockstore
         setupClientEnvironment();
         List<Tool> tools = null;

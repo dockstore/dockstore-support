@@ -4,6 +4,7 @@ import static io.dockstore.toolbackup.client.cli.Client.API_ERROR;
 import static java.lang.System.out;
 
 import java.io.File;
+import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import joptsimple.ArgumentAcceptingOptionSpec;
@@ -30,7 +31,7 @@ class Downloader {
         stringTime = FormattedTimeGenerator.getFormattedTimeNow(TIME_NOW);
     }
 
-    public static void main(String[] argv) {
+    public static void main(String[] argv) throws URISyntaxException {
         out.println("Downloader script started: " + stringTime);
 
         OptionParser parser = new OptionParser();
