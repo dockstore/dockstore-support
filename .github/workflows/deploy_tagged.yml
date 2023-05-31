@@ -11,4 +11,4 @@ on:
 
 jobs:
   call-reusable-tagged-release:
-    uses: dockstore/workflow-actions/.github/workflows/deploy_tagged.yaml
+    uses: dockstore/workflow-actions/.github/workflows/deploy_tagged.yaml@main
