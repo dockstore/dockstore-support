@@ -14,3 +14,4 @@ jobs:
     uses: dockstore/workflow-actions/.github/workflows/deploy_tagged.yaml@main
     with:
       changelist: ${{ inputs.changelist }}
+    secrets: inherit
