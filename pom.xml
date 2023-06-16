@@ -38,7 +38,8 @@
 
         <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dockstore-core.version>1.14.0-beta.0</dockstore-core.version>
+        <!-- TODO: change to a tag when webservice is merged -->
+        <dockstore-core.version>1.15.0-SNAPSHOT</dockstore-core.version>
         <maven-surefire.version>3.0.0-M5</maven-surefire.version>
         <maven-failsafe.version>2.22.2</maven-failsafe.version>
         <skipTests>false</skipTests>
@@ -195,54 +196,6 @@
                         <artifactId>httpcore-osgi</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <!-- remove after bom is updated with Dockstore or above 1.14.0 -->
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-vfs2</artifactId>
-                <version>2.9.0</version>
-            </dependency>
-            <dependency>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok</artifactId>
-                <version>1.18.18</version>
-            </dependency>
-            <dependency>
-                <groupId>com.amazonaws</groupId>
-                <artifactId>aws-java-sdk-bom</artifactId>
-                <version>1.12.264</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.amazon.ion</groupId>
-                <artifactId>ion-java</artifactId>
-                <version>1.8.0</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-core</artifactId>
-                <version>2.17.1</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.inject</groupId>
-                <artifactId>jakarta.inject-api</artifactId>
-                <version>2.0.1</version>
-            </dependency>
-            <dependency>
-                <groupId>org.glassfish.hk2</groupId>
-                <artifactId>hk2-utils</artifactId>
-                <version>3.0.4</version>
-            </dependency>
-            <dependency>
-                <groupId>org.glassfish.hk2.external</groupId>
-                <artifactId>aopalliance-repackaged</artifactId>
-                <version>3.0.4</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.annotation</groupId>
-                <artifactId>jakarta.annotation-api</artifactId>
-                <version>2.1.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

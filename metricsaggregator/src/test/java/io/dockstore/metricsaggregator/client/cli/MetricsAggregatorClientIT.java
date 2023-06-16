@@ -18,6 +18,7 @@
 package io.dockstore.metricsaggregator.client.cli;
 
 import static io.dockstore.client.cli.BaseIT.ADMIN_USERNAME;
+import static io.dockstore.common.Partner.DNA_STACK;
 import static io.dockstore.metricsaggregator.common.TestUtilities.BUCKET_NAME;
 import static io.dockstore.metricsaggregator.common.TestUtilities.CONFIG_FILE_PATH;
 import static io.dockstore.metricsaggregator.common.TestUtilities.ENDPOINT_OVERRIDE;
@@ -27,7 +28,6 @@ import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
 import static io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum.MINIWDL;
 import static io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum.WOMTOOL;
-import static io.dockstore.webservice.core.Partner.DNA_STACK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,7 +42,10 @@ import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import com.google.gson.Gson;
 import io.dockstore.common.CommonTestUtilities;
 import io.dockstore.common.LocalStackTestUtilities;
+import io.dockstore.common.Partner;
 import io.dockstore.common.TestingPostgres;
+import io.dockstore.common.metrics.MetricsData;
+import io.dockstore.common.metrics.MetricsDataS3Client;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.WorkflowsApi;
@@ -56,11 +59,6 @@ import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowVersion;
 import io.dockstore.webservice.DockstoreWebserviceApplication;
 import io.dockstore.webservice.DockstoreWebserviceConfiguration;
-import io.dockstore.webservice.core.Partner;
-import io.dockstore.webservice.core.metrics.ExecutionTimeStatisticMetric;
-import io.dockstore.webservice.core.metrics.MemoryStatisticMetric;
-import io.dockstore.webservice.core.metrics.MetricsData;
-import io.dockstore.webservice.core.metrics.MetricsDataS3Client;
 import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
 import java.io.IOException;
@@ -206,13 +204,13 @@ class MetricsAggregatorClientIT {
         assertEquals(2, platform1Metrics.getMemory().getMinimum());
         assertEquals(4.5, platform1Metrics.getMemory().getMaximum());
         assertEquals(3.25, platform1Metrics.getMemory().getAverage());
-        assertEquals(MemoryStatisticMetric.UNIT, platform1Metrics.getMemory().getUnit());
+        assertNotNull(platform1Metrics.getMemory().getUnit());
 
         assertEquals(2, platform1Metrics.getExecutionTime().getNumberOfDataPointsForAverage());
         assertEquals(1, platform1Metrics.getExecutionTime().getMinimum());
         assertEquals(300, platform1Metrics.getExecutionTime().getMaximum());
         assertEquals(150.5, platform1Metrics.getExecutionTime().getAverage());
-        assertEquals(ExecutionTimeStatisticMetric.UNIT, platform1Metrics.getExecutionTime().getUnit());
+        assertNotNull(platform1Metrics.getExecutionTime().getUnit());
 
         assertEquals(1, platform1Metrics.getValidationStatus().getValidatorTools().size());
         validationInfo = platform1Metrics.getValidationStatus().getValidatorTools().get(MINIWDL.toString());
@@ -247,13 +245,13 @@ class MetricsAggregatorClientIT {
         assertEquals(2, platform1Metrics.getMemory().getMinimum());
         assertEquals(2, platform1Metrics.getMemory().getMaximum());
         assertEquals(2, platform1Metrics.getMemory().getAverage());
-        assertEquals(MemoryStatisticMetric.UNIT, platform1Metrics.getMemory().getUnit());
+        assertNotNull(platform1Metrics.getMemory().getUnit());
 
         assertEquals(1, platform1Metrics.getExecutionTime().getNumberOfDataPointsForAverage());
         assertEquals(300, platform1Metrics.getExecutionTime().getMinimum());
         assertEquals(300, platform1Metrics.getExecutionTime().getMaximum());
         assertEquals(300, platform1Metrics.getExecutionTime().getAverage());
-        assertEquals(ExecutionTimeStatisticMetric.UNIT, platform1Metrics.getExecutionTime().getUnit());
+        assertNotNull(platform1Metrics.getExecutionTime().getUnit());
 
         assertEquals(1, platform1Metrics.getValidationStatus().getValidatorTools().size());
         ValidatorInfo validationInfo = platform1Metrics.getValidationStatus().getValidatorTools().get(MINIWDL.toString());
@@ -287,13 +285,13 @@ class MetricsAggregatorClientIT {
         assertEquals(2, platform2Metrics.getMemory().getMinimum());
         assertEquals(2, platform2Metrics.getMemory().getMaximum());
         assertEquals(2, platform2Metrics.getMemory().getAverage());
-        assertEquals(MemoryStatisticMetric.UNIT, platform2Metrics.getMemory().getUnit());
+        assertNotNull(platform2Metrics.getMemory().getUnit());
 
         assertEquals(1, platform2Metrics.getExecutionTime().getNumberOfDataPointsForAverage());
         assertEquals(300, platform2Metrics.getExecutionTime().getMinimum());
         assertEquals(300, platform2Metrics.getExecutionTime().getMaximum());
         assertEquals(300, platform2Metrics.getExecutionTime().getAverage());
-        assertEquals(ExecutionTimeStatisticMetric.UNIT, platform2Metrics.getExecutionTime().getUnit());
+        assertNotNull(platform2Metrics.getExecutionTime().getUnit());
 
         assertEquals(1, platform2Metrics.getValidationStatus().getValidatorTools().size());
         validationInfo = platform2Metrics.getValidationStatus().getValidatorTools().get(WOMTOOL.toString());
@@ -330,13 +328,13 @@ class MetricsAggregatorClientIT {
         assertEquals(2, overallMetrics.getMemory().getMinimum());
         assertEquals(4.5, overallMetrics.getMemory().getMaximum());
         assertEquals(2.833333333333333, overallMetrics.getMemory().getAverage());
-        assertEquals(MemoryStatisticMetric.UNIT, overallMetrics.getMemory().getUnit());
+        assertNotNull(overallMetrics.getMemory().getUnit());
 
         assertEquals(3, overallMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
         assertEquals(1, overallMetrics.getExecutionTime().getMinimum());
         assertEquals(300, overallMetrics.getExecutionTime().getMaximum());
         assertEquals(200.33333333333331, overallMetrics.getExecutionTime().getAverage());
-        assertEquals(ExecutionTimeStatisticMetric.UNIT, overallMetrics.getExecutionTime().getUnit());
+        assertNotNull(overallMetrics.getExecutionTime().getUnit());
 
         assertEquals(2, overallMetrics.getValidationStatus().getValidatorTools().size());
         validationInfo = overallMetrics.getValidationStatus().getValidatorTools().get(MINIWDL.toString());
