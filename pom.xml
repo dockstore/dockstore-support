@@ -541,9 +541,9 @@
                                         <!-- superceded by org.apache.httpcomponents:httpclient -->
                                         <exclude>commons-httpclient:commons-httpclient</exclude>
                                         <!-- see https://github.com/dropwizard/dropwizard/pull/3069 -->
-                                         <exclude>javax.annotation:javax.annotation-api</exclude>
-                                         <exclude>javax.activation:activation</exclude>
-                                         <exclude>javax.ws.rs:javax.ws.rs-api</exclude>
+                                        <exclude>javax.annotation:javax.annotation-api</exclude>
+                                        <exclude>javax.activation:activation</exclude>
+                                        <exclude>javax.ws.rs:javax.ws.rs-api</exclude>
                                         <!-- Replaced with jakarta.activation:jakarta.activation-api -->
                                         <exclude>javax.activation:javax.activation-api</exclude>
                                         <!-- Replaced with jakarta.servlet:jakarta.servlet-api -->
