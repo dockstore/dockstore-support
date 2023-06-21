@@ -155,6 +155,11 @@
                 <artifactId>dropwizard-migrations</artifactId>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.inject</groupId>
+                <artifactId>jersey-hk2</artifactId>
+                <version>3.0.9</version>
+            </dependency>
             <!--  cwl management -->
             <dependency>
                 <groupId>io.cwl</groupId>

@@ -368,7 +368,8 @@ public class WorkflowRunner {
             }
         }
         out("");
-        out("TOTAL TIME (WALL CLOCK): " + formatDuration(getWallClockTimeInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
+        final Long wallTimeMilliseconds = getWallClockTimeInMilliseconds();
+        out(String.format("TOTAL TIME (WALL CLOCK): %s", wallTimeMilliseconds == null ? "Not available" : formatDuration(getWallClockTimeInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'")));
         out("SUM OF TIMES TAKEN TO COMPLETE EACH TASK: " + formatDuration(getSumOfTimeForEachTaskInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
     }
 

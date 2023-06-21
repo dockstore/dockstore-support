@@ -92,12 +92,6 @@
             <groupId>io.dockstore</groupId>
             <artifactId>openapi-java-client</artifactId>
             <version>${dockstore-core.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.glassfish.jersey.media</groupId>
-                    <artifactId>jersey-media-json-jackson</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.dockstore</groupId>
@@ -116,6 +110,10 @@
             <version>${dockstore-core.version}</version>
             <classifier>tests</classifier>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
         </dependency>
         <dependency>
             <groupId>com.beust</groupId>
@@ -264,6 +262,7 @@
                                 <usedDependency>org.apache.commons:commons-configuration2</usedDependency>
                                 <usedDependency>org.slf4j:slf4j-api</usedDependency>
                                 <usedDependency>software.amazon.awssdk:s3</usedDependency>
+                                <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>
