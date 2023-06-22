@@ -16,24 +16,25 @@
 
 package io.dockstore.tooltester.runWorkflow;
 
-import static com.amazonaws.util.DateUtils.parseISO8601Date;
+import static io.dockstore.common.S3ClientHelper.createFileName;
+import static io.dockstore.common.metrics.MetricsDataS3Client.generateKey;
 import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
 import static io.dockstore.tooltester.helper.ExceptionHandler.API_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.tooltester.helper.ExceptionHandler.errorMessage;
 import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
-import static io.dockstore.webservice.core.metrics.MetricsDataS3Client.generateKey;
-import static io.dockstore.webservice.helpers.S3ClientHelper.createFileName;
 import static java.util.UUID.randomUUID;
 import static org.apache.commons.lang3.math.NumberUtils.max;
 import static org.apache.commons.lang3.math.NumberUtils.min;
 import static org.apache.commons.lang3.time.DurationFormatUtils.formatDuration;
+import static software.amazon.awssdk.utils.DateUtils.parseIso8601Date;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.dockstore.common.Partner;
 import io.dockstore.common.Utilities;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
@@ -43,7 +44,6 @@ import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowSubClass;
-import io.dockstore.webservice.core.Partner;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -256,8 +256,8 @@ public class WorkflowRunner {
             for (JsonElement element : arr) {
                 String startTime = element.getAsJsonObject().get("start_time").getAsString();
                 String endTime = element.getAsJsonObject().get("end_time").getAsString();
-                Date startTimeDate = parseISO8601Date(startTime);
-                Date endTimeDate = parseISO8601Date(endTime);
+                Date startTimeDate = Date.from(parseIso8601Date(startTime));
+                Date endTimeDate = Date.from(parseIso8601Date(endTime));
                 times.add(new TimeStatisticForOneTask(startTimeDate, endTimeDate, element.getAsJsonObject().get("name").getAsString()));
             }
             break;
@@ -269,8 +269,8 @@ public class WorkflowRunner {
             Date startTimeDate = null;
             Date endTimeDate = null;
             try {
-                startTimeDate = parseISO8601Date(startTime + "Z");
-                endTimeDate = parseISO8601Date(endTime + "Z");
+                startTimeDate = Date.from(parseIso8601Date(startTime + "Z"));
+                endTimeDate = Date.from(parseIso8601Date(endTime + "Z"));
                 // The TOIL (which is what runs CWL) endpoint gives times that look like this: 2023-03-20T16:49:23.664
                 // the issue is, that the time given is in the UTC time zone, but that is not specified in the time
                 // string. The ` + "Z"` specifies to the parser that the time is in the UTC time zone.
@@ -368,7 +368,8 @@ public class WorkflowRunner {
             }
         }
         out("");
-        out("TOTAL TIME (WALL CLOCK): " + formatDuration(getWallClockTimeInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
+        final Long wallTimeMilliseconds = getWallClockTimeInMilliseconds();
+        out(String.format("TOTAL TIME (WALL CLOCK): %s", wallTimeMilliseconds == null ? "Not available" : formatDuration(getWallClockTimeInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'")));
         out("SUM OF TIMES TAKEN TO COMPLETE EACH TASK: " + formatDuration(getSumOfTimeForEachTaskInMilliseconds(), "m' minutes 's' seconds 'S' milliseconds'"));
     }
 

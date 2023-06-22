@@ -89,35 +89,20 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.glassfish.jersey.inject</groupId>
-            <artifactId>jersey-hk2</artifactId>
-            <version>2.39</version>
-        </dependency>
-        <dependency>
             <groupId>io.dockstore</groupId>
             <artifactId>openapi-java-client</artifactId>
             <version>${dockstore-core.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.glassfish.jersey.media</groupId>
-                    <artifactId>jersey-media-json-jackson</artifactId>
-                </exclusion>
-            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>dockstore-common</artifactId>
+            <version>${dockstore-core.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dockstore</groupId>
             <artifactId>dockstore-webservice</artifactId>
             <version>${dockstore-core.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.module</groupId>
-                    <artifactId>jackson-module-jaxb-annotations</artifactId>
-                </exclusion>
-            </exclusions>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.dockstore</groupId>
@@ -127,8 +112,24 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.glassfish.jersey.inject</groupId>
+            <artifactId>jersey-hk2</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -144,7 +145,6 @@
         <dependency>
             <groupId>cloud.localstack</groupId>
             <artifactId>localstack-utils</artifactId>
-            <version>0.2.22</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -156,11 +156,6 @@
             <groupId>uk.org.webcompere</groupId>
             <artifactId>system-stubs-core</artifactId>
             <scope>test</scope>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.glassfish.hk2/hk2-api -->
-        <dependency>
-            <groupId>org.glassfish.hk2</groupId>
-            <artifactId>hk2-api</artifactId>
         </dependency>
     </dependencies>
 
@@ -264,8 +259,10 @@
                             <outputXML>true</outputXML>
                             <ignoreNonCompile>true</ignoreNonCompile>
                             <usedDependencies>
+                                <usedDependency>org.apache.commons:commons-configuration2</usedDependency>
+                                <usedDependency>org.slf4j:slf4j-api</usedDependency>
+                                <usedDependency>software.amazon.awssdk:s3</usedDependency>
                                 <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
-                                <usedDependency>org.glassfish.hk2:hk2-api</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>

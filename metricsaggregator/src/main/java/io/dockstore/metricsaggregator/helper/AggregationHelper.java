@@ -1,7 +1,7 @@
 package io.dockstore.metricsaggregator.helper;
 
-import static io.dockstore.webservice.core.metrics.RunExecution.checkExecutionTimeISO8601Format;
-import static io.dockstore.webservice.core.metrics.ValidationExecution.checkExecutionDateISO8601Format;
+import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionDateISO8601Format;
+import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionTimeISO8601Format;
 import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.metricsaggregator.Statistics;

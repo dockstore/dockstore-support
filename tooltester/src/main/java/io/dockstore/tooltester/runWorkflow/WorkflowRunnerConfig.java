@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
@@ -32,7 +33,7 @@ public class WorkflowRunnerConfig {
     public WorkflowRunnerConfig(String configFilePathString)  {
         Path configFilePath = Paths.get(configFilePathString);
 
-        final Yaml safeYaml = new Yaml(new SafeConstructor());
+        final Yaml safeYaml = new Yaml(new SafeConstructor(new LoaderOptions()));
         Map<String, String> yamlMap = null;
         try {
             yamlMap = safeYaml.load(Files.readString(configFilePath));

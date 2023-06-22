@@ -19,8 +19,8 @@ package io.dockstore.metricsaggregator.client.cli;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import io.dockstore.common.Partner;
 import io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum;
-import io.dockstore.webservice.core.Partner;
 import java.io.File;
 
 public class CommandLineArgs {

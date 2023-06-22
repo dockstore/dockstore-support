@@ -37,6 +37,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <slf4j.version>1.7.22</slf4j.version>
+        <aws.version>1.11.83</aws.version>
     </properties>
 
     <organization>
@@ -84,32 +85,10 @@
             <dependency>
                 <groupId>io.cwl</groupId>
                 <artifactId>cwlavro-tools</artifactId>
-                <version>${cwlavro.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.httpcomponents</groupId>
-                        <artifactId>httpclient-osgi</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.httpcomponents</groupId>
-                        <artifactId>httpcore-osgi</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.cwl</groupId>
                 <artifactId>cwlavro-generated</artifactId>
-                <version>${cwlavro.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.httpcomponents</groupId>
-                        <artifactId>httpclient-osgi</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.httpcomponents</groupId>
-                        <artifactId>httpcore-osgi</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -170,12 +149,14 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-s3</artifactId>
+            <version>${aws.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-core -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-core</artifactId>
+            <version>${aws.version}</version>
         </dependency>
 
 
@@ -247,16 +228,6 @@
             <groupId>org.glassfish.hk2</groupId>
             <artifactId>hk2-api</artifactId>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/javax.annotation/javax.annotation-api -->
-        <dependency>
-            <groupId>javax.annotation</groupId>
-            <artifactId>javax.annotation-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>javax.activation</groupId>
-            <artifactId>activation</artifactId>
-        </dependency>
-
     </dependencies>
 
     <build>
@@ -377,8 +348,6 @@
                             <outputXML>true</outputXML>
                             <ignoreNonCompile>true</ignoreNonCompile>
                             <usedDependencies>
-                                <usedDependency>javax.annotation:javax.annotation-api</usedDependency>
-                                <usedDependency>javax.activation:activation</usedDependency>
                                 <usedDependency>org.glassfish.hk2:hk2-api</usedDependency>
                             </usedDependencies>
                         </configuration>

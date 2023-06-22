@@ -15,6 +15,9 @@
  */
 package io.dockstore.tooltester.client.cli;
 
+import static io.dockstore.common.S3ClientHelper.getMetricsPlatform;
+import static io.dockstore.common.S3ClientHelper.getToolId;
+import static io.dockstore.common.S3ClientHelper.getVersionName;
 import static io.dockstore.tooltester.client.cli.JCommanderUtility.out;
 import static io.dockstore.tooltester.client.cli.JCommanderUtility.printJCommanderHelp;
 import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
@@ -23,9 +26,6 @@ import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
 import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.GSON;
 import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.printLine;
 import static io.dockstore.tooltester.runWorkflow.WorkflowRunner.uploadRunInfo;
-import static io.dockstore.webservice.helpers.S3ClientHelper.getMetricsPlatform;
-import static io.dockstore.webservice.helpers.S3ClientHelper.getToolId;
-import static io.dockstore.webservice.helpers.S3ClientHelper.getVersionName;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
