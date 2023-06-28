@@ -34,12 +34,14 @@ public final class TestUtilities {
     private TestUtilities() {
     }
 
-    public static RunExecution createRunExecution(RunExecution.ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB) {
+    public static RunExecution createRunExecution(RunExecution.ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB, Double costUSD, String region) {
         return new RunExecution()
                 .executionStatus(executionStatus)
                 .executionTime(executionTime)
                 .cpuRequirements(cpuRequirements)
-                .memoryRequirementsGB(memoryRequirementsGB);
+                .memoryRequirementsGB(memoryRequirementsGB)
+                .costUSD(costUSD)
+                .region(region);
     }
 
     public static MetricsAggregatorConfig getMetricsConfig() {

@@ -5,6 +5,7 @@ import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionTimeIS
 import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.metricsaggregator.Statistics;
+import io.dockstore.openapi.client.model.CostMetric;
 import io.dockstore.openapi.client.model.CpuMetric;
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
@@ -54,6 +55,7 @@ public final class AggregationHelper {
             getAggregatedExecutionTime(allSubmissions).ifPresent(aggregatedMetrics::setExecutionTime);
             getAggregatedCpu(allSubmissions).ifPresent(aggregatedMetrics::setCpu);
             getAggregatedMemory(allSubmissions).ifPresent(aggregatedMetrics::setMemory);
+            getAggregatedCost(allSubmissions).ifPresent(aggregatedMetrics::setCost);
         }
 
         // Set validation metrics
@@ -251,6 +253,53 @@ public final class AggregationHelper {
         if (!memoryRequirements.isEmpty()) {
             Statistics statistics = new Statistics(memoryRequirements);
             return Optional.of(new MemoryMetric()
+                    .minimum(statistics.min())
+                    .maximum(statistics.max())
+                    .average(statistics.average())
+                    .numberOfDataPointsForAverage(statistics.numberOfDataPoints()));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Aggregate Cost metrics from all submissions by calculating the minimum, maximum, and average.
+     * @param allSubmissions
+     * @return
+     */
+    public static Optional<CostMetric> getAggregatedCost(ExecutionsRequestBody allSubmissions) {
+        // Get aggregated Execution Time metrics that were submitted to Dockstore
+        List<CostMetric> costMetrics = allSubmissions.getAggregatedExecutions().stream()
+                .map(Metrics::getCost)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        getAggregatedCostFromExecutions(allSubmissions.getRunExecutions()).ifPresent(costMetrics::add);
+
+        if (!costMetrics.isEmpty()) {
+            List<Statistics> statistics = costMetrics.stream()
+                    .map(metric -> new Statistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
+            Statistics newStatistic = Statistics.createFromStatistics(statistics);
+            return Optional.of(new CostMetric()
+                    .minimum(newStatistic.min())
+                    .maximum(newStatistic.max())
+                    .average(newStatistic.average())
+                    .numberOfDataPointsForAverage(newStatistic.numberOfDataPoints()));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Aggregate Cost metrics from the list of run executions by calculating the minimum, maximum, and average.
+     * @param executions
+     * @return
+     */
+    public static Optional<CostMetric> getAggregatedCostFromExecutions(List<RunExecution> executions) {
+        List<Double> costs = executions.stream()
+                .map(RunExecution::getCostUSD)
+                .filter(Objects::nonNull)
+                .toList();
+        if (!costs.isEmpty()) {
+            Statistics statistics = new Statistics(costs);
+            return Optional.of(new CostMetric()
                     .minimum(statistics.min())
                     .maximum(statistics.max())
                     .average(statistics.average())

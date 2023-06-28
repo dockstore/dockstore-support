@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.dockstore.openapi.client.model.CostMetric;
 import io.dockstore.openapi.client.model.CpuMetric;
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
@@ -164,6 +165,42 @@ class AggregationHelperTest {
         assertEquals(6.0, memoryMetric.get().getMaximum());
         assertEquals(3.333333333333333, memoryMetric.get().getAverage());
         assertEquals(3, memoryMetric.get().getNumberOfDataPointsForAverage());
+    }
+
+    @Test
+    void testGetAggregatedCost() {
+        List<RunExecution> executions = new ArrayList<>();
+        Optional<CostMetric> costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
+        assertTrue(costMetric.isEmpty());
+
+        // Add an execution that doesn't have cost data
+        executions.add(new RunExecution().executionStatus(SUCCESSFUL));
+        costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
+        assertTrue(costMetric.isEmpty());
+
+        // Add an execution with cost data
+        Double costInUSD = 2.00;
+        executions.add(new RunExecution().executionStatus(SUCCESSFUL).costUSD(costInUSD));
+        costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
+        assertTrue(costMetric.isPresent());
+        assertEquals(costInUSD, costMetric.get().getMinimum());
+        assertEquals(costInUSD, costMetric.get().getMaximum());
+        assertEquals(costInUSD, costMetric.get().getAverage());
+        assertEquals(1, costMetric.get().getNumberOfDataPointsForAverage());
+
+        // Aggregate submissions containing run executions and aggregated metrics
+        Metrics submittedAggregatedMetrics = new Metrics()
+                .cost(new CostMetric()
+                        .minimum(2.00)
+                        .maximum(6.00)
+                        .average(4.00)
+                        .numberOfDataPointsForAverage(2));
+        costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
+        assertTrue(costMetric.isPresent());
+        assertEquals(2.0, costMetric.get().getMinimum());
+        assertEquals(6.0, costMetric.get().getMaximum());
+        assertEquals(3.333333333333333, costMetric.get().getAverage());
+        assertEquals(3, costMetric.get().getNumberOfDataPointsForAverage());
     }
 
     @Test

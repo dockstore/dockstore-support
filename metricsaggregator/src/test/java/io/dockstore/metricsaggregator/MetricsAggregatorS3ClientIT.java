@@ -120,7 +120,7 @@ class MetricsAggregatorS3ClientIT {
         final String workflowVersionId = version.getName();
 
         // A successful execution that ran for 5 minutes, requires 2 CPUs and 2 GBs of memory
-        RunExecution execution = createRunExecution(SUCCESSFUL, "PT5M", 2, 2.0);
+        RunExecution execution = createRunExecution(SUCCESSFUL, "PT5M", 2, 2.0, 2.00, "us-central1");
         ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(List.of(execution));
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, workflowId, workflowVersionId, "");
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform2, workflowId, workflowVersionId, "");
