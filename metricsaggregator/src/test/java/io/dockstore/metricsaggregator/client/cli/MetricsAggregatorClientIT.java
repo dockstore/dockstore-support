@@ -49,6 +49,7 @@ import io.dockstore.common.metrics.MetricsDataS3Client;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.WorkflowsApi;
+import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
@@ -138,7 +139,7 @@ class MetricsAggregatorClientIT {
         String versionId = version.getName();
 
         // A successful run execution that ran for 5 minutes, requires 2 CPUs and 2 GBs of memory
-        List<RunExecution> runExecutions = List.of(createRunExecution(SUCCESSFUL, "PT5M", 2, 2.0, 2.00, "us-central1"));
+        List<RunExecution> runExecutions = List.of(createRunExecution(SUCCESSFUL, "PT5M", 2, 2.0, new Cost().value(2.00), "us-central1"));
         // A successful miniwdl validation
         final String validatorToolVersion1 = "1.0";
         ValidationExecution validationExecution1 = new ValidationExecution()
@@ -174,7 +175,7 @@ class MetricsAggregatorClientIT {
         ValidatorInfo validationInfo;
 
         // A failed run execution that ran for 1 second, requires 2 CPUs and 4.5 GBs of memory
-        runExecutions = List.of(createRunExecution(FAILED_RUNTIME_INVALID, "PT1S", 4, 4.5, 2.00, "us-central1"));
+        runExecutions = List.of(createRunExecution(FAILED_RUNTIME_INVALID, "PT1S", 4, 4.5, new Cost().value(2.00), "us-central1"));
         // A failed miniwdl validation for the same validator version
         List<ValidationExecution> validationExecutions = List.of(new ValidationExecution().validatorTool(MINIWDL).validatorToolVersion("1.0").isValid(false).dateExecuted(Instant.now().toString()));
         ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(runExecutions).validationExecutions(validationExecutions);

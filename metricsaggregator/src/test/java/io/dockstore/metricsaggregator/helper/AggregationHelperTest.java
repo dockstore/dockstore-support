@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.CostMetric;
 import io.dockstore.openapi.client.model.CpuMetric;
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
@@ -180,7 +181,7 @@ class AggregationHelperTest {
 
         // Add an execution with cost data
         Double costInUSD = 2.00;
-        executions.add(new RunExecution().executionStatus(SUCCESSFUL).costUSD(costInUSD));
+        executions.add(new RunExecution().executionStatus(SUCCESSFUL).cost(new Cost().value(costInUSD)));
         costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
         assertTrue(costMetric.isPresent());
         assertEquals(costInUSD, costMetric.get().getMinimum());

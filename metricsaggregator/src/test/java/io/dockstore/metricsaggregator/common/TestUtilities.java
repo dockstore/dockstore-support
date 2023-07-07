@@ -19,6 +19,7 @@ package io.dockstore.metricsaggregator.common;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
 import io.dockstore.metricsaggregator.client.cli.MetricsAggregatorClient;
+import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dropwizard.testing.ResourceHelpers;
 import java.io.File;
@@ -34,13 +35,13 @@ public final class TestUtilities {
     private TestUtilities() {
     }
 
-    public static RunExecution createRunExecution(RunExecution.ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB, Double costUSD, String region) {
+    public static RunExecution createRunExecution(RunExecution.ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB, Cost cost, String region) {
         return new RunExecution()
                 .executionStatus(executionStatus)
                 .executionTime(executionTime)
                 .cpuRequirements(cpuRequirements)
                 .memoryRequirementsGB(memoryRequirementsGB)
-                .costUSD(costUSD)
+                .cost(cost)
                 .region(region);
     }
 

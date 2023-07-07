@@ -2,9 +2,12 @@ package io.dockstore.metricsaggregator.helper;
 
 import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionDateISO8601Format;
 import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionTimeISO8601Format;
+import static io.dockstore.common.metrics.FormatCheckHelper.isValidCurrencyCode;
 import static java.util.stream.Collectors.groupingBy;
 
-import io.dockstore.metricsaggregator.Statistics;
+import io.dockstore.metricsaggregator.DoubleStatistics;
+import io.dockstore.metricsaggregator.MoneyStatistics;
+import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.CostMetric;
 import io.dockstore.openapi.client.model.CpuMetric;
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
@@ -18,6 +21,7 @@ import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import io.dockstore.openapi.client.model.ValidatorInfo;
 import io.dockstore.openapi.client.model.ValidatorVersionInfo;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
@@ -30,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
+import org.javamoney.moneta.Money;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,18 +118,20 @@ public final class AggregationHelper {
         List<ExecutionTimeMetric> executionTimeMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getExecutionTime)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(ArrayList::new));
         getAggregatedExecutionTimeFromExecutions(allSubmissions.getRunExecutions()).ifPresent(executionTimeMetrics::add);
 
         if (!executionTimeMetrics.isEmpty()) {
-            List<Statistics> statistics = executionTimeMetrics.stream()
-                    .map(metric -> new Statistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
-            Statistics newStatistic = Statistics.createFromStatistics(statistics);
+            List<DoubleStatistics> statistics = executionTimeMetrics.stream()
+                    .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage()))
+                    .toList();
+
+            DoubleStatistics newStatistic = DoubleStatistics.createFromStatistics(statistics);
             return Optional.of(new ExecutionTimeMetric()
-                    .minimum(newStatistic.min())
-                    .maximum(newStatistic.max())
-                    .average(newStatistic.average())
-                    .numberOfDataPointsForAverage(newStatistic.numberOfDataPoints()));
+                    .minimum(newStatistic.getMinimum())
+                    .maximum(newStatistic.getMaximum())
+                    .average(newStatistic.getAverage())
+                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
         }
 
         return Optional.empty();
@@ -156,12 +163,12 @@ public final class AggregationHelper {
                 .toList();
 
         if (!executionTimesInSeconds.isEmpty()) {
-            Statistics statistics = new Statistics(executionTimesInSeconds);
+            DoubleStatistics statistics = new DoubleStatistics(executionTimesInSeconds);
             return Optional.of(new ExecutionTimeMetric()
-                    .minimum(statistics.min())
-                    .maximum(statistics.max())
-                    .average(statistics.average())
-                    .numberOfDataPointsForAverage(statistics.numberOfDataPoints()));
+                    .minimum(statistics.getMinimum())
+                    .maximum(statistics.getMaximum())
+                    .average(statistics.getAverage())
+                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
@@ -176,18 +183,18 @@ public final class AggregationHelper {
         List<CpuMetric> cpuMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getCpu)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(ArrayList::new));
         getAggregatedCpuFromExecutions(allSubmissions.getRunExecutions()).ifPresent(cpuMetrics::add);
 
         if (!cpuMetrics.isEmpty()) {
-            List<Statistics> statistics = cpuMetrics.stream()
-                    .map(metric -> new Statistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
-            Statistics newStatistic = Statistics.createFromStatistics(statistics);
+            List<DoubleStatistics> statistics = cpuMetrics.stream()
+                    .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
+            DoubleStatistics newStatistic = DoubleStatistics.createFromStatistics(statistics);
             return Optional.of(new CpuMetric()
-                    .minimum(newStatistic.min())
-                    .maximum(newStatistic.max())
-                    .average(newStatistic.average())
-                    .numberOfDataPointsForAverage(newStatistic.numberOfDataPoints()));
+                    .minimum(newStatistic.getMinimum())
+                    .maximum(newStatistic.getMaximum())
+                    .average(newStatistic.getAverage())
+                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
@@ -204,12 +211,12 @@ public final class AggregationHelper {
                 .map(Integer::doubleValue)
                 .toList();
         if (!cpuRequirements.isEmpty()) {
-            Statistics statistics = new Statistics(cpuRequirements);
+            DoubleStatistics statistics = new DoubleStatistics(cpuRequirements);
             return Optional.of(new CpuMetric()
-                    .minimum(statistics.min())
-                    .maximum(statistics.max())
-                    .average(statistics.average())
-                    .numberOfDataPointsForAverage(statistics.numberOfDataPoints()));
+                    .minimum(statistics.getMinimum())
+                    .maximum(statistics.getMaximum())
+                    .average(statistics.getAverage())
+                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
@@ -224,18 +231,18 @@ public final class AggregationHelper {
         List<MemoryMetric> memoryMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getMemory)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(ArrayList::new));
         getAggregatedMemoryFromExecutions(allSubmissions.getRunExecutions()).ifPresent(memoryMetrics::add);
 
         if (!memoryMetrics.isEmpty()) {
-            List<Statistics> statistics = memoryMetrics.stream()
-                    .map(metric -> new Statistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
-            Statistics newStatistic = Statistics.createFromStatistics(statistics);
+            List<DoubleStatistics> statistics = memoryMetrics.stream()
+                    .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
+            DoubleStatistics newStatistic = DoubleStatistics.createFromStatistics(statistics);
             return Optional.of(new MemoryMetric()
-                    .minimum(newStatistic.min())
-                    .maximum(newStatistic.max())
-                    .average(newStatistic.average())
-                    .numberOfDataPointsForAverage(newStatistic.numberOfDataPoints()));
+                    .minimum(newStatistic.getMinimum())
+                    .maximum(newStatistic.getMaximum())
+                    .average(newStatistic.getAverage())
+                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
@@ -251,12 +258,12 @@ public final class AggregationHelper {
                 .filter(Objects::nonNull)
                 .toList();
         if (!memoryRequirements.isEmpty()) {
-            Statistics statistics = new Statistics(memoryRequirements);
+            DoubleStatistics statistics = new DoubleStatistics(memoryRequirements);
             return Optional.of(new MemoryMetric()
-                    .minimum(statistics.min())
-                    .maximum(statistics.max())
-                    .average(statistics.average())
-                    .numberOfDataPointsForAverage(statistics.numberOfDataPoints()));
+                    .minimum(statistics.getMinimum())
+                    .maximum(statistics.getMaximum())
+                    .average(statistics.getAverage())
+                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
@@ -271,18 +278,20 @@ public final class AggregationHelper {
         List<CostMetric> costMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getCost)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(ArrayList::new));
         getAggregatedCostFromExecutions(allSubmissions.getRunExecutions()).ifPresent(costMetrics::add);
 
         if (!costMetrics.isEmpty()) {
-            List<Statistics> statistics = costMetrics.stream()
-                    .map(metric -> new Statistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
-            Statistics newStatistic = Statistics.createFromStatistics(statistics);
+            List<MoneyStatistics> statistics = costMetrics.stream()
+                    .map(metric -> new MoneyStatistics(Money.of(metric.getMinimum(), metric.getUnit()), Money.of(metric.getMaximum(), metric.getUnit()), Money.of(metric.getAverage(),
+                            metric.getUnit()), metric.getNumberOfDataPointsForAverage()))
+                    .toList();
+            MoneyStatistics moneyStatistics = MoneyStatistics.createFromStatistics(statistics);
             return Optional.of(new CostMetric()
-                    .minimum(newStatistic.min())
-                    .maximum(newStatistic.max())
-                    .average(newStatistic.average())
-                    .numberOfDataPointsForAverage(newStatistic.numberOfDataPoints()));
+                    .minimum(moneyStatistics.getMinimum().getNumberStripped().doubleValue())
+                    .maximum(moneyStatistics.getMaximum().getNumberStripped().doubleValue())
+                    .average(moneyStatistics.getAverage().getNumberStripped().doubleValue())
+                    .numberOfDataPointsForAverage(moneyStatistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
@@ -293,17 +302,27 @@ public final class AggregationHelper {
      * @return
      */
     public static Optional<CostMetric> getAggregatedCostFromExecutions(List<RunExecution> executions) {
-        List<Double> costs = executions.stream()
-                .map(RunExecution::getCostUSD)
+        List<Cost> submittedCosts = executions.stream()
+                .map(RunExecution::getCost)
                 .filter(Objects::nonNull)
                 .toList();
-        if (!costs.isEmpty()) {
-            Statistics statistics = new Statistics(costs);
+
+        boolean containsMalformedCurrencies = submittedCosts.stream().anyMatch(cost -> !isValidCurrencyCode(cost.getCurrency()));
+        // This shouldn't happen until we allow users to submit any currency they want
+        if (containsMalformedCurrencies) {
+            return Optional.empty(); // Don't aggregate if there's malformed data
+        }
+
+        if (!submittedCosts.isEmpty()) {
+            List<Money> costs = submittedCosts.stream()
+                    .map(cost -> Money.of(cost.getValue(), cost.getCurrency()))
+                    .toList();
+            MoneyStatistics statistics = new MoneyStatistics(costs);
             return Optional.of(new CostMetric()
-                    .minimum(statistics.min())
-                    .maximum(statistics.max())
-                    .average(statistics.average())
-                    .numberOfDataPointsForAverage(statistics.numberOfDataPoints()));
+                    .minimum(statistics.getMinimum().getNumberStripped().doubleValue())
+                    .maximum(statistics.getMaximum().getNumberStripped().doubleValue())
+                    .average(statistics.getAverage().getNumberStripped().doubleValue())
+                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
@@ -319,7 +338,7 @@ public final class AggregationHelper {
         List<ValidationStatusMetric> validationStatusMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getValidationStatus)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(ArrayList::new));
         getAggregatedValidationStatusFromExecutions(allSubmissions.getValidationExecutions()).ifPresent(validationStatusMetrics::add);
 
         Map<String, ValidatorInfo> newValidatorToolToValidatorInfo = new HashMap<>();
@@ -339,9 +358,11 @@ public final class AggregationHelper {
                 final int numberOfRuns = validationVersionInfosByValidatorTool.stream().map(ValidatorVersionInfo::getNumberOfRuns)
                         .mapToInt(Integer::intValue)
                         .sum();
-                final double passingRate = Statistics.getWeightedAverage(validationVersionInfosByValidatorTool.stream()
-                        .map(validatorVersionInfo -> new Statistics(validatorVersionInfo.getPassingRate(), validatorVersionInfo.getNumberOfRuns()))
-                        .toList());
+                final List<DoubleStatistics> validationRunsStatistics = validationVersionInfosByValidatorTool.stream()
+                        .map(validatorVersionInfo -> new DoubleStatistics(validatorVersionInfo.getPassingRate(), validatorVersionInfo.getNumberOfRuns()))
+                        .toList();
+
+                final double passingRate = DoubleStatistics.createFromStatistics(validationRunsStatistics).getAverage();
                 final Optional<ValidatorVersionInfo> mostRecentValidationVersion = getLatestValidationVersionInfo(validationVersionInfosByValidatorTool);
 
                 if (mostRecentValidationVersion.isPresent()) {
