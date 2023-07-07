@@ -274,7 +274,7 @@ public final class AggregationHelper {
      * @return
      */
     public static Optional<CostMetric> getAggregatedCost(ExecutionsRequestBody allSubmissions) {
-        // Get aggregated Execution Time metrics that were submitted to Dockstore
+        // Get aggregated cost metrics that were submitted to Dockstore
         List<CostMetric> costMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getCost)
                 .filter(Objects::nonNull)

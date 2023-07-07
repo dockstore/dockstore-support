@@ -12,17 +12,17 @@ public abstract class Statistics<T> {
     private T average;
     private int numberOfDataPoints;
 
-    public Statistics() {
+    protected Statistics() {
     }
 
-    public Statistics(T minimum, T maximum, T average, int numberOfDataPoints) {
+    protected Statistics(T minimum, T maximum, T average, int numberOfDataPoints) {
         this.minimum = minimum;
         this.maximum = maximum;
         this.average = average;
         this.numberOfDataPoints = numberOfDataPoints;
     }
 
-    public Statistics(List<T> dataPoints) {
+    protected Statistics(List<T> dataPoints) {
         this.minimum = calculateMinimum(dataPoints);
         this.maximum = calculateMaximum(dataPoints);
         this.average = calculateAverage(dataPoints);
