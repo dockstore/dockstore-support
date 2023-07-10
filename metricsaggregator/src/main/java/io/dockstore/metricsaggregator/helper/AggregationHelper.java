@@ -288,9 +288,9 @@ public final class AggregationHelper {
                     .toList();
             MoneyStatistics moneyStatistics = MoneyStatistics.createFromStatistics(statistics);
             return Optional.of(new CostMetric()
-                    .minimum(moneyStatistics.getMinimum().getNumberStripped().doubleValue())
-                    .maximum(moneyStatistics.getMaximum().getNumberStripped().doubleValue())
-                    .average(moneyStatistics.getAverage().getNumberStripped().doubleValue())
+                    .minimum(moneyStatistics.getMinimum().getNumber().doubleValue())
+                    .maximum(moneyStatistics.getMaximum().getNumber().doubleValue())
+                    .average(moneyStatistics.getAverage().getNumber().doubleValue())
                     .numberOfDataPointsForAverage(moneyStatistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
@@ -319,9 +319,9 @@ public final class AggregationHelper {
                     .toList();
             MoneyStatistics statistics = new MoneyStatistics(costs);
             return Optional.of(new CostMetric()
-                    .minimum(statistics.getMinimum().getNumberStripped().doubleValue())
-                    .maximum(statistics.getMaximum().getNumberStripped().doubleValue())
-                    .average(statistics.getAverage().getNumberStripped().doubleValue())
+                    .minimum(statistics.getMinimum().getNumber().doubleValue())
+                    .maximum(statistics.getMaximum().getNumber().doubleValue())
+                    .average(statistics.getAverage().getNumber().doubleValue())
                     .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
         }
         return Optional.empty();

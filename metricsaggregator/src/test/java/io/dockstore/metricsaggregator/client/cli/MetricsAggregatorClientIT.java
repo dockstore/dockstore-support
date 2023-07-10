@@ -23,6 +23,7 @@ import static io.dockstore.metricsaggregator.common.TestUtilities.BUCKET_NAME;
 import static io.dockstore.metricsaggregator.common.TestUtilities.CONFIG_FILE_PATH;
 import static io.dockstore.metricsaggregator.common.TestUtilities.ENDPOINT_OVERRIDE;
 import static io.dockstore.metricsaggregator.common.TestUtilities.createRunExecution;
+import static io.dockstore.metricsaggregator.common.TestUtilities.createValidationExecution;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_SEMANTIC_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
@@ -63,7 +64,6 @@ import io.dockstore.webservice.DockstoreWebserviceConfiguration;
 import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -142,17 +142,9 @@ class MetricsAggregatorClientIT {
         List<RunExecution> runExecutions = List.of(createRunExecution(SUCCESSFUL, "PT5M", 2, 2.0, new Cost().value(2.00), "us-central1"));
         // A successful miniwdl validation
         final String validatorToolVersion1 = "1.0";
-        ValidationExecution validationExecution1 = new ValidationExecution()
-                .validatorTool(MINIWDL)
-                .validatorToolVersion(validatorToolVersion1)
-                .isValid(true)
-                .dateExecuted(Instant.now().toString());
+        ValidationExecution validationExecution1 = createValidationExecution(MINIWDL, validatorToolVersion1, true);
         final String  validatorToolVersion2 = "2.0";
-        ValidationExecution validationExecution2 = new ValidationExecution()
-                .validatorTool(WOMTOOL)
-                .validatorToolVersion(validatorToolVersion2)
-                .isValid(false)
-                .dateExecuted(Instant.now().toString());
+        ValidationExecution validationExecution2 = createValidationExecution(WOMTOOL, validatorToolVersion2, false);
 
         // Submit metrics for two platforms
         extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(runExecutions).validationExecutions(List.of(validationExecution1)), platform1, id, versionId, "");
@@ -177,7 +169,7 @@ class MetricsAggregatorClientIT {
         // A failed run execution that ran for 1 second, requires 2 CPUs and 4.5 GBs of memory
         runExecutions = List.of(createRunExecution(FAILED_RUNTIME_INVALID, "PT1S", 4, 4.5, new Cost().value(2.00), "us-central1"));
         // A failed miniwdl validation for the same validator version
-        List<ValidationExecution> validationExecutions = List.of(new ValidationExecution().validatorTool(MINIWDL).validatorToolVersion("1.0").isValid(false).dateExecuted(Instant.now().toString()));
+        List<ValidationExecution> validationExecutions = List.of(createValidationExecution(MINIWDL, "1.0", false));
         ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(runExecutions).validationExecutions(validationExecutions);
         // Submit metrics for the same workflow version for platform 2
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, id, versionId, "");

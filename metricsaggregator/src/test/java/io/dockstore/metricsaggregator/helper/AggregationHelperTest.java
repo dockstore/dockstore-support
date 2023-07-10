@@ -1,5 +1,6 @@
 package io.dockstore.metricsaggregator.helper;
 
+import static io.dockstore.metricsaggregator.common.TestUtilities.createValidationExecution;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_SEMANTIC_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
@@ -213,11 +214,7 @@ class AggregationHelperTest {
         // Add an execution with validation data
         final ValidationExecution.ValidatorToolEnum validatorTool = ValidationExecution.ValidatorToolEnum.MINIWDL;
         final String validatorToolVersion1 = "1.0";
-        executions.add(new ValidationExecution()
-                .validatorTool(validatorTool)
-                .validatorToolVersion(validatorToolVersion1)
-                .isValid(true)
-                .dateExecuted(Instant.now().toString()));
+        executions.add(createValidationExecution(validatorTool, validatorToolVersion1, true));
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isPresent());
         ValidatorInfo validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
@@ -235,12 +232,7 @@ class AggregationHelperTest {
 
         // Add an execution that isn't valid for the same validator
         final String validatorToolVersion2 = "2.0";
-        executions.add(new ValidationExecution()
-                .validatorTool(validatorTool)
-                .validatorToolVersion(validatorToolVersion2)
-                .isValid(false)
-                .dateExecuted(Instant.now().toString())
-                .errorMessage("This is an error message"));
+        executions.add(createValidationExecution(validatorTool, validatorToolVersion2, false).errorMessage("This is an error message"));
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isPresent());
         validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
@@ -256,11 +248,9 @@ class AggregationHelperTest {
 
         // Add an execution that is valid for the same validator
         String expectedDateExecuted = Instant.now().toString();
-        executions.add(new ValidationExecution()
-                .validatorTool(validatorTool)
-                .validatorToolVersion(validatorToolVersion1)
-                .isValid(true)
-                .dateExecuted(expectedDateExecuted));
+        ValidationExecution validationExecution = createValidationExecution(validatorTool, validatorToolVersion1, true);
+        validationExecution.setDateExecuted(expectedDateExecuted);
+        executions.add(validationExecution);
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isPresent());
         validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
