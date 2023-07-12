@@ -74,7 +74,7 @@ public class DoubleStatistics extends Statistics<Double> {
      */
     @Override
     public Double calculateMinimum(List<Double> dataPoints) {
-        return dataPoints.stream().mapToDouble(d -> d).min().getAsDouble();
+        return dataPoints.stream().mapToDouble(d -> d).min().orElse(0);
     }
 
     /**
@@ -84,7 +84,7 @@ public class DoubleStatistics extends Statistics<Double> {
      */
     @Override
     public Double calculateMaximum(List<Double> dataPoints) {
-        return dataPoints.stream().mapToDouble(d -> d).max().getAsDouble();
+        return dataPoints.stream().mapToDouble(d -> d).max().orElse(0);
     }
 
     /**
@@ -94,7 +94,7 @@ public class DoubleStatistics extends Statistics<Double> {
      */
     @Override
     public Double calculateAverage(List<Double> dataPoints) {
-        return dataPoints.stream().mapToDouble(d -> d).average().getAsDouble();
+        return dataPoints.stream().mapToDouble(d -> d).average().orElse(0);
     }
 
     /**

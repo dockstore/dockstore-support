@@ -48,7 +48,7 @@ public class MoneyStatistics extends Statistics<Money> {
     public Money calculateMinimum(List<Money> dataPoints) {
         return dataPoints.stream()
                 .min(Money::compareTo)
-                .get();
+                .orElse(Money.of(0, currency));
     }
 
     /**
@@ -60,7 +60,7 @@ public class MoneyStatistics extends Statistics<Money> {
     public Money calculateMaximum(List<Money> dataPoints) {
         return dataPoints.stream()
                 .max(Money::compareTo)
-                .get();
+                .orElse(Money.of(0, currency));
     }
 
     /**
