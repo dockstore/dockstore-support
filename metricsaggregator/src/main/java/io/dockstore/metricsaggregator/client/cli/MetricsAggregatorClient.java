@@ -196,8 +196,8 @@ public class MetricsAggregatorClient {
             ValidationExecution validationExecution = new ValidationExecution()
                     .validatorTool(validator)
                     .validatorToolVersion(validatorVersion)
-                    .isValid(isValid)
-                    .dateExecuted(dateExecuted);
+                    .isValid(isValid);
+            validationExecution.setDateExecuted(dateExecuted);
             ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().validationExecutions(List.of(validationExecution));
 
             try {

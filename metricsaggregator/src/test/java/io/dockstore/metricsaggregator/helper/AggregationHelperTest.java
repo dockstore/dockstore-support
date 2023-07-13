@@ -1,5 +1,6 @@
 package io.dockstore.metricsaggregator.helper;
 
+import static io.dockstore.metricsaggregator.common.TestUtilities.createValidationExecution;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_SEMANTIC_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
@@ -9,6 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.dockstore.openapi.client.model.Cost;
+import io.dockstore.openapi.client.model.CostMetric;
 import io.dockstore.openapi.client.model.CpuMetric;
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
@@ -167,6 +170,42 @@ class AggregationHelperTest {
     }
 
     @Test
+    void testGetAggregatedCost() {
+        List<RunExecution> executions = new ArrayList<>();
+        Optional<CostMetric> costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
+        assertTrue(costMetric.isEmpty());
+
+        // Add an execution that doesn't have cost data
+        executions.add(new RunExecution().executionStatus(SUCCESSFUL));
+        costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
+        assertTrue(costMetric.isEmpty());
+
+        // Add an execution with cost data
+        Double costInUSD = 2.00;
+        executions.add(new RunExecution().executionStatus(SUCCESSFUL).cost(new Cost().value(costInUSD)));
+        costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
+        assertTrue(costMetric.isPresent());
+        assertEquals(costInUSD, costMetric.get().getMinimum());
+        assertEquals(costInUSD, costMetric.get().getMaximum());
+        assertEquals(costInUSD, costMetric.get().getAverage());
+        assertEquals(1, costMetric.get().getNumberOfDataPointsForAverage());
+
+        // Aggregate submissions containing run executions and aggregated metrics
+        Metrics submittedAggregatedMetrics = new Metrics()
+                .cost(new CostMetric()
+                        .minimum(2.00)
+                        .maximum(6.00)
+                        .average(4.00)
+                        .numberOfDataPointsForAverage(2));
+        costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
+        assertTrue(costMetric.isPresent());
+        assertEquals(2.0, costMetric.get().getMinimum());
+        assertEquals(6.0, costMetric.get().getMaximum());
+        assertEquals(3.333333333333333, costMetric.get().getAverage());
+        assertEquals(3, costMetric.get().getNumberOfDataPointsForAverage());
+    }
+
+    @Test
     void testGetAggregatedValidationStatus() {
         List<ValidationExecution> executions = new ArrayList<>();
         Optional<ValidationStatusMetric> validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
@@ -175,11 +214,7 @@ class AggregationHelperTest {
         // Add an execution with validation data
         final ValidationExecution.ValidatorToolEnum validatorTool = ValidationExecution.ValidatorToolEnum.MINIWDL;
         final String validatorToolVersion1 = "1.0";
-        executions.add(new ValidationExecution()
-                .validatorTool(validatorTool)
-                .validatorToolVersion(validatorToolVersion1)
-                .isValid(true)
-                .dateExecuted(Instant.now().toString()));
+        executions.add(createValidationExecution(validatorTool, validatorToolVersion1, true));
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isPresent());
         ValidatorInfo validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
@@ -197,12 +232,7 @@ class AggregationHelperTest {
 
         // Add an execution that isn't valid for the same validator
         final String validatorToolVersion2 = "2.0";
-        executions.add(new ValidationExecution()
-                .validatorTool(validatorTool)
-                .validatorToolVersion(validatorToolVersion2)
-                .isValid(false)
-                .dateExecuted(Instant.now().toString())
-                .errorMessage("This is an error message"));
+        executions.add(createValidationExecution(validatorTool, validatorToolVersion2, false).errorMessage("This is an error message"));
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isPresent());
         validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
@@ -218,11 +248,9 @@ class AggregationHelperTest {
 
         // Add an execution that is valid for the same validator
         String expectedDateExecuted = Instant.now().toString();
-        executions.add(new ValidationExecution()
-                .validatorTool(validatorTool)
-                .validatorToolVersion(validatorToolVersion1)
-                .isValid(true)
-                .dateExecuted(expectedDateExecuted));
+        ValidationExecution validationExecution = createValidationExecution(validatorTool, validatorToolVersion1, true);
+        validationExecution.setDateExecuted(expectedDateExecuted);
+        executions.add(validationExecution);
         validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isPresent());
         validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());

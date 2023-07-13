@@ -73,6 +73,7 @@ public class MetricsAggregatorS3Client {
             return;
         }
 
+        System.out.println("Aggregating metrics...");
         for (S3DirectoryInfo directoryInfo : metricsDirectories) {
             String toolId = directoryInfo.toolId();
             String versionName = directoryInfo.versionId();
@@ -118,6 +119,7 @@ public class MetricsAggregatorS3Client {
                 }
             }
         }
+        System.out.println("Completed aggregating metrics");
     }
 
     /**

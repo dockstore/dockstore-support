@@ -19,9 +19,13 @@ package io.dockstore.metricsaggregator.common;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
 import io.dockstore.metricsaggregator.client.cli.MetricsAggregatorClient;
+import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.RunExecution;
+import io.dockstore.openapi.client.model.ValidationExecution;
+import io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum;
 import io.dropwizard.testing.ResourceHelpers;
 import java.io.File;
+import java.time.Instant;
 import java.util.Optional;
 import org.apache.commons.configuration2.INIConfiguration;
 
@@ -34,12 +38,25 @@ public final class TestUtilities {
     private TestUtilities() {
     }
 
-    public static RunExecution createRunExecution(RunExecution.ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB) {
-        return new RunExecution()
+    public static RunExecution createRunExecution(RunExecution.ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB, Cost cost, String region) {
+        RunExecution runExecution = new RunExecution()
                 .executionStatus(executionStatus)
                 .executionTime(executionTime)
                 .cpuRequirements(cpuRequirements)
-                .memoryRequirementsGB(memoryRequirementsGB);
+                .memoryRequirementsGB(memoryRequirementsGB)
+                .cost(cost)
+                .region(region);
+        runExecution.setDateExecuted(Instant.now().toString());
+        return runExecution;
+    }
+
+    public static ValidationExecution createValidationExecution(ValidatorToolEnum validatorTool, String validatorToolVersion, boolean isValid) {
+        ValidationExecution validationExecution = new ValidationExecution()
+                .validatorTool(validatorTool)
+                .validatorToolVersion(validatorToolVersion)
+                .isValid(isValid);
+        validationExecution.setDateExecuted(Instant.now().toString());
+        return validationExecution;
     }
 
     public static MetricsAggregatorConfig getMetricsConfig() {
