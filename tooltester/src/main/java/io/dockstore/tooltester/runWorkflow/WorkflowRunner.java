@@ -487,6 +487,7 @@ public class WorkflowRunner {
         runMetrics.setExecutionStatus(getExecutionStatus());
         if (getTotalWallClockTimeInISO861Standard() != null) {
             runMetrics.setExecutionTime(getTotalWallClockTimeInISO861Standard());
+            runMetrics.setDateExecuted(workflowStartTime.toInstant().toString());
         }
         addDataFromSingleMetric("CpuUtilized");
         addDataFromSingleMetric("MemoryUtilized");
