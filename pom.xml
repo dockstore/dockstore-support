@@ -125,6 +125,7 @@
         <module>toolbackup</module>
         <module>tooltester</module>
         <module>dockstore-support-reports</module>
+        <module>jira_automation</module>
     </modules>
 
 

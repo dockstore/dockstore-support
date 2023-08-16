@@ -3,8 +3,6 @@ package io.dockstore.jira;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.kohsuke.github.GHIssue;
 import org.kohsuke.github.GHRepository;
@@ -15,7 +13,7 @@ import org.kohsuke.github.GHRepository;
  * Does not generate a url, because the url will be too long for the browser; you need to input
  * the query in JIRA so it can be POSTed.
  */
-public class App
+public class ResolutionChecker
 {
     public static void main( String[] args ) throws IOException {
         final GHRepository repository = Utils.getDockstoreRepository();
