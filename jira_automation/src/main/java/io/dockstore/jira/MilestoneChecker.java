@@ -13,13 +13,15 @@ import org.kohsuke.github.GHMilestone;
  * Generates a GitHub url with all dockstore issues whose milestone does not match the fix version
  * in JIRA.
  */
-public class MilestoneChecker {
+public final class MilestoneChecker {
 
     /**
      *  Pattern for finding a substring like "Fix Versions: Dockstore 1.15" in GitHub issue body, to extract
      *  the "1.15"
       */
-    private final static Pattern FIX_VERSIONS = Pattern.compile("((Fix Versions)|(fixVersions))(:\\s*(Dockstore )?(.*))");
+    private static final Pattern FIX_VERSIONS = Pattern.compile("((Fix Versions)|(fixVersions))(:\\s*(Dockstore )?(.*))");
+
+    private MilestoneChecker() { }
 
     public static void main(String[] args) throws IOException {
         final List<GHIssue> openIssues = Utils.findOpenIssues(Utils.getDockstoreRepository());
@@ -48,8 +50,8 @@ public class MilestoneChecker {
     }
 
     private static String generateJiraIssuesUrl(final List<JiraAndGithub> issues) {
-        return "https://ucsc-cgl.atlassian.net/issues/?jql=project=DOCK AND " +
-            issues.stream().map(issue -> "key=\"" + issue.jiraIssue() + "\"")
+        return "https://ucsc-cgl.atlassian.net/issues/?jql=project=DOCK AND "
+            + issues.stream().map(issue -> "key=\"" + issue.jiraIssue() + "\"")
                 .collect(Collectors.joining(" or "));
     }
 
@@ -60,9 +62,9 @@ public class MilestoneChecker {
     }
 
     private static boolean milestoneAndFixVersionEqual(String jiraFixVersion, String milestone) {
-        return "Open-ended research tasks".equals(jiraFixVersion) && milestone.equals("Open ended research tasks")
+        return "Open-ended research tasks".equals(jiraFixVersion) && "Open ended research tasks".equals(milestone)
             || Objects.equals(jiraFixVersion, milestone);
     }
 
-    record JiraAndGithub(String jiraIssue, int githubIssue){}
+    record JiraAndGithub(String jiraIssue, int githubIssue) { }
 }

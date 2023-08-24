@@ -13,9 +13,11 @@ import org.kohsuke.github.GHRepository;
  * Does not generate a url, because the url will be too long for the browser; you need to input
  * the query in JIRA so it can be POSTed.
  */
-public class ResolutionChecker
-{
-    public static void main( String[] args ) throws IOException {
+public final class ResolutionChecker {
+
+    private ResolutionChecker() { }
+
+    public static void main(String[] args) throws IOException {
         final GHRepository repository = Utils.getDockstoreRepository();
         final String jqlQuery = issuesOpenInGitHubButDoneInJiraQuery(repository);
         System.out.println(jqlQuery);

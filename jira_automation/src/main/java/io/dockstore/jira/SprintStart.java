@@ -13,9 +13,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 
-public class SprintStart {
+public final class SprintStart {
 
-    private final static String PROJECT = "SEAB";
+    private static final String PROJECT = "SEAB";
     private static final String BASE_URL = "https://ucsc-cgl.atlassian.net/rest/api/3/";
     private static final String USERS_URL = BASE_URL + "users?maxResults=500";
     private static final String PROJECT_URL = BASE_URL + "project/" + PROJECT;
@@ -26,6 +26,13 @@ public class SprintStart {
     private final String jiraToken;
     private final String username;
     private final String sprintName;
+
+    private SprintStart(String username, String sprintName) {
+        this.username = username;
+        this.httpClient = HttpClient.newHttpClient();
+        this.jiraToken = System.getenv("JIRA_TOKEN");
+        this.sprintName = sprintName;
+    }
 
     /**
      * Creates review tickets for a sprint. Expects the environment variable
@@ -45,18 +52,12 @@ public class SprintStart {
 
     }
 
-    private SprintStart(String username, String sprintName) {
-        this.username = username;
-        this.httpClient = HttpClient.newHttpClient();
-        this.jiraToken = System.getenv("JIRA_TOKEN");
-        this.sprintName = sprintName;
-    }
 
     public void createReviewTickets() throws URISyntaxException, IOException, InterruptedException {
         final String users;
         final JiraUser[] jiraUsers =
             jiraRequest(USERS_URL, JiraUser[].class);
-        try (final InputStream inputStream = SprintStart.class.getResourceAsStream("/users.txt")) {
+        try (InputStream inputStream = SprintStart.class.getResourceAsStream("/users.txt")) {
             users = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         }
 
@@ -87,12 +88,10 @@ public class SprintStart {
         return gson.fromJson(httpResponse.body(), clazz);
     }
 
-    record JiraUser(String accountId, String displayName) {}
+    record JiraUser(String accountId, String displayName) { }
 
-    record JiraProject(String key, String id) {}
+    record JiraProject(String key, String id) { }
 
-    record JiraIssueType(String name, String id) {}
-
-//    record JiraIssue
+    record JiraIssueType(String name, String id) { }
 
 }
