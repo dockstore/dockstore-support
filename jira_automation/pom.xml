@@ -27,7 +27,7 @@
     -->
     <swagger-annotations-version>1.6.5</swagger-annotations-version>
     <openapi-annotations-version>2.1.13</openapi-annotations-version>
-    <dockstore-core.version>1.14.0-alpha.2</dockstore-core.version>
+    <dockstore-core.version>1.15.0-alpha.6</dockstore-core.version>
   </properties>
 
   <organization>
