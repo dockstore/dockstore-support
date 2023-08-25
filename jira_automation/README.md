@@ -7,7 +7,7 @@ a configuration issue again, it could be useful in the future.
 2. io.dockstore.jira.MilestoneChecker - generates GitHub and JQL queries to find mismatches in the JIRA fix version and GitHub milestone. The JIRA fix version is
 a multi-value field; the GitHub milestone is a single-value field, so Unito doesn't sync them. We have to remember to manually
 keep them in sync; this program identifies cases we've missed.
-3. SprintStart - an barely started work in progress to automatically generate review tickets at the beginning of a sprint, which
+3. SprintStart - a barely started work in progress to automatically generate review tickets at the beginning of a sprint, which
 is currently a manual and tedious process.
 
 # Auth

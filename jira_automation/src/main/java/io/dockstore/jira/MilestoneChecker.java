@@ -11,7 +11,9 @@ import org.kohsuke.github.GHMilestone;
 
 /**
  * Generates a GitHub url with all dockstore issues whose milestone does not match the fix version
- * in JIRA.
+ * in JIRA. Works by looking at all open GitHub issues, then reading the info Unito appends to the
+ * description in GitHub, which includes the fix version. It compares the fix version in JIRA with
+ * the milestone of the GitHub issue.
  */
 public final class MilestoneChecker {
 
