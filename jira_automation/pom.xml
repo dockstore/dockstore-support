@@ -25,33 +25,12 @@
     <revision>1.0</revision>
     <changelist>.0-SNAPSHOT</changelist>
 
-    <!--
-    The following properties are mostly used in the plugins section
-    as the versions for the dependency section are provided
-    in the Dockstore projects BOM, unless specifically overridden
-    in the dependency section
-    -->
-    <swagger-annotations-version>1.6.5</swagger-annotations-version>
-    <openapi-annotations-version>2.1.13</openapi-annotations-version>
-    <dockstore-core.version>1.15.0-alpha.6</dockstore-core.version>
   </properties>
 
   <organization>
     <name>Dockstore</name>
     <url>https://www.dockstore.org/</url>
   </organization>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>io.dockstore</groupId>
-        <artifactId>bom-internal</artifactId>
-        <type>pom</type>
-        <version>${dockstore-core.version}</version>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <dependencies>
 
