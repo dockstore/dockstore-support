@@ -95,7 +95,7 @@
         <repository>
             <id>artifactory.broadinstitute.org</id>
             <name>artifactory.broadinstitute.org</name>
-            <url>https://artifactory.broadinstitute.org/artifactory/libs-release</url>
+            <url>https://broadinstitute.jfrog.io/artifactory/libs-release/</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
@@ -125,6 +125,7 @@
         <module>toolbackup</module>
         <module>tooltester</module>
         <module>dockstore-support-reports</module>
+        <module>jira_automation</module>
     </modules>
 
 
