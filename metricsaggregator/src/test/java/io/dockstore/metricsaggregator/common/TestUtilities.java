@@ -18,11 +18,11 @@
 package io.dockstore.metricsaggregator.common;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
-import io.dockstore.metricsaggregator.client.cli.MetricsAggregatorClient;
 import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum;
+import io.dockstore.utils.ConfigFileUtils;
 import io.dropwizard.testing.ResourceHelpers;
 import java.io.File;
 import java.time.Instant;
@@ -60,7 +60,7 @@ public final class TestUtilities {
     }
 
     public static MetricsAggregatorConfig getMetricsConfig() {
-        Optional<INIConfiguration> iniConfig = MetricsAggregatorClient.getConfiguration(new File(CONFIG_FILE_PATH));
+        Optional<INIConfiguration> iniConfig = ConfigFileUtils.getConfiguration(new File(CONFIG_FILE_PATH));
         if (iniConfig.isEmpty()) {
             throw new RuntimeException("Unable to get config file");
         }

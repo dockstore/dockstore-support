@@ -17,6 +17,9 @@
 
 package io.dockstore.metricsaggregator.client.cli;
 
+import static io.dockstore.utils.CLIConstants.FAILURE_EXIT_CODE;
+import static io.dockstore.utils.ConfigFileUtils.getConfiguration;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
@@ -38,17 +41,12 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.configuration2.INIConfiguration;
-import org.apache.commons.configuration2.builder.fluent.Configurations;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MetricsAggregatorClient {
 
     public static final String CONFIG_FILE_NAME = "metrics-aggregator.config";
-    public static final int SUCCESS_EXIT_CODE = 0;
-    public static final int FAILURE_EXIT_CODE = 1;
-    public static final String CONFIG_FILE_ERROR = "Could not get configuration file";
     // Constants for the data file's CSV fields used by submit-validation-data
     public static final int TRS_ID_INDEX = 0;
     public static final int VERSION_NAME_INDEX = 1;
@@ -125,18 +123,6 @@ public class MetricsAggregatorClient {
                     System.exit(FAILURE_EXIT_CODE);
                 }
             }
-        }
-    }
-
-    public static Optional<INIConfiguration> getConfiguration(File iniFile) {
-        Configurations configs = new Configurations();
-
-        try {
-            INIConfiguration config = configs.ini(iniFile);
-            return Optional.of(config);
-        } catch (ConfigurationException e) {
-            LOG.error(CONFIG_FILE_ERROR, e);
-            return Optional.empty();
         }
     }
 
