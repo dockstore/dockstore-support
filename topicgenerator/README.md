@@ -26,8 +26,6 @@ openai-api-key: <OpenAI API key>
         - `https://dockstore.org/api`
 - `openai-api-key`: The OpenAI API key required for using the OpenAI APIs. See https://platform.openai.com/docs/api-reference/authentication for more details.
 
-Note that if the configuration file path is not passed as an argument via `--config` or `-c`, then the default location is set to `./topic-generator.config`.
-
 ## Running the program
 
 ```
