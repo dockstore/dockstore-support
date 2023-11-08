@@ -46,22 +46,22 @@ public class TopicGeneratorClient {
     // Headers for the input CSV file
     public static final String TRS_ID_CSV_HEADER = "trsId";
     public static final String VERSION_CSV_HEADER = "version";
-    public static final String[] INPUT_CSV_HEADERS = { TRS_ID_CSV_HEADER, VERSION_CSV_HEADER };
     // Headers for the output CSV file
     public static final String AI_TOPIC_CSV_HEADER = "aiTopic";
     public static final String PROMPT_TOKENS = "promptTokens"; // Number of tokens in prompt
     public static final String COMPLETION_TOKENS = "completionTokens"; // Number of tokens in response
     public static final String FINISH_REASON = "finishReason"; // The reason that the response stopped.
     public static final String IS_TRUNCATED = "isTruncated"; // Whether the descriptor file content truncated because it exceeded the token maximum
-    public static final String[] OUTPUT_CSV_HEADERS = { TRS_ID_CSV_HEADER, VERSION_CSV_HEADER, IS_TRUNCATED, PROMPT_TOKENS, COMPLETION_TOKENS, FINISH_REASON, AI_TOPIC_CSV_HEADER };
     public static final String OUTPUT_FILE_PREFIX = "generated-topics";
+    protected static final String[] INPUT_CSV_HEADERS = { TRS_ID_CSV_HEADER, VERSION_CSV_HEADER };
+    protected static final String[] OUTPUT_CSV_HEADERS = { TRS_ID_CSV_HEADER, VERSION_CSV_HEADER, IS_TRUNCATED, PROMPT_TOKENS, COMPLETION_TOKENS, FINISH_REASON, AI_TOPIC_CSV_HEADER };
     private static final Logger LOG = LoggerFactory.getLogger(TopicGeneratorClient.class);
     // Using GPT 3.5-turbo-16k because it's cheaper and faster than GPT4, and it takes more tokens (16k). GPT4 seems to cause a lot of timeouts.
     private static final ModelType AI_MODEL = ModelType.GPT_3_5_TURBO_16K;
     private static final EncodingRegistry REGISTRY = Encodings.newDefaultEncodingRegistry();
     private static final Encoding ENCODING = REGISTRY.getEncodingForModel(AI_MODEL);
 
-    public TopicGeneratorClient() {
+    TopicGeneratorClient() {
     }
 
     public static void main(String[] args) {
@@ -167,7 +167,7 @@ public class TopicGeneratorClient {
 
     private void getAiGeneratedTopicAndRecordToCsv(OpenAiService openAiService, CSVPrinter csvPrinter, String trsId, String versionId, String entryType, String descriptorContent) {
         // A character limit is specified but ChatGPT doesn't follow it strictly
-        final String systemPrompt = "You will be provided with a " + entryType + ", and your task is to summarize it in one sentence, using a maximum of 150 characters.";
+        final String systemPrompt = "You will be provided with a " + entryType + ", and your task is to summarize it in one sentence where the first word is a verb. Use a maximum of 150 characters.";
         final ChatMessage systemMessage = new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt);
         // The sum of the number of tokens in the request and response cannot exceed the model's maximum context length.
         final int maxResponseTokens = 100; // One token is roughly 4 characters. Using 100 tokens because setting it too low might truncate the response
