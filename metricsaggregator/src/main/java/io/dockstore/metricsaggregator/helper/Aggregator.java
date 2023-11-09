@@ -25,6 +25,11 @@ public interface Aggregator<M, E> {
                 .toList();
     }
 
+    /**
+     * Aggregate metrics from all submissions
+     * @param allSubmissions
+     * @return
+     */
     default Optional<M> getAggregatedMetricFromAllSubmissions(ExecutionsRequestBody allSubmissions) {
         final List<RunExecution> workflowExecutions = new ArrayList<>(allSubmissions.getRunExecutions());
 
