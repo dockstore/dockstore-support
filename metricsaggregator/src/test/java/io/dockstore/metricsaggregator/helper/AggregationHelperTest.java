@@ -19,6 +19,7 @@ import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
+import io.dockstore.openapi.client.model.TaskExecutions;
 import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import io.dockstore.openapi.client.model.ValidatorInfo;
@@ -34,13 +35,14 @@ class AggregationHelperTest {
 
     @Test
     void testGetAggregatedExecutionStatus() {
+        ExecutionStatusAggregator executionStatusAggregator = new ExecutionStatusAggregator();
         ExecutionsRequestBody allSubmissions = new ExecutionsRequestBody();
-        Optional<ExecutionStatusMetric> executionStatusMetric = AggregationHelper.getAggregatedExecutionStatus(allSubmissions);
+        Optional<ExecutionStatusMetric> executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions); // AggregationHelper.getAggregatedExecutionStatus(allSubmissions);
         assertTrue(executionStatusMetric.isEmpty());
 
         RunExecution submittedRunExecution = new RunExecution().executionStatus(SUCCESSFUL);
         allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution));
-        executionStatusMetric = AggregationHelper.getAggregatedExecutionStatus(allSubmissions);
+        executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions); // AggregationHelper.getAggregatedExecutionStatus(allSubmissions);
         assertTrue(executionStatusMetric.isPresent());
         assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
 
@@ -49,33 +51,76 @@ class AggregationHelperTest {
                 new ExecutionStatusMetric().count(
                         Map.of(SUCCESSFUL.toString(), 10, FAILED_RUNTIME_INVALID.toString(), 1)));
         allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution)).aggregatedExecutions(List.of(submittedAggregatedMetrics));
-        executionStatusMetric = AggregationHelper.getAggregatedExecutionStatus(allSubmissions);
+        executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions); // AggregationHelper.getAggregatedExecutionStatus(allSubmissions);
         assertTrue(executionStatusMetric.isPresent());
         assertEquals(11, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
         assertEquals(1, executionStatusMetric.get().getCount().get(FAILED_RUNTIME_INVALID.toString()));
         assertNull(executionStatusMetric.get().getCount().get(FAILED_SEMANTIC_INVALID.toString()), "Should be null because the key doesn't exist in the count map");
+
+        // Aggregate submissions containing workflow run executions and task executions
+        submittedRunExecution = new RunExecution().executionStatus(SUCCESSFUL);
+        TaskExecutions taskExecutionsForOneWorkflowRun = new TaskExecutions().taskExecutions(List.of(submittedRunExecution));
+        allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution)).taskExecutions(List.of(taskExecutionsForOneWorkflowRun));
+        executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions); // AggregationHelper.getAggregatedExecutionStatus(allSubmissions);
+        assertTrue(executionStatusMetric.isPresent());
+        assertEquals(2, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
+        // Submit one successful workflow execution and a list of task executions where the single task failed
+        taskExecutionsForOneWorkflowRun = new TaskExecutions().taskExecutions(List.of(new RunExecution().executionStatus(FAILED_RUNTIME_INVALID)));
+        allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution)).taskExecutions(List.of(taskExecutionsForOneWorkflowRun));
+        executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions); // AggregationHelper.getAggregatedExecutionStatus(allSubmissions);
+        assertTrue(executionStatusMetric.isPresent());
+        assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
+        assertEquals(1, executionStatusMetric.get().getCount().get(FAILED_RUNTIME_INVALID.toString()));
+        // Submit one successful workflow execution and a list of task executions where there are two tasks that failed due to different reasons
+        taskExecutionsForOneWorkflowRun = new TaskExecutions().taskExecutions(
+                List.of(new RunExecution().executionStatus(FAILED_RUNTIME_INVALID),
+                        new RunExecution().executionStatus(FAILED_SEMANTIC_INVALID)));
+        allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution)).taskExecutions(List.of(taskExecutionsForOneWorkflowRun));
+        executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions); // AggregationHelper.getAggregatedExecutionStatus(allSubmissions);
+        assertTrue(executionStatusMetric.isPresent());
+        assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
+        // There should be 1 of either FAILED_RUNTIME_INVALID or FAILED_SEMANTIC_INVALID.
+        assertTrue(executionStatusMetric.get().getCount().containsKey(FAILED_RUNTIME_INVALID.toString()) || executionStatusMetric.get().getCount().containsKey(FAILED_SEMANTIC_INVALID.toString()));
+        // Submit one successful workflow execution and a list of task executions where there are 3 tasks that failed due to different reasons
+        taskExecutionsForOneWorkflowRun = new TaskExecutions().taskExecutions(
+                List.of(new RunExecution().executionStatus(FAILED_RUNTIME_INVALID),
+                        new RunExecution().executionStatus(FAILED_RUNTIME_INVALID),
+                        new RunExecution().executionStatus(FAILED_SEMANTIC_INVALID)));
+        allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution)).taskExecutions(List.of(taskExecutionsForOneWorkflowRun));
+        executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions); // AggregationHelper.getAggregatedExecutionStatus(allSubmissions);
+        assertTrue(executionStatusMetric.isPresent());
+        assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
+        // There should be one count of FAILED_RUNTIME_INVALID because it's the most frequent failed status in the list of task executions
+        assertEquals(1, executionStatusMetric.get().getCount().get(FAILED_RUNTIME_INVALID.toString()));
+    }
+
+    @Test
+    void testCalculateWorkflowExecutionStatusFromTaskExecutions() {
+
+
     }
 
     @Test
     void testGetAggregatedExecutionTime() {
+        ExecutionTimeAggregator executionTimeAggregator = new ExecutionTimeAggregator();
         List<RunExecution> badExecutions = new ArrayList<>();
-        Optional<ExecutionTimeMetric> executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(new ExecutionsRequestBody().runExecutions(badExecutions));
+        Optional<ExecutionTimeMetric> executionTimeMetric = executionTimeAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(badExecutions)); // AggregationHelper.getAggregatedExecutionTime(new ExecutionsRequestBody().runExecutions(badExecutions));
         assertTrue(executionTimeMetric.isEmpty());
 
         // Add an execution that doesn't have execution time data
         badExecutions.add(new RunExecution().executionStatus(SUCCESSFUL));
-        executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(new ExecutionsRequestBody().runExecutions(badExecutions));
+        executionTimeMetric = executionTimeAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(badExecutions)); // AggregationHelper.getAggregatedExecutionTime(new ExecutionsRequestBody().runExecutions(badExecutions));
         assertTrue(executionTimeMetric.isEmpty());
 
         // Add an execution with malformed execution time data
         badExecutions.add(new RunExecution().executionStatus(SUCCESSFUL).executionTime("1 second"));
-        executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(new ExecutionsRequestBody().runExecutions(badExecutions));
+        executionTimeMetric = executionTimeAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(badExecutions)); // AggregationHelper.getAggregatedExecutionTime(new ExecutionsRequestBody().runExecutions(badExecutions));
         assertTrue(executionTimeMetric.isEmpty());
 
         // Add an execution with execution time
         final int timeInSeconds = 10;
         List<RunExecution> executions = List.of(new RunExecution().executionStatus(SUCCESSFUL).executionTime(String.format("PT%dS", timeInSeconds)));
-        executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(new ExecutionsRequestBody().runExecutions(executions));
+        executionTimeMetric = executionTimeAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions)); // AggregationHelper.getAggregatedExecutionTime(new ExecutionsRequestBody().runExecutions(executions));
         assertTrue(executionTimeMetric.isPresent());
         assertEquals(timeInSeconds, executionTimeMetric.get().getMinimum());
         assertEquals(timeInSeconds, executionTimeMetric.get().getMaximum());
@@ -89,7 +134,7 @@ class AggregationHelperTest {
                         .maximum(6.0)
                         .average(4.0)
                         .numberOfDataPointsForAverage(2));
-        executionTimeMetric = AggregationHelper.getAggregatedExecutionTime(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
+        executionTimeMetric = executionTimeAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics))); // AggregationHelper.getAggregatedExecutionTime(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(executionTimeMetric.isPresent());
         assertEquals(2.0, executionTimeMetric.get().getMinimum());
         assertEquals(10.0, executionTimeMetric.get().getMaximum());
@@ -99,19 +144,20 @@ class AggregationHelperTest {
 
     @Test
     void testGetAggregatedCpu() {
+        CpuAggregator cpuAggregator = new CpuAggregator();
         List<RunExecution> executions = new ArrayList<>();
-        Optional<CpuMetric> cpuMetric = AggregationHelper.getAggregatedCpu(new ExecutionsRequestBody().runExecutions(executions));
+        Optional<CpuMetric> cpuMetric = cpuAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions)); // AggregationHelper.getAggregatedCpu(new ExecutionsRequestBody().runExecutions(executions));
         assertTrue(cpuMetric.isEmpty());
 
         // Add an execution that doesn't have cpu data
         executions.add(new RunExecution().executionStatus(SUCCESSFUL));
-        cpuMetric = AggregationHelper.getAggregatedCpu(new ExecutionsRequestBody().runExecutions(executions));
+        cpuMetric = cpuAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions)); // AggregationHelper.getAggregatedCpu(new ExecutionsRequestBody().runExecutions(executions));
         assertTrue(cpuMetric.isEmpty());
 
         // Add an execution with cpu data
         final int cpu = 1;
         executions.add(new RunExecution().executionStatus(SUCCESSFUL).cpuRequirements(cpu));
-        cpuMetric = AggregationHelper.getAggregatedCpu(new ExecutionsRequestBody().runExecutions(executions));
+        cpuMetric = cpuAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions)); // AggregationHelper.getAggregatedCpu(new ExecutionsRequestBody().runExecutions(executions));
         assertTrue(cpuMetric.isPresent());
         assertEquals(cpu, cpuMetric.get().getMinimum());
         assertEquals(cpu, cpuMetric.get().getMaximum());
@@ -125,7 +171,7 @@ class AggregationHelperTest {
                         .maximum(6.0)
                         .average(4.0)
                         .numberOfDataPointsForAverage(2));
-        cpuMetric = AggregationHelper.getAggregatedCpu(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
+        cpuMetric = cpuAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics))); // AggregationHelper.getAggregatedCpu(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(cpuMetric.isPresent());
         assertEquals(1.0, cpuMetric.get().getMinimum());
         assertEquals(6.0, cpuMetric.get().getMaximum());
@@ -135,19 +181,20 @@ class AggregationHelperTest {
 
     @Test
     void testGetAggregatedMemory() {
+        MemoryAggregator memoryAggregator = new MemoryAggregator();
         List<RunExecution> executions = new ArrayList<>();
-        Optional<MemoryMetric> memoryMetric = AggregationHelper.getAggregatedMemory(new ExecutionsRequestBody().runExecutions(executions));
+        Optional<MemoryMetric> memoryMetric = memoryAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions)); // AggregationHelper.getAggregatedMemory(new ExecutionsRequestBody().runExecutions(executions));
         assertTrue(memoryMetric.isEmpty());
 
         // Add an execution that doesn't have memory data
         executions.add(new RunExecution().executionStatus(SUCCESSFUL));
-        memoryMetric = AggregationHelper.getAggregatedMemory(new ExecutionsRequestBody().runExecutions(executions));
+        memoryMetric = memoryAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions)); // AggregationHelper.getAggregatedMemory(new ExecutionsRequestBody().runExecutions(executions));
         assertTrue(memoryMetric.isEmpty());
 
         // Add an execution with memory data
         Double memoryInGB = 2.0;
         executions.add(new RunExecution().executionStatus(SUCCESSFUL).memoryRequirementsGB(memoryInGB));
-        memoryMetric = AggregationHelper.getAggregatedMemory(new ExecutionsRequestBody().runExecutions(executions));
+        memoryMetric = memoryAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions)); // AggregationHelper.getAggregatedMemory(new ExecutionsRequestBody().runExecutions(executions));
         assertTrue(memoryMetric.isPresent());
         assertEquals(memoryInGB, memoryMetric.get().getMinimum());
         assertEquals(memoryInGB, memoryMetric.get().getMaximum());
@@ -161,7 +208,7 @@ class AggregationHelperTest {
                         .maximum(6.0)
                         .average(4.0)
                         .numberOfDataPointsForAverage(2));
-        memoryMetric = AggregationHelper.getAggregatedMemory(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
+        memoryMetric = memoryAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics))); // AggregationHelper.getAggregatedMemory(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(memoryMetric.isPresent());
         assertEquals(2.0, memoryMetric.get().getMinimum());
         assertEquals(6.0, memoryMetric.get().getMaximum());
@@ -171,19 +218,20 @@ class AggregationHelperTest {
 
     @Test
     void testGetAggregatedCost() {
+        CostAggregator costAggregator = new CostAggregator();
         List<RunExecution> executions = new ArrayList<>();
-        Optional<CostMetric> costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
+        Optional<CostMetric> costMetric = costAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions)); // AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
         assertTrue(costMetric.isEmpty());
 
         // Add an execution that doesn't have cost data
         executions.add(new RunExecution().executionStatus(SUCCESSFUL));
-        costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
+        costMetric = costAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions)); // AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
         assertTrue(costMetric.isEmpty());
 
         // Add an execution with cost data
         Double costInUSD = 2.00;
         executions.add(new RunExecution().executionStatus(SUCCESSFUL).cost(new Cost().value(costInUSD)));
-        costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
+        costMetric = costAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions)); // AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions));
         assertTrue(costMetric.isPresent());
         assertEquals(costInUSD, costMetric.get().getMinimum());
         assertEquals(costInUSD, costMetric.get().getMaximum());
@@ -197,7 +245,7 @@ class AggregationHelperTest {
                         .maximum(6.00)
                         .average(4.00)
                         .numberOfDataPointsForAverage(2));
-        costMetric = AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
+        costMetric = costAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics))); // AggregationHelper.getAggregatedCost(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(costMetric.isPresent());
         assertEquals(2.0, costMetric.get().getMinimum());
         assertEquals(6.0, costMetric.get().getMaximum());
