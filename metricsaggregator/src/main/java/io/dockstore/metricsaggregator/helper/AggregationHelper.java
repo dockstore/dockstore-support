@@ -3,6 +3,7 @@ package io.dockstore.metricsaggregator.helper;
 import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionDateISO8601Format;
 import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionTimeISO8601Format;
 import static io.dockstore.common.metrics.FormatCheckHelper.isValidCurrencyCode;
+import static io.dockstore.metricsaggregator.MoneyStatistics.CURRENCY;
 import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
@@ -16,11 +17,14 @@ import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
+import io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum;
+import io.dockstore.openapi.client.model.TaskExecutions;
 import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import io.dockstore.openapi.client.model.ValidatorInfo;
 import io.dockstore.openapi.client.model.ValidatorVersionInfo;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -77,13 +81,19 @@ public final class AggregationHelper {
     }
 
     /**
-     * Aggregate Execution Status metrics from all submissions by summing up the count of each Execution Status encountered in the run executions and aggregated metrics.
+     * Aggregate Execution Status metrics from all submissions by summing up the count of each Execution Status encountered in the workflow run executions and aggregated metrics.
      * @param allSubmissions
      * @return
      */
     public static Optional<ExecutionStatusMetric> getAggregatedExecutionStatus(ExecutionsRequestBody allSubmissions) {
+        final List<RunExecution> workflowExecutions = new ArrayList<>(allSubmissions.getRunExecutions());
+        // If task executions are present, calculate the workflow RunExecution containing the overall workflow-level execution status
+        if (!allSubmissions.getTaskExecutions().isEmpty()) {
+            workflowExecutions.addAll(calculateWorkflowExecutionStatusFromTaskExecutions(allSubmissions.getTaskExecutions()));
+        }
+
         // Calculate the status count from the run executions submitted
-        Map<String, Integer> executionsStatusCount = allSubmissions.getRunExecutions().stream()
+        Map<String, Integer> executionsStatusCount = workflowExecutions.stream()
                 .map(execution -> execution.getExecutionStatus().toString())
                 .collect(groupingBy(Function.identity(), Collectors.reducing(0, e -> 1, Integer::sum)));
 
@@ -108,18 +118,54 @@ public final class AggregationHelper {
         return Optional.of(new ExecutionStatusMetric().count(statusCount));
     }
 
+    public static List<RunExecution> calculateWorkflowExecutionStatusFromTaskExecutions(List<TaskExecutions> taskExecutions) {
+        final List<TaskExecutions> taskExecutionsWithExecutionStatus = taskExecutions.stream()
+                .filter(taskExecutionsForOneWorkflowExecution -> taskExecutionsForOneWorkflowExecution.getTaskExecutions().stream()
+                        .map(RunExecution::getExecutionStatus)
+                        .allMatch(Objects::nonNull))
+                .toList();
+
+        List<RunExecution> calculatedWorkflowExecutions = new ArrayList<>();
+        for (TaskExecutions taskExecutionsForOneWorkflowExecution: taskExecutionsWithExecutionStatus) {
+            final List<RunExecution> individualTaskExecutions = taskExecutionsForOneWorkflowExecution.getTaskExecutions();
+            if (individualTaskExecutions.stream().allMatch(taskRunExecution -> taskRunExecution.getExecutionStatus() == ExecutionStatusEnum.SUCCESSFUL)) {
+                // All executions were successful
+                calculatedWorkflowExecutions.add(new RunExecution().executionStatus(ExecutionStatusEnum.SUCCESSFUL));
+            } else {
+                // If there were failed executions, set the overall status to the most frequent failed status
+                ExecutionStatusEnum mostFrequentFailedStatus = individualTaskExecutions.stream()
+                        .map(RunExecution::getExecutionStatus)
+                        .filter(taskExecutionStatus -> taskExecutionStatus != ExecutionStatusEnum.SUCCESSFUL)
+                        .collect(groupingBy(Function.identity(), Collectors.reducing(0, e -> 1, Integer::sum)))
+                        .entrySet()
+                        .stream()
+                        .max(Map.Entry.comparingByValue())
+                        .map(Map.Entry::getKey)
+                        .orElse(null);
+                calculatedWorkflowExecutions.add(new RunExecution().executionStatus(mostFrequentFailedStatus));
+            }
+        }
+        return calculatedWorkflowExecutions;
+    }
+
     /**
      * Aggregate Execution Time metrics from all submissions by calculating the minimum, maximum, and average.
      * @param allSubmissions
      * @return
      */
     public static Optional<ExecutionTimeMetric> getAggregatedExecutionTime(ExecutionsRequestBody allSubmissions) {
+        final List<RunExecution> workflowExecutions = new ArrayList<>(allSubmissions.getRunExecutions());
+        // If task executions are present, calculate the workflow RunExecution containing the overall workflow-level execution time
+        if (!allSubmissions.getTaskExecutions().isEmpty()) {
+            workflowExecutions.addAll(calculateWorkflowExecutionTimeFromTaskExecutions(allSubmissions.getTaskExecutions()));
+        }
+
         // Get aggregated Execution Time metrics that were submitted to Dockstore
         List<ExecutionTimeMetric> executionTimeMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getExecutionTime)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
-        getAggregatedExecutionTimeFromExecutions(allSubmissions.getRunExecutions()).ifPresent(executionTimeMetrics::add);
+        getAggregatedExecutionTimeFromExecutions(workflowExecutions).ifPresent(executionTimeMetrics::add);
 
         if (!executionTimeMetrics.isEmpty()) {
             List<DoubleStatistics> statistics = executionTimeMetrics.stream()
@@ -135,6 +181,46 @@ public final class AggregationHelper {
         }
 
         return Optional.empty();
+    }
+
+    public static List<RunExecution> calculateWorkflowExecutionTimeFromTaskExecutions(List<TaskExecutions> taskExecutions) {
+        final List<TaskExecutions> taskExecutionsWithExecutionTime = taskExecutions.stream()
+                .filter(taskExecutionsForOneWorkflowExecution -> taskExecutionsForOneWorkflowExecution.getTaskExecutions().stream()
+                        .map(RunExecution::getExecutionTime)
+                        .allMatch(Objects::nonNull))
+                .toList();
+
+        List<RunExecution> calculatedWorkflowExecutions = new ArrayList<>();
+        // How to calculate total time from durations if tasks can be executed concurrently?
+        // We cannot calculate the overall total time from RunExecution's executionTime, which is in ISO 8601 duration format.
+        // Calculate a best guess using RunExecution's dateExecuted, which is in ISO 8601 date format
+        for (TaskExecutions taskExecutionsForOneWorkflowExecution: taskExecutionsWithExecutionTime) {
+            final List<RunExecution> individualTaskExecutions = taskExecutionsForOneWorkflowExecution.getTaskExecutions();
+            if (individualTaskExecutions.size() == 1 && individualTaskExecutions.get(0).getExecutionTime() != null) {
+                // If there's only one task, set the workflow-level execution time to be the execution time of the single task
+                calculatedWorkflowExecutions.add(new RunExecution().executionTime(individualTaskExecutions.get(0).getExecutionTime()));
+            } else {
+                boolean containsInvalidDate = individualTaskExecutions.stream().anyMatch(execution -> checkExecutionDateISO8601Format(execution.getDateExecuted()).isEmpty());
+                if (containsInvalidDate) {
+                    continue; // Skip this set of executions, don't create a workflow RunExecution for it
+                }
+
+                // Find the earliest date executed and latest date executed to calculate a duration estimate
+                final Optional<Date> earliestTaskExecutionDate = individualTaskExecutions.stream()
+                        .map(execution -> checkExecutionDateISO8601Format(execution.getDateExecuted()).get())
+                        .min(Date::compareTo);
+                final Optional<Date> latestTaskExecutionDate = individualTaskExecutions.stream()
+                        .map(execution -> checkExecutionDateISO8601Format(execution.getDateExecuted()).get())
+                        .max(Date::compareTo);
+
+                if (earliestTaskExecutionDate.isPresent() && latestTaskExecutionDate.isPresent()) {
+                    long durationInMs = latestTaskExecutionDate.get().getTime() - earliestTaskExecutionDate.get().getTime();
+                    Duration duration = Duration.of(durationInMs, ChronoUnit.MILLIS);
+                    calculatedWorkflowExecutions.add(new RunExecution().executionTime(duration.toString()));
+                }
+            }
+        }
+        return calculatedWorkflowExecutions;
     }
 
     /**
@@ -179,12 +265,18 @@ public final class AggregationHelper {
      * @return
      */
     public static Optional<CpuMetric> getAggregatedCpu(ExecutionsRequestBody allSubmissions) {
+        final List<RunExecution> workflowExecutions = new ArrayList<>(allSubmissions.getRunExecutions());
+        // If task executions are present, calculate the workflow RunExecution containing the overall workflow-level CPU requirement
+        if (!allSubmissions.getTaskExecutions().isEmpty()) {
+            workflowExecutions.addAll(calculateWorkflowCpuRequirementsFromTaskExecutions(allSubmissions.getTaskExecutions()));
+        }
+
         // Get aggregated Execution Time metrics that were submitted to Dockstore
         List<CpuMetric> cpuMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getCpu)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
-        getAggregatedCpuFromExecutions(allSubmissions.getRunExecutions()).ifPresent(cpuMetrics::add);
+        getAggregatedCpuFromExecutions(workflowExecutions).ifPresent(cpuMetrics::add);
 
         if (!cpuMetrics.isEmpty()) {
             List<DoubleStatistics> statistics = cpuMetrics.stream()
@@ -197,6 +289,26 @@ public final class AggregationHelper {
                     .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
         }
         return Optional.empty();
+    }
+
+    public static List<RunExecution> calculateWorkflowCpuRequirementsFromTaskExecutions(List<TaskExecutions> taskExecutions) {
+        final List<TaskExecutions> taskExecutionsWithCpuRequirements = taskExecutions.stream()
+                .filter(taskExecutionsForOneWorkflowExecution -> taskExecutionsForOneWorkflowExecution.getTaskExecutions().stream()
+                        .map(RunExecution::getCpuRequirements)
+                        .allMatch(Objects::nonNull))
+                .toList();
+
+        List<RunExecution> calculatedWorkflowExecutions = new ArrayList<>();
+        for (TaskExecutions taskExecutionsForOneWorkflowExecution: taskExecutionsWithCpuRequirements) {
+            final List<RunExecution> individualTaskExecutions = taskExecutionsForOneWorkflowExecution.getTaskExecutions();
+            // Get the overall CPU requirement by getting the maximum CPU value used
+            final Optional<Integer> maxCpuRequirement = individualTaskExecutions.stream()
+                    .map(RunExecution::getCpuRequirements)
+                    .filter(Objects::nonNull)
+                    .max(Integer::compareTo);
+            maxCpuRequirement.ifPresent(integer -> calculatedWorkflowExecutions.add(new RunExecution().cpuRequirements(integer)));
+        }
+        return calculatedWorkflowExecutions;
     }
 
     /**
@@ -227,12 +339,18 @@ public final class AggregationHelper {
      * @return
      */
     public static Optional<MemoryMetric> getAggregatedMemory(ExecutionsRequestBody allSubmissions) {
+        final List<RunExecution> workflowExecutions = new ArrayList<>(allSubmissions.getRunExecutions());
+        // If task executions are present, calculate the workflow RunExecution containing the overall workflow-level memory requirement
+        if (!allSubmissions.getTaskExecutions().isEmpty()) {
+            workflowExecutions.addAll(calculateWorkflowMemoryRequirementsFromTaskExecutions(allSubmissions.getTaskExecutions()));
+        }
+
         // Get aggregated Execution Time metrics that were submitted to Dockstore
         List<MemoryMetric> memoryMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getMemory)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
-        getAggregatedMemoryFromExecutions(allSubmissions.getRunExecutions()).ifPresent(memoryMetrics::add);
+        getAggregatedMemoryFromExecutions(workflowExecutions).ifPresent(memoryMetrics::add);
 
         if (!memoryMetrics.isEmpty()) {
             List<DoubleStatistics> statistics = memoryMetrics.stream()
@@ -245,6 +363,26 @@ public final class AggregationHelper {
                     .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
         }
         return Optional.empty();
+    }
+
+    public static List<RunExecution> calculateWorkflowMemoryRequirementsFromTaskExecutions(List<TaskExecutions> taskExecutions) {
+        final List<TaskExecutions> taskExecutionsWithMemoryRequirements = taskExecutions.stream()
+                .filter(taskExecutionsForOneWorkflowExecution -> taskExecutionsForOneWorkflowExecution.getTaskExecutions().stream()
+                        .map(RunExecution::getMemoryRequirementsGB)
+                        .allMatch(Objects::nonNull))
+                .toList();
+
+        List<RunExecution> calculatedWorkflowExecutions = new ArrayList<>();
+        for (TaskExecutions taskExecutionsForOneWorkflowExecution: taskExecutionsWithMemoryRequirements) {
+            final List<RunExecution> individualTaskExecutions = taskExecutionsForOneWorkflowExecution.getTaskExecutions();
+            // Get the overall memory requirement by getting the maximum memory value used
+            final Optional<Double> maxMemoryRequirement = individualTaskExecutions.stream()
+                    .map(RunExecution::getMemoryRequirementsGB)
+                    .filter(Objects::nonNull)
+                    .max(Double::compareTo);
+            maxMemoryRequirement.ifPresent(integer -> calculatedWorkflowExecutions.add(new RunExecution().memoryRequirementsGB(maxMemoryRequirement.get())));
+        }
+        return calculatedWorkflowExecutions;
     }
 
     /**
@@ -274,12 +412,18 @@ public final class AggregationHelper {
      * @return
      */
     public static Optional<CostMetric> getAggregatedCost(ExecutionsRequestBody allSubmissions) {
+        final List<RunExecution> workflowExecutions = new ArrayList<>(allSubmissions.getRunExecutions());
+        // If task executions are present, calculate the workflow RunExecution containing the overall workflow-level cost
+        if (!allSubmissions.getTaskExecutions().isEmpty()) {
+            workflowExecutions.addAll(calculateWorkflowCostFromTaskExecutions(allSubmissions.getTaskExecutions()));
+        }
+
         // Get aggregated cost metrics that were submitted to Dockstore
         List<CostMetric> costMetrics = allSubmissions.getAggregatedExecutions().stream()
                 .map(Metrics::getCost)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
-        getAggregatedCostFromExecutions(allSubmissions.getRunExecutions()).ifPresent(costMetrics::add);
+        getAggregatedCostFromExecutions(workflowExecutions).ifPresent(costMetrics::add);
 
         if (!costMetrics.isEmpty()) {
             List<MoneyStatistics> statistics = costMetrics.stream()
@@ -294,6 +438,32 @@ public final class AggregationHelper {
                     .numberOfDataPointsForAverage(moneyStatistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
+    }
+
+    public static List<RunExecution> calculateWorkflowCostFromTaskExecutions(List<TaskExecutions> taskExecutions) {
+        final List<TaskExecutions> taskExecutionsWithCost = taskExecutions.stream()
+                .filter(taskExecutionsForOneWorkflowExecution -> taskExecutionsForOneWorkflowExecution.getTaskExecutions().stream()
+                        .map(RunExecution::getCost)
+                        .allMatch(Objects::nonNull))
+                .toList();
+
+        List<RunExecution> calculatedWorkflowExecutions = new ArrayList<>();
+        for (TaskExecutions taskExecutionsForOneWorkflowExecution: taskExecutionsWithCost) {
+            final List<RunExecution> individualTaskExecutions = taskExecutionsForOneWorkflowExecution.getTaskExecutions();
+            // Get the overall cost by summing up the cost of each task
+            List<Cost> taskCosts = individualTaskExecutions.stream()
+                    .map(RunExecution::getCost)
+                    .toList();
+            boolean containsMalformedCurrencies = taskCosts.stream().anyMatch(cost -> !isValidCurrencyCode(cost.getCurrency()));
+            // This shouldn't happen until we allow users to submit any currency they want
+            if (!containsMalformedCurrencies && !taskCosts.isEmpty()) {
+                Money totalCost = taskCosts.stream()
+                        .map(cost -> Money.of(cost.getValue(), cost.getCurrency()))
+                        .reduce(Money.of(0, CURRENCY), Money::add);
+                calculatedWorkflowExecutions.add(new RunExecution().cost(new Cost().value(totalCost.getNumber().doubleValue())));
+            }
+        }
+        return calculatedWorkflowExecutions;
     }
 
     /**

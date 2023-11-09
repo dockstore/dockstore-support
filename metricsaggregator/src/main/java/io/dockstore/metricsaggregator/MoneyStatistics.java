@@ -7,7 +7,7 @@ import org.javamoney.moneta.Money;
  * Calculates money statistics in USD using the Java Money library to preserve accuracy.
  */
 public class MoneyStatistics extends Statistics<Money> {
-    private static String currency = "USD";
+    public static final String CURRENCY = "USD";
 
     private MoneyStatistics() {
         super();
@@ -48,7 +48,7 @@ public class MoneyStatistics extends Statistics<Money> {
     public Money calculateMinimum(List<Money> dataPoints) {
         return dataPoints.stream()
                 .min(Money::compareTo)
-                .orElse(Money.of(0, currency));
+                .orElse(Money.of(0, CURRENCY));
     }
 
     /**
@@ -60,7 +60,7 @@ public class MoneyStatistics extends Statistics<Money> {
     public Money calculateMaximum(List<Money> dataPoints) {
         return dataPoints.stream()
                 .max(Money::compareTo)
-                .orElse(Money.of(0, currency));
+                .orElse(Money.of(0, CURRENCY));
     }
 
     /**
@@ -70,7 +70,7 @@ public class MoneyStatistics extends Statistics<Money> {
      */
     @Override
     public Money calculateAverage(List<Money> dataPoints) {
-        Money sum = dataPoints.stream().reduce(Money.of(0, currency), Money::add);
+        Money sum = dataPoints.stream().reduce(Money.of(0, CURRENCY), Money::add);
         return sum.divide(dataPoints.size());
     }
 
@@ -85,6 +85,6 @@ public class MoneyStatistics extends Statistics<Money> {
                     double weight = (double)stat.getNumberOfDataPoints() / (double)totalNumberOfDataPoints;
                     return stat.getAverage().multiply(weight);
                 })
-                .reduce(Money.of(0, currency), Money::add);
+                .reduce(Money.of(0, CURRENCY), Money::add);
     }
 }
