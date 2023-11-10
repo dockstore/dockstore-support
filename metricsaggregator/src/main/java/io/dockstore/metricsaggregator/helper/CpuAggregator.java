@@ -9,7 +9,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class CpuAggregator implements Aggregator<CpuMetric, Integer> {
+/**
+ * Aggregate CPU metrics by calculating the minimum, maximum, and average.
+ * @return
+ */
+public class CpuAggregator implements RunExecutionAggregator<CpuMetric, Integer> {
     @Override
     public CpuMetric getMetricFromMetrics(Metrics metrics) {
         return metrics.getCpu();

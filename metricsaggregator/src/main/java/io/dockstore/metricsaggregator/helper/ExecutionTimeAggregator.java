@@ -15,7 +15,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class ExecutionTimeAggregator implements Aggregator<ExecutionTimeMetric, String> {
+/**
+ * Aggregate Execution Time metrics by calculating the minimum, maximum, and average.
+ */
+public final class ExecutionTimeAggregator implements RunExecutionAggregator<ExecutionTimeMetric, String> {
     @Override
     public String getMetricFromRunExecution(RunExecution runExecution) {
         return runExecution.getExecutionTime();

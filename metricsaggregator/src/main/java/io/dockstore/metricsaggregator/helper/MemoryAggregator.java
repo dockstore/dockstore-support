@@ -9,7 +9,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class MemoryAggregator implements Aggregator<MemoryMetric, Double> {
+/**
+ * Aggregate Memory metrics by calculating the minimum, maximum, and average.
+ */
+public class MemoryAggregator implements RunExecutionAggregator<MemoryMetric, Double> {
     @Override
     public MemoryMetric getMetricFromMetrics(Metrics metrics) {
         return metrics.getMemory();

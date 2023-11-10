@@ -14,7 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 import org.javamoney.moneta.Money;
 
-public class CostAggregator implements Aggregator<CostMetric, Cost> {
+public class CostAggregator implements RunExecutionAggregator<CostMetric, Cost> {
     @Override
     public CostMetric getMetricFromMetrics(Metrics metrics) {
         return metrics.getCost();

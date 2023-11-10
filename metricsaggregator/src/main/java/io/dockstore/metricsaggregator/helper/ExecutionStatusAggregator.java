@@ -16,7 +16,10 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class ExecutionStatusAggregator implements Aggregator<ExecutionStatusMetric, ExecutionStatusEnum> {
+/**
+ * Aggregate Execution Status metrics by summing up the count of each Execution Status.
+ */
+public class ExecutionStatusAggregator implements RunExecutionAggregator<ExecutionStatusMetric, ExecutionStatusEnum> {
 
     @Override
     public ExecutionStatusMetric getMetricFromMetrics(Metrics metrics) {

@@ -95,12 +95,6 @@ class AggregationHelperTest {
     }
 
     @Test
-    void testCalculateWorkflowExecutionStatusFromTaskExecutions() {
-
-
-    }
-
-    @Test
     void testGetAggregatedExecutionTime() {
         ExecutionTimeAggregator executionTimeAggregator = new ExecutionTimeAggregator();
         List<RunExecution> badExecutions = new ArrayList<>();
@@ -140,6 +134,28 @@ class AggregationHelperTest {
         assertEquals(10.0, executionTimeMetric.get().getMaximum());
         assertEquals(6, executionTimeMetric.get().getAverage());
         assertEquals(3, executionTimeMetric.get().getNumberOfDataPointsForAverage());
+
+        // Aggregate submissions containing workflow run executions and task executions
+        // Submit a single workflow execution that took 10s and a single task that took 10s
+        executions = List.of(new RunExecution().executionStatus(SUCCESSFUL).executionTime(String.format("PT%dS", timeInSeconds)));
+        executionTimeMetric = executionTimeAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).taskExecutions(List.of(new TaskExecutions().taskExecutions(executions))));
+        assertTrue(executionTimeMetric.isPresent());
+        assertEquals(timeInSeconds, executionTimeMetric.get().getMinimum());
+        assertEquals(timeInSeconds, executionTimeMetric.get().getMaximum());
+        assertEquals(timeInSeconds, executionTimeMetric.get().getAverage());
+        assertEquals(2, executionTimeMetric.get().getNumberOfDataPointsForAverage()); // There should be 2 data points: 1 for the workflow execution and 1 for the list of tasks
+        // Submit a single workflow execution that took 10s and two tasks that took 10 seconds. This time, dateExecuted is provided
+        RunExecution task1 = new RunExecution().executionStatus(SUCCESSFUL).executionTime(String.format("PT%dS", timeInSeconds));
+        RunExecution task2 = new RunExecution().executionStatus(SUCCESSFUL).executionTime(String.format("PT%dS", timeInSeconds));
+        // The time difference between these two tasks is 10 seconds. When there is more than one task, the duration will be calculated from the dates executed
+        task1.setDateExecuted("2023-11-09T21:54:10.571285905Z");
+        task2.setDateExecuted("2023-11-09T21:54:20.571285905Z");
+        executionTimeMetric = executionTimeAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).taskExecutions(List.of(new TaskExecutions().taskExecutions(List.of(task1, task2)))));
+        assertTrue(executionTimeMetric.isPresent());
+        assertEquals(timeInSeconds, executionTimeMetric.get().getMinimum());
+        assertEquals(timeInSeconds, executionTimeMetric.get().getMaximum());
+        assertEquals(timeInSeconds, executionTimeMetric.get().getAverage());
+        assertEquals(2, executionTimeMetric.get().getNumberOfDataPointsForAverage()); // There should be 2 data points: 1 for the workflow execution and 1 for the list of tasks
     }
 
     @Test
@@ -177,6 +193,19 @@ class AggregationHelperTest {
         assertEquals(6.0, cpuMetric.get().getMaximum());
         assertEquals(3, cpuMetric.get().getAverage());
         assertEquals(3, cpuMetric.get().getNumberOfDataPointsForAverage());
+
+        // Aggregate submissions containing workflow run executions and task executions
+        executions = List.of(new RunExecution().executionStatus(SUCCESSFUL).cpuRequirements(cpu));
+        // Two task executions with different CPU requirements. The workflow execution calculated from these tasks should take the highest cpuRequirement from the tasks
+        TaskExecutions taskExecutions = new TaskExecutions().taskExecutions(List.of(
+                new RunExecution().executionStatus(SUCCESSFUL).cpuRequirements(1),
+                new RunExecution().executionStatus(SUCCESSFUL).cpuRequirements(4)));
+        cpuMetric = cpuAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).taskExecutions(List.of(taskExecutions)));
+        assertTrue(cpuMetric.isPresent());
+        assertEquals(1.0, cpuMetric.get().getMinimum());
+        assertEquals(4.0, cpuMetric.get().getMaximum());
+        assertEquals(2.5, cpuMetric.get().getAverage());
+        assertEquals(2, cpuMetric.get().getNumberOfDataPointsForAverage()); // Two data points: 1 from the workflow execution and 1 for the list of tasks
     }
 
     @Test
@@ -214,6 +243,20 @@ class AggregationHelperTest {
         assertEquals(6.0, memoryMetric.get().getMaximum());
         assertEquals(3.333333333333333, memoryMetric.get().getAverage());
         assertEquals(3, memoryMetric.get().getNumberOfDataPointsForAverage());
+
+        // Aggregate submissions containing workflow run executions and task executions
+        executions = List.of(new RunExecution().executionStatus(SUCCESSFUL).memoryRequirementsGB(2.0));
+        // Two task executions with different memory requirements. The workflow execution calculated from these tasks should take the highest memoryRequirementsGB from the tasks
+        TaskExecutions taskExecutions = new TaskExecutions().taskExecutions(List.of(
+                new RunExecution().executionStatus(SUCCESSFUL).memoryRequirementsGB(2.0),
+                new RunExecution().executionStatus(SUCCESSFUL).memoryRequirementsGB(4.0)));
+        memoryMetric = memoryAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).taskExecutions(List.of(taskExecutions)));
+        assertTrue(memoryMetric.isPresent());
+        assertEquals(2.0, memoryMetric.get().getMinimum());
+        assertEquals(4.0, memoryMetric.get().getMaximum());
+        assertEquals(3.0, memoryMetric.get().getAverage());
+        assertEquals(2, memoryMetric.get().getNumberOfDataPointsForAverage()); // Two data points: 1 from the workflow execution and 1 for the list of tasks
+
     }
 
     @Test
@@ -251,6 +294,20 @@ class AggregationHelperTest {
         assertEquals(6.0, costMetric.get().getMaximum());
         assertEquals(3.333333333333333, costMetric.get().getAverage());
         assertEquals(3, costMetric.get().getNumberOfDataPointsForAverage());
+
+        // Aggregate submissions containing workflow run executions and task executions
+        executions = List.of(new RunExecution().executionStatus(SUCCESSFUL).cost(new Cost().value(2.00)));
+        // Two task executions with different memory requirements. The workflow execution calculated from these tasks should have the sum of the cost of all tasks
+        TaskExecutions taskExecutions = new TaskExecutions().taskExecutions(List.of(
+                new RunExecution().executionStatus(SUCCESSFUL).cost(new Cost().value(2.00)),
+                new RunExecution().executionStatus(SUCCESSFUL).cost(new Cost().value(4.00))
+        ));
+        costMetric = costAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).taskExecutions(List.of(taskExecutions)));
+        assertTrue(costMetric.isPresent());
+        assertEquals(2.0, costMetric.get().getMinimum());
+        assertEquals(6.0, costMetric.get().getMaximum()); // The max is the cost of the two tasks summed together
+        assertEquals(4.0, costMetric.get().getAverage());
+        assertEquals(2, costMetric.get().getNumberOfDataPointsForAverage()); // Two data points: 1 from the workflow execution and 1 for the list of tasks
     }
 
     @Test
