@@ -26,7 +26,7 @@ public class MemoryAggregator implements RunExecutionAggregator<MemoryMetric, Do
     @Override
     public Optional<RunExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun) {
         final List<RunExecution> taskExecutions = taskExecutionsForOneWorkflowRun.getTaskExecutions();
-        if (taskExecutions.stream().map(RunExecution::getMemoryRequirementsGB).allMatch(Objects::nonNull)) {
+        if (taskExecutions != null && taskExecutions.stream().map(RunExecution::getMemoryRequirementsGB).allMatch(Objects::nonNull)) {
             // Get the overall memory requirement by getting the maximum memory value used
             final Optional<Double> maxMemoryRequirement = taskExecutions.stream()
                     .map(RunExecution::getMemoryRequirementsGB)

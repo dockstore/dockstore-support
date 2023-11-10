@@ -34,7 +34,7 @@ public class ExecutionStatusAggregator implements RunExecutionAggregator<Executi
     @Override
     public Optional<RunExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun) {
         final List<RunExecution> taskExecutions = taskExecutionsForOneWorkflowRun.getTaskExecutions();
-        if (taskExecutions.stream().map(RunExecution::getExecutionStatus).allMatch(Objects::nonNull)) {
+        if (taskExecutions != null && taskExecutions.stream().map(RunExecution::getExecutionStatus).allMatch(Objects::nonNull)) {
             if (taskExecutions.stream().allMatch(taskRunExecution -> taskRunExecution.getExecutionStatus() == ExecutionStatusEnum.SUCCESSFUL)) {
                 // All executions were successful
                 return Optional.of(new RunExecution().executionStatus(ExecutionStatusEnum.SUCCESSFUL));

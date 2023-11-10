@@ -27,7 +27,7 @@ public class CpuAggregator implements RunExecutionAggregator<CpuMetric, Integer>
     @Override
     public Optional<RunExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun) {
         final List<RunExecution> taskExecutions = taskExecutionsForOneWorkflowRun.getTaskExecutions();
-        if (taskExecutions.stream().map(RunExecution::getCpuRequirements).allMatch(Objects::nonNull)) {
+        if (taskExecutions != null && taskExecutions.stream().map(RunExecution::getCpuRequirements).allMatch(Objects::nonNull)) {
             // Get the overall CPU requirement by getting the maximum CPU value used
             final Optional<Integer> maxCpuRequirement = taskExecutions.stream()
                     .map(RunExecution::getCpuRequirements)

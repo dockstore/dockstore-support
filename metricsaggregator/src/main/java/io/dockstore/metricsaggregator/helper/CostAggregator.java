@@ -28,7 +28,7 @@ public class CostAggregator implements RunExecutionAggregator<CostMetric, Cost> 
     @Override
     public Optional<RunExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun) {
         final List<RunExecution> taskExecutions = taskExecutionsForOneWorkflowRun.getTaskExecutions();
-        if (taskExecutions.stream().map(RunExecution::getCost).allMatch(Objects::nonNull)) {
+        if (taskExecutions != null && taskExecutions.stream().map(RunExecution::getCost).allMatch(Objects::nonNull)) {
             // Get the overall cost by summing up the cost of each task
             List<Cost> taskCosts = taskExecutions.stream()
                     .map(RunExecution::getCost)

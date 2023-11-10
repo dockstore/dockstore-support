@@ -32,7 +32,7 @@ public final class ExecutionTimeAggregator implements RunExecutionAggregator<Exe
     @Override
     public Optional<RunExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun) {
         final List<RunExecution> taskExecutions = taskExecutionsForOneWorkflowRun.getTaskExecutions();
-        if (taskExecutions.stream().map(RunExecution::getExecutionTime).allMatch(Objects::nonNull)) {
+        if (taskExecutions != null && taskExecutions.stream().map(RunExecution::getExecutionTime).allMatch(Objects::nonNull)) {
             // We cannot calculate the overall total time from RunExecution's executionTime, which is in ISO 8601 duration format.
             // Calculate a best guess using RunExecution's dateExecuted, which is in ISO 8601 date format
             if (taskExecutions.size() == 1 && taskExecutions.get(0).getExecutionTime() != null) {
