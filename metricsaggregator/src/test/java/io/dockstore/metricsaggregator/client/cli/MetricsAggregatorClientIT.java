@@ -54,6 +54,7 @@ import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
+import io.dockstore.openapi.client.model.TaskExecutions;
 import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.openapi.client.model.ValidatorInfo;
 import io.dockstore.openapi.client.model.ValidatorVersionInfo;
@@ -138,8 +139,8 @@ class MetricsAggregatorClientIT {
         String id = "#workflow/" + workflow.getFullWorkflowPath();
         String versionId = version.getName();
 
-        // A successful run execution that ran for 5 minutes, requires 2 CPUs and 2 GBs of memory
-        List<RunExecution> runExecutions = List.of(createRunExecution(SUCCESSFUL, "PT5M", 2, 2.0, new Cost().value(2.00), "us-central1"));
+        // A successful workflow run execution that ran for 5 minutes, requires 2 CPUs and 2 GBs of memory
+        List<RunExecution> workflowExecutions = List.of(createRunExecution(SUCCESSFUL, "PT5M", 2, 2.0, new Cost().value(2.00), "us-central1"));
         // A successful miniwdl validation
         final String validatorToolVersion1 = "1.0";
         ValidationExecution validationExecution1 = createValidationExecution(MINIWDL, validatorToolVersion1, true);
@@ -147,8 +148,8 @@ class MetricsAggregatorClientIT {
         ValidationExecution validationExecution2 = createValidationExecution(WOMTOOL, validatorToolVersion2, false);
 
         // Submit metrics for two platforms
-        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(runExecutions).validationExecutions(List.of(validationExecution1)), platform1, id, versionId, "");
-        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(runExecutions).validationExecutions(List.of(validationExecution2)), platform2, id, versionId, "");
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(workflowExecutions).validationExecutions(List.of(validationExecution1)), platform1, id, versionId, "");
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(workflowExecutions).validationExecutions(List.of(validationExecution2)), platform2, id, versionId, "");
         int expectedNumberOfPlatforms = 3; // 2 for platform1 and platform2, and 1 for ALL platforms
         // Aggregate metrics
         MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
@@ -167,11 +168,11 @@ class MetricsAggregatorClientIT {
         ValidatorInfo validationInfo;
 
         // A failed run execution that ran for 1 second, requires 2 CPUs and 4.5 GBs of memory
-        runExecutions = List.of(createRunExecution(FAILED_RUNTIME_INVALID, "PT1S", 4, 4.5, new Cost().value(2.00), "us-central1"));
+        workflowExecutions = List.of(createRunExecution(FAILED_RUNTIME_INVALID, "PT1S", 4, 4.5, new Cost().value(2.00), "us-central1"));
         // A failed miniwdl validation for the same validator version
         List<ValidationExecution> validationExecutions = List.of(createValidationExecution(MINIWDL, "1.0", false));
-        ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(runExecutions).validationExecutions(validationExecutions);
-        // Submit metrics for the same workflow version for platform 2
+        ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(workflowExecutions).validationExecutions(validationExecutions);
+        // Submit metrics for the same workflow version for platform 1
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, id, versionId, "");
         // Aggregate metrics
         MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
@@ -224,6 +225,52 @@ class MetricsAggregatorClientIT {
         assertEquals(2, mostRecentValidationVersionInfo.getNumberOfRuns());
         assertEquals(50d, validationInfo.getPassingRate());
         assertEquals(2, validationInfo.getNumberOfRuns());
+
+        // Submit two TaskExecutions, each one representing the task metrics for a single workflow execution
+        // A successful task execution that ran for 11 seconds, requires 6 CPUs and 5.5 GBs of memory. Signifies that this workflow execution only executed one task
+        TaskExecutions taskExecutions = new TaskExecutions().taskExecutions(List.of(createRunExecution(SUCCESSFUL, "PT11S", 6, 5.5, new Cost().value(2.00), "us-central1")));
+        executionsRequestBody = new ExecutionsRequestBody().taskExecutions(List.of(taskExecutions));
+        // Submit metrics for the same workflow version for platform 1
+        extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, id, versionId, "");
+        // Aggregate metrics
+        MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
+        // Get workflow version to verify aggregated metrics
+        workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
+        version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
+        assertNotNull(version);
+        assertEquals(expectedNumberOfPlatforms, version.getMetricsByPlatform().size());
+        platform1Metrics = version.getMetricsByPlatform().get(platform1);
+
+        // This version now has three submissions of execution metrics data. Verify that the aggregated metrics are correct
+        assertEquals(2, platform1Metrics.getExecutionStatusCount().getNumberOfSuccessfulExecutions());
+        assertEquals(1, platform1Metrics.getExecutionStatusCount().getNumberOfFailedExecutions());
+        assertEquals(2, platform1Metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()));
+        assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(FAILED_RUNTIME_INVALID.name()));
+        assertFalse(platform1Metrics.getExecutionStatusCount().getCount().containsKey(FAILED_SEMANTIC_INVALID.name()));
+
+        assertEquals(3, platform1Metrics.getCpu().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1Metrics.getCpu().getMinimum());
+        assertEquals(6, platform1Metrics.getCpu().getMaximum());
+        assertEquals(4, platform1Metrics.getCpu().getAverage());
+        assertNull(platform1Metrics.getCpu().getUnit());
+
+        assertEquals(3, platform1Metrics.getMemory().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1Metrics.getMemory().getMinimum());
+        assertEquals(5.5, platform1Metrics.getMemory().getMaximum());
+        assertEquals(4, platform1Metrics.getMemory().getAverage());
+        assertNotNull(platform1Metrics.getMemory().getUnit());
+
+        assertEquals(3, platform1Metrics.getCost().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1Metrics.getCost().getMinimum());
+        assertEquals(2, platform1Metrics.getCost().getMaximum());
+        assertEquals(2, platform1Metrics.getCost().getAverage());
+        assertNotNull(platform1Metrics.getCost().getUnit());
+
+        assertEquals(3, platform1Metrics.getExecutionTime().getNumberOfDataPointsForAverage());
+        assertEquals(1, platform1Metrics.getExecutionTime().getMinimum());
+        assertEquals(300, platform1Metrics.getExecutionTime().getMaximum());
+        assertEquals(104, platform1Metrics.getExecutionTime().getAverage());
+        assertNotNull(platform1Metrics.getExecutionTime().getUnit());
 
         testOverallAggregatedMetrics(version, validatorToolVersion1, validatorToolVersion2, platform1Metrics);
     }
@@ -290,28 +337,31 @@ class MetricsAggregatorClientIT {
         // Verify that the metrics aggregated across ALL platforms are correct
         Metrics overallMetrics = version.getMetricsByPlatform().get(Partner.ALL.name());
         assertNotNull(overallMetrics);
-        assertEquals(2, overallMetrics.getExecutionStatusCount().getNumberOfSuccessfulExecutions());
+        assertEquals(3, overallMetrics.getExecutionStatusCount().getNumberOfSuccessfulExecutions());
         assertEquals(1, overallMetrics.getExecutionStatusCount().getNumberOfFailedExecutions());
-        assertEquals(2, overallMetrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()));
+        assertEquals(3, overallMetrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()));
         assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(FAILED_RUNTIME_INVALID.name()));
         assertFalse(overallMetrics.getExecutionStatusCount().getCount().containsKey(FAILED_SEMANTIC_INVALID.name()));
 
-        assertEquals(3, overallMetrics.getCpu().getNumberOfDataPointsForAverage());
+        // The CPU values submitted were 2, 2, 4, 6
+        assertEquals(4, overallMetrics.getCpu().getNumberOfDataPointsForAverage());
         assertEquals(2, overallMetrics.getCpu().getMinimum());
-        assertEquals(4, overallMetrics.getCpu().getMaximum());
-        assertEquals(2.6666666666666665, overallMetrics.getCpu().getAverage());
+        assertEquals(6, overallMetrics.getCpu().getMaximum());
+        assertEquals(3.5, overallMetrics.getCpu().getAverage());
         assertNull(overallMetrics.getCpu().getUnit());
 
-        assertEquals(3, overallMetrics.getMemory().getNumberOfDataPointsForAverage());
+        // The memory values submitted were 2, 2, 4.5, 5.5
+        assertEquals(4, overallMetrics.getMemory().getNumberOfDataPointsForAverage());
         assertEquals(2, overallMetrics.getMemory().getMinimum());
-        assertEquals(4.5, overallMetrics.getMemory().getMaximum());
-        assertEquals(2.833333333333333, overallMetrics.getMemory().getAverage());
+        assertEquals(5.5, overallMetrics.getMemory().getMaximum());
+        assertEquals(3.5, overallMetrics.getMemory().getAverage());
         assertNotNull(overallMetrics.getMemory().getUnit());
 
-        assertEquals(3, overallMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
+        // The execution times submitted were PT5M, PT5M, PT1S, PT11S
+        assertEquals(4, overallMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
         assertEquals(1, overallMetrics.getExecutionTime().getMinimum());
         assertEquals(300, overallMetrics.getExecutionTime().getMaximum());
-        assertEquals(200.33333333333331, overallMetrics.getExecutionTime().getAverage());
+        assertEquals(153, overallMetrics.getExecutionTime().getAverage());
         assertNotNull(overallMetrics.getExecutionTime().getUnit());
 
         assertEquals(2, overallMetrics.getValidationStatus().getValidatorTools().size());
