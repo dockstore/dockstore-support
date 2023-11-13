@@ -126,6 +126,11 @@ public class TopicGeneratorClient {
         return apiClient;
     }
 
+    /**
+     * Generates a topic for public entries by asking the GPT-3.5-turbo-16k AI model to summarize the content of the entry's primary descriptor.
+     * @param topicGeneratorConfig
+     * @param entriesCsvRecords
+     */
     private void generateTopics(TopicGeneratorConfig topicGeneratorConfig, Iterable<CSVRecord> entriesCsvRecords) {
         final ApiClient apiClient = setupApiClient(topicGeneratorConfig.dockstoreServerUrl());
         final Ga4Ghv20Api ga4Ghv20Api = new Ga4Ghv20Api(apiClient);
@@ -165,6 +170,16 @@ public class TopicGeneratorClient {
         }
     }
 
+    /**
+     * Generates a topic for the entry by asking the GPT-3.5-turbo-16k AI model to summarize the contents of the entry's primary descriptor.
+     * Records the result in a CSV file.
+     * @param openAiService
+     * @param csvPrinter
+     * @param trsId
+     * @param versionId
+     * @param entryType
+     * @param descriptorContent
+     */
     private void getAiGeneratedTopicAndRecordToCsv(OpenAiService openAiService, CSVPrinter csvPrinter, String trsId, String versionId, String entryType, String descriptorContent) {
         // A character limit is specified but ChatGPT doesn't follow it strictly
         final String systemPrompt = "You will be provided with a " + entryType + ", and your task is to summarize it in one sentence where the first word is a verb. Use a maximum of 150 characters.";

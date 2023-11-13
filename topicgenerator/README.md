@@ -1,6 +1,6 @@
 # Topic Generator
 
-This is a Java program that generates topics for public Dockstore entries and puts the results into the webservice using OpenAI's gpt-3.5-turbo-16k AI model.
+This is a Java program that generates topics for public Dockstore entries using OpenAI's gpt-3.5-turbo-16k AI model.
 
 The [entries.csv](entries.csv) file contains the TRS ID and default versions of public Dockstore entries to generate topics for. The [results](results) directory contains the generated topics for those entries from running the topic generator. 
 
