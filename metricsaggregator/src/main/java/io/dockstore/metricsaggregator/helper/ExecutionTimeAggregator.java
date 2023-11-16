@@ -10,6 +10,7 @@ import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -39,7 +40,7 @@ public final class ExecutionTimeAggregator implements RunExecutionAggregator<Exe
                 // If there's only one task, set the workflow-level execution time to be the execution time of the single task
                 return Optional.of(new RunExecution().executionTime(taskExecutions.get(0).getExecutionTime()));
 
-                // Calculate a duration if all task executions have a valid dateExecuted
+            // Calculate a duration if all task executions have a valid dateExecuted
             } else if (taskExecutions.stream().allMatch(execution -> checkExecutionDateISO8601Format(execution.getDateExecuted()).isPresent())) {
                 // Find the earliest date executed and latest date executed to calculate a duration estimate
                 final Optional<Date> earliestTaskExecutionDate = taskExecutions.stream()
@@ -48,10 +49,18 @@ public final class ExecutionTimeAggregator implements RunExecutionAggregator<Exe
                 final Optional<Date> latestTaskExecutionDate = taskExecutions.stream()
                         .map(execution -> checkExecutionDateISO8601Format(execution.getDateExecuted()).get())
                         .max(Date::compareTo);
+                final Optional<RunExecution> latestTaskExecuted = taskExecutions.stream()
+                        .max(Comparator.comparing(execution -> checkExecutionDateISO8601Format(execution.getDateExecuted()).get(), Date::compareTo));
 
-                if (earliestTaskExecutionDate.isPresent() && latestTaskExecutionDate.isPresent()) {
+                if (earliestTaskExecutionDate.isPresent() && latestTaskExecutionDate.isPresent() && latestTaskExecuted.isPresent()) {
+                    // Execution dates are the start dates, calculate a rough duration from the execution dates of the earliest and latest tasks
                     long durationInMs = latestTaskExecutionDate.get().getTime() - earliestTaskExecutionDate.get().getTime();
                     Duration duration = Duration.of(durationInMs, ChronoUnit.MILLIS);
+                    // If the execution time of the latest task is present, add that to the duration to account for the amount of time the last task took to execute
+                    Optional<Duration> latestTaskExecutionTime = checkExecutionTimeISO8601Format(latestTaskExecuted.get().getExecutionTime());
+                    if (latestTaskExecutionTime.isPresent()) {
+                        duration = duration.plus(latestTaskExecutionTime.get());
+                    }
                     return Optional.of(new RunExecution().executionTime(duration.toString()));
                 }
             }

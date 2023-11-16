@@ -43,8 +43,8 @@ class ExecutionTimeAggregatorTest {
         );
         workflowExecution = EXECUTION_TIME_AGGREGATOR.getWorkflowExecutionFromTaskExecutions(taskExecutions);
         assertTrue(workflowExecution.isPresent());
-        // Should be 20 seconds because the difference between the earliest and latest date executed is 20 seconds
-        assertEquals("PT20S", workflowExecution.get().getExecutionTime());
+        // Should be 30 seconds because the difference between the earliest and latest date executed is 20 seconds and the duration of the last task is 10s
+        assertEquals("PT30S", workflowExecution.get().getExecutionTime());
     }
 
     /**

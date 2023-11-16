@@ -147,14 +147,14 @@ class AggregationHelperTest {
         // Submit a single workflow execution that took 10s and two tasks that took 10 seconds. This time, dateExecuted is provided
         RunExecution task1 = new RunExecution().executionStatus(SUCCESSFUL).executionTime(String.format("PT%dS", timeInSeconds));
         RunExecution task2 = new RunExecution().executionStatus(SUCCESSFUL).executionTime(String.format("PT%dS", timeInSeconds));
-        // The time difference between these two tasks is 10 seconds. When there is more than one task, the duration will be calculated from the dates executed
+        // The time difference between these two tasks is 10 seconds. When there is more than one task, the duration will be calculated from the dates executed, plus the duration of the last task, which is 10s
         task1.setDateExecuted("2023-11-09T21:54:10.571285905Z");
         task2.setDateExecuted("2023-11-09T21:54:20.571285905Z");
         executionTimeMetric = executionTimeAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).taskExecutions(List.of(new TaskExecutions().taskExecutions(List.of(task1, task2)))));
         assertTrue(executionTimeMetric.isPresent());
-        assertEquals(timeInSeconds, executionTimeMetric.get().getMinimum());
-        assertEquals(timeInSeconds, executionTimeMetric.get().getMaximum());
-        assertEquals(timeInSeconds, executionTimeMetric.get().getAverage());
+        assertEquals(10, executionTimeMetric.get().getMinimum(), "The minimum is from the workflow execution");
+        assertEquals(20, executionTimeMetric.get().getMaximum(), "The maximum is from the workflow execution calculated from the two tasks");
+        assertEquals(15, executionTimeMetric.get().getAverage());
         assertEquals(2, executionTimeMetric.get().getNumberOfDataPointsForAverage()); // There should be 2 data points: 1 for the workflow execution and 1 for the list of tasks
     }
 
