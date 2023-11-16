@@ -45,6 +45,7 @@
         <skip-metricsaggregator-ITs>true</skip-metricsaggregator-ITs>
         <skip-tooltester-ITs>true</skip-tooltester-ITs>
         <skip-toolbackup-ITs>true</skip-toolbackup-ITs>
+        <skip-topicgenerator-ITs>true</skip-topicgenerator-ITs>
 
         <!-- for sonarcloud -->
         <sonar.projectKey>dockstore_dockstore-support</sonar.projectKey>
@@ -126,6 +127,8 @@
         <module>tooltester</module>
         <module>dockstore-support-reports</module>
         <module>jira_automation</module>
+        <module>topicgenerator</module>
+        <module>utils</module>
     </modules>
 
 
