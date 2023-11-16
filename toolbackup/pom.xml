@@ -229,8 +229,14 @@
             <artifactId>hk2-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>jakarta.xml.bind</groupId>
-            <artifactId>jakarta.xml.bind-api</artifactId>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>2.1.1</version>
         </dependency>
     </dependencies>
 
@@ -353,7 +359,8 @@
                             <ignoreNonCompile>true</ignoreNonCompile>
                             <usedDependencies>
                                 <usedDependency>org.glassfish.hk2:hk2-api</usedDependency>
-                                <usedDependency>jakarta.xml.bind:jakarta.xml.bind-api</usedDependency>
+                                <usedDependency>javax.xml.bind:jaxb-api</usedDependency>
+                                <usedDependency>javax.ws.rs:javax.ws.rs-api</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>
