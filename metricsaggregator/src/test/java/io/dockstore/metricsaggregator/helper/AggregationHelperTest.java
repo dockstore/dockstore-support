@@ -122,12 +122,12 @@ class AggregationHelperTest {
         assertEquals(1, executionTimeMetric.get().getNumberOfDataPointsForAverage());
 
         // Aggregate submissions containing run executions and aggregated metrics
-        ExecutionTimeMetric submittedExecutionTimeMetric = new ExecutionTimeMetric();
-        submittedExecutionTimeMetric.setMinimum(2.0);
-        submittedExecutionTimeMetric.setMaximum(6.0);
-        submittedExecutionTimeMetric.setAverage(4.0);
-        submittedExecutionTimeMetric.setNumberOfDataPointsForAverage(2);
-        Metrics submittedAggregatedMetrics = new Metrics().executionTime(submittedExecutionTimeMetric);
+        Metrics submittedAggregatedMetrics = new Metrics()
+                .executionTime(new ExecutionTimeMetric()
+                        .minimum(2.0)
+                        .maximum(6.0)
+                        .average(4.0)
+                        .numberOfDataPointsForAverage(2));
         executionTimeMetric = executionTimeAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(executionTimeMetric.isPresent());
         assertEquals(2.0, executionTimeMetric.get().getMinimum());
@@ -181,12 +181,12 @@ class AggregationHelperTest {
         assertEquals(1, cpuMetric.get().getNumberOfDataPointsForAverage());
 
         // Aggregate submissions containing run executions and aggregated metrics
-        CpuMetric submittedCpuMetric = new CpuMetric();
-        submittedCpuMetric.setMinimum(2.0);
-        submittedCpuMetric.setMaximum(6.0);
-        submittedCpuMetric.setAverage(4.0);
-        submittedCpuMetric.setNumberOfDataPointsForAverage(2);
-        Metrics submittedAggregatedMetrics = new Metrics().cpu(submittedCpuMetric);
+        Metrics submittedAggregatedMetrics = new Metrics()
+                .cpu(new CpuMetric()
+                        .minimum(2.0)
+                        .maximum(6.0)
+                        .average(4.0)
+                        .numberOfDataPointsForAverage(2));
         cpuMetric = cpuAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(cpuMetric.isPresent());
         assertEquals(1.0, cpuMetric.get().getMinimum());
@@ -231,12 +231,12 @@ class AggregationHelperTest {
         assertEquals(1, memoryMetric.get().getNumberOfDataPointsForAverage());
 
         // Aggregate submissions containing run executions and aggregated metrics
-        MemoryMetric submittedMemoryMetric = new MemoryMetric();
-        submittedMemoryMetric.setMinimum(2.0);
-        submittedMemoryMetric.setMaximum(6.0);
-        submittedMemoryMetric.setAverage(4.0);
-        submittedMemoryMetric.setNumberOfDataPointsForAverage(2);
-        Metrics submittedAggregatedMetrics = new Metrics().memory(submittedMemoryMetric);
+        Metrics submittedAggregatedMetrics = new Metrics()
+                .memory(new MemoryMetric()
+                        .minimum(2.0)
+                        .maximum(6.0)
+                        .average(4.0)
+                        .numberOfDataPointsForAverage(2));
         memoryMetric = memoryAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(memoryMetric.isPresent());
         assertEquals(2.0, memoryMetric.get().getMinimum());
@@ -282,12 +282,12 @@ class AggregationHelperTest {
         assertEquals(1, costMetric.get().getNumberOfDataPointsForAverage());
 
         // Aggregate submissions containing run executions and aggregated metrics
-        CostMetric submittedCostMetric = new CostMetric();
-        submittedCostMetric.setMinimum(2.0);
-        submittedCostMetric.setMaximum(6.0);
-        submittedCostMetric.setAverage(4.0);
-        submittedCostMetric.setNumberOfDataPointsForAverage(2);
-        Metrics submittedAggregatedMetrics = new Metrics().cost(submittedCostMetric);
+        Metrics submittedAggregatedMetrics = new Metrics()
+                .cost(new CostMetric()
+                        .minimum(2.00)
+                        .maximum(6.00)
+                        .average(4.00)
+                        .numberOfDataPointsForAverage(2));
         costMetric = costAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(costMetric.isPresent());
         assertEquals(2.0, costMetric.get().getMinimum());

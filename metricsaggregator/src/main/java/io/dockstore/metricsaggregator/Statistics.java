@@ -1,6 +1,5 @@
 package io.dockstore.metricsaggregator;
 
-import io.dockstore.openapi.client.model.StatisticMetric;
 import java.util.List;
 
 /**
@@ -34,7 +33,6 @@ public abstract class Statistics<T> {
     public abstract T calculateMaximum(List<T> dataPoints);
     public abstract T calculateAverage(List<T> dataPoints);
     public abstract T calculateWeightedAverage(List<? extends Statistics<T>> statistics);
-    public abstract Double getAsDouble(T data);
 
     public T getMinimum() {
         return minimum;
@@ -102,19 +100,5 @@ public abstract class Statistics<T> {
                 .map(Statistics::getNumberOfDataPoints)
                 .mapToInt(Integer::intValue)
                 .sum();
-    }
-
-    /**
-     * Sets the minimum, maximum, average, and numberOfDataPointsForAverage for a StatisticMetric
-     * @param statisticMetric
-     * @return
-     * @param <M>
-     */
-    public <M extends StatisticMetric> M getStatisticMetric(M statisticMetric) {
-        statisticMetric.setMinimum(getAsDouble(minimum));
-        statisticMetric.setMaximum(getAsDouble(maximum));
-        statisticMetric.setAverage(getAsDouble(average));
-        statisticMetric.setNumberOfDataPointsForAverage(getNumberOfDataPoints());
-        return statisticMetric;
     }
 }

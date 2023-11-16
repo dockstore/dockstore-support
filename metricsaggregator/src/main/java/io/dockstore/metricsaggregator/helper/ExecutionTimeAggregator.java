@@ -79,7 +79,11 @@ public final class ExecutionTimeAggregator implements RunExecutionAggregator<Exe
 
         if (!executionTimesInSeconds.isEmpty()) {
             DoubleStatistics statistics = new DoubleStatistics(executionTimesInSeconds);
-            return Optional.of(statistics.getStatisticMetric(new ExecutionTimeMetric()));
+            return Optional.of(new ExecutionTimeMetric()
+                    .minimum(statistics.getMinimum())
+                    .maximum(statistics.getMaximum())
+                    .average(statistics.getAverage())
+                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
@@ -92,7 +96,11 @@ public final class ExecutionTimeAggregator implements RunExecutionAggregator<Exe
                     .toList();
 
             DoubleStatistics newStatistic = DoubleStatistics.createFromStatistics(statistics);
-            return Optional.of(newStatistic.getStatisticMetric(new ExecutionTimeMetric()));
+            return Optional.of(new ExecutionTimeMetric()
+                    .minimum(newStatistic.getMinimum())
+                    .maximum(newStatistic.getMaximum())
+                    .average(newStatistic.getAverage())
+                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }

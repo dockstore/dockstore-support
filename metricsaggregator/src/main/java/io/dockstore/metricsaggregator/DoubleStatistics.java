@@ -111,9 +111,4 @@ public class DoubleStatistics extends Statistics<Double> {
                 .mapToDouble(Double::doubleValue)
                 .sum();
     }
-
-    @Override
-    public Double getAsDouble(Double data) {
-        return data; // already a double
-    }
 }
