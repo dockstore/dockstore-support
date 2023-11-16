@@ -44,11 +44,7 @@ public class MemoryAggregator implements RunExecutionAggregator<MemoryMetric, Do
         List<Double> memoryRequirements = getNonNullMetricsFromRunExecutions(workflowExecutions);
         if (!memoryRequirements.isEmpty()) {
             DoubleStatistics statistics = new DoubleStatistics(memoryRequirements);
-            return Optional.of(new MemoryMetric()
-                    .minimum(statistics.getMinimum())
-                    .maximum(statistics.getMaximum())
-                    .average(statistics.getAverage())
-                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
+            return Optional.of(statistics.getStatisticMetric(new MemoryMetric()));
         }
         return Optional.empty();
     }
@@ -59,11 +55,9 @@ public class MemoryAggregator implements RunExecutionAggregator<MemoryMetric, Do
             List<DoubleStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
             DoubleStatistics newStatistic = DoubleStatistics.createFromStatistics(statistics);
-            return Optional.of(new MemoryMetric()
-                    .minimum(newStatistic.getMinimum())
-                    .maximum(newStatistic.getMaximum())
-                    .average(newStatistic.getAverage())
-                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
+            MemoryMetric memoryMetric = new MemoryMetric();
+            newStatistic.getStatisticMetric(memoryMetric);
+            return Optional.of(memoryMetric);
         }
         return Optional.empty();
     }

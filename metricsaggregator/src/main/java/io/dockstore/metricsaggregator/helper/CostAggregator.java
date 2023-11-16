@@ -60,11 +60,7 @@ public class CostAggregator implements RunExecutionAggregator<CostMetric, Cost> 
                     .map(cost -> Money.of(cost.getValue(), cost.getCurrency()))
                     .toList();
             MoneyStatistics statistics = new MoneyStatistics(costs);
-            return Optional.of(new CostMetric()
-                    .minimum(statistics.getMinimum().getNumber().doubleValue())
-                    .maximum(statistics.getMaximum().getNumber().doubleValue())
-                    .average(statistics.getAverage().getNumber().doubleValue())
-                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
+            return Optional.of(statistics.getStatisticMetric(new CostMetric()));
         }
         return Optional.empty();
     }
@@ -80,11 +76,7 @@ public class CostAggregator implements RunExecutionAggregator<CostMetric, Cost> 
                             metric.getNumberOfDataPointsForAverage()))
                     .toList();
             MoneyStatistics moneyStatistics = MoneyStatistics.createFromStatistics(statistics);
-            return Optional.of(new CostMetric()
-                    .minimum(moneyStatistics.getMinimum().getNumber().doubleValue())
-                    .maximum(moneyStatistics.getMaximum().getNumber().doubleValue())
-                    .average(moneyStatistics.getAverage().getNumber().doubleValue())
-                    .numberOfDataPointsForAverage(moneyStatistics.getNumberOfDataPoints()));
+            return Optional.of(moneyStatistics.getStatisticMetric(new CostMetric()));
         }
         return Optional.empty();
     }

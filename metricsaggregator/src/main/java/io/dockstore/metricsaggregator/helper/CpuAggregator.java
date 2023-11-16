@@ -47,11 +47,7 @@ public class CpuAggregator implements RunExecutionAggregator<CpuMetric, Integer>
                 .toList();
         if (!cpuRequirements.isEmpty()) {
             DoubleStatistics statistics = new DoubleStatistics(cpuRequirements);
-            return Optional.of(new CpuMetric()
-                    .minimum(statistics.getMinimum())
-                    .maximum(statistics.getMaximum())
-                    .average(statistics.getAverage())
-                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
+            return Optional.of(statistics.getStatisticMetric(new CpuMetric()));
         }
         return Optional.empty();
     }
@@ -62,11 +58,7 @@ public class CpuAggregator implements RunExecutionAggregator<CpuMetric, Integer>
             List<DoubleStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
             DoubleStatistics newStatistic = DoubleStatistics.createFromStatistics(statistics);
-            return Optional.of(new CpuMetric()
-                    .minimum(newStatistic.getMinimum())
-                    .maximum(newStatistic.getMaximum())
-                    .average(newStatistic.getAverage())
-                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
+            return Optional.of(newStatistic.getStatisticMetric(new CpuMetric()));
         }
         return Optional.empty();
     }

@@ -87,4 +87,9 @@ public class MoneyStatistics extends Statistics<Money> {
                 })
                 .reduce(Money.of(0, CURRENCY), Money::add);
     }
+
+    @Override
+    public Double getAsDouble(Money data) {
+        return data.getNumber().doubleValue();
+    }
 }
