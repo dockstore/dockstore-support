@@ -234,11 +234,6 @@
             <artifactId>jaxb-api</artifactId>
             <version>2.3.1</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>javax.ws.rs</groupId>-->
-<!--            <artifactId>javax.ws.rs-api</artifactId>-->
-<!--            <version>2.1.1</version>-->
-<!--        </dependency>-->
 
     </dependencies>
 
@@ -362,7 +357,6 @@
                             <usedDependencies>
                                 <usedDependency>org.glassfish.hk2:hk2-api</usedDependency>
                                 <usedDependency>javax.xml.bind:jaxb-api</usedDependency>
-<!--                                <usedDependency>javax.ws.rs:javax.ws.rs-api</usedDependency>-->
                             </usedDependencies>
                         </configuration>
                     </execution>
