@@ -29,6 +29,7 @@ import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
+import io.dockstore.openapi.client.model.TaskExecutions;
 import io.dockstore.openapi.client.model.ValidationExecution;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -132,6 +133,7 @@ public class MetricsAggregatorS3Client {
     private ExecutionsRequestBody getExecutions(String toolId, String versionName, String platform) throws IOException, JsonSyntaxException {
         List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(toolId, versionName, Partner.valueOf(platform));
         List<RunExecution> runExecutionsFromAllSubmissions = new ArrayList<>();
+        List<TaskExecutions> taskExecutionsFromAllSubmissions = new ArrayList<>();
         List<ValidationExecution> validationExecutionsFromAllSubmissions = new ArrayList<>();
         List<Metrics> aggregatedExecutionsFromAllSubmissions = new ArrayList<>();
 
@@ -140,12 +142,14 @@ public class MetricsAggregatorS3Client {
                     metricsData.platform(), metricsData.fileName());
             ExecutionsRequestBody executionsFromOneSubmission = GSON.fromJson(fileContent, ExecutionsRequestBody.class);
             runExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getRunExecutions());
+            taskExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getTaskExecutions());
             validationExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getValidationExecutions());
             aggregatedExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getAggregatedExecutions());
         }
 
         return new ExecutionsRequestBody()
                 .runExecutions(runExecutionsFromAllSubmissions)
+                .taskExecutions(taskExecutionsFromAllSubmissions)
                 .validationExecutions(validationExecutionsFromAllSubmissions)
                 .aggregatedExecutions(aggregatedExecutionsFromAllSubmissions);
     }
