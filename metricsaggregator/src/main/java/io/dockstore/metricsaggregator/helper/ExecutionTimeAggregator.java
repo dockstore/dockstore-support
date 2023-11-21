@@ -82,7 +82,7 @@ public final class ExecutionTimeAggregator implements RunExecutionAggregator<Exe
                 .map(executionTime -> {
                     // Convert executionTime in ISO 8601 duration format to seconds
                     Duration parsedISO8601ExecutionTime = checkExecutionTimeISO8601Format(executionTime).get();
-                    return Long.valueOf(parsedISO8601ExecutionTime.toSeconds()).doubleValue();
+                    return (double) parsedISO8601ExecutionTime.toSeconds();
                 })
                 .toList();
 

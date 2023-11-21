@@ -48,7 +48,7 @@ public interface RunExecutionAggregator<M, E> {
      */
     default List<E> getNonNullMetricsFromRunExecutions(List<RunExecution> runExecutions) {
         return runExecutions.stream()
-                .map(execution -> getMetricFromRunExecution(execution))
+                .map(this::getMetricFromRunExecution)
                 .filter(Objects::nonNull)
                 .toList();
     }
@@ -71,7 +71,7 @@ public interface RunExecutionAggregator<M, E> {
         // If task executions are present, calculate the workflow RunExecution containing the overall workflow-level execution time for each list of tasks
         if (!allSubmissions.getTaskExecutions().isEmpty()) {
             final List<RunExecution> calculatedWorkflowExecutionsFromTasks = allSubmissions.getTaskExecutions().stream()
-                    .map(taskExecutions -> getWorkflowExecutionFromTaskExecutions(taskExecutions))
+                    .map(this::getWorkflowExecutionFromTaskExecutions)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .toList();
@@ -80,7 +80,7 @@ public interface RunExecutionAggregator<M, E> {
 
         // Get aggregated metrics that were submitted to Dockstore
         List<M> aggregatedMetrics = allSubmissions.getAggregatedExecutions().stream()
-                .map(metrics -> getMetricFromMetrics(metrics))
+                .map(this::getMetricFromMetrics)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toCollection(ArrayList::new));
 
