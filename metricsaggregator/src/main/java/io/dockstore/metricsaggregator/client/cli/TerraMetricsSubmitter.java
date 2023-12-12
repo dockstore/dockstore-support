@@ -35,6 +35,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -47,16 +49,16 @@ public class TerraMetricsSubmitter {
     private static final Logger LOG = LoggerFactory.getLogger(MetricsAggregatorClient.class);
     private final MetricsAggregatorConfig config;
     private final SubmitTerraMetrics submitTerraMetricsCommand;
-    private int numberOfExecutionsSubmitted = 0;
-    private int numberOfExecutionsSkipped = 0;
-    private int numberOfCacheHits = 0;
-    private int numberOfCacheMisses = 0;
+    private final AtomicInteger numberOfExecutionsProcessed = new AtomicInteger(0);
+    private final AtomicInteger numberOfExecutionsSubmitted = new AtomicInteger(0);
+    private final AtomicInteger numberOfExecutionsSkipped = new AtomicInteger(0);
+    private final AtomicInteger numberOfCacheHits = new AtomicInteger(0);
+    private final AtomicInteger numberOfCacheMisses = new AtomicInteger(0);
     // Keep track of sourceUrls that are found to be ambiguous
-    private Map<String, String> sourceUrlsToSkipToReason = new HashMap<>();
+    private final Map<String, String> sourceUrlsToSkipToReason = new ConcurrentHashMap<>();
     // Map of source url to TRS info that was previously calculated
-    private Map<String, SourceUrlTrsInfo> sourceUrlToSourceUrlTrsInfo = new HashMap<>();
-    private Map<String, List<MinimalWorkflowInfo>> workflowPathPrefixToWorkflows = new HashMap<>();
-
+    private final Map<String, SourceUrlTrsInfo> sourceUrlToSourceUrlTrsInfo = new ConcurrentHashMap<>();
+    private final Map<String, List<MinimalWorkflowInfo>> workflowPathPrefixToWorkflows = new ConcurrentHashMap<>();
 
     public TerraMetricsSubmitter(MetricsAggregatorConfig config, SubmitTerraMetrics submitTerraMetricsCommand) {
         this.config = config;
@@ -80,45 +82,21 @@ public class TerraMetricsSubmitter {
                     .build();
             workflowMetricRecords = csvFormat.parse(metricsBufferedReader);
 
-            final String outputFileName =  inputDateFilePath + "_skipped_executions_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
+            final String outputFileName = inputDateFilePath + "_skipped_executions_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
 
+            List<CSVRecord> workflowMetricsToProcess = new ArrayList<>();
             try (CSVPrinter skippedExecutionsCsvPrinter = submitTerraMetricsCommand.isRecordSkippedExecutions() ? new CSVPrinter(new FileWriter(outputFileName, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(SkippedTerraMetricsCsvHeaders.class).build()) : null) {
                 for (CSVRecord workflowMetricRecord: workflowMetricRecords) {
-                    final String sourceUrl = workflowMetricRecord.get(TerraMetricsCsvHeaders.source_url);
-                    LOG.info("Processing execution on row {} with source_url {}", workflowMetricRecord.getRecordNumber(), sourceUrl);
-
-                    // Check to see if this source_url was skipped before
-                    if (sourceUrlsToSkipToReason.containsKey(sourceUrl)) {
-                        skipExecution(sourceUrl, workflowMetricRecord, sourceUrlsToSkipToReason.get(sourceUrl), skippedExecutionsCsvPrinter);
-                        continue;
-                    }
-
-                    // Check to see if we need to figure out the TRS ID for the source URL
-                    if (sourceUrlToSourceUrlTrsInfo.containsKey(sourceUrl)) {
-                        ++numberOfCacheHits;
+                    final int batchSize = 100000;
+                    if (workflowMetricsToProcess.size() < batchSize && workflowMetricRecords.iterator().hasNext()) {
+                        workflowMetricsToProcess.add(workflowMetricRecord);
                     } else {
-                        ++numberOfCacheMisses;
-                        Optional<SourceUrlTrsInfo> sourceUrlTrsInfo = calculateTrsInfoFromSourceUrl(workflowMetricRecord, sourceUrl, workflowsApi, skippedExecutionsCsvPrinter);
-                        if (sourceUrlTrsInfo.isEmpty()) {
-                            continue;
-                        } else {
-                            sourceUrlToSourceUrlTrsInfo.put(sourceUrl, sourceUrlTrsInfo.get());
-                        }
-                    }
-
-                    final Optional<RunExecution> workflowExecution = getTerraWorkflowExecutionFromCsvRecord(workflowMetricRecord, sourceUrl, skippedExecutionsCsvPrinter);
-                    if (workflowExecution.isEmpty()) {
-                        continue;
-                    }
-
-                    final SourceUrlTrsInfo sourceUrlTrsInfo = sourceUrlToSourceUrlTrsInfo.get(sourceUrl);
-                    final ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(List.of(workflowExecution.get()));
-                    try {
-                        extendedGa4GhApi.executionMetricsPost(executionsRequestBody, Partner.TERRA.toString(), sourceUrlTrsInfo.trsId(), sourceUrlTrsInfo.version(),
-                                "Terra metrics from BigQuery table broad-dsde-prod-analytics-dev.externally_shared_metrics.dockstore_workflow_metrics_Q4_2023");
-                        ++numberOfExecutionsSubmitted;
-                    } catch (ApiException e) {
-                        skipExecution(sourceUrl, workflowMetricRecord, String.format("Could not submit execution metrics to Dockstore for workflow %s: %s", sourceUrlTrsInfo, e.getMessage()), skippedExecutionsCsvPrinter);
+                        workflowMetricsToProcess.add(workflowMetricRecord);
+                        LOG.info("Processing {} rows", workflowMetricsToProcess.size());
+                        workflowMetricsToProcess.stream()
+                                .parallel()
+                                .forEach(record -> processWorkflowExecution(record, workflowsApi, extendedGa4GhApi, skippedExecutionsCsvPrinter));
+                        workflowMetricsToProcess.clear();
                     }
                 }
             } catch (IOException e) {
@@ -126,13 +104,53 @@ public class TerraMetricsSubmitter {
                 System.exit(FAILURE_EXIT_CODE);
             }
 
-            LOG.info("Done submitting executions from Terra. Submitted {} executions. Skipped {} executions. Cache hits: {}. Cache misses: {}", numberOfExecutionsSubmitted, numberOfExecutionsSkipped, numberOfCacheHits, numberOfCacheMisses);
+            LOG.info("Done processing {} executions from Terra. Submitted {} executions. Skipped {} executions. Cache hits: {}. Cache misses: {}", numberOfExecutionsProcessed, numberOfExecutionsSubmitted, numberOfExecutionsSkipped, numberOfCacheHits, numberOfCacheMisses);
             if (submitTerraMetricsCommand.isRecordSkippedExecutions()) {
                 LOG.info("View skipped executions in file {}", outputFileName);
             }
         } catch (IOException e) {
             LOG.error("Unable to read input CSV file", e);
             System.exit(FAILURE_EXIT_CODE);
+        }
+    }
+
+    private void processWorkflowExecution(CSVRecord workflowMetricRecord, WorkflowsApi workflowsApi, ExtendedGa4GhApi extendedGa4GhApi, CSVPrinter skippedExecutionsCsvPrinter) {
+        final String sourceUrl = workflowMetricRecord.get(TerraMetricsCsvHeaders.source_url);
+        LOG.info("Processing execution on row {} with source_url {}", workflowMetricRecord.getRecordNumber(), sourceUrl);
+        numberOfExecutionsProcessed.incrementAndGet();
+
+        // Check to see if this source_url was skipped before
+        if (sourceUrlsToSkipToReason.containsKey(sourceUrl)) {
+            skipExecution(sourceUrl, workflowMetricRecord, sourceUrlsToSkipToReason.get(sourceUrl), skippedExecutionsCsvPrinter);
+            return;
+        }
+
+        // Check to see if we need to figure out the TRS ID for the source URL
+        if (sourceUrlToSourceUrlTrsInfo.containsKey(sourceUrl)) {
+            numberOfCacheHits.incrementAndGet();
+        } else {
+            numberOfCacheMisses.incrementAndGet();
+            Optional<SourceUrlTrsInfo> sourceUrlTrsInfo = calculateTrsInfoFromSourceUrl(workflowMetricRecord, sourceUrl, workflowsApi, skippedExecutionsCsvPrinter);
+            if (sourceUrlTrsInfo.isEmpty()) {
+                return;
+            } else {
+                sourceUrlToSourceUrlTrsInfo.put(sourceUrl, sourceUrlTrsInfo.get());
+            }
+        }
+
+        final Optional<RunExecution> workflowExecution = getTerraWorkflowExecutionFromCsvRecord(workflowMetricRecord, sourceUrl, skippedExecutionsCsvPrinter);
+        if (workflowExecution.isEmpty()) {
+            return;
+        }
+
+        final SourceUrlTrsInfo sourceUrlTrsInfo = sourceUrlToSourceUrlTrsInfo.get(sourceUrl);
+        final ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(List.of(workflowExecution.get()));
+        try {
+            extendedGa4GhApi.executionMetricsPost(executionsRequestBody, Partner.TERRA.toString(), sourceUrlTrsInfo.trsId(), sourceUrlTrsInfo.version(),
+                    "Terra metrics from BigQuery table broad-dsde-prod-analytics-dev.externally_shared_metrics.dockstore_workflow_metrics_Q4_2023");
+            numberOfExecutionsSubmitted.incrementAndGet();
+        } catch (ApiException e) {
+            skipExecution(sourceUrl, workflowMetricRecord, String.format("Could not submit execution metrics to Dockstore for workflow %s: %s", sourceUrlTrsInfo, e.getMessage()), skippedExecutionsCsvPrinter);
         }
     }
 
@@ -200,7 +218,7 @@ public class TerraMetricsSubmitter {
                 LOG.error("Could not write skipped execution to output file");
             }
         }
-        ++numberOfExecutionsSkipped;
+        numberOfExecutionsSkipped.incrementAndGet();
     }
 
     public Optional<RunExecution> getTerraWorkflowExecutionFromCsvRecord(CSVRecord csvRecord, String sourceUrl, CSVPrinter skippedExecutionsCsvPrinter) {
@@ -277,6 +295,7 @@ public class TerraMetricsSubmitter {
             List<MinimalWorkflowInfo> workflowsFromSameRepo = workflowPathPrefixToWorkflows.get(workflowPathPrefix);
 
             List<String> foundFullWorkflowPaths = new ArrayList<>();
+            // Loop through each workflow to find one that matches the primary descriptor
             workflowsFromSameRepo.forEach(workflow -> {
                 if (!workflow.versionToPrimaryDescriptorPath().containsKey(version)) {
                     // Intentionally putting null in map to indicate that the primary descriptor path for the workflow version doesn't exist
@@ -297,12 +316,13 @@ public class TerraMetricsSubmitter {
             } else if (foundFullWorkflowPaths.size() > 1) {
                 // There is already a workflow in the same repository with the same descriptor path that we're looking for.
                 // Skip this source url because it is an ambiguous case and we can't identify which workflow the source url is referring to.
-                skipExecution(sourceUrl, workflowMetricRecord, "There's more than one workflow in the repository with the same primary descriptor path", skippedExecutionsCsvPrinter);
+                skipExecution(sourceUrl, workflowMetricRecord, String.format("There's %s workflows in the repository with the same primary descriptor path '%s': %s", foundFullWorkflowPaths.size(), primaryDescriptorPathFromUrl, foundFullWorkflowPaths), skippedExecutionsCsvPrinter);
                 return Optional.empty();
             } else {
                 final SourceUrlTrsInfo sourceUrlTrsInfo = new SourceUrlTrsInfo(sourceUrl, "#workflow/" + foundFullWorkflowPaths.get(0), version);
                 return Optional.of(sourceUrlTrsInfo);
             }
+
         } else {
             skipExecution(sourceUrl, workflowMetricRecord, "Not enough components in the source_url to figure out the TRS ID and version", skippedExecutionsCsvPrinter);
             return Optional.empty();
@@ -319,8 +339,5 @@ public class TerraMetricsSubmitter {
     }
 
     public record MinimalWorkflowInfo(long id, String fullWorkflowPath, DescriptorTypeEnum descriptorType, Map<String, String> versionToPrimaryDescriptorPath) {
-    }
-
-    public record WorkflowsFromSameOrganizationInfo(String workflowPathPrefix, String organization, Map<String, String> primaryDescriptorPathToFullWorkflowPath) {
     }
 }
