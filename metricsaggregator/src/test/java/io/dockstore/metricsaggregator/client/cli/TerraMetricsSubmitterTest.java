@@ -2,10 +2,13 @@ package io.dockstore.metricsaggregator.client.cli;
 
 import static io.dockstore.metricsaggregator.client.cli.TerraMetricsSubmitter.formatStringInIso8601Date;
 import static io.dockstore.metricsaggregator.client.cli.TerraMetricsSubmitter.getExecutionTime;
+import static io.dockstore.metricsaggregator.client.cli.TerraMetricsSubmitter.getSourceUrlComponents;
+import static io.dockstore.metricsaggregator.client.cli.TerraMetricsSubmitter.makePathAbsolute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class TerraMetricsSubmitterTest {
@@ -36,5 +39,19 @@ class TerraMetricsSubmitterTest {
         assertTrue(getExecutionTime("").isEmpty());
         assertTrue(getExecutionTime(" ").isEmpty());
         assertTrue(getExecutionTime(null).isEmpty());
+    }
+
+    @Test
+    void testGetSourceUrlComponents() {
+        assertEquals(List.of("theiagen", "public_health_viral_genomics", "v2.0.0", "workflows", "wf_theiacov_fasta.wdl"), getSourceUrlComponents("https://raw.githubusercontent.com/theiagen/public_health_viral_genomics/v2.0.0/workflows/wf_theiacov_fasta.wdl"));
+        // This source_url has consecutive slashes
+        assertEquals(List.of("theiagen", "public_health_viral_genomics", "v2.0.0", "workflows", "wf_theiacov_fasta.wdl"), getSourceUrlComponents("https://raw.githubusercontent.com/theiagen/public_health_viral_genomics/v2.0.0//workflows/wf_theiacov_fasta.wdl"));
+        assertEquals(List.of(), getSourceUrlComponents("https://raw.githubusercontent.com/theiagen/public_health_viral_genomics/v2.0.0//workflows/wf_theiacov_fasta.wdl"));
+    }
+
+    @Test
+    void testMakePathAbsolute() {
+        assertEquals("/foo.wdl", makePathAbsolute("foo.wdl"));
+        assertEquals("/foo.wdl", makePathAbsolute("/foo.wdl"));
     }
 }

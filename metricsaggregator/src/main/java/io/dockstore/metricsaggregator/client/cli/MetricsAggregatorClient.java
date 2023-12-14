@@ -143,7 +143,7 @@ public class MetricsAggregatorClient {
                     final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config.get());
                     final TerraMetricsSubmitter submitTerraMetricsCommand = new TerraMetricsSubmitter(metricsAggregatorConfig,
                             submitTerraMetrics);
-                    submitTerraMetricsCommand.submitMetrics();
+                    submitTerraMetricsCommand.submitTerraMetrics();
                 } catch (Exception e) {
                     LOG.error("Could not submit terra metrics to Dockstore", e);
                     System.exit(FAILURE_EXIT_CODE);
