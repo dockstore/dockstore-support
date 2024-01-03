@@ -156,12 +156,6 @@ public class TerraMetricsSubmitter {
             return;
         }
 
-        // Check if the information from the workflow execution is valid
-        Optional<RunExecution> workflowExecution = getTerraWorkflowExecutionFromCsvRecord(workflowMetricRecord, sourceUrl, skippedExecutionsCsvPrinter);
-        if (workflowExecution.isEmpty()) {
-            return;
-        }
-
         if (!sourceUrlToSourceUrlTrsInfo.containsKey(sourceUrl)) {
             Optional<SourceUrlTrsInfo> sourceUrlTrsInfo = calculateTrsInfoFromSourceUrl(workflowMetricRecord, sourceUrl, workflowsApi, skippedExecutionsCsvPrinter);
             if (sourceUrlTrsInfo.isEmpty()) {
@@ -169,6 +163,12 @@ public class TerraMetricsSubmitter {
             } else {
                 sourceUrlToSourceUrlTrsInfo.put(sourceUrl, sourceUrlTrsInfo.get());
             }
+        }
+
+        // Check if the information from the workflow execution is valid
+        Optional<RunExecution> workflowExecution = getTerraWorkflowExecutionFromCsvRecord(workflowMetricRecord, sourceUrl, skippedExecutionsCsvPrinter);
+        if (workflowExecution.isEmpty()) {
+            return;
         }
 
         final SourceUrlTrsInfo sourceUrlTrsInfo = sourceUrlToSourceUrlTrsInfo.get(sourceUrl);
