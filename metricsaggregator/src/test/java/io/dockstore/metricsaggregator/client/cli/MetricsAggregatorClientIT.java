@@ -24,6 +24,7 @@ import static io.dockstore.metricsaggregator.common.TestUtilities.CONFIG_FILE_PA
 import static io.dockstore.metricsaggregator.common.TestUtilities.ENDPOINT_OVERRIDE;
 import static io.dockstore.metricsaggregator.common.TestUtilities.createRunExecution;
 import static io.dockstore.metricsaggregator.common.TestUtilities.createValidationExecution;
+import static io.dockstore.metricsaggregator.common.TestUtilities.generateExecutionId;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_SEMANTIC_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
@@ -66,6 +67,7 @@ import io.dockstore.webservice.DockstoreWebserviceConfiguration;
 import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -230,6 +232,8 @@ class MetricsAggregatorClientIT {
         // Submit two TaskExecutions, each one representing the task metrics for a single workflow execution
         // A successful task execution that ran for 11 seconds, requires 6 CPUs and 5.5 GBs of memory. Signifies that this workflow execution only executed one task
         TaskExecutions taskExecutions = new TaskExecutions().taskExecutions(List.of(createRunExecution(SUCCESSFUL, "PT11S", 6, 5.5, new Cost().value(2.00), "us-central1")));
+        taskExecutions.setDateExecuted(Instant.now().toString());
+        taskExecutions.setExecutionId(generateExecutionId());
         executionsRequestBody = new ExecutionsRequestBody().taskExecutions(List.of(taskExecutions));
         // Submit metrics for the same workflow version for platform 1
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, id, versionId, "");

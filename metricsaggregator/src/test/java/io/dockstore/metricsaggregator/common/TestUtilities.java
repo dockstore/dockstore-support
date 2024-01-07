@@ -27,6 +27,8 @@ import io.dropwizard.testing.ResourceHelpers;
 import java.io.File;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
+
 import org.apache.commons.configuration2.INIConfiguration;
 
 public final class TestUtilities {
@@ -46,8 +48,13 @@ public final class TestUtilities {
                 .memoryRequirementsGB(memoryRequirementsGB)
                 .cost(cost)
                 .region(region);
+        runExecution.setExecutionId(generateExecutionId());
         runExecution.setDateExecuted(Instant.now().toString());
         return runExecution;
+    }
+
+    public static String generateExecutionId() {
+        return UUID.randomUUID().toString();
     }
 
     public static ValidationExecution createValidationExecution(ValidatorToolEnum validatorTool, String validatorToolVersion, boolean isValid) {
@@ -55,6 +62,7 @@ public final class TestUtilities {
                 .validatorTool(validatorTool)
                 .validatorToolVersion(validatorToolVersion)
                 .isValid(isValid);
+        validationExecution.setExecutionId(generateExecutionId());
         validationExecution.setDateExecuted(Instant.now().toString());
         return validationExecution;
     }

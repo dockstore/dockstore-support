@@ -6,6 +6,7 @@ import static io.dockstore.metricsaggregator.MoneyStatistics.CURRENCY;
 import io.dockstore.metricsaggregator.MoneyStatistics;
 import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.CostMetric;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
@@ -14,15 +15,20 @@ import java.util.Objects;
 import java.util.Optional;
 import org.javamoney.moneta.Money;
 
-public class CostAggregator implements RunExecutionAggregator<CostMetric, Cost> {
+public class CostAggregator implements ExecutionAggregator<RunExecution, CostMetric, Cost> {
     @Override
     public CostMetric getMetricFromMetrics(Metrics metrics) {
         return metrics.getCost();
     }
 
     @Override
-    public Cost getMetricFromRunExecution(RunExecution runExecution) {
-        return runExecution.getCost();
+    public Cost getMetricFromExecution(RunExecution execution) {
+        return execution.getCost();
+    }
+
+    @Override
+    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
+        return executionsRequestBody.getRunExecutions();
     }
 
     @Override
@@ -46,8 +52,8 @@ public class CostAggregator implements RunExecutionAggregator<CostMetric, Cost> 
     }
 
     @Override
-    public Optional<CostMetric> getAggregatedMetricFromWorkflowExecutions(List<RunExecution> workflowExecutions) {
-        List<Cost> submittedCosts = getNonNullMetricsFromRunExecutions(workflowExecutions);
+    public Optional<CostMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
+        List<Cost> submittedCosts = getNonNullMetricsFromExecutions(executions);
 
         boolean containsMalformedCurrencies = submittedCosts.stream().anyMatch(cost -> !isValidCurrencyCode(cost.getCurrency()));
         // This shouldn't happen until we allow users to submit any currency they want

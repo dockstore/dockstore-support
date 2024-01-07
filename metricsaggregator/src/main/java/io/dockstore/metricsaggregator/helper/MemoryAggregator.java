@@ -1,6 +1,7 @@
 package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
@@ -12,15 +13,20 @@ import java.util.Optional;
 /**
  * Aggregate Memory metrics by calculating the minimum, maximum, and average.
  */
-public class MemoryAggregator implements RunExecutionAggregator<MemoryMetric, Double> {
+public class MemoryAggregator implements ExecutionAggregator<RunExecution, MemoryMetric, Double> {
     @Override
     public MemoryMetric getMetricFromMetrics(Metrics metrics) {
         return metrics.getMemory();
     }
 
     @Override
-    public Double getMetricFromRunExecution(RunExecution runExecution) {
-        return runExecution.getMemoryRequirementsGB();
+    public Double getMetricFromExecution(RunExecution execution) {
+        return execution.getMemoryRequirementsGB();
+    }
+
+    @Override
+    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
+        return executionsRequestBody.getRunExecutions();
     }
 
     @Override
@@ -40,8 +46,8 @@ public class MemoryAggregator implements RunExecutionAggregator<MemoryMetric, Do
     }
 
     @Override
-    public Optional<MemoryMetric> getAggregatedMetricFromWorkflowExecutions(List<RunExecution> workflowExecutions) {
-        List<Double> memoryRequirements = getNonNullMetricsFromRunExecutions(workflowExecutions);
+    public Optional<MemoryMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
+        List<Double> memoryRequirements = getNonNullMetricsFromExecutions(executions);
         if (!memoryRequirements.isEmpty()) {
             DoubleStatistics statistics = new DoubleStatistics(memoryRequirements);
             return Optional.of(new MemoryMetric()

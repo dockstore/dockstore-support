@@ -26,6 +26,7 @@ import io.dockstore.common.S3ClientHelper;
 import io.dockstore.common.metrics.MetricsData;
 import io.dockstore.common.metrics.MetricsDataS3Client;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
+import io.dockstore.openapi.client.model.AggregatedExecution;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
@@ -108,7 +109,7 @@ public class MetricsAggregatorS3Client {
             if (!allMetrics.isEmpty()) {
                 // Calculate metrics across all platforms by aggregating the aggregated metrics from each platform
                 try {
-                    getAggregatedMetrics(new ExecutionsRequestBody().aggregatedExecutions(allMetrics)).ifPresent(metrics -> {
+                    getAggregatedMetrics(allMetrics).ifPresent(metrics -> {
                         extendedGa4GhApi.aggregatedMetricsPut(metrics, Partner.ALL.name(), toolId, versionName);
                         System.out.printf("Aggregated metrics across all platforms (%s) for tool ID %s, version %s from directory %s%n",
                                 platformsString, toolId, versionName, versionS3KeyPrefix);
@@ -135,7 +136,7 @@ public class MetricsAggregatorS3Client {
         List<RunExecution> runExecutionsFromAllSubmissions = new ArrayList<>();
         List<TaskExecutions> taskExecutionsFromAllSubmissions = new ArrayList<>();
         List<ValidationExecution> validationExecutionsFromAllSubmissions = new ArrayList<>();
-        List<Metrics> aggregatedExecutionsFromAllSubmissions = new ArrayList<>();
+        List<AggregatedExecution> aggregatedExecutionsFromAllSubmissions = new ArrayList<>();
 
         for (MetricsData metricsData : metricsDataList) {
             String fileContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(),

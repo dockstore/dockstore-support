@@ -45,12 +45,12 @@ class MemoryAggregatorTest {
     @Test
     void testGetAggregatedMetricFromWorkflowExecutions() {
         // Empty list should return Optional.empty()
-        Optional<MemoryMetric> memoryMetric = MEMORY_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(List.of());
+        Optional<MemoryMetric> memoryMetric = MEMORY_AGGREGATOR.getAggregatedMetricFromExecutions(List.of());
         assertTrue(memoryMetric.isEmpty());
 
         // Test the memory metric calculated from a single workflow execution. The min, max, and average should be the same value as the single execution
         List<RunExecution> workflowExecutions = List.of(new RunExecution().memoryRequirementsGB(1.0));
-        memoryMetric = MEMORY_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(workflowExecutions);
+        memoryMetric = MEMORY_AGGREGATOR.getAggregatedMetricFromExecutions(workflowExecutions);
         assertTrue(memoryMetric.isPresent());
         assertEquals(1.0, memoryMetric.get().getMinimum());
         assertEquals(1.0, memoryMetric.get().getMaximum());
@@ -63,7 +63,7 @@ class MemoryAggregatorTest {
                 new RunExecution().memoryRequirementsGB(4.0),
                 new RunExecution().memoryRequirementsGB(6.0)
         );
-        memoryMetric = MEMORY_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(workflowExecutions);
+        memoryMetric = MEMORY_AGGREGATOR.getAggregatedMetricFromExecutions(workflowExecutions);
         assertTrue(memoryMetric.isPresent());
         assertEquals(2.0, memoryMetric.get().getMinimum());
         assertEquals(6.0, memoryMetric.get().getMaximum());

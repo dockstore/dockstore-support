@@ -40,6 +40,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+
 import org.apache.commons.configuration2.INIConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,6 +186,7 @@ public class MetricsAggregatorClient {
                     .validatorToolVersion(validatorVersion)
                     .isValid(isValid);
             validationExecution.setDateExecuted(dateExecuted);
+            validationExecution.setExecutionId(UUID.randomUUID().toString()); // No execution ID was provided by DNAstack, generate a random one
             ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().validationExecutions(List.of(validationExecution));
 
             try {

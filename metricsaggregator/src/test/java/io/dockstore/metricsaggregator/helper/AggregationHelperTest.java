@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.dockstore.openapi.client.model.AggregatedExecution;
 import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.CostMetric;
 import io.dockstore.openapi.client.model.CpuMetric;
@@ -17,7 +18,6 @@ import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.MemoryMetric;
-import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import io.dockstore.openapi.client.model.ValidationExecution;
@@ -47,7 +47,8 @@ class AggregationHelperTest {
         assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
 
         // Aggregate submissions containing run executions and aggregated metrics
-        Metrics submittedAggregatedMetrics = new Metrics().executionStatusCount(
+        AggregatedExecution submittedAggregatedMetrics = new AggregatedExecution();
+        submittedAggregatedMetrics.executionStatusCount(
                 new ExecutionStatusMetric().count(
                         Map.of(SUCCESSFUL.toString(), 10, FAILED_RUNTIME_INVALID.toString(), 1)));
         allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution)).aggregatedExecutions(List.of(submittedAggregatedMetrics));
@@ -122,12 +123,12 @@ class AggregationHelperTest {
         assertEquals(1, executionTimeMetric.get().getNumberOfDataPointsForAverage());
 
         // Aggregate submissions containing run executions and aggregated metrics
-        Metrics submittedAggregatedMetrics = new Metrics()
-                .executionTime(new ExecutionTimeMetric()
-                        .minimum(2.0)
-                        .maximum(6.0)
-                        .average(4.0)
-                        .numberOfDataPointsForAverage(2));
+        AggregatedExecution submittedAggregatedMetrics = new AggregatedExecution();
+        submittedAggregatedMetrics.executionTime(new ExecutionTimeMetric()
+                    .minimum(2.0)
+                    .maximum(6.0)
+                    .average(4.0)
+                    .numberOfDataPointsForAverage(2));
         executionTimeMetric = executionTimeAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(executionTimeMetric.isPresent());
         assertEquals(2.0, executionTimeMetric.get().getMinimum());
@@ -181,12 +182,12 @@ class AggregationHelperTest {
         assertEquals(1, cpuMetric.get().getNumberOfDataPointsForAverage());
 
         // Aggregate submissions containing run executions and aggregated metrics
-        Metrics submittedAggregatedMetrics = new Metrics()
-                .cpu(new CpuMetric()
-                        .minimum(2.0)
-                        .maximum(6.0)
-                        .average(4.0)
-                        .numberOfDataPointsForAverage(2));
+        AggregatedExecution submittedAggregatedMetrics = new AggregatedExecution();
+        submittedAggregatedMetrics.cpu(new CpuMetric()
+                    .minimum(2.0)
+                    .maximum(6.0)
+                    .average(4.0)
+                    .numberOfDataPointsForAverage(2));
         cpuMetric = cpuAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(cpuMetric.isPresent());
         assertEquals(1.0, cpuMetric.get().getMinimum());
@@ -231,12 +232,12 @@ class AggregationHelperTest {
         assertEquals(1, memoryMetric.get().getNumberOfDataPointsForAverage());
 
         // Aggregate submissions containing run executions and aggregated metrics
-        Metrics submittedAggregatedMetrics = new Metrics()
-                .memory(new MemoryMetric()
-                        .minimum(2.0)
-                        .maximum(6.0)
-                        .average(4.0)
-                        .numberOfDataPointsForAverage(2));
+        AggregatedExecution submittedAggregatedMetrics = new AggregatedExecution();
+        submittedAggregatedMetrics.memory(new MemoryMetric()
+                    .minimum(2.0)
+                    .maximum(6.0)
+                    .average(4.0)
+                    .numberOfDataPointsForAverage(2));
         memoryMetric = memoryAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(memoryMetric.isPresent());
         assertEquals(2.0, memoryMetric.get().getMinimum());
@@ -282,12 +283,12 @@ class AggregationHelperTest {
         assertEquals(1, costMetric.get().getNumberOfDataPointsForAverage());
 
         // Aggregate submissions containing run executions and aggregated metrics
-        Metrics submittedAggregatedMetrics = new Metrics()
-                .cost(new CostMetric()
-                        .minimum(2.00)
-                        .maximum(6.00)
-                        .average(4.00)
-                        .numberOfDataPointsForAverage(2));
+        AggregatedExecution submittedAggregatedMetrics = new AggregatedExecution();
+        submittedAggregatedMetrics.cost(new CostMetric()
+                    .minimum(2.00)
+                    .maximum(6.00)
+                    .average(4.00)
+                    .numberOfDataPointsForAverage(2));
         costMetric = costAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(costMetric.isPresent());
         assertEquals(2.0, costMetric.get().getMinimum());
@@ -313,14 +314,14 @@ class AggregationHelperTest {
     @Test
     void testGetAggregatedValidationStatus() {
         List<ValidationExecution> executions = new ArrayList<>();
-        Optional<ValidationStatusMetric> validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
+        Optional<ValidationStatusMetric> validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isEmpty());
 
         // Add an execution with validation data
         final ValidationExecution.ValidatorToolEnum validatorTool = ValidationExecution.ValidatorToolEnum.MINIWDL;
         final String validatorToolVersion1 = "1.0";
         executions.add(createValidationExecution(validatorTool, validatorToolVersion1, true));
-        validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
+        validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isPresent());
         ValidatorInfo validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
         assertNotNull(validatorInfo);
@@ -338,7 +339,7 @@ class AggregationHelperTest {
         // Add an execution that isn't valid for the same validator
         final String validatorToolVersion2 = "2.0";
         executions.add(createValidationExecution(validatorTool, validatorToolVersion2, false).errorMessage("This is an error message"));
-        validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
+        validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isPresent());
         validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
         mostRecentValidatorVersion = validatorInfo.getValidatorVersions().stream().filter(validatorVersion -> validatorToolVersion2.equals(validatorVersion.getName())).findFirst().get();
@@ -356,7 +357,7 @@ class AggregationHelperTest {
         ValidationExecution validationExecution = createValidationExecution(validatorTool, validatorToolVersion1, true);
         validationExecution.setDateExecuted(expectedDateExecuted);
         executions.add(validationExecution);
-        validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions));
+        validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().validationExecutions(executions));
         assertTrue(validationStatusMetric.isPresent());
         validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
         mostRecentValidatorVersion = validatorInfo.getValidatorVersions().stream().filter(validationVersion -> validatorToolVersion1.equals(validationVersion.getName())).findFirst().get();
@@ -378,14 +379,14 @@ class AggregationHelperTest {
                 .passingRate(100d)
                 .numberOfRuns(4)
                 .dateExecuted(expectedDateExecuted);
-        Metrics submittedAggregatedMetrics = new Metrics()
-                .validationStatus(new ValidationStatusMetric().validatorTools(
-                        Map.of(validatorTool.toString(), new ValidatorInfo()
-                                .validatorVersions(List.of(validationVersionInfo))
-                                .numberOfRuns(4)
-                                .passingRate(100d))));
+        AggregatedExecution submittedAggregatedMetrics = new AggregatedExecution();
+        submittedAggregatedMetrics.validationStatus(new ValidationStatusMetric().validatorTools(
+                    Map.of(validatorTool.toString(), new ValidatorInfo()
+                            .validatorVersions(List.of(validationVersionInfo))
+                            .numberOfRuns(4)
+                            .passingRate(100d))));
 
-        validationStatusMetric = AggregationHelper.getAggregatedValidationStatus(new ExecutionsRequestBody().validationExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
+        validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().validationExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(validationStatusMetric.isPresent());
         validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
         mostRecentValidatorVersion = validatorInfo.getValidatorVersions().stream().filter(validationVersion -> validatorToolVersion1.equals(validationVersion.getName())).findFirst().get();
