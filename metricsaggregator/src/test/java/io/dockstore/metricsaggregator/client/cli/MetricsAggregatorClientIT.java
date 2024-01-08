@@ -24,6 +24,8 @@ import static io.dockstore.metricsaggregator.common.TestUtilities.CONFIG_FILE_PA
 import static io.dockstore.metricsaggregator.common.TestUtilities.ENDPOINT_OVERRIDE;
 import static io.dockstore.metricsaggregator.common.TestUtilities.createRunExecution;
 import static io.dockstore.metricsaggregator.common.TestUtilities.createValidationExecution;
+import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.ABORTED;
+import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_SEMANTIC_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
@@ -443,5 +445,36 @@ class MetricsAggregatorClientIT {
         validationExecution = executionsRequestBody.getValidationExecutions().get(0);
         assertFalse(validationExecution.isIsValid());
         assertEquals(validator, validationExecution.getValidatorTool());
+    }
+
+    @Test
+    void testSubmitTerraMetrics() throws IOException {
+        final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
+        final WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
+
+        Workflow workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
+        WorkflowVersion version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
+        assertNotNull(version);
+
+        String id = "#workflow/" + workflow.getFullWorkflowPath();
+        String versionId = version.getName();
+        // This file contains 3 valid rows of executions: 1 failed, 1 successful, and 1 aborted.
+        // It also contains 2 invalid rows of executions: 1 where workflow_start is missing, and one where the source_url is invalid
+        String terraMetricsFilePath = ResourceHelpers.resourceFilePath("terra-metrics.csv");
+
+        // Submit Terra metrics using a CSV file that metrics of workflows executed on Terra
+        MetricsAggregatorClient.main(new String[] {"submit-terra-metrics", "--config", CONFIG_FILE_PATH, "--data", terraMetricsFilePath});
+        List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(id, versionId);
+        assertEquals(1, metricsDataList.size()); // There should be 1 file in S3.
+        MetricsData metricsData = metricsDataList.get(0);
+        // Verify the metrics that were sent to S3
+        String metricsDataContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(), metricsData.platform(), metricsData.fileName());
+        ExecutionsRequestBody executionsRequestBody = GSON.fromJson(metricsDataContent, ExecutionsRequestBody.class);
+        assertTrue(executionsRequestBody.getValidationExecutions().isEmpty(), "Should not have validation executions");
+        List<RunExecution> terraWorkflowExecutions = executionsRequestBody.getRunExecutions();
+        assertEquals(3, terraWorkflowExecutions.size(), "Should have 3 workflow executions submitted");
+        assertTrue(terraWorkflowExecutions.stream().anyMatch(execution -> execution.getExecutionStatus() == SUCCESSFUL));
+        assertTrue(terraWorkflowExecutions.stream().anyMatch(execution -> execution.getExecutionStatus() == ABORTED));
+        assertTrue(terraWorkflowExecutions.stream().anyMatch(execution -> execution.getExecutionStatus() == FAILED));
     }
 }

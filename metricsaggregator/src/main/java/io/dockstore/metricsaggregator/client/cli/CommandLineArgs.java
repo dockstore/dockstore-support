@@ -79,7 +79,7 @@ public class CommandLineArgs {
         }
     }
 
-    @Parameters(commandNames = { "submit-terra-metrics" }, commandDescription = "Formats workflow validation data specified in a file then submits it to Dockstore")
+    @Parameters(commandNames = { "submit-terra-metrics" }, commandDescription = "Submits workflow metrics provided by Terra via a CSV file to Dockstore")
     public static class SubmitTerraMetrics extends CommandLineArgs {
         @Parameter(names = {"-c", "--config"}, description = "The config file path.")
         private File config = new File("./" + MetricsAggregatorClient.CONFIG_FILE_NAME);

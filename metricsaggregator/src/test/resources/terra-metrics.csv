@@ -1,0 +1,6 @@
+workflow_id,status,workflow_start,workflow_end,workflow_runtime_minutes,source_url
+d13db165-9289-4ebd-93c7-26db408f84c1,Succeeded,2022-06-30 00:33:44.101000 UTC,2022-06-30 01:25:29.663000 UTC,51,https://raw.githubusercontent.com/dockstore-testing/testWorkflow/master/Dockstore.cwl
+59ce788c-acc6-4aaa-b440-560fe614b7a1,Aborted,2022-03-02 20:37:03.245000 UTC,2022-03-02 21:35:16.497000 UTC,58,https://raw.githubusercontent.com/dockstore-testing/testWorkflow/master/Dockstore.cwl
+ed4eaac6-cc95-4e8f-9316-335bb3b13592,Failed,2022-07-15 15:37:06.450000 UTC,2022-07-15 16:29:08.951000 UTC,52,https://raw.githubusercontent.com/dockstore-testing/testWorkflow/master/Dockstore.cwl
+f3b368f3-2313-4480-98f6-a3bca3d986ef,Aborted,,,58,https://raw.githubusercontent.com/dockstore-testing/testWorkflow/master/Dockstore.cwl
+dac1e206-9a33-4d52-baf3-b04258745534,Succeeded,2022-06-30 00:33:44.101000 UTC,2022-06-30 01:25:29.663000 UTC,51,https://raw.githubusercontent.com/doesntexistorganization/doesntexistrepo/master/Dockstore.cwl

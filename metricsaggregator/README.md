@@ -79,6 +79,22 @@ Usage: <main class> [options] [command] [command options]
             Possible Values: [MINIWDL, WOMTOOL, CWLTOOL, NF_VALIDATION, OTHER]
         * -vv, --validatorVersion
             The version of the validator tool used to validate the workflows
+
+    submit-terra-metrics      Submits workflow metrics provided by Terra via a 
+            CSV file to Dockstore
+      Usage: submit-terra-metrics [options]
+        Options:
+          -c, --config
+            The config file path.
+            Default: ./metrics-aggregator.config
+        * -d, --data
+            The file path to the CSV file containing workflow metrics from 
+            Terra. The first line of the file should contain the CSV fields: workflow_id,status,workflow_start,workflow_end,workflow_runtime_minutes,source_url
+          --help
+            Prints help for metricsaggregator
+          -r, --recordSkipped
+            Record skipped executions and the reason skipped to a CSV file
+            Default: false
 ```
 
 ### aggregate-metrics
@@ -102,3 +118,14 @@ java -jar target/metricsaggregator-*-SNAPSHOT.jar submit-validation-data --confi
 ```
 
 After running this command, you will want to run the `aggregate-metrics` command to aggregate the new validation data submitted.
+
+### submit-terra-metrics
+
+The following is an example command that submits metrics from a CSV file that Terra provided, recording the metrics that were skipped into an output CSV file.
+
+```
+java -jar target/metricsaggregator-*-SNAPSHOT.jar submit-terra-metrics --config my-custom-config \
+--data <path-to-terra-metrics-csv-file> --recordSkipped
+```
+
+After running this command, you will want to run the `aggregate-metrics` command to aggregate the new Terra metrics submitted.
