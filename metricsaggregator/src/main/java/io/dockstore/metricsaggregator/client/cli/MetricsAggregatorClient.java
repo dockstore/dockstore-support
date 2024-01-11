@@ -150,8 +150,11 @@ public class MetricsAggregatorClient {
                 }
             }
         }
-        final Instant endTime = Instant.now();
-        LOG.info("{} took {}", jCommander.getParsedCommand(), Duration.between(startTime, endTime));
+
+        if (jCommander.getParsedCommand() != null) {
+            final Instant endTime = Instant.now();
+            LOG.info("{} took {}", jCommander.getParsedCommand(), Duration.between(startTime, endTime));
+        }
     }
 
     private void aggregateMetrics(MetricsAggregatorConfig config) throws URISyntaxException {
