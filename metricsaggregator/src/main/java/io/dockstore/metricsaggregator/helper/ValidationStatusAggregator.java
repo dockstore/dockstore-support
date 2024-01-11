@@ -198,12 +198,12 @@ public class ValidationStatusAggregator implements
      * @param executions
      * @return
      */
-    @SuppressWarnings("checkstyle:magicnumber")
     static double getPassingRate(List<ValidationExecution> executions) {
+        final int oneHundredPercent = 100;
         final double numberOfPassingExecutions = executions.stream()
                 .filter(ValidationExecution::isIsValid)
                 .count();
 
-        return (numberOfPassingExecutions / executions.size()) * 100;
+        return (numberOfPassingExecutions / executions.size()) * oneHundredPercent;
     }
 }

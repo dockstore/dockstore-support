@@ -127,6 +127,7 @@ class MetricsAggregatorClientIT {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:methodlength")
     void testAggregateMetrics() {
         final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
@@ -407,6 +408,7 @@ class MetricsAggregatorClientIT {
         final Partner platform = DNA_STACK;
         final ValidationExecution.ValidatorToolEnum validator = MINIWDL;
         final String validatorVersion = "1.0";
+        final String executionId = "foobar";
 
         Workflow workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
         WorkflowVersion version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
@@ -418,7 +420,7 @@ class MetricsAggregatorClientIT {
         String successfulDataFilePath = ResourceHelpers.resourceFilePath("miniwdl-successful-validation-workflow-names.csv");
 
         // Submit validation data using a data file that contains workflow names of workflows that were successfully validated with miniwdl on DNAstack
-        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--validatorVersion", validatorVersion, "--data", successfulDataFilePath, "--platform", platform.toString()});
+        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--validatorVersion", validatorVersion, "--data", successfulDataFilePath, "--platform", platform.toString(), "--executionId", executionId});
         List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(id, versionId);
         assertEquals(1, metricsDataList.size());
         MetricsData metricsData = metricsDataList.get(0);
@@ -430,12 +432,13 @@ class MetricsAggregatorClientIT {
         ValidationExecution validationExecution = executionsRequestBody.getValidationExecutions().get(0);
         assertTrue(validationExecution.isIsValid());
         assertEquals(validator, validationExecution.getValidatorTool());
+        assertEquals(executionId, validationExecution.getExecutionId());
 
         LocalStackTestUtilities.deleteBucketContents(s3Client, BUCKET_NAME); // Clear bucket contents to start from scratch
 
         // Submit validation data using a data file that contains workflow names of workflows that failed validation with miniwdl on DNAstack
         String failedDataFilePath = ResourceHelpers.resourceFilePath("miniwdl-failed-validation-workflow-names.csv");
-        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--validatorVersion", validatorVersion, "--data", failedDataFilePath, "--platform", platform.toString()});
+        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--validatorVersion", validatorVersion, "--data", failedDataFilePath, "--platform", platform.toString(), "--executionId", executionId});
         metricsDataList = metricsDataS3Client.getMetricsData(id, versionId);
         assertEquals(1, metricsDataList.size());
         metricsData = metricsDataList.get(0);

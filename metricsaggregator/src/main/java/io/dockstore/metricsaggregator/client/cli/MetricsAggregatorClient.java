@@ -40,8 +40,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
-
 import org.apache.commons.configuration2.INIConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,7 +117,8 @@ public class MetricsAggregatorClient {
                 try {
                     final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config.get());
                     metricsAggregatorClient.submitValidationData(metricsAggregatorConfig, submitValidationData.getValidator(),
-                            submitValidationData.getValidatorVersion(), submitValidationData.getDataFilePath(), submitValidationData.getPlatform());
+                            submitValidationData.getValidatorVersion(), submitValidationData.getDataFilePath(), submitValidationData.getPlatform(),
+                            submitValidationData.getExecutionId());
                 } catch (Exception e) {
                     LOG.error("Could not submit validation metrics to Dockstore", e);
                     System.exit(FAILURE_EXIT_CODE);
@@ -150,7 +149,7 @@ public class MetricsAggregatorClient {
     }
 
 
-    private void submitValidationData(MetricsAggregatorConfig config, ValidatorToolEnum validator, String validatorVersion, String dataFilePath, Partner platform) throws IOException {
+    private void submitValidationData(MetricsAggregatorConfig config, ValidatorToolEnum validator, String validatorVersion, String dataFilePath, Partner platform, String executionId) throws IOException {
         ApiClient apiClient = setupApiClient(config.getDockstoreServerUrl(), config.getDockstoreToken());
         ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
 
@@ -186,7 +185,7 @@ public class MetricsAggregatorClient {
                     .validatorToolVersion(validatorVersion)
                     .isValid(isValid);
             validationExecution.setDateExecuted(dateExecuted);
-            validationExecution.setExecutionId(UUID.randomUUID().toString()); // No execution ID was provided by DNAstack, generate a random one
+            validationExecution.setExecutionId(executionId);
             ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().validationExecutions(List.of(validationExecution));
 
             try {

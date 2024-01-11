@@ -42,7 +42,7 @@ public class CommandLineArgs {
     }
 
     @Parameters(commandNames = { "submit-validation-data" }, commandDescription = "Formats workflow validation data specified in a file then submits it to Dockstore")
-    public static class SubmitValidationData extends  CommandLineArgs {
+    public static class SubmitValidationData extends CommandLineArgs {
         @Parameter(names = {"-c", "--config"}, description = "The config file path.")
         private File config = new File("./" + MetricsAggregatorClient.CONFIG_FILE_NAME);
 
@@ -57,6 +57,9 @@ public class CommandLineArgs {
 
         @Parameter(names = {"-p", "--platform"}, description = "The platform that the workflow was validated on", required = true)
         private Partner platform;
+
+        @Parameter(names = {"-id", "--executionId"}, description = "The execution ID to use for each validation execution. Assumes that each validation in the file is performed on unique workflows and workflow versions.")
+        private String executionId;
 
         public File getConfig() {
             return config;
@@ -76,6 +79,10 @@ public class CommandLineArgs {
 
         public Partner getPlatform() {
             return platform;
+        }
+
+        public String getExecutionId() {
+            return executionId;
         }
     }
 }

@@ -28,7 +28,6 @@ import java.io.File;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
-
 import org.apache.commons.configuration2.INIConfiguration;
 
 public final class TestUtilities {
