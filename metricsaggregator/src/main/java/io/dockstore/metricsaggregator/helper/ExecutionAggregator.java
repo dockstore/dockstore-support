@@ -99,6 +99,7 @@ public interface ExecutionAggregator<T, M, E> {
     default Optional<M> getAggregatedMetricFromMetricsList(List<Metrics> metricsList) {
         List<M> specificMetrics = metricsList.stream()
                 .map(this::getMetricFromMetrics)
+                .filter(Objects::nonNull)
                 .toList();
         return getAggregatedMetricsFromAggregatedMetrics(specificMetrics);
     }
