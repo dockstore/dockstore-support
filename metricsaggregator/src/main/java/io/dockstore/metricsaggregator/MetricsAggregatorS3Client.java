@@ -36,7 +36,9 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,33 +128,56 @@ public class MetricsAggregatorS3Client {
 
     /**
      * Get all executions from all submissions for the specific tool, version, and platform.
+     * If there are executions with the same execution ID, the function takes the newest execution.
      * @param toolId
      * @param versionName
      * @param platform
      * @return
      */
     private ExecutionsRequestBody getExecutions(String toolId, String versionName, String platform) throws IOException, JsonSyntaxException {
+        // getMetricsData uses the S3 ListObjectsV2Request which returns objects in alphabetical order.
+        // Since the file names are the time of submission in milliseconds, metricsDataList is sorted from oldest file name to newest file name
         List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(toolId, versionName, Partner.valueOf(platform));
-        List<RunExecution> runExecutionsFromAllSubmissions = new ArrayList<>();
-        List<TaskExecutions> taskExecutionsFromAllSubmissions = new ArrayList<>();
-        List<ValidationExecution> validationExecutionsFromAllSubmissions = new ArrayList<>();
-        List<AggregatedExecution> aggregatedExecutionsFromAllSubmissions = new ArrayList<>();
+        Map<String, RunExecution> executionIdToWorkflowExecutionMap = new HashMap<>();
+        Map<String, TaskExecutions> executionIdToTaskExecutionsMap = new HashMap<>();
+        Map<String, ValidationExecution> executionIdToValidationExecutionMap = new HashMap<>();
+        Map<String, AggregatedExecution> executionIdToAggregatedExecutionMap = new HashMap<>();
 
         for (MetricsData metricsData : metricsDataList) {
             String fileContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(),
                     metricsData.platform(), metricsData.fileName());
             ExecutionsRequestBody executionsFromOneSubmission = GSON.fromJson(fileContent, ExecutionsRequestBody.class);
-            runExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getRunExecutions());
-            taskExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getTaskExecutions());
-            validationExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getValidationExecutions());
-            aggregatedExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getAggregatedExecutions());
+            executionsFromOneSubmission.getRunExecutions().forEach(workflowExecution -> {
+                executionIdToWorkflowExecutionMap.put(workflowExecution.getExecutionId(), workflowExecution);
+                executionIdToValidationExecutionMap.remove(workflowExecution.getExecutionId());
+                executionIdToTaskExecutionsMap.remove(workflowExecution.getExecutionId());
+                executionIdToAggregatedExecutionMap.remove(workflowExecution.getExecutionId());
+            });
+            executionsFromOneSubmission.getTaskExecutions().forEach(taskExecutions -> {
+                executionIdToTaskExecutionsMap.put(taskExecutions.getExecutionId(), taskExecutions);
+                executionIdToWorkflowExecutionMap.remove(taskExecutions.getExecutionId());
+                executionIdToValidationExecutionMap.remove(taskExecutions.getExecutionId());
+                executionIdToAggregatedExecutionMap.remove(taskExecutions.getExecutionId());
+            });
+            executionsFromOneSubmission.getValidationExecutions().forEach(validationExecution -> {
+                executionIdToValidationExecutionMap.put(validationExecution.getExecutionId(), validationExecution);
+                executionIdToWorkflowExecutionMap.remove(validationExecution.getExecutionId());
+                executionIdToTaskExecutionsMap.remove(validationExecution.getExecutionId());
+                executionIdToAggregatedExecutionMap.remove(validationExecution.getExecutionId());
+            });
+            executionsFromOneSubmission.getAggregatedExecutions().forEach(aggregatedExecution -> {
+                executionIdToAggregatedExecutionMap.put(aggregatedExecution.getExecutionId(), aggregatedExecution);
+                executionIdToWorkflowExecutionMap.remove(aggregatedExecution.getExecutionId());
+                executionIdToTaskExecutionsMap.remove(aggregatedExecution.getExecutionId());
+                executionIdToValidationExecutionMap.remove(aggregatedExecution.getExecutionId());
+            });
         }
 
         return new ExecutionsRequestBody()
-                .runExecutions(runExecutionsFromAllSubmissions)
-                .taskExecutions(taskExecutionsFromAllSubmissions)
-                .validationExecutions(validationExecutionsFromAllSubmissions)
-                .aggregatedExecutions(aggregatedExecutionsFromAllSubmissions);
+                .runExecutions(executionIdToWorkflowExecutionMap.values().stream().toList())
+                .taskExecutions(executionIdToTaskExecutionsMap.values().stream().toList())
+                .validationExecutions(executionIdToValidationExecutionMap.values().stream().toList())
+                .aggregatedExecutions(executionIdToAggregatedExecutionMap.values().stream().toList());
     }
 
     /**
