@@ -31,6 +31,7 @@ import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
 import static io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum.MINIWDL;
 import static io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum.WOMTOOL;
+import static io.dockstore.utils.ExceptionHandler.IO_ERROR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -62,7 +63,6 @@ import io.dockstore.openapi.client.model.ValidatorInfo;
 import io.dockstore.openapi.client.model.ValidatorVersionInfo;
 import io.dockstore.openapi.client.model.Workflow;
 import io.dockstore.openapi.client.model.WorkflowVersion;
-import io.dockstore.utils.CLIConstants;
 import io.dockstore.webservice.DockstoreWebserviceApplication;
 import io.dockstore.webservice.DockstoreWebserviceConfiguration;
 import io.dropwizard.testing.DropwizardTestSupport;
@@ -395,7 +395,7 @@ class MetricsAggregatorClientIT {
     @Test
     void testAggregateMetricsErrors() throws Exception {
         int exitCode = catchSystemExit(() -> MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", "thisdoesntexist"}));
-        assertEquals(CLIConstants.FAILURE_EXIT_CODE, exitCode);
+        assertEquals(IO_ERROR, exitCode);
     }
 
     @Test

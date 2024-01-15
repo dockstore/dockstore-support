@@ -1,7 +1,9 @@
 package io.dockstore.utils;
 
+import static io.dockstore.utils.ExceptionHandler.IO_ERROR;
+import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
+
 import java.io.File;
-import java.util.Optional;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.configuration2.SubnodeConfiguration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
@@ -20,16 +22,16 @@ public final class ConfigFileUtils {
     private ConfigFileUtils() {
     }
 
-    public static Optional<INIConfiguration> getConfiguration(File iniFile) {
+    public static INIConfiguration getConfiguration(File iniFile) {
         Configurations configs = new Configurations();
 
+        INIConfiguration config = null;
         try {
-            INIConfiguration config = configs.ini(iniFile);
-            return Optional.of(config);
+            config = configs.ini(iniFile);
         } catch (ConfigurationException e) {
-            LOG.error(CONFIG_FILE_ERROR, e);
-            return Optional.empty();
+            exceptionMessage(e, CONFIG_FILE_ERROR, IO_ERROR);
         }
+        return config;
     }
 
     public static SubnodeConfiguration getDockstoreSection(INIConfiguration iniConfig) {

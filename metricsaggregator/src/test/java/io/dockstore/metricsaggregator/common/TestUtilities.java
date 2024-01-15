@@ -26,7 +26,6 @@ import io.dockstore.utils.ConfigFileUtils;
 import io.dropwizard.testing.ResourceHelpers;
 import java.io.File;
 import java.time.Instant;
-import java.util.Optional;
 import org.apache.commons.configuration2.INIConfiguration;
 
 public final class TestUtilities {
@@ -60,12 +59,7 @@ public final class TestUtilities {
     }
 
     public static MetricsAggregatorConfig getMetricsConfig() {
-        Optional<INIConfiguration> iniConfig = ConfigFileUtils.getConfiguration(new File(CONFIG_FILE_PATH));
-        if (iniConfig.isEmpty()) {
-            throw new RuntimeException("Unable to get config file");
-        }
-
-        MetricsAggregatorConfig config = new MetricsAggregatorConfig(iniConfig.get());
-        return config;
+        INIConfiguration iniConfig = ConfigFileUtils.getConfiguration(new File(CONFIG_FILE_PATH));
+        return new MetricsAggregatorConfig(iniConfig);
     }
 }

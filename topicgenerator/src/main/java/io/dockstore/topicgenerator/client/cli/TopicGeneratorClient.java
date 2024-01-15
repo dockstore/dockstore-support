@@ -1,7 +1,9 @@
 package io.dockstore.topicgenerator.client.cli;
 
-import static io.dockstore.utils.CLIConstants.FAILURE_EXIT_CODE;
 import static io.dockstore.utils.ConfigFileUtils.getConfiguration;
+import static io.dockstore.utils.ExceptionHandler.GENERIC_ERROR;
+import static io.dockstore.utils.ExceptionHandler.IO_ERROR;
+import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
@@ -34,7 +36,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -75,15 +76,14 @@ public class TopicGeneratorClient {
         } catch (MissingCommandException e) {
             jCommander.usage();
             if (e.getUnknownCommand().isEmpty()) {
-                LOG.error("No command entered", e);
+                LOG.error("No command entered");
             } else {
-                LOG.error("Unknown command", e);
+                LOG.error("Unknown command");
             }
-            System.exit(FAILURE_EXIT_CODE);
+            exceptionMessage(e, "The command is missing", GENERIC_ERROR);
         } catch (ParameterException e) {
             jCommander.usage();
-            LOG.error("Error parsing arguments", e);
-            System.exit(FAILURE_EXIT_CODE);
+            exceptionMessage(e, "Error parsing arguments", GENERIC_ERROR);
         }
 
         if (jCommander.getParsedCommand() == null || commandLineArgs.isHelp()) {
@@ -92,12 +92,8 @@ public class TopicGeneratorClient {
             if (generateTopicsCommand.isHelp()) {
                 jCommander.usage();
             } else {
-                final Optional<INIConfiguration> config = getConfiguration(generateTopicsCommand.getConfig());
-                if (config.isEmpty()) {
-                    LOG.error("Unable to get topic-generator config file");
-                    System.exit(FAILURE_EXIT_CODE);
-                }
-                final TopicGeneratorConfig topicGeneratorConfig = new TopicGeneratorConfig(config.get());
+                final INIConfiguration config = getConfiguration(generateTopicsCommand.getConfig());
+                final TopicGeneratorConfig topicGeneratorConfig = new TopicGeneratorConfig(config);
 
                 // Read CSV file
                 Iterable<CSVRecord> entriesCsvRecords = null;
@@ -110,8 +106,7 @@ public class TopicGeneratorClient {
                             .build();
                     entriesCsvRecords = csvFormat.parse(entriesCsv);
                 } catch (IOException e) {
-                    LOG.error("Unable to read input CSV file", e);
-                    System.exit(FAILURE_EXIT_CODE);
+                    exceptionMessage(e, "Unable to read input CSV file", IO_ERROR);
                 }
 
                 final TopicGeneratorClient topicGeneratorClient = new TopicGeneratorClient();
@@ -165,8 +160,7 @@ public class TopicGeneratorClient {
                 }
             }
         } catch (IOException e) {
-            LOG.error("Unable to create new CSV output file", e);
-            System.exit(FAILURE_EXIT_CODE);
+            exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
     }
 

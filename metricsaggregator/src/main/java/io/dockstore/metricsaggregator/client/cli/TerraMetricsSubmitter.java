@@ -1,7 +1,8 @@
 package io.dockstore.metricsaggregator.client.cli;
 
-import static io.dockstore.utils.CLIConstants.FAILURE_EXIT_CODE;
 import static io.dockstore.utils.DockstoreApiClientUtils.setupApiClient;
+import static io.dockstore.utils.ExceptionHandler.IO_ERROR;
+import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.common.Partner;
@@ -125,8 +126,7 @@ public class TerraMetricsSubmitter {
                     }
                 }
             } catch (IOException e) {
-                LOG.error("Unable to create new CSV output file", e);
-                System.exit(FAILURE_EXIT_CODE);
+                exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
             }
 
             logStats();
@@ -135,8 +135,7 @@ public class TerraMetricsSubmitter {
                 LOG.info("View skipped executions in file {}", outputFileName);
             }
         } catch (IOException e) {
-            LOG.error("Unable to read input CSV file", e);
-            System.exit(FAILURE_EXIT_CODE);
+            exceptionMessage(e, "Unable to read input CSV file", IO_ERROR);
         }
     }
 
