@@ -1,8 +1,8 @@
 package io.dockstore.tooltester.runWorkflow;
 
-import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.IO_ERROR;
-import static io.dockstore.tooltester.helper.ExceptionHandler.exceptionMessage;
+import static io.dockstore.utils.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.utils.ExceptionHandler.IO_ERROR;
+import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import static java.util.UUID.randomUUID;
 
 import java.io.BufferedWriter;

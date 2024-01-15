@@ -115,6 +115,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>utils</artifactId>
+            <version>${revision}${changelist}</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
             <artifactId>jackson-jaxrs-base</artifactId>
             <scope>runtime</scope>

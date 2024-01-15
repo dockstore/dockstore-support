@@ -1,7 +1,7 @@
 package io.dockstore.tooltester.client.cli;
 
 import static io.dockstore.tooltester.client.cli.Client.main;
-import static io.dockstore.tooltester.helper.ExceptionHandler.COMMAND_ERROR;
+import static io.dockstore.utils.ExceptionHandler.COMMAND_ERROR;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
