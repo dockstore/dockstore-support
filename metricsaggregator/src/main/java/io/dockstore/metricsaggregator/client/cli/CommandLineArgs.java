@@ -91,13 +91,19 @@ public class CommandLineArgs {
         @Parameter(names = {"-r", "--recordSkipped"}, description = "Record skipped executions and the reason skipped to a CSV file")
         private boolean recordSkippedExecutions;
 
+        @Parameter(names = {"-de", "--description"}, description = "Optional description about the metrics to include when submitting metrics to Dockstore")
+        private String description;
+
         public File getConfig() {
             return config;
         }
 
-
         public String getDataFilePath() {
             return dataFilePath;
+        }
+
+        public String getDescription() {
+            return description;
         }
 
         public boolean isRecordSkippedExecutions() {

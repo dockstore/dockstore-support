@@ -90,6 +90,9 @@ Usage: <main class> [options] [command] [command options]
         * -d, --data
             The file path to the CSV file containing workflow metrics from 
             Terra. The first line of the file should contain the CSV fields: workflow_id,status,workflow_start,workflow_end,workflow_runtime_minutes,source_url
+          -de, --description
+            Optional description about the metrics to include when submitting 
+            metrics to Dockstore
           --help
             Prints help for metricsaggregator
           -r, --recordSkipped

@@ -174,8 +174,11 @@ public class TerraMetricsSubmitter {
                 .toList();
         final ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(workflowExecutionsToSubmit);
         try {
-            extendedGa4GhApi.executionMetricsPost(executionsRequestBody, Partner.TERRA.toString(), sourceUrlTrsInfo.trsId(), sourceUrlTrsInfo.version(),
-                    "Terra metrics from Q4 2023");
+            String description = "Submitted using the metricsaggregator's submit-terra-metrics command";
+            if (StringUtils.isNotBlank(submitTerraMetricsCommand.getDescription())) {
+                description += ". " + submitTerraMetricsCommand.getDescription();
+            }
+            extendedGa4GhApi.executionMetricsPost(executionsRequestBody, Partner.TERRA.toString(), sourceUrlTrsInfo.trsId(), sourceUrlTrsInfo.version(), description);
             numberOfExecutionsSubmitted.addAndGet(workflowMetricRecords.size());
         } catch (ApiException e) {
             logSkippedExecutions(sourceUrlTrsInfo.sourceUrl(), workflowMetricRecords, String.format("Could not submit execution metrics to Dockstore for workflow %s: %s", sourceUrlTrsInfo, e.getMessage()), skippedExecutionsCsvPrinter, false);
