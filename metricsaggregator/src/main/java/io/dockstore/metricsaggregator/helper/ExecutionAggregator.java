@@ -1,5 +1,6 @@
 package io.dockstore.metricsaggregator.helper;
 
+import io.dockstore.openapi.client.model.Execution;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.TaskExecutions;
@@ -10,15 +11,32 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * An interface defining the methods needed to aggregate RunExecution's
- * @param <T> The type of execution, example: RunExecution or ValidationExecution
- * @param <M> The aggregated metric from Metrics
- * @param <E> The execution metric from RunExecution
+ * An interface defining the methods needed to aggregate workflow executions into aggregated metrics to submit to Dockstore.
+ * @param <T> The type of execution, example: RunExecution or ValidationExecution, that contains the metric to aggregate
+ * @param <M> The aggregated metric from the Metrics class, a class containing multiple types of aggregated metrics
+ * @param <E> The execution metric to aggregate from the Execution
  */
-public interface ExecutionAggregator<T, M, E> {
+public interface ExecutionAggregator<T extends Execution, M, E> {
 
+    /**
+     * Get the aggregated metric associated with the metric type from the aggregated Metrics class, which contains multiple types of aggregated metrics.
+     * @param metrics
+     * @return
+     */
     M getMetricFromMetrics(Metrics metrics);
+
+    /**
+     * Get the metric to aggregate from a single workflow execution.
+     * @param execution
+     * @return
+     */
     E getMetricFromExecution(T execution);
+
+    /**
+     * Get the executions containing the metric to aggregate from ExecutionsRequestBody.
+     * @param executionsRequestBody
+     * @return
+     */
     List<T> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody);
 
     /**
@@ -96,6 +114,12 @@ public interface ExecutionAggregator<T, M, E> {
         return Optional.empty();
     }
 
+    /**
+     * Given a list of Metrics, a class containing multiple types of aggregated metrics, get the metrics associated with the metric type and
+     * aggregate them into a metric of this type.
+     * @param metricsList
+     * @return
+     */
     default Optional<M> getAggregatedMetricFromMetricsList(List<Metrics> metricsList) {
         List<M> specificMetrics = metricsList.stream()
                 .map(this::getMetricFromMetrics)
