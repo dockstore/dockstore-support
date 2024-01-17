@@ -1,1 +1,1 @@
-{"runExecutions":[{"additionalProperties":{"CpuUtilized_MAX":0.0,"MemoryUtilized_MAX":0.0,"CpuUtilized_AVERAGE":"NaN","MemoryUtilized_AVERAGE":"NaN"},"executionStatus":"SUCCESSFUL","executionTime":"PT8M24.122S"}],"validationExecutions":[]}
+{"runExecutions":[{"executionId":"176d58e8-b434-4658-819f-2cc93b904273","dateExecuted":"2023-04-10T19:07:54.180Z","additionalProperties":{"CpuUtilized_MAX":0.0,"MemoryUtilized_MAX":0.0,"CpuUtilized_AVERAGE":"NaN","MemoryUtilized_AVERAGE":"NaN"},"executionStatus":"SUCCESSFUL","executionTime":"PT8M24.122S"}],"validationExecutions":[]}

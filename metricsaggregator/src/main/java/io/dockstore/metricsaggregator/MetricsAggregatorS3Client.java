@@ -159,31 +159,29 @@ public class MetricsAggregatorS3Client {
             // For each execution, put it in a map so that there are no executions with duplicate execution IDs.
             // The latest execution put in the map is the newest one based on the principal that S3 lists objects in alphabetical order,
             // which is returned in an ordered list via getMetricsData.
-            // Note: executions that were submitted to S3 prior to the existence of execution IDs don't have an execution ID.
-            // For the purposes of aggregation, generate one so that the execution is considered unique.
             executionsFromOneSubmission.getRunExecutions().forEach(workflowExecution -> {
-                final String executionId = generateExecutionIdIfNull(workflowExecution.getExecutionId());
+                final String executionId = workflowExecution.getExecutionId();
                 executionIdToWorkflowExecutionMap.put(executionId, workflowExecution);
                 executionIdToValidationExecutionMap.remove(executionId);
                 executionIdToTaskExecutionsMap.remove(executionId);
                 executionIdToAggregatedExecutionMap.remove(executionId);
             });
             executionsFromOneSubmission.getTaskExecutions().forEach(taskExecutions -> {
-                final String executionId = generateExecutionIdIfNull(taskExecutions.getExecutionId());
+                final String executionId = taskExecutions.getExecutionId();
                 executionIdToTaskExecutionsMap.put(executionId, taskExecutions);
                 executionIdToWorkflowExecutionMap.remove(executionId);
                 executionIdToValidationExecutionMap.remove(executionId);
                 executionIdToAggregatedExecutionMap.remove(executionId);
             });
             executionsFromOneSubmission.getValidationExecutions().forEach(validationExecution -> {
-                final String executionId = generateExecutionIdIfNull(validationExecution.getExecutionId());
+                final String executionId = validationExecution.getExecutionId();
                 executionIdToValidationExecutionMap.put(executionId, validationExecution);
                 executionIdToWorkflowExecutionMap.remove(executionId);
                 executionIdToTaskExecutionsMap.remove(executionId);
                 executionIdToAggregatedExecutionMap.remove(executionId);
             });
             executionsFromOneSubmission.getAggregatedExecutions().forEach(aggregatedExecution -> {
-                final String executionId = generateExecutionIdIfNull(aggregatedExecution.getExecutionId());
+                final String executionId = aggregatedExecution.getExecutionId();
                 executionIdToAggregatedExecutionMap.put(executionId, aggregatedExecution);
                 executionIdToWorkflowExecutionMap.remove(executionId);
                 executionIdToTaskExecutionsMap.remove(executionId);
