@@ -276,8 +276,7 @@ public class TerraMetricsSubmitter {
         }
 
         RunExecution workflowExecution = new RunExecution();
-        // TODO: uncomment below when the update executions endpoint PR is merged
-        //workflowExecution.setExecutionId(executionId);
+        workflowExecution.setExecutionId(executionId);
         workflowExecution.setExecutionStatus(executionStatus.get());
         workflowExecution.setDateExecuted(dateExecuted.get());
         getExecutionTime(workflowRunTimeMinutes).ifPresent(workflowExecution::setExecutionTime);

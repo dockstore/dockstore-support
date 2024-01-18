@@ -40,7 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -213,20 +212,6 @@ public class MetricsAggregatorS3Client {
                 .taskExecutions(executionIdToTaskExecutionsMap.values().stream().toList())
                 .validationExecutions(executionIdToValidationExecutionMap.values().stream().toList())
                 .aggregatedExecutions(executionIdToAggregatedExecutionMap.values().stream().toList());
-    }
-
-    /**
-     * If the execution ID is null, generate a random one for the purposes of aggregation.
-     * Executions that were submitted to S3 prior to the existence of execution IDs don't have an execution ID,
-     * thus for the purposes of aggregation, generate one.
-     * @param executionId
-     * @return
-     */
-    private String generateExecutionIdIfNull(String executionId) {
-        if (executionId == null) {
-            return UUID.randomUUID().toString();
-        }
-        return executionId;
     }
 
     /**
