@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           # A list of files, directories, and wildcard patterns to cache and restore
           path: ~/.m2/repository
