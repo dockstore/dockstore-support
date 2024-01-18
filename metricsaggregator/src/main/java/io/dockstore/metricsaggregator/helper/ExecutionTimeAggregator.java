@@ -5,6 +5,7 @@ import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionTimeIS
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
@@ -19,15 +20,20 @@ import java.util.Optional;
 /**
  * Aggregate Execution Time metrics by calculating the minimum, maximum, and average.
  */
-public final class ExecutionTimeAggregator implements RunExecutionAggregator<ExecutionTimeMetric, String> {
+public final class ExecutionTimeAggregator implements ExecutionAggregator<RunExecution, ExecutionTimeMetric, String> {
     @Override
-    public String getMetricFromRunExecution(RunExecution runExecution) {
-        return runExecution.getExecutionTime();
+    public String getMetricFromExecution(RunExecution execution) {
+        return execution.getExecutionTime();
     }
 
     @Override
     public ExecutionTimeMetric getMetricFromMetrics(Metrics metrics) {
         return metrics.getExecutionTime();
+    }
+
+    @Override
+    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
+        return executionsRequestBody.getRunExecutions();
     }
 
     @Override
@@ -69,8 +75,8 @@ public final class ExecutionTimeAggregator implements RunExecutionAggregator<Exe
     }
 
     @Override
-    public Optional<ExecutionTimeMetric> getAggregatedMetricFromWorkflowExecutions(List<RunExecution> workflowExecutions) {
-        List<String> executionTimes = getNonNullMetricsFromRunExecutions(workflowExecutions);
+    public Optional<ExecutionTimeMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
+        List<String> executionTimes = getNonNullMetricsFromExecutions(executions);
 
         boolean containsMalformedExecutionTimes = executionTimes.stream().anyMatch(executionTime -> checkExecutionTimeISO8601Format(executionTime).isEmpty());
         // This really shouldn't happen because the webservice validates that the ExecutionTime is in the correct format

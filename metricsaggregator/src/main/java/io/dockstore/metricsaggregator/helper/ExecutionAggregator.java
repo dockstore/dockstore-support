@@ -1,8 +1,8 @@
 package io.dockstore.metricsaggregator.helper;
 
+import io.dockstore.openapi.client.model.Execution;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
-import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,28 +11,47 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * An interface defining the methods needed to aggregate RunExecution's
- * @param <M> The aggregated metric from Metrics
- * @param <E> The execution metric from RunExecution
+ * An interface defining the methods needed to aggregate workflow executions into aggregated metrics to submit to Dockstore.
+ * @param <T> The type of execution, example: RunExecution or ValidationExecution, that contains the metric to aggregate
+ * @param <M> The aggregated metric from the Metrics class, a class containing multiple types of aggregated metrics
+ * @param <E> The execution metric to aggregate from the Execution
  */
-public interface RunExecutionAggregator<M, E> {
+public interface ExecutionAggregator<T extends Execution, M, E> {
 
+    /**
+     * Get the aggregated metric associated with the metric type from the aggregated Metrics class, which contains multiple types of aggregated metrics.
+     * @param metrics
+     * @return
+     */
     M getMetricFromMetrics(Metrics metrics);
-    E getMetricFromRunExecution(RunExecution runExecution);
+
+    /**
+     * Get the metric to aggregate from a single workflow execution.
+     * @param execution
+     * @return
+     */
+    E getMetricFromExecution(T execution);
+
+    /**
+     * Get the executions containing the metric to aggregate from ExecutionsRequestBody.
+     * @param executionsRequestBody
+     * @return
+     */
+    List<T> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody);
 
     /**
      * Aggregates TaskExecutions that belong to a single workflow run into a workflow-level RunExecution
      * @param taskExecutionsForOneWorkflowRun
      * @return
      */
-    Optional<RunExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun);
+    Optional<T> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun);
 
     /**
      * Aggregates workflow executions into an aggregated metric.
-     * @param workflowExecutions
+     * @param executions
      * @return
      */
-    Optional<M> getAggregatedMetricFromWorkflowExecutions(List<RunExecution> workflowExecutions);
+    Optional<M> getAggregatedMetricFromExecutions(List<T> executions);
 
     /**
      * Aggregates a list of aggregated metrics into one aggregated metric.
@@ -42,13 +61,13 @@ public interface RunExecutionAggregator<M, E> {
     Optional<M> getAggregatedMetricsFromAggregatedMetrics(List<M> aggregatedMetrics);
 
     /**
-     * Returns a list of RunExecutions where the execution metric is not null.
-     * @param runExecutions
+     * Returns a list of executions of type T where the execution metric is not null.
+     * @param executions
      * @return
      */
-    default List<E> getNonNullMetricsFromRunExecutions(List<RunExecution> runExecutions) {
-        return runExecutions.stream()
-                .map(this::getMetricFromRunExecution)
+    default List<E> getNonNullMetricsFromExecutions(List<T> executions) {
+        return executions.stream()
+                .map(this::getMetricFromExecution)
                 .filter(Objects::nonNull)
                 .toList();
     }
@@ -66,11 +85,11 @@ public interface RunExecutionAggregator<M, E> {
      * @return
      */
     default Optional<M> getAggregatedMetricFromAllSubmissions(ExecutionsRequestBody allSubmissions) {
-        final List<RunExecution> workflowExecutions = new ArrayList<>(allSubmissions.getRunExecutions());
+        final List<T> workflowExecutions = new ArrayList<>(getExecutionsFromExecutionRequestBody(allSubmissions));
 
         // If task executions are present, calculate the workflow RunExecution containing the overall workflow-level execution time for each list of tasks
         if (!allSubmissions.getTaskExecutions().isEmpty()) {
-            final List<RunExecution> calculatedWorkflowExecutionsFromTasks = allSubmissions.getTaskExecutions().stream()
+            final List<T> calculatedWorkflowExecutionsFromTasks = allSubmissions.getTaskExecutions().stream()
                     .map(this::getWorkflowExecutionFromTaskExecutions)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
@@ -85,7 +104,7 @@ public interface RunExecutionAggregator<M, E> {
                 .collect(Collectors.toCollection(ArrayList::new));
 
         // Aggregate workflow executions into one metric and add it to the list of aggregated metrics
-        Optional<M> aggregatedMetricFromWorkflowExecutions = getAggregatedMetricFromWorkflowExecutions(workflowExecutions);
+        Optional<M> aggregatedMetricFromWorkflowExecutions = getAggregatedMetricFromExecutions(workflowExecutions);
         aggregatedMetricFromWorkflowExecutions.ifPresent(aggregatedMetrics::add);
 
         if (!aggregatedMetrics.isEmpty()) {
@@ -93,5 +112,19 @@ public interface RunExecutionAggregator<M, E> {
             return getAggregatedMetricsFromAggregatedMetrics(aggregatedMetrics);
         }
         return Optional.empty();
+    }
+
+    /**
+     * Given a list of Metrics, a class containing multiple types of aggregated metrics, get the metrics associated with the metric type and
+     * aggregate them into a metric of this type.
+     * @param metricsList
+     * @return
+     */
+    default Optional<M> getAggregatedMetricFromMetricsList(List<Metrics> metricsList) {
+        List<M> specificMetrics = metricsList.stream()
+                .map(this::getMetricFromMetrics)
+                .filter(Objects::nonNull)
+                .toList();
+        return getAggregatedMetricsFromAggregatedMetrics(specificMetrics);
     }
 }

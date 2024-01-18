@@ -53,12 +53,12 @@ class ExecutionTimeAggregatorTest {
     @Test
     void testGetAggregatedMetricFromWorkflowExecutions() {
         // Empty list should return Optional.empty()
-        Optional<ExecutionTimeMetric> executionTimeMetric = EXECUTION_TIME_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(List.of());
+        Optional<ExecutionTimeMetric> executionTimeMetric = EXECUTION_TIME_AGGREGATOR.getAggregatedMetricFromExecutions(List.of());
         assertTrue(executionTimeMetric.isEmpty());
 
         // Test the metric calculated from a single workflow execution. The min, max, and average should be the same value as the single execution
         List<RunExecution> workflowExecutions = List.of(new RunExecution().executionTime("PT10S")); // 10 seconds
-        executionTimeMetric = EXECUTION_TIME_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(workflowExecutions);
+        executionTimeMetric = EXECUTION_TIME_AGGREGATOR.getAggregatedMetricFromExecutions(workflowExecutions);
         assertTrue(executionTimeMetric.isPresent());
         assertEquals(10.0, executionTimeMetric.get().getMinimum());
         assertEquals(10.0, executionTimeMetric.get().getMaximum());
@@ -71,7 +71,7 @@ class ExecutionTimeAggregatorTest {
                 new RunExecution().executionTime("PT20S"), // 20 seconds
                 new RunExecution().executionTime("PT30S") // 30 seconds
         );
-        executionTimeMetric = EXECUTION_TIME_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(workflowExecutions);
+        executionTimeMetric = EXECUTION_TIME_AGGREGATOR.getAggregatedMetricFromExecutions(workflowExecutions);
         assertTrue(executionTimeMetric.isPresent());
         assertEquals(10.0, executionTimeMetric.get().getMinimum());
         assertEquals(30.0, executionTimeMetric.get().getMaximum());

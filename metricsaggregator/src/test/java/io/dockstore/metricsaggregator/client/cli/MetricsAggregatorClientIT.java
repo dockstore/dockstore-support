@@ -23,7 +23,9 @@ import static io.dockstore.metricsaggregator.common.TestUtilities.BUCKET_NAME;
 import static io.dockstore.metricsaggregator.common.TestUtilities.CONFIG_FILE_PATH;
 import static io.dockstore.metricsaggregator.common.TestUtilities.ENDPOINT_OVERRIDE;
 import static io.dockstore.metricsaggregator.common.TestUtilities.createRunExecution;
+import static io.dockstore.metricsaggregator.common.TestUtilities.createTasksExecutions;
 import static io.dockstore.metricsaggregator.common.TestUtilities.createValidationExecution;
+import static io.dockstore.metricsaggregator.common.TestUtilities.generateExecutionId;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_SEMANTIC_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.SUCCESSFUL;
@@ -33,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static uk.org.webcompere.systemstubs.SystemStubs.catchSystemExit;
 
@@ -48,10 +51,14 @@ import io.dockstore.common.TestingPostgres;
 import io.dockstore.common.metrics.MetricsData;
 import io.dockstore.common.metrics.MetricsDataS3Client;
 import io.dockstore.openapi.client.ApiClient;
+import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.WorkflowsApi;
+import io.dockstore.openapi.client.model.AggregatedExecution;
 import io.dockstore.openapi.client.model.Cost;
+import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
+import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
@@ -66,7 +73,9 @@ import io.dockstore.webservice.DockstoreWebserviceConfiguration;
 import io.dropwizard.testing.DropwizardTestSupport;
 import io.dropwizard.testing.ResourceHelpers;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -125,6 +134,7 @@ class MetricsAggregatorClientIT {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:methodlength")
     void testAggregateMetrics() {
         final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
@@ -230,6 +240,8 @@ class MetricsAggregatorClientIT {
         // Submit two TaskExecutions, each one representing the task metrics for a single workflow execution
         // A successful task execution that ran for 11 seconds, requires 6 CPUs and 5.5 GBs of memory. Signifies that this workflow execution only executed one task
         TaskExecutions taskExecutions = new TaskExecutions().taskExecutions(List.of(createRunExecution(SUCCESSFUL, "PT11S", 6, 5.5, new Cost().value(2.00), "us-central1")));
+        taskExecutions.setDateExecuted(Instant.now().toString());
+        taskExecutions.setExecutionId(generateExecutionId());
         executionsRequestBody = new ExecutionsRequestBody().taskExecutions(List.of(taskExecutions));
         // Submit metrics for the same workflow version for platform 1
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, id, versionId, "");
@@ -396,6 +408,83 @@ class MetricsAggregatorClientIT {
         assertEquals(CLIConstants.FAILURE_EXIT_CODE, exitCode);
     }
 
+    /**
+     * Test that the metrics aggregator takes the newest execution if there are executions with duplicate IDs.
+     */
+    @Test
+    void testAggregateExecutionsWithDuplicateIds() {
+        final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
+        final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
+        final WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
+        String platform = Partner.TERRA.name();
+
+        Workflow workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
+        WorkflowVersion version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
+        assertNotNull(version);
+        assertTrue(version.getMetricsByPlatform().isEmpty());
+
+        String id = "#workflow/" + workflow.getFullWorkflowPath();
+        String versionId = version.getName();
+
+        // Create a workflow execution, tasks execution, validation execution, and aggregated execution with the same execution ID
+        final String executionId = generateExecutionId();
+        // Check if metric is aggregated from workflow execution by checking executionTime metric
+        RunExecution workflowExecution = createRunExecution(SUCCESSFUL, "PT5M", null, null, null, null);
+        workflowExecution.setExecutionId(executionId);
+        // Check if metric is aggregated from task executions by checking cpu requirement metric
+        TaskExecutions taskExecutions = createTasksExecutions(SUCCESSFUL, null, 2, null, null, null);
+        taskExecutions.setExecutionId(executionId);
+        // Check if metric is aggregated from validation execution by checking if it has a validation status metric
+        ValidationExecution validationExecution = createValidationExecution(MINIWDL, "v1", true);
+        validationExecution.setExecutionId(executionId);
+        // Check if metric is aggregated from aggregated execution by checking memory metric
+        AggregatedExecution aggregatedExecution = new AggregatedExecution().executionId(executionId);
+        aggregatedExecution.executionStatusCount(new ExecutionStatusMetric().count(Map.of(SUCCESSFUL.name(), 1))); // required metric
+        aggregatedExecution.memory(new MemoryMetric().minimum(1.0).maximum(1.0).average(1.0).numberOfDataPointsForAverage(1));
+
+        // Try to send all of them in one POST. Should fail because the webservice validates that one submission does not include duplicate IDs
+        assertThrows(ApiException.class, () -> extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody()
+                .runExecutions(List.of(workflowExecution))
+                .taskExecutions(List.of(taskExecutions))
+                .validationExecutions(List.of(validationExecution))
+                .aggregatedExecutions(List.of(aggregatedExecution)),
+                platform, id, versionId, ""));
+
+        // Send them one at a time. The last execution sent should be the one that the metrics aggregator aggregates
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(List.of(workflowExecution)), platform, id, versionId, "");
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().taskExecutions(List.of(taskExecutions)), platform, id, versionId, "");
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().validationExecutions(List.of(validationExecution)), platform, id, versionId, "");
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().aggregatedExecutions(List.of(aggregatedExecution)), platform, id, versionId, "");
+
+        MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
+        // Get workflow version to verify aggregated metrics
+        workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
+        version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
+        Metrics metrics = version.getMetricsByPlatform().get(platform);
+        assertNotNull(metrics);
+        // Should be aggregated from aggregatedExecution because it was submitted last
+        assertNotNull(metrics.getMemory());
+        assertNull(metrics.getExecutionTime()); // Verify that the metric from workflow execution wasn't used
+        assertNull(metrics.getCpu()); // Verify that the metric from task executions weren't used
+        assertNull(metrics.getValidationStatus()); // Verify that the metric from validation execution wasn't used
+
+        // Submit a workflow execution. The metric should be from the latest workflow execution.
+        workflowExecution.setExecutionTime("PT0S"); // Change execution time so it's different from the first workflow execution
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(List.of(workflowExecution)), platform, id, versionId, "");
+        MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
+        // Get workflow version to verify aggregated metrics
+        workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
+        version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
+        metrics = version.getMetricsByPlatform().get(platform);
+        assertNotNull(metrics);
+        // Should be aggregated from aggregatedExecution because it was submitted last
+        assertNotNull(metrics.getExecutionTime());
+        assertEquals(0, metrics.getExecutionTime().getMinimum()); // Verify that the execution time is from the second workflow execution
+        assertNull(metrics.getCpu()); // Verify that the metric from task executions weren't used
+        assertNull(metrics.getValidationStatus()); // Verify that the metric from validation execution wasn't used
+        assertNull(metrics.getMemory()); // Verify that the metric from aggregated execution wasn't used
+    }
+
     @Test
     void testSubmitValidationData() throws IOException {
         final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
@@ -403,6 +492,7 @@ class MetricsAggregatorClientIT {
         final Partner platform = DNA_STACK;
         final ValidationExecution.ValidatorToolEnum validator = MINIWDL;
         final String validatorVersion = "1.0";
+        final String executionId = "foobar";
 
         Workflow workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
         WorkflowVersion version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
@@ -414,7 +504,7 @@ class MetricsAggregatorClientIT {
         String successfulDataFilePath = ResourceHelpers.resourceFilePath("miniwdl-successful-validation-workflow-names.csv");
 
         // Submit validation data using a data file that contains workflow names of workflows that were successfully validated with miniwdl on DNAstack
-        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--validatorVersion", validatorVersion, "--data", successfulDataFilePath, "--platform", platform.toString()});
+        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--validatorVersion", validatorVersion, "--data", successfulDataFilePath, "--platform", platform.toString(), "--executionId", executionId});
         List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(id, versionId);
         assertEquals(1, metricsDataList.size());
         MetricsData metricsData = metricsDataList.get(0);
@@ -426,12 +516,13 @@ class MetricsAggregatorClientIT {
         ValidationExecution validationExecution = executionsRequestBody.getValidationExecutions().get(0);
         assertTrue(validationExecution.isIsValid());
         assertEquals(validator, validationExecution.getValidatorTool());
+        assertEquals(executionId, validationExecution.getExecutionId());
 
         LocalStackTestUtilities.deleteBucketContents(s3Client, BUCKET_NAME); // Clear bucket contents to start from scratch
 
         // Submit validation data using a data file that contains workflow names of workflows that failed validation with miniwdl on DNAstack
         String failedDataFilePath = ResourceHelpers.resourceFilePath("miniwdl-failed-validation-workflow-names.csv");
-        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--validatorVersion", validatorVersion, "--data", failedDataFilePath, "--platform", platform.toString()});
+        MetricsAggregatorClient.main(new String[] {"submit-validation-data", "--config", CONFIG_FILE_PATH, "--validator", validator.toString(), "--validatorVersion", validatorVersion, "--data", failedDataFilePath, "--platform", platform.toString(), "--executionId", executionId});
         metricsDataList = metricsDataS3Client.getMetricsData(id, versionId);
         assertEquals(1, metricsDataList.size());
         metricsData = metricsDataList.get(0);

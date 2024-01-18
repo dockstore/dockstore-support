@@ -2,6 +2,7 @@ package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
 import io.dockstore.openapi.client.model.CpuMetric;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
@@ -13,15 +14,20 @@ import java.util.Optional;
  * Aggregate CPU metrics by calculating the minimum, maximum, and average.
  * @return
  */
-public class CpuAggregator implements RunExecutionAggregator<CpuMetric, Integer> {
+public class CpuAggregator implements ExecutionAggregator<RunExecution, CpuMetric, Integer> {
     @Override
     public CpuMetric getMetricFromMetrics(Metrics metrics) {
         return metrics.getCpu();
     }
 
     @Override
-    public Integer getMetricFromRunExecution(RunExecution runExecution) {
-        return runExecution.getCpuRequirements();
+    public Integer getMetricFromExecution(RunExecution execution) {
+        return execution.getCpuRequirements();
+    }
+
+    @Override
+    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
+        return executionsRequestBody.getRunExecutions();
     }
 
     @Override
@@ -41,8 +47,8 @@ public class CpuAggregator implements RunExecutionAggregator<CpuMetric, Integer>
     }
 
     @Override
-    public Optional<CpuMetric> getAggregatedMetricFromWorkflowExecutions(List<RunExecution> workflowExecutions) {
-        List<Double> cpuRequirements = getNonNullMetricsFromRunExecutions(workflowExecutions).stream()
+    public Optional<CpuMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
+        List<Double> cpuRequirements = getNonNullMetricsFromExecutions(executions).stream()
                 .map(Integer::doubleValue)
                 .toList();
         if (!cpuRequirements.isEmpty()) {
