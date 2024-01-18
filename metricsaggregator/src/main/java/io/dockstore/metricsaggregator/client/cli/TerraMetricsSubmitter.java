@@ -402,6 +402,10 @@ public class TerraMetricsSubmitter {
      * @return
      */
     static List<String> getSourceUrlComponents(String sourceUrl) {
+        final String rawGitHubUrlPrefix = "https://raw.githubusercontent.com/";
+        if (!sourceUrl.startsWith(rawGitHubUrlPrefix)) {
+            return List.of();
+        }
         final String sourceUrlWithoutGitHubPrefix = sourceUrl.replace("https://raw.githubusercontent.com/", "");
         return Arrays.stream(sourceUrlWithoutGitHubPrefix.split("/"))
                 .filter(urlComponent -> !urlComponent.isEmpty()) // Filter out empty strings that are a result of consecutive slashes '//'

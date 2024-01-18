@@ -46,7 +46,7 @@ class TerraMetricsSubmitterTest {
         assertEquals(List.of("theiagen", "public_health_viral_genomics", "v2.0.0", "workflows", "wf_theiacov_fasta.wdl"), getSourceUrlComponents("https://raw.githubusercontent.com/theiagen/public_health_viral_genomics/v2.0.0/workflows/wf_theiacov_fasta.wdl"));
         // This source_url has consecutive slashes
         assertEquals(List.of("theiagen", "public_health_viral_genomics", "v2.0.0", "workflows", "wf_theiacov_fasta.wdl"), getSourceUrlComponents("https://raw.githubusercontent.com/theiagen/public_health_viral_genomics/v2.0.0//workflows/wf_theiacov_fasta.wdl"));
-        assertEquals(List.of(), getSourceUrlComponents("https://raw.githubusercontent.com/theiagen/public_health_viral_genomics/v2.0.0//workflows/wf_theiacov_fasta.wdl"));
+        assertEquals(List.of(), getSourceUrlComponents("https://nottherawgithuburlprefix/theiagen/public_health_viral_genomics/v2.0.0//workflows/wf_theiacov_fasta.wdl"));
     }
 
     @Test
