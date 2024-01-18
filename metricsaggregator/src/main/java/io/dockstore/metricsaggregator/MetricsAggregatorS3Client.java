@@ -26,6 +26,7 @@ import io.dockstore.common.S3ClientHelper;
 import io.dockstore.common.metrics.MetricsData;
 import io.dockstore.common.metrics.MetricsDataS3Client;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
+import io.dockstore.openapi.client.model.AggregatedExecution;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
@@ -35,8 +36,11 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,7 +127,7 @@ public class MetricsAggregatorS3Client {
         if (!allMetrics.isEmpty()) {
             // Calculate metrics across all platforms by aggregating the aggregated metrics from each platform
             try {
-                getAggregatedMetrics(new ExecutionsRequestBody().aggregatedExecutions(allMetrics)).ifPresent(metrics -> {
+                getAggregatedMetrics(allMetrics).ifPresent(metrics -> {
                     extendedGa4GhApi.aggregatedMetricsPut(metrics, Partner.ALL.name(), toolId, versionName);
                     LOG.info("Aggregated metrics across all platforms ({}) for tool ID {}, version {} from directory {}",
                             platformsString, toolId, versionName, versionS3KeyPrefix);
@@ -144,33 +148,85 @@ public class MetricsAggregatorS3Client {
 
     /**
      * Get all executions from all submissions for the specific tool, version, and platform.
+     * If there are executions with the same execution ID, the function takes the newest execution.
      * @param toolId
      * @param versionName
      * @param platform
      * @return
      */
     private ExecutionsRequestBody getExecutions(String toolId, String versionName, String platform) throws IOException, JsonSyntaxException {
+        // getMetricsData uses the S3 ListObjectsV2Request which returns objects in alphabetical order.
+        // Since the file names are the time of submission in milliseconds, metricsDataList is sorted from oldest file name to newest file name
         List<MetricsData> metricsDataList = metricsDataS3Client.getMetricsData(toolId, versionName, Partner.valueOf(platform));
-        List<RunExecution> runExecutionsFromAllSubmissions = new ArrayList<>();
-        List<TaskExecutions> taskExecutionsFromAllSubmissions = new ArrayList<>();
-        List<ValidationExecution> validationExecutionsFromAllSubmissions = new ArrayList<>();
-        List<Metrics> aggregatedExecutionsFromAllSubmissions = new ArrayList<>();
+        Map<String, RunExecution> executionIdToWorkflowExecutionMap = new HashMap<>();
+        Map<String, TaskExecutions> executionIdToTaskExecutionsMap = new HashMap<>();
+        Map<String, ValidationExecution> executionIdToValidationExecutionMap = new HashMap<>();
+        Map<String, AggregatedExecution> executionIdToAggregatedExecutionMap = new HashMap<>();
 
         for (MetricsData metricsData : metricsDataList) {
             String fileContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(),
                     metricsData.platform(), metricsData.fileName());
-            ExecutionsRequestBody executionsFromOneSubmission = GSON.fromJson(fileContent, ExecutionsRequestBody.class);
-            runExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getRunExecutions());
-            taskExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getTaskExecutions());
-            validationExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getValidationExecutions());
-            aggregatedExecutionsFromAllSubmissions.addAll(executionsFromOneSubmission.getAggregatedExecutions());
+
+            ExecutionsRequestBody executionsFromOneSubmission;
+            try {
+                executionsFromOneSubmission = GSON.fromJson(fileContent, ExecutionsRequestBody.class);
+            } catch (JsonSyntaxException e) {
+                LOG.error("Could not read execution(s) from S3 key {}, ignoring file", metricsData.s3Key());
+                continue;
+            }
+
+            // For each execution, put it in a map so that there are no executions with duplicate execution IDs.
+            // The latest execution put in the map is the newest one based on the principal that S3 lists objects in alphabetical order,
+            // which is returned in an ordered list via getMetricsData.
+            executionsFromOneSubmission.getRunExecutions().forEach(workflowExecution -> {
+                final String executionId = workflowExecution.getExecutionId();
+                executionIdToWorkflowExecutionMap.put(executionId, workflowExecution);
+                executionIdToValidationExecutionMap.remove(executionId);
+                executionIdToTaskExecutionsMap.remove(executionId);
+                executionIdToAggregatedExecutionMap.remove(executionId);
+            });
+            executionsFromOneSubmission.getTaskExecutions().forEach(taskExecutions -> {
+                final String executionId = taskExecutions.getExecutionId();
+                executionIdToTaskExecutionsMap.put(executionId, taskExecutions);
+                executionIdToWorkflowExecutionMap.remove(executionId);
+                executionIdToValidationExecutionMap.remove(executionId);
+                executionIdToAggregatedExecutionMap.remove(executionId);
+            });
+            executionsFromOneSubmission.getValidationExecutions().forEach(validationExecution -> {
+                final String executionId = validationExecution.getExecutionId();
+                executionIdToValidationExecutionMap.put(executionId, validationExecution);
+                executionIdToWorkflowExecutionMap.remove(executionId);
+                executionIdToTaskExecutionsMap.remove(executionId);
+                executionIdToAggregatedExecutionMap.remove(executionId);
+            });
+            executionsFromOneSubmission.getAggregatedExecutions().forEach(aggregatedExecution -> {
+                final String executionId = aggregatedExecution.getExecutionId();
+                executionIdToAggregatedExecutionMap.put(executionId, aggregatedExecution);
+                executionIdToWorkflowExecutionMap.remove(executionId);
+                executionIdToTaskExecutionsMap.remove(executionId);
+                executionIdToValidationExecutionMap.remove(executionId);
+            });
         }
 
         return new ExecutionsRequestBody()
-                .runExecutions(runExecutionsFromAllSubmissions)
-                .taskExecutions(taskExecutionsFromAllSubmissions)
-                .validationExecutions(validationExecutionsFromAllSubmissions)
-                .aggregatedExecutions(aggregatedExecutionsFromAllSubmissions);
+                .runExecutions(executionIdToWorkflowExecutionMap.values().stream().toList())
+                .taskExecutions(executionIdToTaskExecutionsMap.values().stream().toList())
+                .validationExecutions(executionIdToValidationExecutionMap.values().stream().toList())
+                .aggregatedExecutions(executionIdToAggregatedExecutionMap.values().stream().toList());
+    }
+
+    /**
+     * If the execution ID is null, generate a random one for the purposes of aggregation.
+     * Executions that were submitted to S3 prior to the existence of execution IDs don't have an execution ID,
+     * thus for the purposes of aggregation, generate one.
+     * @param executionId
+     * @return
+     */
+    private String generateExecutionIdIfNull(String executionId) {
+        if (executionId == null) {
+            return UUID.randomUUID().toString();
+        }
+        return executionId;
     }
 
     /**

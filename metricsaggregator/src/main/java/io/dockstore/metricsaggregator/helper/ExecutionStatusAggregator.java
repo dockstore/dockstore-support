@@ -3,6 +3,7 @@ package io.dockstore.metricsaggregator.helper;
 import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum;
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
 /**
  * Aggregate Execution Status metrics by summing up the count of each Execution Status.
  */
-public class ExecutionStatusAggregator implements RunExecutionAggregator<ExecutionStatusMetric, ExecutionStatusEnum> {
+public class ExecutionStatusAggregator implements ExecutionAggregator<RunExecution, ExecutionStatusMetric, ExecutionStatusEnum> {
 
     @Override
     public ExecutionStatusMetric getMetricFromMetrics(Metrics metrics) {
@@ -27,8 +28,13 @@ public class ExecutionStatusAggregator implements RunExecutionAggregator<Executi
     }
 
     @Override
-    public ExecutionStatusEnum getMetricFromRunExecution(RunExecution runExecution) {
-        return runExecution.getExecutionStatus();
+    public ExecutionStatusEnum getMetricFromExecution(RunExecution execution) {
+        return execution.getExecutionStatus();
+    }
+
+    @Override
+    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
+        return executionsRequestBody.getRunExecutions();
     }
 
     @Override
@@ -57,10 +63,10 @@ public class ExecutionStatusAggregator implements RunExecutionAggregator<Executi
     }
 
     @Override
-    public Optional<ExecutionStatusMetric> getAggregatedMetricFromWorkflowExecutions(List<RunExecution> workflowExecutions) {
-        if (!workflowExecutions.isEmpty()) {
+    public Optional<ExecutionStatusMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
+        if (!executions.isEmpty()) {
             // Calculate the status count from the workflow executions submitted
-            Map<String, Integer> executionsStatusCount = workflowExecutions.stream()
+            Map<String, Integer> executionsStatusCount = executions.stream()
                     .map(execution -> execution.getExecutionStatus().toString())
                     .collect(groupingBy(Function.identity(), Collectors.reducing(0, e -> 1, Integer::sum)));
             return Optional.of(new ExecutionStatusMetric().count(executionsStatusCount));

@@ -116,7 +116,8 @@ public class MetricsAggregatorClient {
                     final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config);
                     metricsAggregatorClient.submitValidationData(metricsAggregatorConfig, submitValidationData.getValidator(),
                             submitValidationData.getValidatorVersion(), submitValidationData.getDataFilePath(),
-                            submitValidationData.getPlatform());
+                            submitValidationData.getPlatform(),
+                            submitValidationData.getExecutionId());
                 } catch (Exception e) {
                     exceptionMessage(e, "Could not submit validation metrics to Dockstore", GENERIC_ERROR);
                 }
@@ -158,8 +159,8 @@ public class MetricsAggregatorClient {
         metricsAggregatorS3Client.aggregateMetrics(extendedGa4GhApi);
     }
 
-    private void submitValidationData(MetricsAggregatorConfig config, ValidatorToolEnum validator, String validatorVersion,
-            String dataFilePath, Partner platform) throws IOException {
+
+    private void submitValidationData(MetricsAggregatorConfig config, ValidatorToolEnum validator, String validatorVersion, String dataFilePath, Partner platform, String executionId) throws IOException {
         ApiClient apiClient = setupApiClient(config.getDockstoreServerUrl(), config.getDockstoreToken());
         ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
 
@@ -193,6 +194,7 @@ public class MetricsAggregatorClient {
             ValidationExecution validationExecution = new ValidationExecution().validatorTool(validator)
                     .validatorToolVersion(validatorVersion).isValid(isValid);
             validationExecution.setDateExecuted(dateExecuted);
+            validationExecution.setExecutionId(executionId);
             ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().validationExecutions(List.of(validationExecution));
 
             try {

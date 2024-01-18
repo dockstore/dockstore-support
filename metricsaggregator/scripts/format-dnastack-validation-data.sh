@@ -9,6 +9,8 @@ set -o nounset
 # This script can likely be removed after discussing with DNAstack the format that we want the validation data in.
 
 DATA_FILE_PATH="${1}"
+# DNAstack didn't provide a date. Use a provided date or the current date, specified in ISO 8601 UTC date format
+DATE_EXECUTED=${2-$(date +%Y-%m-%dT%H-%M-%S%z)}
 DELIMITER=','
 IS_VALID=true # DNAstack provided a file with workflow names that validated successfully with miniwdl
 
@@ -27,8 +29,6 @@ do
     FORMATTED_DATA_LINE+="${DELIMITER}"
     FORMATTED_DATA_LINE+="${IS_VALID}"
     FORMATTED_DATA_LINE+="${DELIMITER}"
-    # DNAstack didn't provide a date. Use current date, specified in ISO 8601 UTC date format
-    DATE_EXECUTED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     FORMATTED_DATA_LINE+="${DATE_EXECUTED}"
     echo "${FORMATTED_DATA_LINE}" >> "${FORMATTED_DATA_FILE}"
   fi

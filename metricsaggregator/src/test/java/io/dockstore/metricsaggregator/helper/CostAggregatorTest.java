@@ -46,12 +46,12 @@ class CostAggregatorTest {
     @Test
     void testGetAggregatedMetricFromWorkflowExecutions() {
         // Empty list should return Optional.empty()
-        Optional<CostMetric> costMetric = COST_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(List.of());
+        Optional<CostMetric> costMetric = COST_AGGREGATOR.getAggregatedMetricFromExecutions(List.of());
         assertTrue(costMetric.isEmpty());
 
         // Test the metric calculated from a single workflow execution. The min, max, and average should be the same value as the single execution
         List<RunExecution> workflowExecutions = List.of(new RunExecution().cost(new Cost().value(1.0)));
-        costMetric = COST_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(workflowExecutions);
+        costMetric = COST_AGGREGATOR.getAggregatedMetricFromExecutions(workflowExecutions);
         assertTrue(costMetric.isPresent());
         assertEquals(1.0, costMetric.get().getMinimum());
         assertEquals(1.0, costMetric.get().getMaximum());
@@ -64,7 +64,7 @@ class CostAggregatorTest {
                 new RunExecution().cost(new Cost().value(4.0)),
                 new RunExecution().cost(new Cost().value(6.0))
         );
-        costMetric = COST_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(workflowExecutions);
+        costMetric = COST_AGGREGATOR.getAggregatedMetricFromExecutions(workflowExecutions);
         assertTrue(costMetric.isPresent());
         assertEquals(2.0, costMetric.get().getMinimum());
         assertEquals(6.0, costMetric.get().getMaximum());

@@ -58,6 +58,9 @@ public class CommandLineArgs {
         @Parameter(names = {"-p", "--platform"}, description = "The platform that the workflow was validated on", required = true)
         private Partner platform;
 
+        @Parameter(names = {"-id", "--executionId"}, description = "The execution ID to use for each validation execution. Assumes that each validation in the file is performed on unique workflows and workflow versions.")
+        private String executionId;
+
         public File getConfig() {
             return config;
         }
@@ -76,6 +79,10 @@ public class CommandLineArgs {
 
         public Partner getPlatform() {
             return platform;
+        }
+
+        public String getExecutionId() {
+            return executionId;
         }
     }
 

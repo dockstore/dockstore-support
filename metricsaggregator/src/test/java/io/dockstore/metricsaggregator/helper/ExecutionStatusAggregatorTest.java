@@ -71,12 +71,12 @@ class ExecutionStatusAggregatorTest {
     @Test
     void testGetAggregatedMetricFromWorkflowExecutions() {
         // Empty list should return Optional.empty()
-        Optional<ExecutionStatusMetric> executionStatusMetric = EXECUTION_STATUS_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(List.of());
+        Optional<ExecutionStatusMetric> executionStatusMetric = EXECUTION_STATUS_AGGREGATOR.getAggregatedMetricFromExecutions(List.of());
         assertTrue(executionStatusMetric.isEmpty());
 
         // Test the metric calculated from a single workflow execution.
         List<RunExecution> workflowExecutions = List.of(new RunExecution().executionStatus(SUCCESSFUL));
-        executionStatusMetric = EXECUTION_STATUS_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(workflowExecutions);
+        executionStatusMetric = EXECUTION_STATUS_AGGREGATOR.getAggregatedMetricFromExecutions(workflowExecutions);
         assertTrue(executionStatusMetric.isPresent());
         assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
         assertFalse(executionStatusMetric.get().getCount().containsKey(FAILED_SEMANTIC_INVALID.toString()));
@@ -88,7 +88,7 @@ class ExecutionStatusAggregatorTest {
                 new RunExecution().executionStatus(FAILED_SEMANTIC_INVALID),
                 new RunExecution().executionStatus(FAILED_RUNTIME_INVALID)
         );
-        executionStatusMetric = EXECUTION_STATUS_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(workflowExecutions);
+        executionStatusMetric = EXECUTION_STATUS_AGGREGATOR.getAggregatedMetricFromExecutions(workflowExecutions);
         assertTrue(executionStatusMetric.isPresent());
         assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
         assertEquals(1, executionStatusMetric.get().getCount().get(FAILED_SEMANTIC_INVALID.toString()));

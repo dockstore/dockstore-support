@@ -45,12 +45,12 @@ class CpuAggregatorTest {
     @Test
     void testGetAggregatedMetricFromWorkflowExecutions() {
         // Empty list should return Optional.empty()
-        Optional<CpuMetric> cpuMetric = CPU_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(List.of());
+        Optional<CpuMetric> cpuMetric = CPU_AGGREGATOR.getAggregatedMetricFromExecutions(List.of());
         assertTrue(cpuMetric.isEmpty());
 
         // Test the metric calculated from a single workflow execution. The min, max, and average should be the same value as the single execution
         List<RunExecution> workflowExecutions = List.of(new RunExecution().cpuRequirements(1));
-        cpuMetric = CPU_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(workflowExecutions);
+        cpuMetric = CPU_AGGREGATOR.getAggregatedMetricFromExecutions(workflowExecutions);
         assertTrue(cpuMetric.isPresent());
         assertEquals(1.0, cpuMetric.get().getMinimum());
         assertEquals(1.0, cpuMetric.get().getMaximum());
@@ -63,7 +63,7 @@ class CpuAggregatorTest {
                 new RunExecution().cpuRequirements(4),
                 new RunExecution().cpuRequirements(6)
         );
-        cpuMetric = CPU_AGGREGATOR.getAggregatedMetricFromWorkflowExecutions(workflowExecutions);
+        cpuMetric = CPU_AGGREGATOR.getAggregatedMetricFromExecutions(workflowExecutions);
         assertTrue(cpuMetric.isPresent());
         assertEquals(2.0, cpuMetric.get().getMinimum());
         assertEquals(6.0, cpuMetric.get().getMaximum());
