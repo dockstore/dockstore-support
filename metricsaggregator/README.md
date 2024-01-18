@@ -69,11 +69,15 @@ Usage: <main class> [options] [command] [command options]
             format of the workflows that were validated by the validator 
             specified. The first line of the file should contain the CSV 
             fields: trsID,versionName,isValid,dateExecuted
+          -id, --executionId
+            The execution ID to use for each validation execution. Assumes 
+            that each validation in the file is performed on unique workflows 
+            and workflow versions.
           --help
             Prints help for metricsaggregator
         * -p, --platform
             The platform that the workflow was validated on
-            Possible Values: [GALAXY, TERRA, DNA_STACK, DNA_NEXUS, CGC, NHLBI_BIODATA_CATALYST, ANVIL, CAVATICA, NEXTFLOW_TOWER, ELWAZI, AGC, OTHER]
+            Possible Values: [GALAXY, TERRA, DNA_STACK, DNA_NEXUS, CGC, NHLBI_BIODATA_CATALYST, ANVIL, CAVATICA, NEXTFLOW_TOWER, ELWAZI, AGC, OTHER, ALL]
         * -v, --validator
             The validator tool used to validate the workflows
             Possible Values: [MINIWDL, WOMTOOL, CWLTOOL, NF_VALIDATION, OTHER]
@@ -117,7 +121,7 @@ with miniwdl on DNAstack:
 
 ```
 java -jar target/metricsaggregator-*-SNAPSHOT.jar submit-validation-data --config my-custom-config \
---data <path-to-my-data-file> --validator MINIWDL --validatorVersion 1.0 --platform DNA_STACK 
+--data <path-to-my-data-file> --validator MINIWDL --validatorVersion 1.0 --platform DNA_STACK --executionId a02075d9-092a-4fe7-9f83-4abf11de3dc9
 ```
 
 After running this command, you will want to run the `aggregate-metrics` command to aggregate the new validation data submitted.

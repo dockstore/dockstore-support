@@ -194,8 +194,13 @@ public class TerraMetricsSubmitter {
      * @param reason Reason that this execution is being skipped
      * @param skippedExecutionsCsvPrinter CSVPrinter that writes to the output file
      * @param skipFutureExecutionsWithSourceUrl boolean indicating if all executions with the same source_url should be skipped
+     * @param logToConsole boolean indicating if the reason skipped should be logged to the console
      */
-    private void logSkippedExecution(String sourceUrl, CSVRecord csvRecordToSkip, String reason, CSVPrinter skippedExecutionsCsvPrinter, boolean skipFutureExecutionsWithSourceUrl) {
+    private void logSkippedExecution(String sourceUrl, CSVRecord csvRecordToSkip, String reason, CSVPrinter skippedExecutionsCsvPrinter, boolean skipFutureExecutionsWithSourceUrl, boolean logToConsole) {
+        if (logToConsole) {
+            LOG.warn("Skipping execution on row {} with source_url {}: {}", csvRecordToSkip.getRecordNumber(), sourceUrl, reason);
+        }
+
         // Record to map for future reference. Only want to do this if the skip reason applies for ALL executions with the source_url.
         // Should not add to this map if the skip reason is specific to one execution
         if (skipFutureExecutionsWithSourceUrl) {
@@ -218,6 +223,18 @@ public class TerraMetricsSubmitter {
     }
 
     /**
+     * Performs logging and writing of the skipped execution to the console and output file.
+     * Assumes that the execution being skipped is for a reason that is only applicable to that execution.
+     * @param sourceUrl source_url of the csvRecordToSkip
+     * @param csvRecordToSkip CSVRecord to skip
+     * @param reason Reason that this execution is being skipped
+     * @param skippedExecutionsCsvPrinter CSVPrinter that writes to the output file
+     */
+    private void logSkippedExecution(String sourceUrl, CSVRecord csvRecordToSkip, String reason, CSVPrinter skippedExecutionsCsvPrinter) {
+        logSkippedExecution(sourceUrl, csvRecordToSkip, reason, skippedExecutionsCsvPrinter, false, true);
+    }
+
+    /**
      * Performs logging and writing of the skipped executions with the same sourceUrl to an output file. Assumes that all executions are skipped for the same reason.
      * If skipFutureExecutionsWithSourceUrl is true, also adds the source_url of the skipped execution to the sourceUrlsToSkipToReason map
      * so that future executions with the same source_url are skipped.
@@ -228,7 +245,8 @@ public class TerraMetricsSubmitter {
      * @param skipFutureExecutionsWithSourceUrl boolean indicating if all executions with the same source_url should be skipped
      */
     private void logSkippedExecutions(String sourceUrl, List<CSVRecord> csvRecordsToSkip, String reason, CSVPrinter skippedExecutionsCsvPrinter, boolean skipFutureExecutionsWithSourceUrl) {
-        csvRecordsToSkip.forEach(csvRecordToSkip -> logSkippedExecution(sourceUrl, csvRecordToSkip, reason, skippedExecutionsCsvPrinter, skipFutureExecutionsWithSourceUrl));
+        LOG.warn("Skipping {} executions with source_url {}: {}", csvRecordsToSkip.size(), sourceUrl, reason);
+        csvRecordsToSkip.forEach(csvRecordToSkip -> logSkippedExecution(sourceUrl, csvRecordToSkip, reason, skippedExecutionsCsvPrinter, skipFutureExecutionsWithSourceUrl, false));
     }
 
     /**
@@ -248,30 +266,30 @@ public class TerraMetricsSubmitter {
 
         // Check that all required fields are present
         if (StringUtils.isBlank(executionId)) {
-            logSkippedExecution(sourceUrl, csvRecord, "The required field workflow_id is missing", skippedExecutionsCsvPrinter, false);
+            logSkippedExecution(sourceUrl, csvRecord, "The required field workflow_id is missing", skippedExecutionsCsvPrinter);
             return Optional.empty();
         }
 
         if (StringUtils.isBlank(workflowStart)) {
-            logSkippedExecution(sourceUrl, csvRecord, "The required field workflow_start is missing", skippedExecutionsCsvPrinter, false);
+            logSkippedExecution(sourceUrl, csvRecord, "The required field workflow_start is missing", skippedExecutionsCsvPrinter);
             return Optional.empty();
         }
 
         if (StringUtils.isBlank(status)) {
-            logSkippedExecution(sourceUrl, csvRecord, "The required field status is missing", skippedExecutionsCsvPrinter, false);
+            logSkippedExecution(sourceUrl, csvRecord, "The required field status is missing", skippedExecutionsCsvPrinter);
             return Optional.empty();
         }
 
         // Format fields into Dockstore schema
         final Optional<ExecutionStatusEnum> executionStatus = getExecutionStatusEnumFromTerraStatus(status);
         if (executionStatus.isEmpty()) {
-            logSkippedExecution(sourceUrl, csvRecord, "Could not get a valid ExecutionStatusEnum from status '" + status + "'", skippedExecutionsCsvPrinter, false);
+            logSkippedExecution(sourceUrl, csvRecord, "Could not get a valid ExecutionStatusEnum from status '" + status + "'", skippedExecutionsCsvPrinter);
             return Optional.empty();
         }
 
         final Optional<String> dateExecuted = formatStringInIso8601Date(workflowStart);
         if (dateExecuted.isEmpty()) {
-            logSkippedExecution(sourceUrl, csvRecord, "Could not get a valid dateExecuted from workflow_start '" + workflowStart + "'", skippedExecutionsCsvPrinter, false);
+            logSkippedExecution(sourceUrl, csvRecord, "Could not get a valid dateExecuted from workflow_start '" + workflowStart + "'", skippedExecutionsCsvPrinter);
             return Optional.empty();
         }
 
