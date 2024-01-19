@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
@@ -110,12 +111,16 @@ public class MetricsAggregatorS3Client {
             }
 
             try {
-                getAggregatedMetrics(allSubmissions).ifPresent(metrics -> {
-                    extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, toolId, versionName);
-                    LOG.info("Aggregated metrics for tool ID {}, version {}, platform {} from directory {}", toolId, versionName, platform, versionS3KeyPrefix);
-                    allMetrics.add(metrics);
+                Optional<Metrics> aggregatedPlatformMetric = getAggregatedMetrics(allSubmissions);
+                if (aggregatedPlatformMetric.isPresent()) {
+                    extendedGa4GhApi.aggregatedMetricsPut(aggregatedPlatformMetric.get(), platform, toolId, versionName);
+                    LOG.info("Aggregated metrics for tool ID {}, version {}, platform {} from directory {}", toolId, versionName, platform,
+                            versionS3KeyPrefix);
+                    allMetrics.add(aggregatedPlatformMetric.get());
                     numberOfMetricsSubmitted.incrementAndGet();
-                });
+                } else {
+                    LOG.error("Error aggregating metrics for tool ID {}, version {}, platform {} from directory {}", toolId, versionName, platform, versionS3KeyPrefix);
+                }
             } catch (Exception e) {
                 LOG.error("Error aggregating metrics: Could not put all executions from directory {}", versionS3KeyPrefix, e);
                 numberOfMetricsSkipped.incrementAndGet();
@@ -139,6 +144,7 @@ public class MetricsAggregatorS3Client {
                 // Continue aggregating metrics for other directories
             }
         } else {
+            LOG.error("Error aggregating metrics for directory {}: no platform metrics aggregated", versionS3KeyPrefix);
             numberOfMetricsSkipped.incrementAndGet();
         }
         numberOfDirectoriesProcessed.incrementAndGet();
@@ -170,7 +176,7 @@ public class MetricsAggregatorS3Client {
             try {
                 executionsFromOneSubmission = GSON.fromJson(fileContent, ExecutionsRequestBody.class);
             } catch (JsonSyntaxException e) {
-                LOG.error("Could not read execution(s) from S3 key {}, ignoring file", metricsData.s3Key());
+                LOG.error("Could not read execution(s) from S3 key {}, ignoring file", metricsData.s3Key(), e);
                 continue;
             }
 
