@@ -133,6 +133,14 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
         <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
         </dependency>
@@ -143,6 +151,10 @@
         <dependency>
             <groupId>javax.money</groupId>
             <artifactId>money-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -278,6 +290,8 @@
                                 <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
                                 <usedDependency>javax.money:money-api</usedDependency>
                                 <usedDependency>org.javamoney.moneta:moneta-core</usedDependency>
+                                <usedDependency>ch.qos.logback:logback-classic</usedDependency>
+                                <usedDependency>ch.qos.logback:logback-core</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>

@@ -39,8 +39,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -52,6 +53,9 @@ public class MetricsAggregatorS3Client {
 
     private static final Logger LOG = LoggerFactory.getLogger(MetricsAggregatorS3Client.class);
     private static final Gson GSON = new Gson();
+    private final AtomicInteger numberOfDirectoriesProcessed = new AtomicInteger(0);
+    private final AtomicInteger numberOfMetricsSubmitted = new AtomicInteger(0);
+    private final AtomicInteger numberOfMetricsSkipped = new AtomicInteger(0);
 
     private final String bucketName;
 
@@ -71,60 +75,80 @@ public class MetricsAggregatorS3Client {
     }
 
     public void aggregateMetrics(ExtendedGa4GhApi extendedGa4GhApi) {
+        LOG.info("Getting directories to process...");
         List<S3DirectoryInfo> metricsDirectories = getDirectories();
 
         if (metricsDirectories.isEmpty()) {
-            System.out.println("No directories found to aggregate metrics");
+            LOG.info("No directories found to aggregate metrics");
             return;
         }
 
-        System.out.println("Aggregating metrics...");
-        for (S3DirectoryInfo directoryInfo : metricsDirectories) {
-            String toolId = directoryInfo.toolId();
-            String versionName = directoryInfo.versionId();
-            List<String> platforms = directoryInfo.platforms();
-            String platformsString = String.join(", ", platforms);
-            String versionS3KeyPrefix = directoryInfo.versionS3KeyPrefix();
+        LOG.info("Aggregating metrics for {} directories", metricsDirectories.size());
+        metricsDirectories.stream()
+                .parallel()
+                .forEach(directoryInfo -> aggregateMetricsForDirectory(directoryInfo, extendedGa4GhApi));
+        LOG.info("Completed aggregating metrics. Processed {} directories, submitted {} platform metrics, and skipped {} platform metrics", numberOfDirectoriesProcessed, numberOfMetricsSubmitted, numberOfMetricsSkipped);
+    }
 
-            // Collect metrics for each platform, so we can calculate metrics across all platforms
-            List<Metrics> allMetrics = new ArrayList<>();
-            for (String platform : platforms) {
-                ExecutionsRequestBody allSubmissions;
-                try {
-                    allSubmissions = getExecutions(toolId, versionName, platform);
-                } catch (Exception e) {
-                    LOG.error("Error aggregating metrics: Could not get all executions from directory {}", versionS3KeyPrefix, e);
-                    continue; // Continue aggregating metrics for other directories
-                }
+    private void aggregateMetricsForDirectory(S3DirectoryInfo directoryInfo, ExtendedGa4GhApi extendedGa4GhApi) {
+        LOG.info("Processing directory {}", directoryInfo);
+        String toolId = directoryInfo.toolId();
+        String versionName = directoryInfo.versionId();
+        List<String> platforms = directoryInfo.platforms();
+        String platformsString = String.join(", ", platforms);
+        String versionS3KeyPrefix = directoryInfo.versionS3KeyPrefix();
 
-                try {
-                    getAggregatedMetrics(allSubmissions).ifPresent(metrics -> {
-                        extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, toolId, versionName);
-                        System.out.printf("Aggregated metrics for tool ID %s, version %s, platform %s from directory %s%n", toolId, versionName, platform, versionS3KeyPrefix);
-                        allMetrics.add(metrics);
-                    });
-                } catch (Exception e) {
-                    LOG.error("Error aggregating metrics: Could not put all executions from directory {}", versionS3KeyPrefix, e);
-                    // Continue aggregating metrics for other platforms
-                }
+        // Collect metrics for each platform, so we can calculate metrics across all platforms
+        List<Metrics> allMetrics = new ArrayList<>();
+        for (String platform : platforms) {
+            ExecutionsRequestBody allSubmissions;
+            try {
+                allSubmissions = getExecutions(toolId, versionName, platform);
+            } catch (Exception e) {
+                LOG.error("Error aggregating metrics: Could not get all executions from directory {}", versionS3KeyPrefix, e);
+                numberOfMetricsSkipped.incrementAndGet();
+                continue; // Continue aggregating metrics for other directories
             }
 
-            if (!allMetrics.isEmpty()) {
-                // Calculate metrics across all platforms by aggregating the aggregated metrics from each platform
-                try {
-                    getAggregatedMetrics(allMetrics).ifPresent(metrics -> {
-                        extendedGa4GhApi.aggregatedMetricsPut(metrics, Partner.ALL.name(), toolId, versionName);
-                        System.out.printf("Aggregated metrics across all platforms (%s) for tool ID %s, version %s from directory %s%n",
-                                platformsString, toolId, versionName, versionS3KeyPrefix);
-                        allMetrics.add(metrics);
-                    });
-                } catch (Exception e) {
-                    LOG.error("Error aggregating metrics across all platforms ({}) for tool ID {}, version {} from directory {}", platformsString, toolId, versionName, versionS3KeyPrefix, e);
-                    // Continue aggregating metrics for other directories
+            try {
+                Optional<Metrics> aggregatedPlatformMetric = getAggregatedMetrics(allSubmissions);
+                if (aggregatedPlatformMetric.isPresent()) {
+                    extendedGa4GhApi.aggregatedMetricsPut(aggregatedPlatformMetric.get(), platform, toolId, versionName);
+                    LOG.info("Aggregated metrics for tool ID {}, version {}, platform {} from directory {}", toolId, versionName, platform,
+                            versionS3KeyPrefix);
+                    allMetrics.add(aggregatedPlatformMetric.get());
+                    numberOfMetricsSubmitted.incrementAndGet();
+                } else {
+                    LOG.error("Error aggregating metrics for tool ID {}, version {}, platform {} from directory {}", toolId, versionName, platform, versionS3KeyPrefix);
                 }
+            } catch (Exception e) {
+                LOG.error("Error aggregating metrics: Could not put all executions from directory {}", versionS3KeyPrefix, e);
+                numberOfMetricsSkipped.incrementAndGet();
+                // Continue aggregating metrics for other platforms
             }
         }
-        System.out.println("Completed aggregating metrics");
+
+        if (!allMetrics.isEmpty()) {
+            // Calculate metrics across all platforms by aggregating the aggregated metrics from each platform
+            try {
+                getAggregatedMetrics(allMetrics).ifPresent(metrics -> {
+                    extendedGa4GhApi.aggregatedMetricsPut(metrics, Partner.ALL.name(), toolId, versionName);
+                    LOG.info("Aggregated metrics across all platforms ({}) for tool ID {}, version {} from directory {}",
+                            platformsString, toolId, versionName, versionS3KeyPrefix);
+                    allMetrics.add(metrics);
+                    numberOfMetricsSubmitted.incrementAndGet();
+                });
+            } catch (Exception e) {
+                LOG.error("Error aggregating metrics across all platforms ({}) for tool ID {}, version {} from directory {}", platformsString, toolId, versionName, versionS3KeyPrefix, e);
+                numberOfMetricsSkipped.incrementAndGet();
+                // Continue aggregating metrics for other directories
+            }
+        } else {
+            LOG.error("Error aggregating metrics for directory {}: no platform metrics aggregated", versionS3KeyPrefix);
+            numberOfMetricsSkipped.incrementAndGet();
+        }
+        numberOfDirectoriesProcessed.incrementAndGet();
+        LOG.info("Processed {} directories", numberOfDirectoriesProcessed);
     }
 
     /**
@@ -152,7 +176,7 @@ public class MetricsAggregatorS3Client {
             try {
                 executionsFromOneSubmission = GSON.fromJson(fileContent, ExecutionsRequestBody.class);
             } catch (JsonSyntaxException e) {
-                LOG.error("Could not read execution(s) from S3 key {}, ignoring file", metricsData.s3Key());
+                LOG.error("Could not read execution(s) from S3 key {}, ignoring file", metricsData.s3Key(), e);
                 continue;
             }
 
@@ -194,20 +218,6 @@ public class MetricsAggregatorS3Client {
                 .taskExecutions(executionIdToTaskExecutionsMap.values().stream().toList())
                 .validationExecutions(executionIdToValidationExecutionMap.values().stream().toList())
                 .aggregatedExecutions(executionIdToAggregatedExecutionMap.values().stream().toList());
-    }
-
-    /**
-     * If the execution ID is null, generate a random one for the purposes of aggregation.
-     * Executions that were submitted to S3 prior to the existence of execution IDs don't have an execution ID,
-     * thus for the purposes of aggregation, generate one.
-     * @param executionId
-     * @return
-     */
-    private String generateExecutionIdIfNull(String executionId) {
-        if (executionId == null) {
-            return UUID.randomUUID().toString();
-        }
-        return executionId;
     }
 
     /**

@@ -1,4 +1,4 @@
-package io.dockstore.tooltester.helper;
+package io.dockstore.utils;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;

@@ -85,4 +85,51 @@ public class CommandLineArgs {
             return executionId;
         }
     }
+
+    @Parameters(commandNames = { "submit-terra-metrics" }, commandDescription = "Submits workflow metrics provided by Terra via a CSV file to Dockstore")
+    public static class SubmitTerraMetrics extends CommandLineArgs {
+        @Parameter(names = {"-c", "--config"}, description = "The config file path.")
+        private File config = new File("./" + MetricsAggregatorClient.CONFIG_FILE_NAME);
+
+
+        @Parameter(names = {"-d", "--data"}, description = "The file path to the CSV file containing workflow metrics from Terra. The first line of the file should contain the CSV fields: workflow_id,status,workflow_start,workflow_end,workflow_runtime_minutes,source_url", required = true)
+        private String dataFilePath;
+
+        @Parameter(names = {"-r", "--recordSkipped"}, description = "Record skipped executions and the reason skipped to a CSV file")
+        private boolean recordSkippedExecutions;
+
+        @Parameter(names = {"-de", "--description"}, description = "Optional description about the metrics to include when submitting metrics to Dockstore")
+        private String description;
+
+        public File getConfig() {
+            return config;
+        }
+
+        public String getDataFilePath() {
+            return dataFilePath;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public boolean isRecordSkippedExecutions() {
+            return recordSkippedExecutions;
+        }
+
+        /**
+         * Headers for the input data file
+         */
+        public enum TerraMetricsCsvHeaders {
+            workflow_id, status, workflow_start, workflow_end, workflow_runtime_minutes, source_url
+        }
+
+        /**
+         * Headers for the output file containing workflow executions that were skipped.
+         * The headers are the same as the input file headers, with the addition of a "reason" header indicating why an execution was skipped
+         */
+        public enum SkippedTerraMetricsCsvHeaders {
+            workflow_id, status, workflow_start, workflow_end, workflow_runtime_minutes, source_url, reason_skipped
+        }
+    }
 }

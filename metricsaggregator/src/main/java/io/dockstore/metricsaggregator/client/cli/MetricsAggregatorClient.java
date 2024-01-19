@@ -17,8 +17,10 @@
 
 package io.dockstore.metricsaggregator.client.cli;
 
-import static io.dockstore.utils.CLIConstants.FAILURE_EXIT_CODE;
 import static io.dockstore.utils.ConfigFileUtils.getConfiguration;
+import static io.dockstore.utils.DockstoreApiClientUtils.setupApiClient;
+import static io.dockstore.utils.ExceptionHandler.GENERIC_ERROR;
+import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
@@ -27,9 +29,9 @@ import io.dockstore.common.Partner;
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
 import io.dockstore.metricsaggregator.MetricsAggregatorS3Client;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.AggregateMetricsCommand;
+import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitTerraMetrics;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitValidationData;
 import io.dockstore.openapi.client.ApiClient;
-import io.dockstore.openapi.client.Configuration;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.ValidationExecution;
@@ -38,8 +40,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,34 +59,36 @@ public class MetricsAggregatorClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(MetricsAggregatorClient.class);
 
-
     public MetricsAggregatorClient() {
 
     }
 
     public static void main(String[] args) {
+        final Instant startTime = Instant.now();
         MetricsAggregatorClient metricsAggregatorClient = new MetricsAggregatorClient();
         final CommandLineArgs commandLineArgs = new CommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
         final AggregateMetricsCommand aggregateMetricsCommand = new AggregateMetricsCommand();
         final SubmitValidationData submitValidationData = new SubmitValidationData();
+        final SubmitTerraMetrics submitTerraMetrics = new SubmitTerraMetrics();
+
         jCommander.addCommand(aggregateMetricsCommand);
         jCommander.addCommand(submitValidationData);
+        jCommander.addCommand(submitTerraMetrics);
 
         try {
             jCommander.parse(args);
         } catch (MissingCommandException e) {
             jCommander.usage();
             if (e.getUnknownCommand().isEmpty()) {
-                LOG.error("No command entered", e);
+                LOG.error("No command entered");
             } else {
-                LOG.error("Unknown command", e);
+                LOG.error("Unknown command");
             }
-            System.exit(FAILURE_EXIT_CODE);
+            exceptionMessage(e, "The command is missing", GENERIC_ERROR);
         } catch (ParameterException e) {
             jCommander.usage();
-            LOG.error("Error parsing arguments", e);
-            System.exit(FAILURE_EXIT_CODE);
+            exceptionMessage(e, "Error parsing arguments", GENERIC_ERROR);
         }
 
         if (jCommander.getParsedCommand() == null || commandLineArgs.isHelp()) {
@@ -92,46 +97,52 @@ public class MetricsAggregatorClient {
             if (aggregateMetricsCommand.isHelp()) {
                 jCommander.usage();
             } else {
-                final Optional<INIConfiguration> config = getConfiguration(aggregateMetricsCommand.getConfig());
-                if (config.isEmpty()) {
-                    System.exit(FAILURE_EXIT_CODE);
-                }
+                INIConfiguration config = getConfiguration(aggregateMetricsCommand.getConfig());
 
                 try {
-                    final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config.get());
+                    final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config);
                     metricsAggregatorClient.aggregateMetrics(metricsAggregatorConfig);
                 } catch (Exception e) {
-                    LOG.error("Could not aggregate metrics", e);
-                    System.exit(FAILURE_EXIT_CODE);
+                    exceptionMessage(e, "Could not aggregate metrics", GENERIC_ERROR);
                 }
             }
         } else if ("submit-validation-data".equals(jCommander.getParsedCommand())) {
             if (submitValidationData.isHelp()) {
                 jCommander.usage();
             } else {
-                final Optional<INIConfiguration> config = getConfiguration(submitValidationData.getConfig());
-                if (config.isEmpty()) {
-                    System.exit(FAILURE_EXIT_CODE);
-                }
+                INIConfiguration config = getConfiguration(submitValidationData.getConfig());
 
                 try {
-                    final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config.get());
+                    final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config);
                     metricsAggregatorClient.submitValidationData(metricsAggregatorConfig, submitValidationData.getValidator(),
-                            submitValidationData.getValidatorVersion(), submitValidationData.getDataFilePath(), submitValidationData.getPlatform(),
+                            submitValidationData.getValidatorVersion(), submitValidationData.getDataFilePath(),
+                            submitValidationData.getPlatform(),
                             submitValidationData.getExecutionId());
                 } catch (Exception e) {
-                    LOG.error("Could not submit validation metrics to Dockstore", e);
-                    System.exit(FAILURE_EXIT_CODE);
+                    exceptionMessage(e, "Could not submit validation metrics to Dockstore", GENERIC_ERROR);
+                }
+            }
+        } else if ("submit-terra-metrics".equals(jCommander.getParsedCommand())) {
+            if (submitTerraMetrics.isHelp()) {
+                jCommander.usage();
+            } else {
+                INIConfiguration config = getConfiguration(submitTerraMetrics.getConfig());
+
+                try {
+                    final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config);
+                    final TerraMetricsSubmitter submitTerraMetricsCommand = new TerraMetricsSubmitter(metricsAggregatorConfig,
+                            submitTerraMetrics);
+                    submitTerraMetricsCommand.submitTerraMetrics();
+                } catch (Exception e) {
+                    exceptionMessage(e, "Could not submit Terra metrics to Dockstore", GENERIC_ERROR);
                 }
             }
         }
-    }
 
-    private ApiClient setupApiClient(String serverUrl, String token) {
-        ApiClient apiClient = Configuration.getDefaultApiClient();
-        apiClient.setBasePath(serverUrl);
-        apiClient.addDefaultHeader("Authorization", "Bearer " + token);
-        return apiClient;
+        if (jCommander.getParsedCommand() != null) {
+            final Instant endTime = Instant.now();
+            LOG.info("{} took {}", jCommander.getParsedCommand(), Duration.between(startTime, endTime));
+        }
     }
 
     private void aggregateMetrics(MetricsAggregatorConfig config) throws URISyntaxException {
@@ -180,10 +191,8 @@ public class MetricsAggregatorClient {
                 continue;
             }
             String dateExecuted = lineComponents[DATE_EXECUTED_INDEX];
-            ValidationExecution validationExecution = new ValidationExecution()
-                    .validatorTool(validator)
-                    .validatorToolVersion(validatorVersion)
-                    .isValid(isValid);
+            ValidationExecution validationExecution = new ValidationExecution().validatorTool(validator)
+                    .validatorToolVersion(validatorVersion).isValid(isValid);
             validationExecution.setDateExecuted(dateExecuted);
             validationExecution.setExecutionId(executionId);
             ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().validationExecutions(List.of(validationExecution));
@@ -191,7 +200,8 @@ public class MetricsAggregatorClient {
             try {
                 extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform.toString(), trsId, versionName,
                         "Validation executions submitted using dockstore-support metricsaggregator");
-                System.out.printf("Submitted validation metrics for tool ID %s, version %s, %s validated by %s %s on platform %s%n", trsId, versionName, isValid ? "successfully" : "unsuccessfully", validator, validatorVersion, platform);
+                System.out.printf("Submitted validation metrics for tool ID %s, version %s, %s validated by %s %s on platform %s%n", trsId,
+                        versionName, isValid ? "successfully" : "unsuccessfully", validator, validatorVersion, platform);
             } catch (Exception e) {
                 // Could end up here if the workflow no longer exists. Log then continue processing
                 LOG.error("Could not submit validation executions to Dockstore for workflow {}", csvLine, e);
