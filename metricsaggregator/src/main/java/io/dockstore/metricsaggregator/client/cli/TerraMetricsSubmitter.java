@@ -186,7 +186,7 @@ public class TerraMetricsSubmitter {
 
     /**
      * Submit Terra workflow executions to Dockstore.
-     * If the request fails with a 413 Request Entity Too Large, the function halves the number of workflow executions to submit then re-attempts submission
+     * If the request fails with a 413 Request Entity Too Large and there are more than one execution to submit, the function halves the number of workflow executions to submit then re-attempts submission
      * until it's successful or a non-413 error occurs.
      * @param workflowExecutionsToSubmit
      * @param sourceUrlTrsInfo
@@ -202,12 +202,23 @@ public class TerraMetricsSubmitter {
             numberOfExecutionsSubmitted.addAndGet(workflowMetricRecords.size());
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_REQUEST_TOO_LONG) {
-                int partitionSize = IntMath.divide(workflowExecutionsToSubmit.size(), 2, RoundingMode.UP);
-                List<List<RunExecution>> workflowExecutionsToSubmitPartitions = Lists.partition(workflowExecutionsToSubmit, partitionSize);
-                LOG.info("Request body too large, dividing list of {} workflow executions in half with partition size {} and re-attempting", workflowExecutionsToSubmit.size(), partitionSize);
-                for (List<RunExecution> partition: workflowExecutionsToSubmitPartitions) {
-                    LOG.info("Re-attempting with {} workflow executions", partition.size());
-                    executionMetricsPost(partition, sourceUrlTrsInfo, description, extendedGa4GhApi, workflowMetricRecords, skippedExecutionsCsvPrinter);
+                // One execution is too large, not much that can be done, so log and skip it
+                if (workflowExecutionsToSubmit.size() == 1) {
+                    logSkippedExecutions(sourceUrlTrsInfo.sourceUrl(), workflowMetricRecords,
+                            String.format("Could not submit execution metric to Dockstore for workflow %s. Single execution is too large: %s", sourceUrlTrsInfo,
+                                    e.getMessage()), skippedExecutionsCsvPrinter, false);
+                } else {
+                    int partitionSize = IntMath.divide(workflowExecutionsToSubmit.size(), 2, RoundingMode.UP);
+                    List<List<RunExecution>> workflowExecutionsToSubmitPartitions = Lists.partition(workflowExecutionsToSubmit,
+                            partitionSize);
+                    LOG.info(
+                            "Request body too large, dividing list of {} workflow executions in half with partition size {} and re-attempting",
+                            workflowExecutionsToSubmit.size(), partitionSize);
+                    for (List<RunExecution> partition : workflowExecutionsToSubmitPartitions) {
+                        LOG.info("Re-attempting with {} workflow executions", partition.size());
+                        executionMetricsPost(partition, sourceUrlTrsInfo, description, extendedGa4GhApi, workflowMetricRecords,
+                                skippedExecutionsCsvPrinter);
+                    }
                 }
             } else {
                 logSkippedExecutions(sourceUrlTrsInfo.sourceUrl(), workflowMetricRecords,
