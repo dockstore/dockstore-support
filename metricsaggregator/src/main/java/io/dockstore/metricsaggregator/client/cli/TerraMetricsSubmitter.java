@@ -6,6 +6,7 @@ import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import static java.util.stream.Collectors.groupingBy;
 
 import com.google.common.collect.Lists;
+import com.google.common.math.IntMath;
 import io.dockstore.common.Partner;
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitTerraMetrics;
@@ -23,6 +24,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -200,8 +202,9 @@ public class TerraMetricsSubmitter {
             numberOfExecutionsSubmitted.addAndGet(workflowMetricRecords.size());
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_REQUEST_TOO_LONG) {
-                List<List<RunExecution>> workflowExecutionsToSubmitPartitions = Lists.partition(workflowExecutionsToSubmit, 2);
-                LOG.info("Request body too large, dividing list of {} workflow executions in half and re-attempting", workflowExecutionsToSubmit.size());
+                int partitionSize = IntMath.divide(workflowExecutionsToSubmit.size(), 2, RoundingMode.UP);
+                List<List<RunExecution>> workflowExecutionsToSubmitPartitions = Lists.partition(workflowExecutionsToSubmit, partitionSize);
+                LOG.info("Request body too large, dividing list of {} workflow executions in half with partition size {} and re-attempting", workflowExecutionsToSubmit.size(), partitionSize);
                 for (List<RunExecution> partition: workflowExecutionsToSubmitPartitions) {
                     LOG.info("Re-attempting with {} workflow executions", partition.size());
                     executionMetricsPost(partition, sourceUrlTrsInfo, description, extendedGa4GhApi, workflowMetricRecords, skippedExecutionsCsvPrinter);
