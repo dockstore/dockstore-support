@@ -201,7 +201,9 @@ public class TerraMetricsSubmitter {
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_REQUEST_TOO_LONG) {
                 List<List<RunExecution>> workflowExecutionsToSubmitPartitions = Lists.partition(workflowExecutionsToSubmit, 2);
+                LOG.info("Request body too large, dividing list of {} workflow executions in half and re-attempting", workflowExecutionsToSubmit.size());
                 for (List<RunExecution> partition: workflowExecutionsToSubmitPartitions) {
+                    LOG.info("Re-attempting with {} workflow executions", partition.size());
                     executionMetricsPost(partition, sourceUrlTrsInfo, description, extendedGa4GhApi, workflowMetricRecords, skippedExecutionsCsvPrinter);
                 }
             } else {
