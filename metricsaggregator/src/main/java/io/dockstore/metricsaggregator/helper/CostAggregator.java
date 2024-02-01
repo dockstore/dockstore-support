@@ -6,8 +6,6 @@ import static io.dockstore.metricsaggregator.MoneyStatistics.CURRENCY;
 import io.dockstore.metricsaggregator.MoneyStatistics;
 import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.CostMetric;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
-import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.List;

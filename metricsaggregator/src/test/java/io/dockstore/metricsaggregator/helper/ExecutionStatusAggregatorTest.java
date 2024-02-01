@@ -20,7 +20,6 @@ import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.MetricsByStatus;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

@@ -1,14 +1,13 @@
 package io.dockstore.metricsaggregator.helper;
 
+import io.dockstore.openapi.client.model.Execution;
+import io.dockstore.openapi.client.model.ExecutionsRequestBody;
+import io.dockstore.openapi.client.model.Metrics;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import io.dockstore.openapi.client.model.Execution;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
-import io.dockstore.openapi.client.model.Metrics;
 
 /**
  * An interface defining the methods needed to aggregate workflow executions into aggregated metrics from ExecutionsRequestBody S3 objects to submit to Dockstore.

@@ -1,9 +1,7 @@
 package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.MemoryMetric;
-import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.List;
