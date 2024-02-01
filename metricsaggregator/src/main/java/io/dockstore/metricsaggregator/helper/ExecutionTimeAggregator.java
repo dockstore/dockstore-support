@@ -28,7 +28,7 @@ public final class ExecutionTimeAggregator implements ExecutionAggregator<RunExe
 
     @Override
     public ExecutionTimeMetric getMetricFromMetrics(Metrics metrics) {
-        return metrics.getExecutionTime();
+        return null;
     }
 
     @Override

@@ -18,6 +18,7 @@ import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.MemoryMetric;
+import io.dockstore.openapi.client.model.MetricsByStatus;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import io.dockstore.openapi.client.model.ValidationExecution;
@@ -44,18 +45,19 @@ class AggregationHelperTest {
         allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution));
         executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions);
         assertTrue(executionStatusMetric.isPresent());
-        assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
+        assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()).getExecutionStatusCount());
 
         // Aggregate submissions containing run executions and aggregated metrics
         AggregatedExecution submittedAggregatedMetrics = new AggregatedExecution();
         submittedAggregatedMetrics.executionStatusCount(
                 new ExecutionStatusMetric().count(
-                        Map.of(SUCCESSFUL.toString(), 10, FAILED_RUNTIME_INVALID.toString(), 1)));
+                        Map.of(SUCCESSFUL.toString(), new MetricsByStatus().executionStatusCount(10),
+                                FAILED_RUNTIME_INVALID.toString(), new MetricsByStatus().executionStatusCount(1))));
         allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution)).aggregatedExecutions(List.of(submittedAggregatedMetrics));
         executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions);
         assertTrue(executionStatusMetric.isPresent());
-        assertEquals(11, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
-        assertEquals(1, executionStatusMetric.get().getCount().get(FAILED_RUNTIME_INVALID.toString()));
+        assertEquals(11, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()).getExecutionStatusCount());
+        assertEquals(1, executionStatusMetric.get().getCount().get(FAILED_RUNTIME_INVALID.toString()).getExecutionStatusCount());
         assertNull(executionStatusMetric.get().getCount().get(FAILED_SEMANTIC_INVALID.toString()), "Should be null because the key doesn't exist in the count map");
 
         // Aggregate submissions containing workflow run executions and task executions
@@ -64,14 +66,14 @@ class AggregationHelperTest {
         allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution)).taskExecutions(List.of(taskExecutionsForOneWorkflowRun));
         executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions);
         assertTrue(executionStatusMetric.isPresent());
-        assertEquals(2, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
+        assertEquals(2, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()).getExecutionStatusCount());
         // Submit one successful workflow execution and a list of task executions where the single task failed
         taskExecutionsForOneWorkflowRun = new TaskExecutions().taskExecutions(List.of(new RunExecution().executionStatus(FAILED_RUNTIME_INVALID)));
         allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution)).taskExecutions(List.of(taskExecutionsForOneWorkflowRun));
         executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions);
         assertTrue(executionStatusMetric.isPresent());
-        assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
-        assertEquals(1, executionStatusMetric.get().getCount().get(FAILED_RUNTIME_INVALID.toString()));
+        assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()).getExecutionStatusCount());
+        assertEquals(1, executionStatusMetric.get().getCount().get(FAILED_RUNTIME_INVALID.toString()).getExecutionStatusCount());
         // Submit one successful workflow execution and a list of task executions where there are two tasks that failed due to different reasons
         taskExecutionsForOneWorkflowRun = new TaskExecutions().taskExecutions(
                 List.of(new RunExecution().executionStatus(FAILED_RUNTIME_INVALID),
@@ -79,7 +81,7 @@ class AggregationHelperTest {
         allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution)).taskExecutions(List.of(taskExecutionsForOneWorkflowRun));
         executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions);
         assertTrue(executionStatusMetric.isPresent());
-        assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
+        assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()).getExecutionStatusCount());
         // There should be 1 of either FAILED_RUNTIME_INVALID or FAILED_SEMANTIC_INVALID.
         assertTrue(executionStatusMetric.get().getCount().containsKey(FAILED_RUNTIME_INVALID.toString()) || executionStatusMetric.get().getCount().containsKey(FAILED_SEMANTIC_INVALID.toString()));
         // Submit one successful workflow execution and a list of task executions where there are 3 tasks that failed due to different reasons
@@ -90,9 +92,9 @@ class AggregationHelperTest {
         allSubmissions = new ExecutionsRequestBody().runExecutions(List.of(submittedRunExecution)).taskExecutions(List.of(taskExecutionsForOneWorkflowRun));
         executionStatusMetric = executionStatusAggregator.getAggregatedMetricFromAllSubmissions(allSubmissions);
         assertTrue(executionStatusMetric.isPresent());
-        assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()));
+        assertEquals(1, executionStatusMetric.get().getCount().get(SUCCESSFUL.toString()).getExecutionStatusCount());
         // There should be one count of FAILED_RUNTIME_INVALID because it's the most frequent failed status in the list of task executions
-        assertEquals(1, executionStatusMetric.get().getCount().get(FAILED_RUNTIME_INVALID.toString()));
+        assertEquals(1, executionStatusMetric.get().getCount().get(FAILED_RUNTIME_INVALID.toString()).getExecutionStatusCount());
     }
 
     @Test
@@ -124,11 +126,15 @@ class AggregationHelperTest {
 
         // Aggregate submissions containing run executions and aggregated metrics
         AggregatedExecution submittedAggregatedMetrics = new AggregatedExecution();
-        submittedAggregatedMetrics.executionTime(new ExecutionTimeMetric()
-                    .minimum(2.0)
-                    .maximum(6.0)
-                    .average(4.0)
-                    .numberOfDataPointsForAverage(2));
+        ExecutionStatusMetric executionStatusMetric = new ExecutionStatusMetric().putCountItem(SUCCESSFUL.name(),
+                new MetricsByStatus()
+                        .executionStatusCount(1)
+                        .executionTime(new ExecutionTimeMetric()
+                            .minimum(2.0)
+                            .maximum(6.0)
+                            .average(4.0)
+                            .numberOfDataPointsForAverage(2)));
+        submittedAggregatedMetrics.executionStatusCount(executionStatusMetric);
         executionTimeMetric = executionTimeAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(executionTimeMetric.isPresent());
         assertEquals(2.0, executionTimeMetric.get().getMinimum());
@@ -183,11 +189,15 @@ class AggregationHelperTest {
 
         // Aggregate submissions containing run executions and aggregated metrics
         AggregatedExecution submittedAggregatedMetrics = new AggregatedExecution();
-        submittedAggregatedMetrics.cpu(new CpuMetric()
-                    .minimum(2.0)
-                    .maximum(6.0)
-                    .average(4.0)
-                    .numberOfDataPointsForAverage(2));
+        ExecutionStatusMetric executionStatusMetric = new ExecutionStatusMetric().putCountItem(SUCCESSFUL.name(),
+                new MetricsByStatus()
+                        .executionStatusCount(1)
+                        .cpu(new CpuMetric()
+                                .minimum(2.0)
+                                .maximum(6.0)
+                                .average(4.0)
+                                .numberOfDataPointsForAverage(2)));
+        submittedAggregatedMetrics.executionStatusCount(executionStatusMetric);
         cpuMetric = cpuAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(cpuMetric.isPresent());
         assertEquals(1.0, cpuMetric.get().getMinimum());
@@ -233,11 +243,15 @@ class AggregationHelperTest {
 
         // Aggregate submissions containing run executions and aggregated metrics
         AggregatedExecution submittedAggregatedMetrics = new AggregatedExecution();
-        submittedAggregatedMetrics.memory(new MemoryMetric()
-                    .minimum(2.0)
-                    .maximum(6.0)
-                    .average(4.0)
-                    .numberOfDataPointsForAverage(2));
+        ExecutionStatusMetric executionStatusMetric = new ExecutionStatusMetric().putCountItem(SUCCESSFUL.name(),
+                new MetricsByStatus()
+                        .executionStatusCount(1)
+                        .memory(new MemoryMetric()
+                                .minimum(2.0)
+                                .maximum(6.0)
+                                .average(4.0)
+                                .numberOfDataPointsForAverage(2)));
+        submittedAggregatedMetrics.executionStatusCount(executionStatusMetric);
         memoryMetric = memoryAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(memoryMetric.isPresent());
         assertEquals(2.0, memoryMetric.get().getMinimum());
@@ -284,11 +298,15 @@ class AggregationHelperTest {
 
         // Aggregate submissions containing run executions and aggregated metrics
         AggregatedExecution submittedAggregatedMetrics = new AggregatedExecution();
-        submittedAggregatedMetrics.cost(new CostMetric()
-                    .minimum(2.00)
-                    .maximum(6.00)
-                    .average(4.00)
-                    .numberOfDataPointsForAverage(2));
+        ExecutionStatusMetric executionStatusMetric = new ExecutionStatusMetric().putCountItem(SUCCESSFUL.name(),
+                new MetricsByStatus()
+                        .executionStatusCount(1)
+                        .cost(new CostMetric()
+                                .minimum(2.0)
+                                .maximum(6.0)
+                                .average(4.0)
+                                .numberOfDataPointsForAverage(2)));
+        submittedAggregatedMetrics.executionStatusCount(executionStatusMetric);
         costMetric = costAggregator.getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().runExecutions(executions).aggregatedExecutions(List.of(submittedAggregatedMetrics)));
         assertTrue(costMetric.isPresent());
         assertEquals(2.0, costMetric.get().getMinimum());

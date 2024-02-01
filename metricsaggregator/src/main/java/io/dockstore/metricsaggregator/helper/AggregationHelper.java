@@ -26,13 +26,7 @@ public final class AggregationHelper {
         // Set run metrics
         Optional<ExecutionStatusMetric> aggregatedExecutionStatus = new ExecutionStatusAggregator().getAggregatedMetricFromAllSubmissions(allSubmissions);
         boolean containsRunMetrics = aggregatedExecutionStatus.isPresent();
-        if (aggregatedExecutionStatus.isPresent()) {
-            aggregatedMetrics.setExecutionStatusCount(aggregatedExecutionStatus.get());
-            new ExecutionTimeAggregator().getAggregatedMetricFromAllSubmissions(allSubmissions).ifPresent(aggregatedMetrics::setExecutionTime);
-            new CpuAggregator().getAggregatedMetricFromAllSubmissions(allSubmissions).ifPresent(aggregatedMetrics::setCpu);
-            new MemoryAggregator().getAggregatedMetricFromAllSubmissions(allSubmissions).ifPresent(aggregatedMetrics::setMemory);
-            new CostAggregator().getAggregatedMetricFromAllSubmissions(allSubmissions).ifPresent(aggregatedMetrics::setCost);
-        }
+        aggregatedExecutionStatus.ifPresent(aggregatedMetrics::setExecutionStatusCount);
 
         // Set validation metrics
         Optional<ValidationStatusMetric> aggregatedValidationStatus = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(allSubmissions);
@@ -57,13 +51,7 @@ public final class AggregationHelper {
         // Set run metrics
         Optional<ExecutionStatusMetric> aggregatedExecutionStatus = new ExecutionStatusAggregator().getAggregatedMetricFromMetricsList(aggregatedMetrics);
         boolean containsRunMetrics = aggregatedExecutionStatus.isPresent();
-        if (aggregatedExecutionStatus.isPresent()) {
-            overallMetrics.setExecutionStatusCount(aggregatedExecutionStatus.get());
-            new ExecutionTimeAggregator().getAggregatedMetricFromMetricsList(aggregatedMetrics).ifPresent(overallMetrics::setExecutionTime);
-            new CpuAggregator().getAggregatedMetricFromMetricsList(aggregatedMetrics).ifPresent(overallMetrics::setCpu);
-            new MemoryAggregator().getAggregatedMetricFromMetricsList(aggregatedMetrics).ifPresent(overallMetrics::setMemory);
-            new CostAggregator().getAggregatedMetricFromMetricsList(aggregatedMetrics).ifPresent(overallMetrics::setCost);
-        }
+        aggregatedExecutionStatus.ifPresent(overallMetrics::setExecutionStatusCount);
 
         // Set validation metrics
         Optional<ValidationStatusMetric> aggregatedValidationStatus = new ValidationStatusAggregator().getAggregatedMetricFromMetricsList(aggregatedMetrics);

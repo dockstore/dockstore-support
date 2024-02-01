@@ -16,7 +16,7 @@ import java.util.Optional;
 public class MemoryAggregator implements ExecutionAggregator<RunExecution, MemoryMetric, Double> {
     @Override
     public MemoryMetric getMetricFromMetrics(Metrics metrics) {
-        return metrics.getMemory();
+        return null;
     }
 
     @Override
