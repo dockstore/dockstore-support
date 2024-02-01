@@ -15,19 +15,10 @@ import java.util.Optional;
  * @return
  */
 public class CpuAggregator implements ExecutionAggregator<RunExecution, CpuMetric, Integer> {
-    @Override
-    public CpuMetric getMetricFromMetrics(Metrics metrics) {
-        return null;
-    }
 
     @Override
     public Integer getMetricFromExecution(RunExecution execution) {
         return execution.getCpuRequirements();
-    }
-
-    @Override
-    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
-        return executionsRequestBody.getRunExecutions();
     }
 
     @Override

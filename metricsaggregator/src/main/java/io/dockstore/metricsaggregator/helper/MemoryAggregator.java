@@ -14,19 +14,10 @@ import java.util.Optional;
  * Aggregate Memory metrics by calculating the minimum, maximum, and average.
  */
 public class MemoryAggregator implements ExecutionAggregator<RunExecution, MemoryMetric, Double> {
-    @Override
-    public MemoryMetric getMetricFromMetrics(Metrics metrics) {
-        return null;
-    }
 
     @Override
     public Double getMetricFromExecution(RunExecution execution) {
         return execution.getMemoryRequirementsGB();
-    }
-
-    @Override
-    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
-        return executionsRequestBody.getRunExecutions();
     }
 
     @Override

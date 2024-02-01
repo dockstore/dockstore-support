@@ -16,19 +16,10 @@ import java.util.Optional;
 import org.javamoney.moneta.Money;
 
 public class CostAggregator implements ExecutionAggregator<RunExecution, CostMetric, Cost> {
-    @Override
-    public CostMetric getMetricFromMetrics(Metrics metrics) {
-        return null;
-    }
 
     @Override
     public Cost getMetricFromExecution(RunExecution execution) {
         return execution.getCost();
-    }
-
-    @Override
-    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
-        return executionsRequestBody.getRunExecutions();
     }
 
     @Override

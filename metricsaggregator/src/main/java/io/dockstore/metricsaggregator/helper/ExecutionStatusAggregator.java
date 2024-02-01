@@ -21,7 +21,8 @@ import java.util.stream.Collectors;
 /**
  * Aggregate Execution Status metrics by summing up the count of each Execution Status.
  */
-public class ExecutionStatusAggregator implements ExecutionAggregator<RunExecution, ExecutionStatusMetric, ExecutionStatusEnum> {
+public class ExecutionStatusAggregator implements
+        ExecutionsRequestBodyAggregator<RunExecution, ExecutionStatusMetric, ExecutionStatusEnum> {
     // Aggregators used to calculate metrics by execution status
     private final ExecutionTimeAggregator executionTimeAggregator = new ExecutionTimeAggregator();
     private final CpuAggregator cpuAggregator = new CpuAggregator();
