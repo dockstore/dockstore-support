@@ -2,8 +2,6 @@ package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
 import io.dockstore.openapi.client.model.CpuMetric;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
-import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.List;
@@ -15,19 +13,10 @@ import java.util.Optional;
  * @return
  */
 public class CpuAggregator implements ExecutionAggregator<RunExecution, CpuMetric, Integer> {
-    @Override
-    public CpuMetric getMetricFromMetrics(Metrics metrics) {
-        return metrics.getCpu();
-    }
 
     @Override
     public Integer getMetricFromExecution(RunExecution execution) {
         return execution.getCpuRequirements();
-    }
-
-    @Override
-    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
-        return executionsRequestBody.getRunExecutions();
     }
 
     @Override

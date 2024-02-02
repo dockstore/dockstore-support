@@ -27,6 +27,7 @@ import static io.dockstore.metricsaggregator.common.TestUtilities.createTasksExe
 import static io.dockstore.metricsaggregator.common.TestUtilities.createValidationExecution;
 import static io.dockstore.metricsaggregator.common.TestUtilities.generateExecutionId;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.ABORTED;
+import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.ALL;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_RUNTIME_INVALID;
 import static io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum.FAILED_SEMANTIC_INVALID;
@@ -63,6 +64,7 @@ import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metrics;
+import io.dockstore.openapi.client.model.MetricsByStatus;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import io.dockstore.openapi.client.model.ValidationExecution;
@@ -77,7 +79,6 @@ import io.dropwizard.testing.ResourceHelpers;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -199,33 +200,88 @@ class MetricsAggregatorClientIT {
         // This version now has two execution metrics data for it. Verify that the aggregated metrics are correct
         assertEquals(1, platform1Metrics.getExecutionStatusCount().getNumberOfSuccessfulExecutions());
         assertEquals(1, platform1Metrics.getExecutionStatusCount().getNumberOfFailedExecutions());
-        assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()));
-        assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(FAILED_RUNTIME_INVALID.name()));
+        assertEquals(2, platform1Metrics.getExecutionStatusCount().getCount().get(ALL.name()).getExecutionStatusCount());
+        assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()).getExecutionStatusCount());
+        assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(FAILED_RUNTIME_INVALID.name()).getExecutionStatusCount());
         assertFalse(platform1Metrics.getExecutionStatusCount().getCount().containsKey(FAILED_SEMANTIC_INVALID.name()));
 
-        assertEquals(2, platform1Metrics.getCpu().getNumberOfDataPointsForAverage());
-        assertEquals(2, platform1Metrics.getCpu().getMinimum());
-        assertEquals(4, platform1Metrics.getCpu().getMaximum());
-        assertEquals(3, platform1Metrics.getCpu().getAverage());
-        assertNull(platform1Metrics.getCpu().getUnit());
+        // Check metrics for ALL executions statuses
+        MetricsByStatus platform1AllStatusesMetrics = platform1Metrics.getExecutionStatusCount().getCount().get(ALL.name());
+        assertEquals(2, platform1AllStatusesMetrics.getCpu().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1AllStatusesMetrics.getCpu().getMinimum());
+        assertEquals(4, platform1AllStatusesMetrics.getCpu().getMaximum());
+        assertEquals(3, platform1AllStatusesMetrics.getCpu().getAverage());
+        assertNull(platform1AllStatusesMetrics.getCpu().getUnit());
 
-        assertEquals(2, platform1Metrics.getMemory().getNumberOfDataPointsForAverage());
-        assertEquals(2, platform1Metrics.getMemory().getMinimum());
-        assertEquals(4.5, platform1Metrics.getMemory().getMaximum());
-        assertEquals(3.25, platform1Metrics.getMemory().getAverage());
-        assertNotNull(platform1Metrics.getMemory().getUnit());
+        assertEquals(2, platform1AllStatusesMetrics.getMemory().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1AllStatusesMetrics.getMemory().getMinimum());
+        assertEquals(4.5, platform1AllStatusesMetrics.getMemory().getMaximum());
+        assertEquals(3.25, platform1AllStatusesMetrics.getMemory().getAverage());
+        assertNotNull(platform1AllStatusesMetrics.getMemory().getUnit());
 
-        assertEquals(2, platform1Metrics.getCost().getNumberOfDataPointsForAverage());
-        assertEquals(2, platform1Metrics.getCost().getMinimum());
-        assertEquals(2, platform1Metrics.getCost().getMaximum());
-        assertEquals(2, platform1Metrics.getCost().getAverage());
-        assertNotNull(platform1Metrics.getCost().getUnit());
+        assertEquals(2, platform1AllStatusesMetrics.getCost().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1AllStatusesMetrics.getCost().getMinimum());
+        assertEquals(2, platform1AllStatusesMetrics.getCost().getMaximum());
+        assertEquals(2, platform1AllStatusesMetrics.getCost().getAverage());
+        assertNotNull(platform1AllStatusesMetrics.getCost().getUnit());
 
-        assertEquals(2, platform1Metrics.getExecutionTime().getNumberOfDataPointsForAverage());
-        assertEquals(1, platform1Metrics.getExecutionTime().getMinimum());
-        assertEquals(300, platform1Metrics.getExecutionTime().getMaximum());
-        assertEquals(150.5, platform1Metrics.getExecutionTime().getAverage());
-        assertNotNull(platform1Metrics.getExecutionTime().getUnit());
+        assertEquals(2, platform1AllStatusesMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
+        assertEquals(1, platform1AllStatusesMetrics.getExecutionTime().getMinimum());
+        assertEquals(300, platform1AllStatusesMetrics.getExecutionTime().getMaximum());
+        assertEquals(150.5, platform1AllStatusesMetrics.getExecutionTime().getAverage());
+        assertNotNull(platform1AllStatusesMetrics.getExecutionTime().getUnit());
+
+        // Check metrics for successful executions
+        MetricsByStatus platform1SuccessfulMetrics = platform1Metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name());
+        assertEquals(1, platform1SuccessfulMetrics.getCpu().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1SuccessfulMetrics.getCpu().getMinimum());
+        assertEquals(2, platform1SuccessfulMetrics.getCpu().getMaximum());
+        assertEquals(2, platform1SuccessfulMetrics.getCpu().getAverage());
+        assertNull(platform1SuccessfulMetrics.getCpu().getUnit());
+
+        assertEquals(1, platform1SuccessfulMetrics.getMemory().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1SuccessfulMetrics.getMemory().getMinimum());
+        assertEquals(2, platform1SuccessfulMetrics.getMemory().getMaximum());
+        assertEquals(2, platform1SuccessfulMetrics.getMemory().getAverage());
+        assertNotNull(platform1SuccessfulMetrics.getMemory().getUnit());
+
+        assertEquals(1, platform1SuccessfulMetrics.getCost().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1SuccessfulMetrics.getCost().getMinimum());
+        assertEquals(2, platform1SuccessfulMetrics.getCost().getMaximum());
+        assertEquals(2, platform1SuccessfulMetrics.getCost().getAverage());
+        assertNotNull(platform1SuccessfulMetrics.getCost().getUnit());
+
+        assertEquals(1, platform1SuccessfulMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
+        assertEquals(300, platform1SuccessfulMetrics.getExecutionTime().getMinimum());
+        assertEquals(300, platform1SuccessfulMetrics.getExecutionTime().getMaximum());
+        assertEquals(300, platform1SuccessfulMetrics.getExecutionTime().getAverage());
+        assertNotNull(platform1SuccessfulMetrics.getExecutionTime().getUnit());
+
+        // Check metrics for failed runtime invalid executions
+        MetricsByStatus platform1FailedRuntimeInvalidMetrics = platform1Metrics.getExecutionStatusCount().getCount().get(FAILED_RUNTIME_INVALID.name());
+        assertEquals(1, platform1FailedRuntimeInvalidMetrics.getCpu().getNumberOfDataPointsForAverage());
+        assertEquals(4, platform1FailedRuntimeInvalidMetrics.getCpu().getMinimum());
+        assertEquals(4, platform1FailedRuntimeInvalidMetrics.getCpu().getMaximum());
+        assertEquals(4, platform1FailedRuntimeInvalidMetrics.getCpu().getAverage());
+        assertNull(platform1FailedRuntimeInvalidMetrics.getCpu().getUnit());
+
+        assertEquals(1, platform1FailedRuntimeInvalidMetrics.getMemory().getNumberOfDataPointsForAverage());
+        assertEquals(4.5, platform1FailedRuntimeInvalidMetrics.getMemory().getMinimum());
+        assertEquals(4.5, platform1FailedRuntimeInvalidMetrics.getMemory().getMaximum());
+        assertEquals(4.5, platform1FailedRuntimeInvalidMetrics.getMemory().getAverage());
+        assertNotNull(platform1FailedRuntimeInvalidMetrics.getMemory().getUnit());
+
+        assertEquals(1, platform1FailedRuntimeInvalidMetrics.getCost().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1FailedRuntimeInvalidMetrics.getCost().getMinimum());
+        assertEquals(2, platform1FailedRuntimeInvalidMetrics.getCost().getMaximum());
+        assertEquals(2, platform1FailedRuntimeInvalidMetrics.getCost().getAverage());
+        assertNotNull(platform1FailedRuntimeInvalidMetrics.getCost().getUnit());
+
+        assertEquals(1, platform1FailedRuntimeInvalidMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
+        assertEquals(1, platform1FailedRuntimeInvalidMetrics.getExecutionTime().getMinimum());
+        assertEquals(1, platform1FailedRuntimeInvalidMetrics.getExecutionTime().getMaximum());
+        assertEquals(1, platform1FailedRuntimeInvalidMetrics.getExecutionTime().getAverage());
+        assertNotNull(platform1FailedRuntimeInvalidMetrics.getExecutionTime().getUnit());
 
         assertEquals(1, platform1Metrics.getValidationStatus().getValidatorTools().size());
         validationInfo = platform1Metrics.getValidationStatus().getValidatorTools().get(MINIWDL.toString());
@@ -239,7 +295,7 @@ class MetricsAggregatorClientIT {
         assertEquals(50d, validationInfo.getPassingRate());
         assertEquals(2, validationInfo.getNumberOfRuns());
 
-        // Submit two TaskExecutions, each one representing the task metrics for a single workflow execution
+        // Submit one TaskExecutions, representing the task metrics for a single workflow execution
         // A successful task execution that ran for 11 seconds, requires 6 CPUs and 5.5 GBs of memory. Signifies that this workflow execution only executed one task
         TaskExecutions taskExecutions = new TaskExecutions().taskExecutions(List.of(createRunExecution(SUCCESSFUL, "PT11S", 6, 5.5, new Cost().value(2.00), "us-central1")));
         taskExecutions.setDateExecuted(Instant.now().toString());
@@ -259,33 +315,62 @@ class MetricsAggregatorClientIT {
         // This version now has three submissions of execution metrics data. Verify that the aggregated metrics are correct
         assertEquals(2, platform1Metrics.getExecutionStatusCount().getNumberOfSuccessfulExecutions());
         assertEquals(1, platform1Metrics.getExecutionStatusCount().getNumberOfFailedExecutions());
-        assertEquals(2, platform1Metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()));
-        assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(FAILED_RUNTIME_INVALID.name()));
+        assertEquals(3, platform1Metrics.getExecutionStatusCount().getCount().get(ALL.name()).getExecutionStatusCount());
+        assertEquals(2, platform1Metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()).getExecutionStatusCount());
+        assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(FAILED_RUNTIME_INVALID.name()).getExecutionStatusCount());
         assertFalse(platform1Metrics.getExecutionStatusCount().getCount().containsKey(FAILED_SEMANTIC_INVALID.name()));
 
-        assertEquals(3, platform1Metrics.getCpu().getNumberOfDataPointsForAverage());
-        assertEquals(2, platform1Metrics.getCpu().getMinimum());
-        assertEquals(6, platform1Metrics.getCpu().getMaximum());
-        assertEquals(4, platform1Metrics.getCpu().getAverage());
-        assertNull(platform1Metrics.getCpu().getUnit());
+        // Check metrics for ALL executions statuses
+        platform1AllStatusesMetrics = platform1Metrics.getExecutionStatusCount().getCount().get(ALL.name());
+        assertEquals(3, platform1AllStatusesMetrics.getCpu().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1AllStatusesMetrics.getCpu().getMinimum());
+        assertEquals(6, platform1AllStatusesMetrics.getCpu().getMaximum());
+        assertEquals(4, platform1AllStatusesMetrics.getCpu().getAverage());
+        assertNull(platform1AllStatusesMetrics.getCpu().getUnit());
 
-        assertEquals(3, platform1Metrics.getMemory().getNumberOfDataPointsForAverage());
-        assertEquals(2, platform1Metrics.getMemory().getMinimum());
-        assertEquals(5.5, platform1Metrics.getMemory().getMaximum());
-        assertEquals(4, platform1Metrics.getMemory().getAverage());
-        assertNotNull(platform1Metrics.getMemory().getUnit());
+        assertEquals(3, platform1AllStatusesMetrics.getMemory().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1AllStatusesMetrics.getMemory().getMinimum());
+        assertEquals(5.5, platform1AllStatusesMetrics.getMemory().getMaximum());
+        assertEquals(4, platform1AllStatusesMetrics.getMemory().getAverage());
+        assertNotNull(platform1AllStatusesMetrics.getMemory().getUnit());
 
-        assertEquals(3, platform1Metrics.getCost().getNumberOfDataPointsForAverage());
-        assertEquals(2, platform1Metrics.getCost().getMinimum());
-        assertEquals(2, platform1Metrics.getCost().getMaximum());
-        assertEquals(2, platform1Metrics.getCost().getAverage());
-        assertNotNull(platform1Metrics.getCost().getUnit());
+        assertEquals(3, platform1AllStatusesMetrics.getCost().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1AllStatusesMetrics.getCost().getMinimum());
+        assertEquals(2, platform1AllStatusesMetrics.getCost().getMaximum());
+        assertEquals(2, platform1AllStatusesMetrics.getCost().getAverage());
+        assertNotNull(platform1AllStatusesMetrics.getCost().getUnit());
 
-        assertEquals(3, platform1Metrics.getExecutionTime().getNumberOfDataPointsForAverage());
-        assertEquals(1, platform1Metrics.getExecutionTime().getMinimum());
-        assertEquals(300, platform1Metrics.getExecutionTime().getMaximum());
-        assertEquals(104, platform1Metrics.getExecutionTime().getAverage());
-        assertNotNull(platform1Metrics.getExecutionTime().getUnit());
+        assertEquals(3, platform1AllStatusesMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
+        assertEquals(1, platform1AllStatusesMetrics.getExecutionTime().getMinimum());
+        assertEquals(300, platform1AllStatusesMetrics.getExecutionTime().getMaximum());
+        assertEquals(104, platform1AllStatusesMetrics.getExecutionTime().getAverage());
+        assertNotNull(platform1AllStatusesMetrics.getExecutionTime().getUnit());
+
+        // Only checking the metrics for the successful status because that's the one we updated
+        platform1SuccessfulMetrics = platform1Metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name());
+        assertEquals(2, platform1SuccessfulMetrics.getCpu().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1SuccessfulMetrics.getCpu().getMinimum());
+        assertEquals(6, platform1SuccessfulMetrics.getCpu().getMaximum());
+        assertEquals(4, platform1SuccessfulMetrics.getCpu().getAverage());
+        assertNull(platform1SuccessfulMetrics.getCpu().getUnit());
+
+        assertEquals(2, platform1SuccessfulMetrics.getMemory().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1SuccessfulMetrics.getMemory().getMinimum());
+        assertEquals(5.5, platform1SuccessfulMetrics.getMemory().getMaximum());
+        assertEquals(3.75, platform1SuccessfulMetrics.getMemory().getAverage());
+        assertNotNull(platform1SuccessfulMetrics.getMemory().getUnit());
+
+        assertEquals(2, platform1SuccessfulMetrics.getCost().getNumberOfDataPointsForAverage());
+        assertEquals(2, platform1SuccessfulMetrics.getCost().getMinimum());
+        assertEquals(2, platform1SuccessfulMetrics.getCost().getMaximum());
+        assertEquals(2, platform1SuccessfulMetrics.getCost().getAverage());
+        assertNotNull(platform1SuccessfulMetrics.getCost().getUnit());
+
+        assertEquals(2, platform1SuccessfulMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
+        assertEquals(11, platform1SuccessfulMetrics.getExecutionTime().getMinimum());
+        assertEquals(300, platform1SuccessfulMetrics.getExecutionTime().getMaximum());
+        assertEquals(155.5, platform1SuccessfulMetrics.getExecutionTime().getAverage());
+        assertNotNull(platform1SuccessfulMetrics.getExecutionTime().getUnit());
 
         testOverallAggregatedMetrics(version, validatorToolVersion1, validatorToolVersion2, platform1Metrics);
     }
@@ -297,33 +382,62 @@ class MetricsAggregatorClientIT {
         // Verify that the aggregated metrics are the same as the single execution for the platform
         assertEquals(1, platformMetrics.getExecutionStatusCount().getNumberOfSuccessfulExecutions());
         assertEquals(0, platformMetrics.getExecutionStatusCount().getNumberOfFailedExecutions());
-        assertEquals(1, platformMetrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()));
+        assertEquals(1, platformMetrics.getExecutionStatusCount().getCount().get(ALL.name()).getExecutionStatusCount());
+        assertEquals(1, platformMetrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()).getExecutionStatusCount());
         assertFalse(platformMetrics.getExecutionStatusCount().getCount().containsKey(FAILED_RUNTIME_INVALID.name()));
         assertFalse(platformMetrics.getExecutionStatusCount().getCount().containsKey(FAILED_SEMANTIC_INVALID.name()));
 
-        assertEquals(1, platformMetrics.getCpu().getNumberOfDataPointsForAverage());
-        assertEquals(2, platformMetrics.getCpu().getMinimum());
-        assertEquals(2, platformMetrics.getCpu().getMaximum());
-        assertEquals(2, platformMetrics.getCpu().getAverage());
-        assertNull(platformMetrics.getCpu().getUnit());
+        // Check for ALL statuses
+        MetricsByStatus platformAllStatusesMetrics = platformMetrics.getExecutionStatusCount().getCount().get(ALL.name());
+        assertEquals(1, platformAllStatusesMetrics.getCpu().getNumberOfDataPointsForAverage());
+        assertEquals(2, platformAllStatusesMetrics.getCpu().getMinimum());
+        assertEquals(2, platformAllStatusesMetrics.getCpu().getMaximum());
+        assertEquals(2, platformAllStatusesMetrics.getCpu().getAverage());
+        assertNull(platformAllStatusesMetrics.getCpu().getUnit());
 
-        assertEquals(1, platformMetrics.getMemory().getNumberOfDataPointsForAverage());
-        assertEquals(2, platformMetrics.getMemory().getMinimum());
-        assertEquals(2, platformMetrics.getMemory().getMaximum());
-        assertEquals(2, platformMetrics.getMemory().getAverage());
-        assertNotNull(platformMetrics.getMemory().getUnit());
+        assertEquals(1, platformAllStatusesMetrics.getMemory().getNumberOfDataPointsForAverage());
+        assertEquals(2, platformAllStatusesMetrics.getMemory().getMinimum());
+        assertEquals(2, platformAllStatusesMetrics.getMemory().getMaximum());
+        assertEquals(2, platformAllStatusesMetrics.getMemory().getAverage());
+        assertNotNull(platformAllStatusesMetrics.getMemory().getUnit());
 
-        assertEquals(1, platformMetrics.getCost().getNumberOfDataPointsForAverage());
-        assertEquals(2, platformMetrics.getCost().getMinimum());
-        assertEquals(2, platformMetrics.getCost().getMaximum());
-        assertEquals(2, platformMetrics.getCost().getAverage());
-        assertNotNull(platformMetrics.getCost().getUnit());
+        assertEquals(1, platformAllStatusesMetrics.getCost().getNumberOfDataPointsForAverage());
+        assertEquals(2, platformAllStatusesMetrics.getCost().getMinimum());
+        assertEquals(2, platformAllStatusesMetrics.getCost().getMaximum());
+        assertEquals(2, platformAllStatusesMetrics.getCost().getAverage());
+        assertNotNull(platformAllStatusesMetrics.getCost().getUnit());
 
-        assertEquals(1, platformMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
-        assertEquals(300, platformMetrics.getExecutionTime().getMinimum());
-        assertEquals(300, platformMetrics.getExecutionTime().getMaximum());
-        assertEquals(300, platformMetrics.getExecutionTime().getAverage());
-        assertNotNull(platformMetrics.getExecutionTime().getUnit());
+        assertEquals(1, platformAllStatusesMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
+        assertEquals(300, platformAllStatusesMetrics.getExecutionTime().getMinimum());
+        assertEquals(300, platformAllStatusesMetrics.getExecutionTime().getMaximum());
+        assertEquals(300, platformAllStatusesMetrics.getExecutionTime().getAverage());
+        assertNotNull(platformAllStatusesMetrics.getExecutionTime().getUnit());
+
+        // Check SUCCESSFUL status metrics
+        MetricsByStatus platformSuccessfulMetrics = platformMetrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name());
+        assertEquals(1, platformSuccessfulMetrics.getCpu().getNumberOfDataPointsForAverage());
+        assertEquals(2, platformSuccessfulMetrics.getCpu().getMinimum());
+        assertEquals(2, platformSuccessfulMetrics.getCpu().getMaximum());
+        assertEquals(2, platformSuccessfulMetrics.getCpu().getAverage());
+        assertNull(platformSuccessfulMetrics.getCpu().getUnit());
+
+        assertEquals(1, platformSuccessfulMetrics.getMemory().getNumberOfDataPointsForAverage());
+        assertEquals(2, platformSuccessfulMetrics.getMemory().getMinimum());
+        assertEquals(2, platformSuccessfulMetrics.getMemory().getMaximum());
+        assertEquals(2, platformSuccessfulMetrics.getMemory().getAverage());
+        assertNotNull(platformSuccessfulMetrics.getMemory().getUnit());
+
+        assertEquals(1, platformSuccessfulMetrics.getCost().getNumberOfDataPointsForAverage());
+        assertEquals(2, platformSuccessfulMetrics.getCost().getMinimum());
+        assertEquals(2, platformSuccessfulMetrics.getCost().getMaximum());
+        assertEquals(2, platformSuccessfulMetrics.getCost().getAverage());
+        assertNotNull(platformSuccessfulMetrics.getCost().getUnit());
+
+        assertEquals(1, platformSuccessfulMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
+        assertEquals(300, platformSuccessfulMetrics.getExecutionTime().getMinimum());
+        assertEquals(300, platformSuccessfulMetrics.getExecutionTime().getMaximum());
+        assertEquals(300, platformSuccessfulMetrics.getExecutionTime().getAverage());
+        assertNotNull(platformSuccessfulMetrics.getExecutionTime().getUnit());
 
         assertEquals(1, platformMetrics.getValidationStatus().getValidatorTools().size());
         final String expectedValidatorTool = submittedValidationExecution.getValidatorTool().toString();
@@ -354,30 +468,70 @@ class MetricsAggregatorClientIT {
         assertNotNull(overallMetrics);
         assertEquals(3, overallMetrics.getExecutionStatusCount().getNumberOfSuccessfulExecutions());
         assertEquals(1, overallMetrics.getExecutionStatusCount().getNumberOfFailedExecutions());
-        assertEquals(3, overallMetrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()));
-        assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(FAILED_RUNTIME_INVALID.name()));
+        assertEquals(4, overallMetrics.getExecutionStatusCount().getCount().get(ALL.name()).getExecutionStatusCount());
+        assertEquals(3, overallMetrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name()).getExecutionStatusCount());
+        assertEquals(1, platform1Metrics.getExecutionStatusCount().getCount().get(FAILED_RUNTIME_INVALID.name()).getExecutionStatusCount());
         assertFalse(overallMetrics.getExecutionStatusCount().getCount().containsKey(FAILED_SEMANTIC_INVALID.name()));
 
-        // The CPU values submitted were 2, 2, 4, 6
-        assertEquals(4, overallMetrics.getCpu().getNumberOfDataPointsForAverage());
-        assertEquals(2, overallMetrics.getCpu().getMinimum());
-        assertEquals(6, overallMetrics.getCpu().getMaximum());
-        assertEquals(3.5, overallMetrics.getCpu().getAverage());
-        assertNull(overallMetrics.getCpu().getUnit());
+        // The CPU values submitted were:
+        // SUCCESSFUL: 2, 2, 6
+        // FAILED_RUNTIME_INVALID: 4
+        MetricsByStatus overallAllStatusesMetrics = overallMetrics.getExecutionStatusCount().getCount().get(ALL.name());
+        MetricsByStatus overallSuccessfulMetrics = overallMetrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name());
+        MetricsByStatus overallFailedRuntimeInvalidMetrics = overallMetrics.getExecutionStatusCount().getCount().get(FAILED_RUNTIME_INVALID.name());
+        assertEquals(4, overallAllStatusesMetrics.getCpu().getNumberOfDataPointsForAverage());
+        assertEquals(2, overallAllStatusesMetrics.getCpu().getMinimum());
+        assertEquals(6, overallAllStatusesMetrics.getCpu().getMaximum());
+        assertEquals(3.5, overallAllStatusesMetrics.getCpu().getAverage());
+        assertNull(overallAllStatusesMetrics.getCpu().getUnit());
+        assertEquals(3, overallSuccessfulMetrics.getCpu().getNumberOfDataPointsForAverage());
+        assertEquals(2, overallSuccessfulMetrics.getCpu().getMinimum());
+        assertEquals(6, overallSuccessfulMetrics.getCpu().getMaximum());
+        assertEquals(3.333333333333333, overallSuccessfulMetrics.getCpu().getAverage());
+        assertNull(overallSuccessfulMetrics.getCpu().getUnit());
+        assertEquals(1, overallFailedRuntimeInvalidMetrics.getCpu().getNumberOfDataPointsForAverage());
+        assertEquals(4, overallFailedRuntimeInvalidMetrics.getCpu().getMinimum());
+        assertEquals(4, overallFailedRuntimeInvalidMetrics.getCpu().getMaximum());
+        assertEquals(4, overallFailedRuntimeInvalidMetrics.getCpu().getAverage());
+        assertNull(overallFailedRuntimeInvalidMetrics.getCpu().getUnit());
 
-        // The memory values submitted were 2, 2, 4.5, 5.5
-        assertEquals(4, overallMetrics.getMemory().getNumberOfDataPointsForAverage());
-        assertEquals(2, overallMetrics.getMemory().getMinimum());
-        assertEquals(5.5, overallMetrics.getMemory().getMaximum());
-        assertEquals(3.5, overallMetrics.getMemory().getAverage());
-        assertNotNull(overallMetrics.getMemory().getUnit());
+        // The memory values submitted were:
+        // SUCCESSFUL: 2, 2, 5.5
+        // FAILED_RUNTIME_INVALID: 4.5
+        assertEquals(4, overallAllStatusesMetrics.getMemory().getNumberOfDataPointsForAverage());
+        assertEquals(2, overallAllStatusesMetrics.getMemory().getMinimum());
+        assertEquals(5.5, overallAllStatusesMetrics.getMemory().getMaximum());
+        assertEquals(3.5, overallAllStatusesMetrics.getMemory().getAverage());
+        assertNotNull(overallAllStatusesMetrics.getMemory().getUnit());
+        assertEquals(3, overallSuccessfulMetrics.getMemory().getNumberOfDataPointsForAverage());
+        assertEquals(2, overallSuccessfulMetrics.getMemory().getMinimum());
+        assertEquals(5.5, overallSuccessfulMetrics.getMemory().getMaximum());
+        assertEquals(3.1666666666666665, overallSuccessfulMetrics.getMemory().getAverage());
+        assertNotNull(overallSuccessfulMetrics.getMemory().getUnit());
+        assertEquals(1, overallFailedRuntimeInvalidMetrics.getMemory().getNumberOfDataPointsForAverage());
+        assertEquals(4.5, overallFailedRuntimeInvalidMetrics.getMemory().getMinimum());
+        assertEquals(4.5, overallFailedRuntimeInvalidMetrics.getMemory().getMaximum());
+        assertEquals(4.5, overallFailedRuntimeInvalidMetrics.getMemory().getAverage());
+        assertNotNull(overallFailedRuntimeInvalidMetrics.getMemory().getUnit());
 
-        // The execution times submitted were PT5M, PT5M, PT1S, PT11S
-        assertEquals(4, overallMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
-        assertEquals(1, overallMetrics.getExecutionTime().getMinimum());
-        assertEquals(300, overallMetrics.getExecutionTime().getMaximum());
-        assertEquals(153, overallMetrics.getExecutionTime().getAverage());
-        assertNotNull(overallMetrics.getExecutionTime().getUnit());
+        // The execution times submitted were:
+        // SUCCESSFUL: PT5M, PT5M, PT11S
+        // FAILED_RUNTIME_INVALID: PT1S
+        assertEquals(4, overallAllStatusesMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
+        assertEquals(1, overallAllStatusesMetrics.getExecutionTime().getMinimum());
+        assertEquals(300, overallAllStatusesMetrics.getExecutionTime().getMaximum());
+        assertEquals(153, overallAllStatusesMetrics.getExecutionTime().getAverage());
+        assertNotNull(overallAllStatusesMetrics.getExecutionTime().getUnit());
+        assertEquals(3, overallSuccessfulMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
+        assertEquals(11, overallSuccessfulMetrics.getExecutionTime().getMinimum());
+        assertEquals(300, overallSuccessfulMetrics.getExecutionTime().getMaximum());
+        assertEquals(203.66666666666666, overallSuccessfulMetrics.getExecutionTime().getAverage());
+        assertNotNull(overallSuccessfulMetrics.getExecutionTime().getUnit());
+        assertEquals(1, overallFailedRuntimeInvalidMetrics.getExecutionTime().getNumberOfDataPointsForAverage());
+        assertEquals(1, overallFailedRuntimeInvalidMetrics.getExecutionTime().getMinimum());
+        assertEquals(1, overallFailedRuntimeInvalidMetrics.getExecutionTime().getMaximum());
+        assertEquals(1, overallFailedRuntimeInvalidMetrics.getExecutionTime().getAverage());
+        assertNotNull(overallFailedRuntimeInvalidMetrics.getExecutionTime().getUnit());
 
         assertEquals(2, overallMetrics.getValidationStatus().getValidatorTools().size());
         validationInfo = overallMetrics.getValidationStatus().getValidatorTools().get(MINIWDL.toString());
@@ -441,8 +595,14 @@ class MetricsAggregatorClientIT {
         validationExecution.setExecutionId(executionId);
         // Check if metric is aggregated from aggregated execution by checking memory metric
         AggregatedExecution aggregatedExecution = new AggregatedExecution().executionId(executionId);
-        aggregatedExecution.executionStatusCount(new ExecutionStatusMetric().count(Map.of(SUCCESSFUL.name(), 1))); // required metric
-        aggregatedExecution.memory(new MemoryMetric().minimum(1.0).maximum(1.0).average(1.0).numberOfDataPointsForAverage(1));
+        aggregatedExecution.executionStatusCount(new ExecutionStatusMetric().putCountItem(SUCCESSFUL.name(),
+                new MetricsByStatus()
+                        .executionStatusCount(1)
+                        .memory(new MemoryMetric()
+                                .minimum(1.0)
+                                .maximum(1.0)
+                                .average(1.0)
+                                .numberOfDataPointsForAverage(1))));
 
         // Try to send all of them in one POST. Should fail because the webservice validates that one submission does not include duplicate IDs
         assertThrows(ApiException.class, () -> extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody()
@@ -465,9 +625,10 @@ class MetricsAggregatorClientIT {
         Metrics metrics = version.getMetricsByPlatform().get(platform);
         assertNotNull(metrics);
         // Should be aggregated from aggregatedExecution because it was submitted last
-        assertNotNull(metrics.getMemory());
-        assertNull(metrics.getExecutionTime()); // Verify that the metric from workflow execution wasn't used
-        assertNull(metrics.getCpu()); // Verify that the metric from task executions weren't used
+        MetricsByStatus successfulMetrics = metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name());
+        assertNotNull(successfulMetrics.getMemory());
+        assertNull(successfulMetrics.getExecutionTime()); // Verify that the metric from workflow execution wasn't used
+        assertNull(successfulMetrics.getCpu()); // Verify that the metric from task executions weren't used
         assertNull(metrics.getValidationStatus()); // Verify that the metric from validation execution wasn't used
 
         // Submit a workflow execution. The metric should be from the latest workflow execution.
@@ -480,11 +641,12 @@ class MetricsAggregatorClientIT {
         metrics = version.getMetricsByPlatform().get(platform);
         assertNotNull(metrics);
         // Should be aggregated from aggregatedExecution because it was submitted last
-        assertNotNull(metrics.getExecutionTime());
-        assertEquals(0, metrics.getExecutionTime().getMinimum()); // Verify that the execution time is from the second workflow execution
-        assertNull(metrics.getCpu()); // Verify that the metric from task executions weren't used
+        successfulMetrics = metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name());
+        assertNotNull(successfulMetrics.getExecutionTime());
+        assertEquals(0, successfulMetrics.getExecutionTime().getMinimum()); // Verify that the execution time is from the second workflow execution
+        assertNull(successfulMetrics.getCpu()); // Verify that the metric from task executions weren't used
         assertNull(metrics.getValidationStatus()); // Verify that the metric from validation execution wasn't used
-        assertNull(metrics.getMemory()); // Verify that the metric from aggregated execution wasn't used
+        assertNull(successfulMetrics.getMemory()); // Verify that the metric from aggregated execution wasn't used
     }
 
     @Test

@@ -1,9 +1,7 @@
 package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.MemoryMetric;
-import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.List;
@@ -14,19 +12,10 @@ import java.util.Optional;
  * Aggregate Memory metrics by calculating the minimum, maximum, and average.
  */
 public class MemoryAggregator implements ExecutionAggregator<RunExecution, MemoryMetric, Double> {
-    @Override
-    public MemoryMetric getMetricFromMetrics(Metrics metrics) {
-        return metrics.getMemory();
-    }
 
     @Override
     public Double getMetricFromExecution(RunExecution execution) {
         return execution.getMemoryRequirementsGB();
-    }
-
-    @Override
-    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
-        return executionsRequestBody.getRunExecutions();
     }
 
     @Override

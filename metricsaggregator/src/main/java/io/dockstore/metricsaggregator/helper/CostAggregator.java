@@ -6,8 +6,6 @@ import static io.dockstore.metricsaggregator.MoneyStatistics.CURRENCY;
 import io.dockstore.metricsaggregator.MoneyStatistics;
 import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.CostMetric;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
-import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.List;
@@ -16,19 +14,10 @@ import java.util.Optional;
 import org.javamoney.moneta.Money;
 
 public class CostAggregator implements ExecutionAggregator<RunExecution, CostMetric, Cost> {
-    @Override
-    public CostMetric getMetricFromMetrics(Metrics metrics) {
-        return metrics.getCost();
-    }
 
     @Override
     public Cost getMetricFromExecution(RunExecution execution) {
         return execution.getCost();
-    }
-
-    @Override
-    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
-        return executionsRequestBody.getRunExecutions();
     }
 
     @Override
