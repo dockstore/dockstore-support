@@ -5,6 +5,8 @@ import static io.dockstore.utils.ExceptionHandler.IO_ERROR;
 import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import static java.util.stream.Collectors.groupingBy;
 
+import com.google.common.collect.Lists;
+import com.google.common.math.IntMath;
 import io.dockstore.common.Partner;
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitTerraMetrics;
@@ -22,6 +24,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -44,6 +47,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,21 +171,60 @@ public class TerraMetricsSubmitter {
         }
 
         final SourceUrlTrsInfo sourceUrlTrsInfo = sourceUrlToSourceUrlTrsInfo.get(sourceUrl);
-        final List<RunExecution> workflowExecutionsToSubmit = workflowMetricRecords.stream()
+        List<RunExecution> workflowExecutionsToSubmit = workflowMetricRecords.stream()
                 .map(workflowExecution -> getTerraWorkflowExecutionFromCsvRecord(workflowExecution, sourceUrlTrsInfo.sourceUrl(), skippedExecutionsCsvPrinter))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .toList();
-        final ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody().runExecutions(workflowExecutionsToSubmit);
+        String description = "Submitted using the metricsaggregator's submit-terra-metrics command";
+        if (StringUtils.isNotBlank(submitTerraMetricsCommand.getDescription())) {
+            description += ". " + submitTerraMetricsCommand.getDescription();
+        }
+
+        executionMetricsPost(workflowExecutionsToSubmit, sourceUrlTrsInfo, description, extendedGa4GhApi, workflowMetricRecords, skippedExecutionsCsvPrinter);
+    }
+
+    /**
+     * Submit Terra workflow executions to Dockstore.
+     * If the request fails with a 413 Request Entity Too Large and there are more than one execution to submit, the function halves the number of workflow executions to submit then re-attempts submission
+     * until it's successful or a non-413 error occurs.
+     * @param workflowExecutionsToSubmit
+     * @param sourceUrlTrsInfo
+     * @param description
+     * @param extendedGa4GhApi
+     * @param workflowMetricRecords
+     * @param skippedExecutionsCsvPrinter
+     */
+    private void executionMetricsPost(List<RunExecution> workflowExecutionsToSubmit, SourceUrlTrsInfo sourceUrlTrsInfo, String description, ExtendedGa4GhApi extendedGa4GhApi, List<CSVRecord> workflowMetricRecords, CSVPrinter skippedExecutionsCsvPrinter) {
         try {
-            String description = "Submitted using the metricsaggregator's submit-terra-metrics command";
-            if (StringUtils.isNotBlank(submitTerraMetricsCommand.getDescription())) {
-                description += ". " + submitTerraMetricsCommand.getDescription();
-            }
-            extendedGa4GhApi.executionMetricsPost(executionsRequestBody, Partner.TERRA.toString(), sourceUrlTrsInfo.trsId(), sourceUrlTrsInfo.version(), description);
+            extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(workflowExecutionsToSubmit), Partner.TERRA.toString(), sourceUrlTrsInfo.trsId(),
+                    sourceUrlTrsInfo.version(), description);
             numberOfExecutionsSubmitted.addAndGet(workflowMetricRecords.size());
         } catch (ApiException e) {
-            logSkippedExecutions(sourceUrlTrsInfo.sourceUrl(), workflowMetricRecords, String.format("Could not submit execution metrics to Dockstore for workflow %s: %s", sourceUrlTrsInfo, e.getMessage()), skippedExecutionsCsvPrinter, false);
+            if (e.getCode() == HttpStatus.SC_REQUEST_TOO_LONG) {
+                // One execution is too large, not much that can be done, so log and skip it
+                if (workflowExecutionsToSubmit.size() == 1) {
+                    logSkippedExecutions(sourceUrlTrsInfo.sourceUrl(), workflowMetricRecords,
+                            String.format("Could not submit execution metric to Dockstore for workflow %s. Single execution is too large: %s", sourceUrlTrsInfo,
+                                    e.getMessage()), skippedExecutionsCsvPrinter, false);
+                } else {
+                    int partitionSize = IntMath.divide(workflowExecutionsToSubmit.size(), 2, RoundingMode.UP);
+                    List<List<RunExecution>> workflowExecutionsToSubmitPartitions = Lists.partition(workflowExecutionsToSubmit,
+                            partitionSize);
+                    LOG.info(
+                            "Request body too large, dividing list of {} workflow executions in half with partition size {} and re-attempting",
+                            workflowExecutionsToSubmit.size(), partitionSize);
+                    for (List<RunExecution> partition : workflowExecutionsToSubmitPartitions) {
+                        LOG.info("Re-attempting with {} workflow executions", partition.size());
+                        executionMetricsPost(partition, sourceUrlTrsInfo, description, extendedGa4GhApi, workflowMetricRecords,
+                                skippedExecutionsCsvPrinter);
+                    }
+                }
+            } else {
+                logSkippedExecutions(sourceUrlTrsInfo.sourceUrl(), workflowMetricRecords,
+                        String.format("Could not submit execution metrics to Dockstore for workflow %s: %s", sourceUrlTrsInfo,
+                                e.getMessage()), skippedExecutionsCsvPrinter, false);
+            }
         }
     }
 

@@ -26,7 +26,7 @@ import org.apache.commons.lang3.StringUtils;
  * each validator tool version.
  */
 public class ValidationStatusAggregator implements
-        ExecutionAggregator<ValidationExecution, ValidationStatusMetric, ValidationExecution> {
+        ExecutionsRequestBodyAggregator<ValidationExecution, ValidationStatusMetric, ValidationExecution> {
 
     @Override
     public ValidationStatusMetric getMetricFromMetrics(Metrics metrics) {

@@ -5,8 +5,6 @@ import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionTimeIS
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
-import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import java.time.Duration;
@@ -24,16 +22,6 @@ public final class ExecutionTimeAggregator implements ExecutionAggregator<RunExe
     @Override
     public String getMetricFromExecution(RunExecution execution) {
         return execution.getExecutionTime();
-    }
-
-    @Override
-    public ExecutionTimeMetric getMetricFromMetrics(Metrics metrics) {
-        return metrics.getExecutionTime();
-    }
-
-    @Override
-    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
-        return executionsRequestBody.getRunExecutions();
     }
 
     @Override

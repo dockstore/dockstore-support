@@ -157,6 +157,10 @@
             <artifactId>commons-csv</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
@@ -292,6 +296,7 @@
                                 <usedDependency>org.javamoney.moneta:moneta-core</usedDependency>
                                 <usedDependency>ch.qos.logback:logback-classic</usedDependency>
                                 <usedDependency>ch.qos.logback:logback-core</usedDependency>
+                                <usedDependency>com.google.guava:guava</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>
