@@ -1,27 +1,26 @@
 package io.dockstore.toolbackup.client.cli;
 
+import static io.dockstore.toolbackup.client.cli.Client.API_ERROR;
+import static java.lang.System.out;
+
+import java.io.File;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 
-import java.io.File;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-
-import static io.dockstore.toolbackup.client.cli.Client.API_ERROR;
-import static java.lang.System.out;
-
 /**
  * Created by kcao on 20/01/17.
  */
 class Downloader {
     private static HierarchicalINIConfiguration config;
-    private final OptionSet options;
     private static String endpoint;
     private static final LocalDateTime TIME_NOW = LocalDateTime.now();
     private static String stringTime;
+    private final OptionSet options;
 
     Downloader(OptionSet options) {
         this.options = options;
@@ -47,7 +46,7 @@ class Downloader {
 
         setUpEndpoint();
         Downloader downloader = new Downloader(options);
-        S3Communicator s3Communicator= new S3Communicator("dockstore", endpoint);
+        S3Communicator s3Communicator = new S3Communicator("dockstore", endpoint);
         downloader.download(options.valueOf(bucketName), options.valueOf(keyPrefix), dirPath, s3Communicator);
 
         final LocalDateTime end = LocalDateTime.now();

@@ -17,13 +17,19 @@
 
 package io.dockstore.metricsaggregator.common;
 
-import java.io.File;
-import java.util.Optional;
-
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
-import io.dockstore.metricsaggregator.client.cli.MetricsAggregatorClient;
+import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.RunExecution;
+import io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum;
+import io.dockstore.openapi.client.model.TaskExecutions;
+import io.dockstore.openapi.client.model.ValidationExecution;
+import io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum;
+import io.dockstore.utils.ConfigFileUtils;
 import io.dropwizard.testing.ResourceHelpers;
+import java.io.File;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 import org.apache.commons.configuration2.INIConfiguration;
 
 public final class TestUtilities {
@@ -32,23 +38,46 @@ public final class TestUtilities {
     public static final String BUCKET_NAME = METRICS_AGGREGATOR_CONFIG.getS3Bucket();
     public static final String ENDPOINT_OVERRIDE = METRICS_AGGREGATOR_CONFIG.getS3EndpointOverride();
 
-    private TestUtilities() {}
+    private TestUtilities() {
+    }
 
-    public static RunExecution createRunExecution(RunExecution.ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB) {
-        return new RunExecution()
+    public static RunExecution createRunExecution(ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB, Cost cost, String region) {
+        RunExecution runExecution = new RunExecution()
                 .executionStatus(executionStatus)
                 .executionTime(executionTime)
                 .cpuRequirements(cpuRequirements)
-                .memoryRequirementsGB(memoryRequirementsGB);
+                .memoryRequirementsGB(memoryRequirementsGB)
+                .cost(cost)
+                .region(region);
+        runExecution.setExecutionId(generateExecutionId());
+        runExecution.setDateExecuted(Instant.now().toString());
+        return runExecution;
+    }
+
+    public static TaskExecutions createTasksExecutions(ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB, Cost cost, String region) {
+        TaskExecutions taskExecutions = new TaskExecutions();
+        taskExecutions.setExecutionId(generateExecutionId());
+        taskExecutions.setDateExecuted(Instant.now().toString());
+        taskExecutions.setTaskExecutions(List.of(createRunExecution(executionStatus, executionTime, cpuRequirements, memoryRequirementsGB, cost, region)));
+        return taskExecutions;
+    }
+
+    public static String generateExecutionId() {
+        return UUID.randomUUID().toString();
+    }
+
+    public static ValidationExecution createValidationExecution(ValidatorToolEnum validatorTool, String validatorToolVersion, boolean isValid) {
+        ValidationExecution validationExecution = new ValidationExecution()
+                .validatorTool(validatorTool)
+                .validatorToolVersion(validatorToolVersion)
+                .isValid(isValid);
+        validationExecution.setExecutionId(generateExecutionId());
+        validationExecution.setDateExecuted(Instant.now().toString());
+        return validationExecution;
     }
 
     public static MetricsAggregatorConfig getMetricsConfig() {
-        Optional<INIConfiguration> iniConfig = MetricsAggregatorClient.getConfiguration(new File(CONFIG_FILE_PATH));
-        if (iniConfig.isEmpty()) {
-            throw new RuntimeException("Unable to get config file");
-        }
-
-        MetricsAggregatorConfig config = new MetricsAggregatorConfig(iniConfig.get());
-        return config;
+        INIConfiguration iniConfig = ConfigFileUtils.getConfiguration(new File(CONFIG_FILE_PATH));
+        return new MetricsAggregatorConfig(iniConfig);
     }
 }

@@ -69,16 +69,39 @@ Usage: <main class> [options] [command] [command options]
             format of the workflows that were validated by the validator 
             specified. The first line of the file should contain the CSV 
             fields: trsID,versionName,isValid,dateExecuted
+          -id, --executionId
+            The execution ID to use for each validation execution. Assumes 
+            that each validation in the file is performed on unique workflows 
+            and workflow versions.
           --help
             Prints help for metricsaggregator
         * -p, --platform
             The platform that the workflow was validated on
-            Possible Values: [GALAXY, TERRA, DNA_STACK, DNA_NEXUS, CGC, NHLBI_BIODATA_CATALYST, ANVIL, CAVATICA, NEXTFLOW_TOWER, ELWAZI, AGC, OTHER]
+            Possible Values: [GALAXY, TERRA, DNA_STACK, DNA_NEXUS, CGC, NHLBI_BIODATA_CATALYST, ANVIL, CAVATICA, NEXTFLOW_TOWER, ELWAZI, AGC, OTHER, ALL]
         * -v, --validator
             The validator tool used to validate the workflows
             Possible Values: [MINIWDL, WOMTOOL, CWLTOOL, NF_VALIDATION, OTHER]
         * -vv, --validatorVersion
             The version of the validator tool used to validate the workflows
+
+    submit-terra-metrics      Submits workflow metrics provided by Terra via a 
+            CSV file to Dockstore
+      Usage: submit-terra-metrics [options]
+        Options:
+          -c, --config
+            The config file path.
+            Default: ./metrics-aggregator.config
+        * -d, --data
+            The file path to the CSV file containing workflow metrics from 
+            Terra. The first line of the file should contain the CSV fields: workflow_id,status,workflow_start,workflow_end,workflow_runtime_minutes,source_url
+          -de, --description
+            Optional description about the metrics to include when submitting 
+            metrics to Dockstore
+          --help
+            Prints help for metricsaggregator
+          -r, --recordSkipped
+            Record skipped executions and the reason skipped to a CSV file
+            Default: false
 ```
 
 ### aggregate-metrics
@@ -98,7 +121,18 @@ with miniwdl on DNAstack:
 
 ```
 java -jar target/metricsaggregator-*-SNAPSHOT.jar submit-validation-data --config my-custom-config \
---data <path-to-my-data-file> --validator MINIWDL --validatorVersion 1.0 --platform DNA_STACK 
+--data <path-to-my-data-file> --validator MINIWDL --validatorVersion 1.0 --platform DNA_STACK --executionId a02075d9-092a-4fe7-9f83-4abf11de3dc9
 ```
 
 After running this command, you will want to run the `aggregate-metrics` command to aggregate the new validation data submitted.
+
+### submit-terra-metrics
+
+The following is an example command that submits metrics from a CSV file that Terra provided, recording the metrics that were skipped into an output CSV file.
+
+```
+java -jar target/metricsaggregator-*-SNAPSHOT.jar submit-terra-metrics --config my-custom-config \
+--data <path-to-terra-metrics-csv-file> --recordSkipped
+```
+
+After running this command, you will want to run the `aggregate-metrics` command to aggregate the new Terra metrics submitted.

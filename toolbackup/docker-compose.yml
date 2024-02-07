@@ -1,0 +1,15 @@
+version: '2.2'
+services:
+  es01:
+    image: andrewgaul/s3proxy:sha-ba0fd6d
+    container_name: es01
+    environment:
+      - S3PROXY_AUTHORIZATION=none
+    ports:
+      - "8080:80"
+    networks:
+      - elastic
+
+networks:
+  elastic:
+    driver: bridge

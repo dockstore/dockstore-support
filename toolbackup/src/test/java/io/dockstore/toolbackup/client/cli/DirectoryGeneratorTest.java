@@ -1,16 +1,15 @@
 package io.dockstore.toolbackup.client.cli;
 
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
+import static org.junit.Assume.assumeTrue;
+
 import io.dockstore.toolbackup.client.cli.common.DirCleaner;
+import java.io.File;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
-
-import java.io.File;
-
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Created by kcao on 25/01/17.
@@ -29,7 +28,7 @@ public class DirectoryGeneratorTest {
      * @throws Exception
      */
     @Test
-    public void createDir_existingFile() throws Exception {
+    public void createDirExistingFile() throws Exception {
         exit.expectSystemExit();
         File file = new File(DIR + File.separator + "sameName.txt");
         assumeTrue(file.isFile() || !file.exists());

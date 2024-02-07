@@ -12,7 +12,7 @@ executors:
 
   machine_integration_test_exec:
     machine: # run the steps with Ubuntu VM
-      image: ubuntu-2204:2022.10.1
+      image: ubuntu-2204:2024.01.1
     environment:
       PGHOST: 127.0.0.1
     resource_class: medium
@@ -29,12 +29,27 @@ workflows:
   version: 2
   everything:
     jobs:
-      - build-metrics-aggregator:
+      - build-all:
           <<: *common_filters
       - metrics-aggregator-tests:
           <<: *common_filters
           requires:
-            - build-metrics-aggregator
+            - build-all
+      - tooltester-tests:
+          <<: *common_filters
+          requires:
+            - build-all
+      - toolbackup-tests:
+          <<: *common_filters
+          requires:
+            - build-all
+      - sonar-cloud:
+          <<: *common_filters
+          requires:
+            - metrics-aggregator-tests
+            - tooltester-tests
+            - toolbackup-tests
+          context: sonarcloud
 
 jobs:
   metrics-aggregator-tests:
@@ -44,9 +59,61 @@ jobs:
       DIRECTORY: metricsaggregator
       MAVEN_GOAL: verify
     steps:
-      - setup_and_run_integration_tests
+      - get_workspace_and_dependencies
+      - setup_machine
+      - setup_for_tests
+      - setup_for_postgres
+      - wait_for_elastic_search
+      - run_tests
+      - save_test_results
+      - send_coverage
+  tooltester-tests:
+    docker: # run the steps with Docker
+      - image: cimg/openjdk:<< pipeline.parameters.java-tag >>
+    parallelism: 1
+    environment:
+      DIRECTORY: tooltester
+      MAVEN_GOAL: verify
+    steps:
+      - get_workspace_and_dependencies
+      - setup_for_tests
+      - run_tests
+      - save_test_results
+      - send_coverage
+  toolbackup-tests:
+    executor: machine_integration_test_exec
+    parallelism: 1
+    environment:
+      DIRECTORY: toolbackup
+      MAVEN_GOAL: verify
+    steps:
+      - get_workspace_and_dependencies
+      - setup_machine
+      - setup_for_tests
+      - run_tests
+      - save_test_results
+      - send_coverage
+  sonar-cloud:
+    docker: # run the steps with Docker
+      - image: cimg/openjdk:<< pipeline.parameters.java-tag >>
+    steps:
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          keys:
+            # Find a cache corresponding to this specific licenses file checksum
+            # when this file is changed, this key will fail
+            - dockstore-support-java-{{ checksum "THIRD-PARTY-LICENSES.txt" }}
+            # Find the most recent cache used from any branch
+            - dockstore-support-java-
+      - run:
+          name: build
+          command: ./mvnw clean install -DskipTests
+      - run:
+          name: SonarCloud scan - coverage
+          command: ./mvnw -Dsonar.coverage.jacoco.xmlReportPaths=../coverage/* sonar:sonar
 
-  build-metrics-aggregator:
+  build-all:
     docker: # run the steps with Docker
       - image: cimg/openjdk:<< pipeline.parameters.java-tag >>
         environment:
@@ -56,10 +123,26 @@ jobs:
           JAVA_TOOL_OPTIONS: -Xmx512m
     steps: # a collection of executable commands
       - checkout # check out source code to working directory
+      - restore_cache:
+          keys:
+            # Find a cache corresponding to this specific licenses file checksum
+            # when this file is changed, this key will fail
+            - dockstore-support-java-{{ checksum "pom.xml" }}
+            # Find the most recent cache used from any branch
+            - dockstore-support-java-
       - install-git-secrets
       - run:
-          name: build-metrics-aggregator
-          command: cd metricsaggregator && mvn -B clean install -DskipTests
+          name: build-all
+          command: ./mvnw -B clean install -DskipTests
+      - run:
+          name: clean the cache
+          command: |
+            rm -rf ~/.m2/repository/io/dockstore
+            rm -rf ~/.m2/repository/.cache/download-maven-plugin directory
+      - save_cache: # saves the project dependencies
+          paths:
+            - ~/.m2
+          key: dockstore-support-java-{{ checksum "pom.xml" }}
 
         # Running scan must occur after build
       - run_git_secrets_scan
@@ -78,14 +161,17 @@ commands:
             mvn -v
             python3 -V
       - run:
-          name: Docker-Compose
-          command: cd $DIRECTORY && docker-compose up -d
+          name: Docker-Compose (if present)
+          command: cd $DIRECTORY && docker-compose up -d && cd .. || true
 
   send_coverage:
     steps:
       - run:
           name: send coverage
           command: bash <(curl -s https://codecov.io/bash) -F ${DIRECTORY//-} || echo "Codecov did not collect coverage reports"
+      - store_artifacts:
+          path: dockstore-cli-reports/target/site
+
 
   install_dockerize:
     steps:
@@ -144,26 +230,29 @@ commands:
           command: |
             sudo rm -rf /var/lib/apt/lists/*
             sudo apt update
-            sudo apt install -y postgresql-client
-
-  setup_for_integration_tests:
-    steps:
-      - get_workspace_and_dependencies
-      - setup_machine
-      - setup_for_tests
-      - wait_for_elastic_search
+            sudo apt install -y postgresql-client 
 
   get_workspace_and_dependencies:
     steps:
       - attach_workspace:
           at: .
+      - restore_cache:
+          keys:
+            # Find a cache corresponding to this specific licenses file checksum
+            # when this file is changed, this key will fail
+            - dockstore-support-java-{{ checksum "pom.xml" }}
+            # Find the most recent cache used from any branch
+            - dockstore-support-java-
 
   setup_for_tests:
     steps:
       - install-git-secrets
+      - install_dockerize
+
+  setup_for_postgres:
+    steps:
       - install_postgres_sql_client
       - setup_postgres
-      - install_dockerize
       - wait_for_db
 
   run_tests:
@@ -171,7 +260,7 @@ commands:
       - run:
           name: run tests
           command: |
-            cd $DIRECTORY && mvn -B clean install -ntp | grep  -v "^Running Changeset:"
+            ./mvnw -B clean install -Dskip-$DIRECTORY-ITs=false | grep  -v "^Running Changeset:"
   save_test_results:
     steps:
       - run:
@@ -182,10 +271,3 @@ commands:
           when: always
       - store_test_results:
           path: ~/test-results
-
-  setup_and_run_integration_tests:
-    steps:
-      - setup_for_integration_tests
-      - run_tests
-      - save_test_results
-      - send_coverage

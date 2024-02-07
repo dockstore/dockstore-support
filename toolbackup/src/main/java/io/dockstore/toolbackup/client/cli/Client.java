@@ -15,25 +15,18 @@
  */
 package io.dockstore.toolbackup.client.cli;
 
+import static java.lang.System.out;
+
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.Configuration;
 import io.swagger.client.api.ContainersApi;
-import io.swagger.client.api.GAGHApi;
+import io.swagger.client.api.Ga4GhApi;
 import io.swagger.client.api.UsersApi;
 import io.swagger.client.model.Tool;
 import io.swagger.client.model.ToolVersion;
-import joptsimple.ArgumentAcceptingOptionSpec;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.HierarchicalINIConfiguration;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -43,17 +36,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import static java.lang.System.out;
+import java.util.Objects;
+import joptsimple.ArgumentAcceptingOptionSpec;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.slf4j.LoggerFactory;
 
 public class Client {
-    private static final Logger ROOT_LOGGER = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-    private final OptionSet options;
-    private ContainersApi containersApi;
-    private UsersApi usersApi;
-    private GAGHApi ga4ghApi;
-    private boolean isAdmin = false;
-    private String endpoint;
 
     public static final int GENERIC_ERROR = 1;          // General error, not yet described by an error type
     public static final int CONNECTION_ERROR = 150;     // Connection exception
@@ -61,12 +54,19 @@ public class Client {
     public static final int API_ERROR = 6;              // API throws an exception
     public static final int CLIENT_ERROR = 4;           // Client does something wrong (ex. input validation)
     public static final int COMMAND_ERROR = 10;         // Command is not successful, but not due to errors
+    private static final Logger ROOT_LOGGER = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
     // retrieves only the bamstats tool as shown in https://dockstore.org/docs/getting-started-with-docker
     private static final String BAMSTATS = "quay.io/briandoconnor/dockstore-tool-bamstats";
 
     private static final LocalDateTime TIME_NOW = LocalDateTime.now();
-    private static String stringTime;
+    private static final String STRING_TIME;
+    private final OptionSet options;
+    private ContainersApi containersApi;
+    private UsersApi usersApi;
+    private Ga4GhApi ga4ghApi;
+    private boolean isAdmin = false;
+    private String endpoint;
 
     private Map<String, List<VersionDetail>> toolsToVersions;
     private HierarchicalINIConfiguration config;
@@ -77,11 +77,11 @@ public class Client {
 
     static {
         ROOT_LOGGER.setLevel(Level.WARN);
-        stringTime = FormattedTimeGenerator.getFormattedTimeNow(TIME_NOW);
+        STRING_TIME = FormattedTimeGenerator.getFormattedTimeNow(TIME_NOW);
     }
 
     public static void main(String[] argv) {
-        out.println("Back-up script started: " + stringTime);
+        out.println("Back-up script started: " + STRING_TIME);
 
         out.println(Arrays.toString(argv));
 
@@ -100,7 +100,7 @@ public class Client {
 
         try {
             client.run(dirPath, options.valueOf(bucketName), options.valueOf(keyPrefix), options.valueOf(isTestMode));
-        }  catch (UnknownHostException e) {
+        } catch (UnknownHostException e) {
             ErrorExit.exceptionMessage(e, "No internet access", CONNECTION_ERROR);
         }
 
@@ -112,7 +112,7 @@ public class Client {
     private List<Tool> getTools() {
         List<Tool> tools = null;
         try {
-            tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null);
+            tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null, null, null);
         } catch (ApiException e) {
             ErrorExit.exceptionMessage(e, "Could not retrieve dockstore tools", API_ERROR);
         }
@@ -131,8 +131,8 @@ public class Client {
 
     private List<File> getModifiedFiles(String key, final Map<String, Long> keysToSizes, File file) {
         List<File> modifiedFiles = new ArrayList<>();
-        for(Map.Entry<String, Long> entry: keysToSizes.entrySet()) {
-            if (key == entry.getKey()) {
+        for (Map.Entry<String, Long> entry : keysToSizes.entrySet()) {
+            if (Objects.equals(key, entry.getKey())) {
                 if (entry.getValue() != file.length()) {
                     modifiedFiles.add(file);
                 }
@@ -146,13 +146,13 @@ public class Client {
         List<File> localFiles = (List<File>) FileUtils.listFiles(new File(baseDir), TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
         Map<String, Long> keysToSizes = s3Communicator.getKeysToSizes(bucketName, prefix);
 
-        for(File file : localFiles) {
+        for (File file : localFiles) {
             String key = prefix + file.getAbsolutePath().replace(baseDir, "");
-            if(!keysToSizes.containsKey(key)) {
+            if (!keysToSizes.containsKey(key)) {
                 out.println("Cloud does not yet have this file: " + file.getAbsolutePath());
                 uploadList.add(file);
             } else {
-                if(keysToSizes.get(key) != file.length()) {
+                if (keysToSizes.get(key) != file.length()) {
                     out.println("Updated " + file.getAbsolutePath() + " has not yet been uploaded");
                     getModifiedFiles(key, keysToSizes, file);
                 }
@@ -166,13 +166,13 @@ public class Client {
         // use swagger-generated classes to talk to dockstore
         setupClientEnvironment();
         List<Tool> tools = null;
-        if(isTestMode) {
+        if (isTestMode) {
             tools = getTestTool(BAMSTATS);
         } else {
             tools = getTools();
         }
 
-        final S3Communicator s3Communicator= new S3Communicator("dockstore", endpoint);
+        final S3Communicator s3Communicator = new S3Communicator("dockstore", endpoint);
         String reportDir = baseDir + File.separator + "report";
 
         // save Docker images to local
@@ -187,7 +187,7 @@ public class Client {
 
         // upload to cloud
         // NOTE: cannot invoke getFilesForUpload again as sometimes the report size may be exactly the same but the contents will be different
-        forUpload.addAll(FileUtils.listFiles(new File(reportDir), new String[] { "html", "JSON", "json" }, false));
+        forUpload.addAll(FileUtils.listFiles(new File(reportDir), new String[]{"html", "JSON", "json"}, false));
 
         // show all files to be uploaded to cloud
         // out.println("Files to be uploaded: " + Arrays.toString(forUpload.toArray()));
@@ -211,18 +211,18 @@ public class Client {
         try {
             for (Map.Entry<String, List<VersionDetail>> entry : toolsToVersions.entrySet()) {
                 // each tool has its own page for its versions
-                final String toolReportPath = baseDir + File.separator + entry.getKey()+".html";
+                final String toolReportPath = baseDir + File.separator + entry.getKey() + ".html";
                 FileUtils.write(new File(toolReportPath), ReportGenerator.generateToolReport(entry.getValue()), "UTF-8");
                 out.println("Finished creating " + toolReportPath);
             }
             // main menu
             FileUtils.writeStringToFile(new File(baseDir + File.separator + "index.html"),
-                                        ReportGenerator.generateMainMenu(toolsToVersions.keySet(), addedTotalInB, cloudTotalInB), "UTF-8");
+                ReportGenerator.generateMainMenu(toolsToVersions.keySet(), addedTotalInB, cloudTotalInB), "UTF-8");
             out.println("Finished creating index.html");
 
             // json map
             ReportGenerator.generateJSONMap(toolsToVersions, baseDir);
-        } catch(IOException e) {
+        } catch (IOException e) {
             ErrorExit.exceptionMessage(e, "Could not write report to local directory", IO_ERROR);
         }
     }
@@ -238,8 +238,8 @@ public class Client {
     }
 
     private VersionDetail findLocalVD(List<VersionDetail> versionsDetails, String version) {
-        for(VersionDetail row : versionsDetails) {
-            if(row.getVersion().equals(version) && row.getPath() != "") {
+        for (VersionDetail row : versionsDetails) {
+            if (row.getVersion().equals(version) && !Objects.equals(row.getPath(), "")) {
                 return row;
             }
         }
@@ -247,8 +247,8 @@ public class Client {
     }
 
     private VersionDetail findInvalidVD(List<VersionDetail> versionsDetails, String version) {
-        for(VersionDetail row : versionsDetails) {
-            if(row.getVersion().equals(version) && !row.isValid()) {
+        for (VersionDetail row : versionsDetails) {
+            if (row.getVersion().equals(version) && !row.isValid()) {
                 return row;
             }
         }
@@ -261,7 +261,7 @@ public class Client {
         String metaVersion = version.getMetaVersion();
         VersionDetail before;
 
-        if(dockerCommunicator.pullDockerImage(img)) {
+        if (dockerCommunicator.pullDockerImage(img)) {
             // docker img valid
             long dockerSize = dockerCommunicator.getImageSize(img);
             File imgFile = new File(dirPath + File.separator + versionTag + ".tar");
@@ -270,13 +270,13 @@ public class Client {
             before = findLocalVD(versionsDetails, versionTag);
 
             // image had not changed from the last encounter
-            if(before != null && before.getDockerSize() == dockerCommunicator.getImageSize(img)) {
+            if (before != null && before.getDockerSize() == dockerCommunicator.getImageSize(img)) {
                 out.println(img + " did not change");
-                before.addTime(stringTime);
+                before.addTime(STRING_TIME);
 
                 long fileSize = imgFile.length();
                 // image not yet saved in local
-                if(!imgFile.isFile() || fileSize != before.getFileSize()) {
+                if (!imgFile.isFile() || fileSize != before.getFileSize()) {
                     out.println("However, a local file must be created for " + img);
                     saveDockerImage(img, imgFile, dockerCommunicator);
                 }
@@ -284,12 +284,12 @@ public class Client {
                 // new version of image
                 saveDockerImage(img, imgFile, dockerCommunicator);
 
-                if(before != null) {
+                if (before != null) {
                     out.println(img + " had changed");
                     before.setPath("");
                 }
 
-                versionsDetails.add(new VersionDetail(versionTag, metaVersion, dockerSize, imgFile.length(), stringTime, true, imgFile.getAbsolutePath()));
+                versionsDetails.add(new VersionDetail(versionTag, metaVersion, dockerSize, imgFile.length(), STRING_TIME, true, imgFile.getAbsolutePath()));
             }
 
             dockerCommunicator.removeDockerImage(img);
@@ -297,10 +297,10 @@ public class Client {
         } else {
             // non-existent image
             before = findInvalidVD(versionsDetails, versionTag);
-            if(before != null) {
-                before.addTime(stringTime);
+            if (before != null) {
+                before.addTime(STRING_TIME);
             } else {
-                versionsDetails.add(new VersionDetail(versionTag, metaVersion, 0, 0, stringTime, false, ""));
+                versionsDetails.add(new VersionDetail(versionTag, metaVersion, 0, 0, STRING_TIME, false, ""));
             }
         }
     }
@@ -308,25 +308,25 @@ public class Client {
     public void saveToLocal(String baseDir, String reportDir, final List<Tool> tools, DockerCommunicator dockerCommunicator) {
         toolsToVersions = ReportGenerator.loadJSONMap(reportDir);
 
-        for(Tool tool : tools)  {
+        for (Tool tool : tools) {
             String toolName = tool.getToolname();
             String dirPath = baseDir + File.separator + tool.getId();
             DirectoryGenerator.createDir(dirPath);
-            if(toolName == null) {
+            if (toolName == null) {
                 continue;
             }
 
             List<VersionDetail> versionsDetails;
-            if(toolsToVersions.containsKey(toolName)) {
+            if (toolsToVersions.containsKey(toolName)) {
                 versionsDetails = toolsToVersions.get(toolName);
             } else {
                 versionsDetails = new ArrayList<>();
             }
 
             List<ToolVersion> versions = tool.getVersions();
-            for(ToolVersion version : versions) {
+            for (ToolVersion version : versions) {
                 String img = version.getImage();
-                if(img == null) {
+                if (img == null) {
                     continue;
                 }
                 update(version, dirPath, versionsDetails, img, dockerCommunicator);
@@ -352,11 +352,11 @@ public class Client {
 
         // pull out the variables from the config
         String token = config.getString("token", "");
-        String serverUrl = config.getString("server-url", "https://www.dockstore.org:8443");
+        String serverUrl = config.getString("server-url", "https://www.dockstore.org:443/api");
 
         try {
             endpoint = config.getString("endpoint");
-        } catch(NullPointerException e) {
+        } catch (NullPointerException e) {
             throw new RuntimeException("Expected " + configFilePath + " with an endpoint initialization");
         }
 
@@ -367,11 +367,11 @@ public class Client {
 
         this.containersApi = new ContainersApi(defaultApiClient);
         this.usersApi = new UsersApi(defaultApiClient);
-        this.ga4ghApi = new GAGHApi(defaultApiClient);
+        this.ga4ghApi = new Ga4GhApi(defaultApiClient);
 
         try {
             if (this.usersApi.getApiClient() != null) {
-                this.isAdmin = this.usersApi.getUser().getIsAdmin();
+                this.isAdmin = this.usersApi.getUser().isIsAdmin();
             }
         } catch (ApiException e) {
             this.isAdmin = false;

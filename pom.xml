@@ -1,0 +1,694 @@
+<!--
+  ~    Copyright 2017 OICR
+  ~
+  ~    Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.dockstore</groupId>
+    <artifactId>dockstore-support</artifactId>
+    <version>${revision}${changelist}</version>
+    <packaging>pom</packaging>
+
+    <name>dockstore</name>
+    <description>dockstore support parent POM</description>
+    <url>https://github.com/dockstore/dockstore-support</url>
+    <!--
+    The following properties are mostly used in the plugins section
+    as the versions for the dependencies elements are provided
+    in the dockstore bom-internal pom.xml (BOM), unless specifically overridden
+    in dependencies elements
+    -->
+    <properties>
+        <!-- the following properties set sane defaults when no revision properties are set from the command-line -->
+        <revision>1.15</revision>
+        <changelist>.0-SNAPSHOT</changelist>
+
+        <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <dockstore-core.version>1.15.0-rc.2</dockstore-core.version>
+        <maven-surefire.version>3.0.0-M5</maven-surefire.version>
+        <maven-failsafe.version>2.22.2</maven-failsafe.version>
+        <skipTests>false</skipTests>
+        <skip-metricsaggregator-ITs>true</skip-metricsaggregator-ITs>
+        <skip-tooltester-ITs>true</skip-tooltester-ITs>
+        <skip-toolbackup-ITs>true</skip-toolbackup-ITs>
+        <skip-topicgenerator-ITs>true</skip-topicgenerator-ITs>
+
+        <!-- for sonarcloud -->
+        <sonar.projectKey>dockstore_dockstore-support</sonar.projectKey>
+        <sonar.organization>dockstore</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
+        <!-- this is not an aggregated path -->
+        <sonar.coverage.jacoco.xmlReportPaths>
+            ${project.basedir}/target/jacoco.xml,${project.basedir}/target/jacoco-it.xml,${project.basedir}/../dockstore-support-reports/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+        <!-- end sonarcloud properties -->
+    </properties>
+
+    <organization>
+        <name>Dockstore</name>
+        <url>https://www.dockstore.org/</url>
+    </organization>
+
+    <scm>
+        <connection>${github.url}</connection>
+        <developerConnection>${github.url}</developerConnection>
+        <url>${github.url}</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <repositories>
+        <repository>
+            <id>artifacts.oicr.on.ca.ca-snapshots</id>
+            <url>https://artifacts.oicr.on.ca/artifactory/collab-snapshot</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>artifacts.oicr.on.ca</id>
+            <name>artifacts.oicr.on.ca</name>
+            <url>https://artifacts.oicr.on.ca/artifactory/collab-release</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>apache-releases</id>
+            <name>Apache Releases repository</name>
+            <url>https://repository.apache.org/content/repositories/releases/</url>
+        </repository>
+        <!-- broad -->
+        <repository>
+            <id>artifactory.broadinstitute.org</id>
+            <name>artifactory.broadinstitute.org</name>
+            <url>https://broadinstitute.jfrog.io/artifactory/libs-release/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <licenses>
+        <license>
+            <name>Apache Software License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+    </licenses>
+
+    <distributionManagement>
+        <repository>
+            <id>central</id>
+            <name>artifacts.oicr.on.ca-releases</name>
+            <url>https://artifacts.oicr.on.ca/artifactory/collab-release</url>
+        </repository>
+    </distributionManagement>
+
+    <modules>
+        <module>metricsaggregator</module>
+        <module>toolbackup</module>
+        <module>tooltester</module>
+        <module>dockstore-support-reports</module>
+        <module>jira_automation</module>
+        <module>topicgenerator</module>
+        <module>utils</module>
+    </modules>
+
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- remove likely when bumping bom-internal -->
+            <dependency>
+                <groupId>io.dockstore</groupId>
+                <artifactId>bom-internal</artifactId>
+                <type>pom</type>
+                <version>${dockstore-core.version}</version>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>ro.fortsoft.pf4j</groupId>
+                <artifactId>pf4j</artifactId>
+                <version>1.1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>xml-apis</groupId>
+                <artifactId>xml-apis</artifactId>
+                <version>1.4.01</version>
+            </dependency>
+            <dependency>
+                <groupId>io.dropwizard</groupId>
+                <artifactId>dropwizard-migrations</artifactId>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.inject</groupId>
+                <artifactId>jersey-hk2</artifactId>
+                <version>3.0.11</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-csv</artifactId>
+                <version>1.10.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.3.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <version>2.6</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>cobertura-maven-plugin</artifactId>
+                    <version>2.7</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>findbugs-maven-plugin</artifactId>
+                    <version>3.0.4</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.eluder.coveralls</groupId>
+                    <artifactId>coveralls-maven-plugin</artifactId>
+                    <version>4.2.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>net.alchim31.maven</groupId>
+                    <artifactId>scala-maven-plugin</artifactId>
+                    <version>3.2.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>io.swagger</groupId>
+                    <artifactId>swagger-codegen-maven-plugin</artifactId>
+                    <version>2.1.4</version>
+                </plugin>
+                <!-- https://github.com/jacoco/jacoco/pull/760 -->
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>0.8.8</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.googlecode.maven-download-plugin</groupId>
+                    <artifactId>download-maven-plugin</artifactId>
+                    <version>1.6.8</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-scm-publish-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.10.1</version>
+                    <configuration>
+                        <release>17</release>
+                        <showDeprecation>true</showDeprecation>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.2.2</version>
+                    <configuration>
+                        <archive>
+                            <manifest>
+                                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                            </manifest>
+                        </archive>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>3.2.2</version>
+                    <configuration>
+                        <configLocation>checkstyle.xml</configLocation>
+                        <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
+                        <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                        <includeTestResources>true</includeTestResources>
+                        <includeResources>true</includeResources>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>com.puppycrawl.tools</groupId>
+                            <artifactId>checkstyle</artifactId>
+                            <version>10.11.0</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.2.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>3.1.0</version>
+                    <configuration>
+                        <filesets>
+                            <fileset>
+                                <directory>datastore</directory>
+                            </fileset>
+                            <fileset>
+                                <directory>cromwell-executions</directory>
+                            </fileset>
+                            <fileset>
+                                <directory>cromwell-input</directory>
+                            </fileset>
+                            <fileset>
+                                <directory>cromwell-workflow-logs</directory>
+                            </fileset>
+                            <fileset>
+                                <directory>.</directory>
+                                <includes>
+                                    <include>Cromwell.stderr.txt</include>
+                                    <include>Cromwell.stdout.txt</include>
+                                </includes>
+                            </fileset>
+                        </filesets>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>2.8.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>2.5.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>3.7.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>3.2.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire.version}</version>
+                    <configuration>
+                        <!-- enforce that tests should be independent -->
+                        <runOrder>random</runOrder>
+                        <!-- re-run flaky tests once -->
+                        <rerunFailingTestsCount>1</rerunFailingTestsCount>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${maven-failsafe.version}</version>
+                    <configuration>
+                        <!-- enforce that tests should be independent -->
+                        <runOrder>random</runOrder>
+                        <!-- re-run flaky tests once -->
+                        <rerunFailingTestsCount>1</rerunFailingTestsCount>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>2.5.3</version>
+                    <configuration>
+                        <autoVersionSubmodules>true</autoVersionSubmodules>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>4.7.3.4</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>3.4.1</version>
+                    <executions>
+                        <execution>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>shade</goal>
+                            </goals>
+                            <configuration>
+                                <transformers>
+                                    <!-- Akka used by Cromwell expects a consistent reference.conf file.  Also order matters, so keep it first in the list of transformers -->
+                                    <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                        <resource>reference.conf</resource>
+                                    </transformer>
+                                </transformers>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.3.2</version>
+                </plugin>
+                <!-- https://mvnrepository.com/artifact/org.scala-tools/maven-scala-plugin -->
+                <plugin>
+                    <groupId>org.scala-tools</groupId>
+                    <artifactId>maven-scala-plugin</artifactId>
+                    <version>2.15.2</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.3.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
+                <!-- https://mvnrepository.com/artifact/org.codehaus.mojo/versions-maven-plugin -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>versions-maven-plugin</artifactId>
+                    <version>2.10.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <version>2.0.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>flatten-maven-plugin</artifactId>
+                    <version>1.2.7</version>
+                    <configuration>
+                        <outputDirectory>${project.basedir}/generated/src/main/resources/</outputDirectory>
+                        <updatePomFile>false</updatePomFile>
+                        <!-- snyk is picky about filenames -->
+                        <flattenedPomFilename>pom.xml</flattenedPomFilename>
+                    </configuration>
+                    <executions>
+                        <!-- enable flattening -->
+                        <execution>
+                            <id>flatten</id>
+                            <phase>validate</phase>
+                            <goals>
+                                <goal>flatten</goal>
+                            </goals>
+                        </execution>
+                        <!-- ensure proper cleanup -->
+                        <execution>
+                            <id>flatten.clean</id>
+                            <phase>clean</phase>
+                            <goals>
+                                <goal>clean</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>2.0.0</version>
+                <configuration>
+                    <outputDirectory>${project.basedir}</outputDirectory>
+                    <missingFile>THIRD-PARTY-LICENSES.properties</missingFile>
+                    <thirdPartyFilename>THIRD-PARTY-LICENSES.txt</thirdPartyFilename>
+                    <sortArtifactByName>true</sortArtifactByName>
+                    <failOnMissing>true</failOnMissing>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>aggregate-add-third-party</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce</id>
+                        <configuration>
+                            <rules>
+                                <DependencyConvergence />
+                                <requirePluginVersions>
+                                    <message>Best Practice is to always define plugin versions!</message>
+                                </requirePluginVersions>
+                                <requireReleaseDeps>
+                                    <message>No Snapshots Allowed!</message>
+                                    <failWhenParentIsSnapshot>false</failWhenParentIsSnapshot>
+                                    <excludes>
+                                        <exclude>io.dockstore:*</exclude>
+                                    </excludes>
+                                </requireReleaseDeps>
+                                <requireUpperBoundDeps>
+                                    <excludes>
+                                        <!-- inconsistent in dropwizard 2.1.5 list of transient dependencies and causes this to break, nonetheless the actual versions end up being consistent as checked by
+                                         keysmap.list and mvn dependency:tree. Weird -->
+                                        <exclude>com.fasterxml.jackson.module:jackson-module-jaxb-annotations</exclude>
+                                        <exclude>com.fasterxml.jackson.core:jackson-databind</exclude>
+                                        <exclude>com.fasterxml.jackson.core:jackson-annotations</exclude>
+                                    </excludes>
+                                </requireUpperBoundDeps>
+                                <requireMavenVersion>
+                                    <version>3.8.5</version>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <version>[11.0.11,18.0)</version>
+                                </requireJavaVersion>
+                                <banDuplicatePomDependencyVersions />
+                                <bannedDependencies>
+                                    <!-- currently, some of these dependencies are brought in transitively -->
+                                    <searchTransitive>false</searchTransitive>
+                                    <excludes>
+                                        <!-- superceded by org.apache.commons:commons-lang3 for direct dependencies-->
+                                        <exclude>commons-lang:commons-lang</exclude>
+                                        <!-- superceded by org.apache.commons:commons-configuration2 for direct dependencies-->
+                                        <!-- still used by toolbackup <exclude>commons-configuration:commons-configuration</exclude> -->
+                                        <!-- superceded by org.apache.httpcomponents:httpclient -->
+                                        <exclude>commons-httpclient:commons-httpclient</exclude>
+                                        <!-- see https://github.com/dropwizard/dropwizard/pull/3069 -->
+                                        <exclude>javax.annotation:javax.annotation-api</exclude>
+                                        <exclude>javax.activation:activation</exclude>
+                                        <exclude>javax.ws.rs:javax.ws.rs-api</exclude>
+                                        <!-- Replaced with jakarta.activation:jakarta.activation-api -->
+                                        <exclude>javax.activation:javax.activation-api</exclude>
+                                        <!-- Replaced with jakarta.servlet:jakarta.servlet-api -->
+                                        <exclude>javax.servlet:javax.servlet-api</exclude>
+                                        <!-- Replaced with jakarta.validation:jakarta.validation-api -->
+                                        <exclude>javax.validation:validation-api</exclude>
+                                        <!-- Replaced with jakarta.xml.bind:jakarta.xml.bind-api, but need to keep around for tooltester and toolbackup -->
+                                        <!-- <exclude>javax.xml.bind:jaxb-api</exclude> -->
+                                        <!-- should be using v2 api -->
+                                        <!-- still used by toolbackup <exclude>com.amazonaws:*</exclude> -->
+                                        <!-- we should be using jpa 2.2 -->
+                                        <exclude>org.hibernate.javax.persistence:hibernate-jpa-2.1-api</exclude>
+                                        <!-- more bans from the javax to jakarta merge -->
+                                        <exclude>com.fasterxml.jackson.datatype:jackson-datatype-hibernate5</exclude>
+                                        <exclude>javax.persistence:javax.persistence-api</exclude>
+                                        <exclude>javax.transaction:javax.transaction-api</exclude>
+                                        <exclude>org.eclipse.jetty.toolchain:jetty-servlet-api</exclude>
+                                        <exclude>io.dropwizard.metrics:metrics-servlets</exclude>
+                                        <exclude>io.swagger.core.v3:swagger-integration</exclude>
+                                        <exclude>io.swagger:swagger-jaxrs</exclude>
+                                        <exclude>io.swagger.core.v3:swagger-jaxrs2-servlet-initializer</exclude>
+                                        <exclude>io.swagger:swagger-jersey2-jaxrs</exclude>
+                                    </excludes>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>true</failOnWarning>
+                            <outputXML>true</outputXML>
+                            <ignoreNonCompile>true</ignoreNonCompile>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <configuration>
+                    <append>true</append>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>default-prepare-agent-integration</id>
+                        <goals>
+                            <goal>prepare-agent-integration</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <release>17</release>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <inherited>false</inherited>
+                        <phase>site-deploy</phase>
+                        <goals>
+                            <goal>aggregate</goal>
+                            <goal>test-aggregate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <enableFilesSummary>true</enableFilesSummary>
+                    <enableRulesSummary>true</enableRulesSummary>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>
+                            compile
+                        </phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <consoleOutput>true</consoleOutput>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>true</skip>
+                    <threshold>High</threshold>
+                    <excludeFilterFile>
+                        ${project.basedir}/findbugs-exclude.xml
+                    </excludeFilterFile>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>verify</id>
+                        <goals>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>net.revelc.code</groupId>
+                <artifactId>impsort-maven-plugin</artifactId>
+                <version>1.8.0</version>
+                <configuration>
+                    <compliance>17</compliance>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>sort-imports</id>
+                        <goals>
+                            <goal>sort</goal><!-- runs at process-sources phase by default -->
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

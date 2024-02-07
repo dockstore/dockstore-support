@@ -19,7 +19,6 @@ package io.dockstore.tooltester.runWorkflow;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.api.WorkflowsApi;
-
 import java.util.List;
 
 /**
@@ -27,11 +26,13 @@ import java.util.List;
  */
 public class WorkflowList {
 
-    private Ga4Ghv20Api ga4Ghv20Api;
-    private ExtendedGa4GhApi extendedGa4GhApi;
-    private WorkflowsApi workflowsApi;
-    private WorkflowRunnerConfig workflowRunnerConfig;
-    private String resultDirectory;
+    private final Ga4Ghv20Api ga4Ghv20Api;
+    private final ExtendedGa4GhApi extendedGa4GhApi;
+    private final WorkflowsApi workflowsApi;
+    private final WorkflowRunnerConfig workflowRunnerConfig;
+    private final String resultDirectory;
+
+    private final List<WorkflowRunner> workflowsToTest;
 
     public WorkflowList(Ga4Ghv20Api ga4Ghv20Api, ExtendedGa4GhApi extendedGa4GhApi, WorkflowsApi workflowsApi, WorkflowRunnerConfig workflowRunnerConfig, String resultDirectory) throws InterruptedException {
         this.ga4Ghv20Api = ga4Ghv20Api;
@@ -42,7 +43,6 @@ public class WorkflowList {
 
         this.workflowsToTest = getDefaultTests();
     }
-    private final List<WorkflowRunner> workflowsToTest;
 
     private List<WorkflowRunner> getDefaultTests() throws InterruptedException {
         return List.of(new WorkflowRunner("github.com/dockstore-testing/wes-testing/agc-fastq-read-counts", "main", "test-parameter-files/agc-fastq-read-counts-test-parameter-file.json", extendedGa4GhApi, workflowsApi, workflowRunnerConfig, resultDirectory),
