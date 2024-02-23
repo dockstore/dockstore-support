@@ -4,7 +4,6 @@ import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionDateIS
 import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import io.dockstore.openapi.client.model.ValidationExecution;
@@ -25,8 +24,7 @@ import org.apache.commons.lang3.StringUtils;
  * Aggregate Validation metrics from the list of validation executions by retrieving the validation information for the most recent execution of
  * each validator tool version.
  */
-public class ValidationStatusAggregator implements
-        ExecutionsRequestBodyAggregator<ValidationExecution, ValidationStatusMetric, ValidationExecution> {
+public class ValidationStatusAggregator extends ValidationExecutionAggregator<ValidationStatusMetric, ValidationExecution> {
 
     @Override
     public ValidationStatusMetric getMetricFromMetrics(Metrics metrics) {
@@ -36,11 +34,6 @@ public class ValidationStatusAggregator implements
     @Override
     public ValidationExecution getMetricFromExecution(ValidationExecution execution) {
         return execution; // The entire execution contains the metric, not a specific field like with RunExecution
-    }
-
-    @Override
-    public List<ValidationExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
-        return executionsRequestBody.getValidationExecutions();
     }
 
     /**
@@ -106,6 +99,11 @@ public class ValidationStatusAggregator implements
             return Optional.empty();
         }
         return Optional.of(new ValidationStatusMetric().validatorTools(validatorToolToValidationInfo));
+    }
+
+    @Override
+    public boolean validateExecutionMetric(ValidationExecution executionMetric) {
+        return executionMetric != null;
     }
 
     @Override

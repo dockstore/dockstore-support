@@ -3,7 +3,6 @@ package io.dockstore.metricsaggregator.helper;
 import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.MetricsByStatus;
 import io.dockstore.openapi.client.model.RunExecution;
@@ -21,8 +20,7 @@ import java.util.stream.Collectors;
 /**
  * Aggregate Execution Status metrics by summing up the count of each Execution Status.
  */
-public class ExecutionStatusAggregator implements
-        ExecutionsRequestBodyAggregator<RunExecution, ExecutionStatusMetric, ExecutionStatusEnum> {
+public class ExecutionStatusAggregator extends RunExecutionAggregator<ExecutionStatusMetric, ExecutionStatusEnum> {
     // Aggregators used to calculate metrics by execution status
     private final ExecutionTimeAggregator executionTimeAggregator = new ExecutionTimeAggregator();
     private final CpuAggregator cpuAggregator = new CpuAggregator();
@@ -35,13 +33,13 @@ public class ExecutionStatusAggregator implements
     }
 
     @Override
-    public ExecutionStatusEnum getMetricFromExecution(RunExecution execution) {
-        return execution.getExecutionStatus();
+    public boolean validateExecutionMetric(ExecutionStatusEnum executionMetric) {
+        return true; // Will always be valid if it's an enum
     }
 
     @Override
-    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
-        return executionsRequestBody.getRunExecutions();
+    public ExecutionStatusEnum getMetricFromExecution(RunExecution execution) {
+        return execution.getExecutionStatus();
     }
 
     @Override
@@ -91,6 +89,7 @@ public class ExecutionStatusAggregator implements
             // Figure out metrics over all statuses
             MetricsByStatus overallMetricsByStatus = getMetricsByStatusFromExecutions(executionsByStatus.values().stream().flatMap(Collection::stream).toList());
             executionStatusMetric.getCount().put(ExecutionStatusEnum.ALL.name(), overallMetricsByStatus);
+            executionStatusMetric.setNumberOfSkippedExecutions(calculateNumberOfSkippedExecutions(executions));
 
             return Optional.of(executionStatusMetric);
         }
@@ -125,6 +124,7 @@ public class ExecutionStatusAggregator implements
             }
             MetricsByStatus overallMetricsByStatus = getMetricsByStatusFromMetricsByStatusList(metricsByStatusesToCalculateAllStatus);
             executionStatusMetric.getCount().put(ExecutionStatusEnum.ALL.name(), overallMetricsByStatus);
+            executionStatusMetric.setNumberOfSkippedExecutions(sumNumberOfSkippedExecutions(aggregatedMetrics));
             return Optional.of(executionStatusMetric);
         }
         return Optional.empty();

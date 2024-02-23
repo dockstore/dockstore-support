@@ -5,6 +5,7 @@ import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionTimeIS
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
+import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import java.time.Duration;
@@ -18,10 +19,20 @@ import java.util.Optional;
 /**
  * Aggregate Execution Time metrics by calculating the minimum, maximum, and average.
  */
-public final class ExecutionTimeAggregator implements ExecutionAggregator<RunExecution, ExecutionTimeMetric, String> {
+public final class ExecutionTimeAggregator extends RunExecutionAggregator<ExecutionTimeMetric, String> {
     @Override
     public String getMetricFromExecution(RunExecution execution) {
         return execution.getExecutionTime();
+    }
+
+    @Override
+    public ExecutionTimeMetric getMetricFromMetrics(Metrics metrics) {
+        return null;
+    }
+
+    @Override
+    public boolean validateExecutionMetric(String executionMetric) {
+        return checkExecutionTimeISO8601Format(executionMetric).isPresent();
     }
 
     @Override
@@ -64,15 +75,9 @@ public final class ExecutionTimeAggregator implements ExecutionAggregator<RunExe
 
     @Override
     public Optional<ExecutionTimeMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
-        List<String> executionTimes = getNonNullMetricsFromExecutions(executions);
+        List<String> validExecutionTimes = getValidMetricsFromExecutions(executions);
 
-        boolean containsMalformedExecutionTimes = executionTimes.stream().anyMatch(executionTime -> checkExecutionTimeISO8601Format(executionTime).isEmpty());
-        // This really shouldn't happen because the webservice validates that the ExecutionTime is in the correct format
-        if (containsMalformedExecutionTimes) {
-            return Optional.empty(); // Don't aggregate if there's malformed data
-        }
-
-        List<Double> executionTimesInSeconds = executionTimes.stream()
+        List<Double> executionTimesInSeconds = validExecutionTimes.stream()
                 .map(executionTime -> {
                     // Convert executionTime in ISO 8601 duration format to seconds
                     Duration parsedISO8601ExecutionTime = checkExecutionTimeISO8601Format(executionTime).get();
@@ -82,11 +87,13 @@ public final class ExecutionTimeAggregator implements ExecutionAggregator<RunExe
 
         if (!executionTimesInSeconds.isEmpty()) {
             DoubleStatistics statistics = new DoubleStatistics(executionTimesInSeconds);
-            return Optional.of(new ExecutionTimeMetric()
+            ExecutionTimeMetric executionTimeMetric = new ExecutionTimeMetric()
                     .minimum(statistics.getMinimum())
                     .maximum(statistics.getMaximum())
                     .average(statistics.getAverage())
-                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
+                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints());
+            executionTimeMetric.setNumberOfSkippedExecutions(calculateNumberOfSkippedExecutions(executions));
+            return Optional.of(executionTimeMetric);
         }
         return Optional.empty();
     }
@@ -99,11 +106,13 @@ public final class ExecutionTimeAggregator implements ExecutionAggregator<RunExe
                     .toList();
 
             DoubleStatistics newStatistic = DoubleStatistics.createFromStatistics(statistics);
-            return Optional.of(new ExecutionTimeMetric()
+            ExecutionTimeMetric executionTimeMetric = new ExecutionTimeMetric()
                     .minimum(newStatistic.getMinimum())
                     .maximum(newStatistic.getMaximum())
                     .average(newStatistic.getAverage())
-                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
+                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints());
+            executionTimeMetric.setNumberOfSkippedExecutions(sumNumberOfSkippedExecutions(aggregatedMetrics));
+            return Optional.of(executionTimeMetric);
         }
         return Optional.empty();
     }

@@ -2,6 +2,7 @@ package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
 import io.dockstore.openapi.client.model.MemoryMetric;
+import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.List;
@@ -11,11 +12,21 @@ import java.util.Optional;
 /**
  * Aggregate Memory metrics by calculating the minimum, maximum, and average.
  */
-public class MemoryAggregator implements ExecutionAggregator<RunExecution, MemoryMetric, Double> {
+public class MemoryAggregator extends RunExecutionAggregator<MemoryMetric, Double> {
 
     @Override
     public Double getMetricFromExecution(RunExecution execution) {
         return execution.getMemoryRequirementsGB();
+    }
+
+    @Override
+    public MemoryMetric getMetricFromMetrics(Metrics metrics) {
+        return null;
+    }
+
+    @Override
+    public boolean validateExecutionMetric(Double executionMetric) {
+        return executionMetric >= 0;
     }
 
     @Override
@@ -36,14 +47,16 @@ public class MemoryAggregator implements ExecutionAggregator<RunExecution, Memor
 
     @Override
     public Optional<MemoryMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
-        List<Double> memoryRequirements = getNonNullMetricsFromExecutions(executions);
+        List<Double> memoryRequirements = getValidMetricsFromExecutions(executions);
         if (!memoryRequirements.isEmpty()) {
             DoubleStatistics statistics = new DoubleStatistics(memoryRequirements);
-            return Optional.of(new MemoryMetric()
+            MemoryMetric memoryMetric = new MemoryMetric()
                     .minimum(statistics.getMinimum())
                     .maximum(statistics.getMaximum())
                     .average(statistics.getAverage())
-                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
+                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints());
+            memoryMetric.setNumberOfSkippedExecutions(calculateNumberOfSkippedExecutions(executions));
+            return Optional.of(memoryMetric);
         }
         return Optional.empty();
     }
@@ -54,11 +67,13 @@ public class MemoryAggregator implements ExecutionAggregator<RunExecution, Memor
             List<DoubleStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
             DoubleStatistics newStatistic = DoubleStatistics.createFromStatistics(statistics);
-            return Optional.of(new MemoryMetric()
+            MemoryMetric memoryMetric = new MemoryMetric()
                     .minimum(newStatistic.getMinimum())
                     .maximum(newStatistic.getMaximum())
                     .average(newStatistic.getAverage())
-                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
+                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints());
+            memoryMetric.setNumberOfSkippedExecutions(sumNumberOfSkippedExecutions(aggregatedMetrics));
+            return Optional.of(memoryMetric);
         }
         return Optional.empty();
     }

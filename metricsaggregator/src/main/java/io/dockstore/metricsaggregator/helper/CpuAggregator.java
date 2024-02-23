@@ -2,6 +2,7 @@ package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
 import io.dockstore.openapi.client.model.CpuMetric;
+import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.List;
@@ -12,11 +13,21 @@ import java.util.Optional;
  * Aggregate CPU metrics by calculating the minimum, maximum, and average.
  * @return
  */
-public class CpuAggregator implements ExecutionAggregator<RunExecution, CpuMetric, Integer> {
+public class CpuAggregator extends RunExecutionAggregator<CpuMetric, Integer> {
 
     @Override
     public Integer getMetricFromExecution(RunExecution execution) {
         return execution.getCpuRequirements();
+    }
+
+    @Override
+    public CpuMetric getMetricFromMetrics(Metrics metrics) {
+        return null;
+    }
+
+    @Override
+    public boolean validateExecutionMetric(Integer executionMetric) {
+        return executionMetric >= 0;
     }
 
     @Override
@@ -37,16 +48,18 @@ public class CpuAggregator implements ExecutionAggregator<RunExecution, CpuMetri
 
     @Override
     public Optional<CpuMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
-        List<Double> cpuRequirements = getNonNullMetricsFromExecutions(executions).stream()
+        List<Double> cpuRequirements = getValidMetricsFromExecutions(executions).stream()
                 .map(Integer::doubleValue)
                 .toList();
         if (!cpuRequirements.isEmpty()) {
             DoubleStatistics statistics = new DoubleStatistics(cpuRequirements);
-            return Optional.of(new CpuMetric()
+            CpuMetric cpuMetric = new CpuMetric()
                     .minimum(statistics.getMinimum())
                     .maximum(statistics.getMaximum())
                     .average(statistics.getAverage())
-                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
+                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints());
+            cpuMetric.setNumberOfSkippedExecutions(calculateNumberOfSkippedExecutions(executions));
+            return Optional.of(cpuMetric);
         }
         return Optional.empty();
     }
@@ -57,11 +70,13 @@ public class CpuAggregator implements ExecutionAggregator<RunExecution, CpuMetri
             List<DoubleStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
             DoubleStatistics newStatistic = DoubleStatistics.createFromStatistics(statistics);
-            return Optional.of(new CpuMetric()
+            CpuMetric cpuMetric = new CpuMetric()
                     .minimum(newStatistic.getMinimum())
                     .maximum(newStatistic.getMaximum())
                     .average(newStatistic.getAverage())
-                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
+                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints());
+            cpuMetric.setNumberOfSkippedExecutions(sumNumberOfSkippedExecutions(aggregatedMetrics));
+            return Optional.of(cpuMetric);
         }
         return Optional.empty();
     }

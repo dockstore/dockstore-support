@@ -54,6 +54,13 @@ public final class TestUtilities {
         return runExecution;
     }
 
+    public static RunExecution createRunExecution(ExecutionStatusEnum executionStatusEnum) {
+        RunExecution runExecution = new RunExecution().executionStatus(executionStatusEnum);
+        runExecution.setExecutionId(generateExecutionId());
+        runExecution.setDateExecuted(Instant.now().toString());
+        return runExecution;
+    }
+
     public static TaskExecutions createTasksExecutions(ExecutionStatusEnum executionStatus, String executionTime, Integer cpuRequirements, Double memoryRequirementsGB, Cost cost, String region) {
         TaskExecutions taskExecutions = new TaskExecutions();
         taskExecutions.setExecutionId(generateExecutionId());
