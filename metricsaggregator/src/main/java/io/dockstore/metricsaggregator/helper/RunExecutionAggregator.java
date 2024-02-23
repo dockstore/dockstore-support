@@ -15,15 +15,6 @@ public abstract class RunExecutionAggregator<M extends Metric, E> extends Execut
                 this::getMetricFromExecution).allMatch(Objects::nonNull)).toList();
     }
 
-    /*
-    @Override
-    public boolean allTasksHaveMetric(TaskExecutions taskExecutions) {
-        return taskExecutions.getTaskExecutions().stream()
-                .map(this::getMetricFromExecution)
-                .allMatch(Objects::nonNull);
-    }
-     */
-
     @Override
     public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
         return executionsRequestBody.getRunExecutions();

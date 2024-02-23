@@ -103,7 +103,7 @@ public class ValidationStatusAggregator extends ValidationExecutionAggregator<Va
 
     @Override
     public boolean validateExecutionMetric(ValidationExecution executionMetric) {
-        return executionMetric != null;
+        return true;
     }
 
     @Override
