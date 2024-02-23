@@ -21,12 +21,12 @@ public class MemoryAggregator extends RunExecutionAggregator<MemoryMetric, Doubl
 
     @Override
     public MemoryMetric getMetricFromMetrics(Metrics metrics) {
-        return null;
+        return null; // There is no MemoryMetric in Metrics
     }
 
     @Override
     public boolean validateExecutionMetric(Double executionMetric) {
-        return executionMetric >= 0;
+        return executionMetric != null && executionMetric >= 0;
     }
 
     @Override
@@ -46,34 +46,29 @@ public class MemoryAggregator extends RunExecutionAggregator<MemoryMetric, Doubl
     }
 
     @Override
-    public Optional<MemoryMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
-        List<Double> memoryRequirements = getValidMetricsFromExecutions(executions);
-        if (!memoryRequirements.isEmpty()) {
-            DoubleStatistics statistics = new DoubleStatistics(memoryRequirements);
-            MemoryMetric memoryMetric = new MemoryMetric()
+    protected Optional<MemoryMetric> calculateAggregatedMetricFromExecutionMetrics(List<Double> executionMetrics) {
+        if (!executionMetrics.isEmpty()) {
+            DoubleStatistics statistics = new DoubleStatistics(executionMetrics);
+            return Optional.of(new MemoryMetric()
                     .minimum(statistics.getMinimum())
                     .maximum(statistics.getMaximum())
                     .average(statistics.getAverage())
-                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints());
-            memoryMetric.setNumberOfSkippedExecutions(calculateNumberOfSkippedExecutions(executions));
-            return Optional.of(memoryMetric);
+                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
 
     @Override
-    public Optional<MemoryMetric> getAggregatedMetricsFromAggregatedMetrics(List<MemoryMetric> aggregatedMetrics) {
+    public Optional<MemoryMetric> calculateAggregatedMetricFromAggregatedMetrics(List<MemoryMetric> aggregatedMetrics) {
         if (!aggregatedMetrics.isEmpty()) {
             List<DoubleStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
             DoubleStatistics newStatistic = DoubleStatistics.createFromStatistics(statistics);
-            MemoryMetric memoryMetric = new MemoryMetric()
+            return Optional.of(new MemoryMetric()
                     .minimum(newStatistic.getMinimum())
                     .maximum(newStatistic.getMaximum())
                     .average(newStatistic.getAverage())
-                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints());
-            memoryMetric.setNumberOfSkippedExecutions(sumNumberOfSkippedExecutions(aggregatedMetrics));
-            return Optional.of(memoryMetric);
+                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }

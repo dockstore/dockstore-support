@@ -23,12 +23,12 @@ public class CostAggregator extends RunExecutionAggregator<CostMetric, Cost> {
 
     @Override
     public CostMetric getMetricFromMetrics(Metrics metrics) {
-        return null;
+        return null; // There is no CostMetric in Metrics
     }
 
     @Override
     public boolean validateExecutionMetric(Cost executionMetric) {
-        return isValidCurrencyCode(executionMetric.getCurrency()) && executionMetric.getValue() >= 0;
+        return executionMetric != null && isValidCurrencyCode(executionMetric.getCurrency()) && executionMetric.getValue() >= 0;
     }
 
     @Override
@@ -52,27 +52,23 @@ public class CostAggregator extends RunExecutionAggregator<CostMetric, Cost> {
     }
 
     @Override
-    public Optional<CostMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
-        List<Cost> validSubmittedCosts = getValidMetricsFromExecutions(executions);
-
-        if (!validSubmittedCosts.isEmpty()) {
-            List<Money> costs = validSubmittedCosts.stream()
+    protected Optional<CostMetric> calculateAggregatedMetricFromExecutionMetrics(List<Cost> executionMetrics) {
+        if (!executionMetrics.isEmpty()) {
+            List<Money> costs = executionMetrics.stream()
                     .map(cost -> Money.of(cost.getValue(), cost.getCurrency()))
                     .toList();
             MoneyStatistics statistics = new MoneyStatistics(costs);
-            CostMetric costMetric = new CostMetric()
+            return Optional.of(new CostMetric()
                     .minimum(statistics.getMinimum().getNumber().doubleValue())
                     .maximum(statistics.getMaximum().getNumber().doubleValue())
                     .average(statistics.getAverage().getNumber().doubleValue())
-                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints());
-            costMetric.setNumberOfSkippedExecutions(calculateNumberOfSkippedExecutions(executions));
-            return Optional.of(costMetric);
+                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
 
     @Override
-    public Optional<CostMetric> getAggregatedMetricsFromAggregatedMetrics(List<CostMetric> aggregatedMetrics) {
+    public Optional<CostMetric> calculateAggregatedMetricFromAggregatedMetrics(List<CostMetric> aggregatedMetrics) {
         if (!aggregatedMetrics.isEmpty()) {
             List<MoneyStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new MoneyStatistics(
@@ -82,13 +78,11 @@ public class CostAggregator extends RunExecutionAggregator<CostMetric, Cost> {
                             metric.getNumberOfDataPointsForAverage()))
                     .toList();
             MoneyStatistics moneyStatistics = MoneyStatistics.createFromStatistics(statistics);
-            CostMetric costMetric = new CostMetric()
+            return Optional.of(new CostMetric()
                     .minimum(moneyStatistics.getMinimum().getNumber().doubleValue())
                     .maximum(moneyStatistics.getMaximum().getNumber().doubleValue())
                     .average(moneyStatistics.getAverage().getNumber().doubleValue())
-                    .numberOfDataPointsForAverage(moneyStatistics.getNumberOfDataPoints());
-            costMetric.setNumberOfSkippedExecutions(sumNumberOfSkippedExecutions(aggregatedMetrics));
-            return Optional.of(costMetric);
+                    .numberOfDataPointsForAverage(moneyStatistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }

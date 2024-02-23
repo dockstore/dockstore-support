@@ -5,7 +5,6 @@ import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
 import io.dockstore.openapi.client.model.Metrics;
-import io.dockstore.openapi.client.model.TaskExecutions;
 import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
@@ -36,20 +35,25 @@ public class ValidationStatusAggregator extends ValidationExecutionAggregator<Va
         return execution; // The entire execution contains the metric, not a specific field like with RunExecution
     }
 
+    @Override
+    public boolean validateExecutionMetric(ValidationExecution executionMetric) {
+        return true;
+    }
+
     /**
      * Aggregate Validation metrics from the list of validation executions by retrieving the validation information for the most recent execution of
      * each validator tool version.
-     * @param executions
+     * @param executionMetrics
      * @return
      */
     @Override
-    public Optional<ValidationStatusMetric> getAggregatedMetricFromExecutions(List<ValidationExecution> executions) {
-        if (executions.isEmpty()) {
+    protected Optional<ValidationStatusMetric> calculateAggregatedMetricFromExecutionMetrics(List<ValidationExecution> executionMetrics) {
+        if (executionMetrics.isEmpty()) {
             return Optional.empty();
         }
 
         // Group executions by validator tool
-        Map<ValidatorToolEnum, List<ValidationExecution>> validatorToolToValidations = executions.stream()
+        Map<ValidatorToolEnum, List<ValidationExecution>> validatorToolToValidations = executionMetrics.stream()
                 .collect(groupingBy(ValidationExecution::getValidatorTool));
 
         // For each validator tool, aggregate validation metrics for it
@@ -102,17 +106,7 @@ public class ValidationStatusAggregator extends ValidationExecutionAggregator<Va
     }
 
     @Override
-    public boolean validateExecutionMetric(ValidationExecution executionMetric) {
-        return true;
-    }
-
-    @Override
-    public Optional<ValidationExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun) {
-        return Optional.empty(); // Task executions don't apply to validation executions
-    }
-
-    @Override
-    public Optional<ValidationStatusMetric> getAggregatedMetricsFromAggregatedMetrics(List<ValidationStatusMetric> aggregatedMetrics) {
+    public Optional<ValidationStatusMetric> calculateAggregatedMetricFromAggregatedMetrics(List<ValidationStatusMetric> aggregatedMetrics) {
         Map<String, ValidatorInfo> newValidatorToolToValidatorInfo = new HashMap<>();
         if (!aggregatedMetrics.isEmpty()) {
             // Go through all the ValidationStatusMetrics and group the ValidationVersionInfos by validator tool

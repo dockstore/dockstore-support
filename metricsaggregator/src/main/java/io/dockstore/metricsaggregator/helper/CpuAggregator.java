@@ -22,12 +22,12 @@ public class CpuAggregator extends RunExecutionAggregator<CpuMetric, Integer> {
 
     @Override
     public CpuMetric getMetricFromMetrics(Metrics metrics) {
-        return null;
+        return null; // There is no CpuMetric in Metrics
     }
 
     @Override
     public boolean validateExecutionMetric(Integer executionMetric) {
-        return executionMetric >= 0;
+        return executionMetric != null && executionMetric >= 0;
     }
 
     @Override
@@ -47,36 +47,32 @@ public class CpuAggregator extends RunExecutionAggregator<CpuMetric, Integer> {
     }
 
     @Override
-    public Optional<CpuMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
-        List<Double> cpuRequirements = getValidMetricsFromExecutions(executions).stream()
+    protected Optional<CpuMetric> calculateAggregatedMetricFromExecutionMetrics(List<Integer> executionMetrics) {
+        List<Double> cpuRequirements = executionMetrics.stream()
                 .map(Integer::doubleValue)
                 .toList();
         if (!cpuRequirements.isEmpty()) {
             DoubleStatistics statistics = new DoubleStatistics(cpuRequirements);
-            CpuMetric cpuMetric = new CpuMetric()
+            return Optional.of(new CpuMetric()
                     .minimum(statistics.getMinimum())
                     .maximum(statistics.getMaximum())
                     .average(statistics.getAverage())
-                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints());
-            cpuMetric.setNumberOfSkippedExecutions(calculateNumberOfSkippedExecutions(executions));
-            return Optional.of(cpuMetric);
+                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
 
     @Override
-    public Optional<CpuMetric> getAggregatedMetricsFromAggregatedMetrics(List<CpuMetric> aggregatedMetrics) {
+    public Optional<CpuMetric> calculateAggregatedMetricFromAggregatedMetrics(List<CpuMetric> aggregatedMetrics) {
         if (!aggregatedMetrics.isEmpty()) {
             List<DoubleStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();
             DoubleStatistics newStatistic = DoubleStatistics.createFromStatistics(statistics);
-            CpuMetric cpuMetric = new CpuMetric()
+            return Optional.of(new CpuMetric()
                     .minimum(newStatistic.getMinimum())
                     .maximum(newStatistic.getMaximum())
                     .average(newStatistic.getAverage())
-                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints());
-            cpuMetric.setNumberOfSkippedExecutions(sumNumberOfSkippedExecutions(aggregatedMetrics));
-            return Optional.of(cpuMetric);
+                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }

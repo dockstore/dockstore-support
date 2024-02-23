@@ -4,15 +4,12 @@ import io.dockstore.openapi.client.model.Execution;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metric;
 import io.dockstore.openapi.client.model.Metrics;
-import io.dockstore.openapi.client.model.TaskExecutions;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
- * An interface defining the methods needed to aggregate workflow executions into aggregated metrics.
+ * A class defining the methods needed to aggregate workflow executions into aggregated metrics.
  * @param <T> The type of execution, example: RunExecution or ValidationExecution, that contains the metric to aggregate
  * @param <M> The aggregated metric from the Metrics class, a class containing multiple types of aggregated metrics
  * @param <E> The execution metric to aggregate from the Execution
@@ -47,97 +44,52 @@ public abstract class ExecutionAggregator<T extends Execution, M extends Metric,
      */
     public abstract boolean validateExecutionMetric(E executionMetric);
 
-    public abstract List<TaskExecutions> getTaskExecutionsWithMetric(List<TaskExecutions> taskExecutionsList);
-
-    /**
-     * Aggregates TaskExecutions that belong to a single workflow run into a workflow-level RunExecution. Does NOT check that the resulting workflow run is valid.
-     * @param taskExecutionsForOneWorkflowRun
-     * @return
-     */
-    public abstract Optional<T> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun);
-
     /**
      * Aggregates workflow executions into an aggregated metric.
-     * @param executions
+     * @param executionMetrics
      * @return
      */
-    public abstract Optional<M> getAggregatedMetricFromExecutions(List<T> executions);
+    protected abstract Optional<M> calculateAggregatedMetricFromExecutionMetrics(List<E> executionMetrics);
 
     /**
      * Aggregates a list of aggregated metrics into one aggregated metric.
      * @param aggregatedMetrics
      * @return
      */
-    public abstract Optional<M> getAggregatedMetricsFromAggregatedMetrics(List<M> aggregatedMetrics);
-
-    public List<E> getValidMetricsFromExecutions(List<T> executions) {
-        return executions.stream()
-                .map(this::getMetricFromExecution)
-                .filter(executionMetric -> executionMetric != null && validateExecutionMetric(executionMetric))
-                .toList();
-    }
-
-    public int calculateNumberOfSkippedExecutions(List<T> executions) {
-        List<E> executionsWithNonNullMetric = executions.stream().map(this::getMetricFromExecution).filter(Objects::nonNull).toList();
-        List<E> validExecutionMetrics = executionsWithNonNullMetric.stream().filter(this::validateExecutionMetric).toList();
-        return executionsWithNonNullMetric.size() - validExecutionMetrics.size();
-    }
-
-    public int sumNumberOfSkippedExecutions(List<M> metrics) {
-        return metrics.stream().map(Metric::getNumberOfSkippedExecutions).reduce(0, Integer::sum);
-    }
+    public abstract Optional<M> calculateAggregatedMetricFromAggregatedMetrics(List<M> aggregatedMetrics);
 
     /**
      * Aggregate metrics from all submissions in the ExecutionsRequestBody.
-     * This method uses the runExecutions, taskExecutions, and aggregatedExecutions from ExecutionRequestBody to create an aggregated metric.
-     * Metrics are aggregated by:
-     * <ol>
-     *     <li>Aggregating task executions, provided via ExecutionRequestBody.taskExecutions, into workflow executions.</li>
-     *     <li>Aggregating workflow executions,submitted via ExecutionRequestBody.runExecutions and workflow executions that were aggregated from task executions, into an aggregated metric.
-     *     <li>Aggregating the list of aggregated metrics, submitted via ExecutionRequestBody.aggregatedExecutions and the aggregated metric that was aggregated from workflow executions, into one aggregated metric.</li>
-     * </ol>
      * @param allSubmissions
      * @return
      */
-    public Optional<M> getAggregatedMetricFromAllSubmissions(ExecutionsRequestBody allSubmissions) {
-        final List<T> workflowExecutions = new ArrayList<>(getExecutionsFromExecutionRequestBody(allSubmissions));
+    public abstract Optional<M> getAggregatedMetricFromAllSubmissions(ExecutionsRequestBody allSubmissions);
 
-        // Get aggregated metrics that were submitted to Dockstore
-        List<M> aggregatedMetrics = allSubmissions.getAggregatedExecutions().stream()
-                .map(this::getMetricFromMetrics)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(ArrayList::new));
 
-        // If task executions are present, calculate the workflow RunExecution containing the overall workflow-level execution time for each list of tasks
-        int numberOfTaskExecutionSetsSkipped = 0;
-        if (!allSubmissions.getTaskExecutions().isEmpty()) {
-            final List<TaskExecutions> taskExecutionsWithMetric = getTaskExecutionsWithMetric(allSubmissions.getTaskExecutions());
-            final List<T> calculatedWorkflowExecutionsFromTasks = taskExecutionsWithMetric.stream()
-                    .map(this::getWorkflowExecutionFromTaskExecutions)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .toList();
-            // The number of task execution sets skipped will be added to the total count of skipped executions later
-            numberOfTaskExecutionSetsSkipped = taskExecutionsWithMetric.size() - calculatedWorkflowExecutionsFromTasks.size();
-            workflowExecutions.addAll(calculatedWorkflowExecutionsFromTasks);
+    public final Optional<M> getAggregatedMetricFromExecutions(List<T> executions) {
+        final List<E> executionsWithNonNullMetric = executions.stream().map(this::getMetricFromExecution).filter(Objects::nonNull).toList();
+        final List<E> validExecutionMetrics = executionsWithNonNullMetric.stream().filter(this::validateExecutionMetric).toList();
+        if (!validExecutionMetrics.isEmpty()) {
+            Optional<M> calculatedMetric = calculateAggregatedMetricFromExecutionMetrics(validExecutionMetrics);
+            final int numberOfSkippedExecutions = executionsWithNonNullMetric.size() - validExecutionMetrics.size();
+            calculatedMetric.ifPresent(metric -> metric.setNumberOfSkippedExecutions(numberOfSkippedExecutions));
+            return calculatedMetric;
         }
+        return Optional.empty();
+    }
 
-        // Aggregate workflow executions into one metric and add it to the list of aggregated metrics
-        Optional<M> aggregatedMetricFromWorkflowExecutions = getAggregatedMetricFromExecutions(workflowExecutions);
-        if (aggregatedMetricFromWorkflowExecutions.isPresent()) {
-            aggregatedMetricFromWorkflowExecutions.get().setNumberOfSkippedExecutions(calculateNumberOfSkippedExecutions(workflowExecutions));
-            aggregatedMetrics.add(aggregatedMetricFromWorkflowExecutions.get());
-        }
-
+    /**
+     * Aggregates a list of aggregated metrics into one aggregated metric.
+     * @param aggregatedMetrics
+     * @return
+     */
+    public final Optional<M> getAggregatedMetricsFromAggregatedMetrics(List<M> aggregatedMetrics) {
         if (!aggregatedMetrics.isEmpty()) {
-            // Calculate the new aggregated metric from the list of aggregated metrics
-            Optional<M> aggregatedMetric = getAggregatedMetricsFromAggregatedMetrics(aggregatedMetrics);
-            if (aggregatedMetric.isPresent()) {
-                // Set the number of skipped executions to the sum from the aggregated metrics plus the number of task execution sets that were skipped
-                aggregatedMetric.get().setNumberOfSkippedExecutions(sumNumberOfSkippedExecutions(aggregatedMetrics) + numberOfTaskExecutionSetsSkipped);
-                return aggregatedMetric;
-            }
-
+            Optional<M> calculatedMetric = calculateAggregatedMetricFromAggregatedMetrics(aggregatedMetrics);
+            // Sum number of skipped executions from the aggregated metrics
+            final int numberOfSkippedExecutions =  aggregatedMetrics.stream().map(Metric::getNumberOfSkippedExecutions).reduce(0, Integer::sum);
+            calculatedMetric.ifPresent(metric -> metric.setNumberOfSkippedExecutions(numberOfSkippedExecutions));
+            return calculatedMetric;
         }
         return Optional.empty();
     }

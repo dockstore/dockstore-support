@@ -27,7 +27,7 @@ public final class ExecutionTimeAggregator extends RunExecutionAggregator<Execut
 
     @Override
     public ExecutionTimeMetric getMetricFromMetrics(Metrics metrics) {
-        return null;
+        return null; // There is no ExecutionTimeMetric in Metrics
     }
 
     @Override
@@ -74,10 +74,8 @@ public final class ExecutionTimeAggregator extends RunExecutionAggregator<Execut
     }
 
     @Override
-    public Optional<ExecutionTimeMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
-        List<String> validExecutionTimes = getValidMetricsFromExecutions(executions);
-
-        List<Double> executionTimesInSeconds = validExecutionTimes.stream()
+    protected Optional<ExecutionTimeMetric> calculateAggregatedMetricFromExecutionMetrics(List<String> executionMetrics) {
+        List<Double> executionTimesInSeconds = executionMetrics.stream()
                 .map(executionTime -> {
                     // Convert executionTime in ISO 8601 duration format to seconds
                     Duration parsedISO8601ExecutionTime = checkExecutionTimeISO8601Format(executionTime).get();
@@ -87,32 +85,28 @@ public final class ExecutionTimeAggregator extends RunExecutionAggregator<Execut
 
         if (!executionTimesInSeconds.isEmpty()) {
             DoubleStatistics statistics = new DoubleStatistics(executionTimesInSeconds);
-            ExecutionTimeMetric executionTimeMetric = new ExecutionTimeMetric()
+            return Optional.of(new ExecutionTimeMetric()
                     .minimum(statistics.getMinimum())
                     .maximum(statistics.getMaximum())
                     .average(statistics.getAverage())
-                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints());
-            executionTimeMetric.setNumberOfSkippedExecutions(calculateNumberOfSkippedExecutions(executions));
-            return Optional.of(executionTimeMetric);
+                    .numberOfDataPointsForAverage(statistics.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
 
     @Override
-    public Optional<ExecutionTimeMetric> getAggregatedMetricsFromAggregatedMetrics(List<ExecutionTimeMetric> aggregatedMetrics) {
+    public Optional<ExecutionTimeMetric> calculateAggregatedMetricFromAggregatedMetrics(List<ExecutionTimeMetric> aggregatedMetrics) {
         if (!aggregatedMetrics.isEmpty()) {
             List<DoubleStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage()))
                     .toList();
 
             DoubleStatistics newStatistic = DoubleStatistics.createFromStatistics(statistics);
-            ExecutionTimeMetric executionTimeMetric = new ExecutionTimeMetric()
+            return Optional.of(new ExecutionTimeMetric()
                     .minimum(newStatistic.getMinimum())
                     .maximum(newStatistic.getMaximum())
                     .average(newStatistic.getAverage())
-                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints());
-            executionTimeMetric.setNumberOfSkippedExecutions(sumNumberOfSkippedExecutions(aggregatedMetrics));
-            return Optional.of(executionTimeMetric);
+                    .numberOfDataPointsForAverage(newStatistic.getNumberOfDataPoints()));
         }
         return Optional.empty();
     }
