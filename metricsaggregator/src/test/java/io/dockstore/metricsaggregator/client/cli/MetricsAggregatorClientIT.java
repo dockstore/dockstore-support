@@ -599,9 +599,9 @@ class MetricsAggregatorClientIT {
                 platform, id, versionId, ""));
 
         // Send them one at a time. The last execution sent should be the one that the metrics aggregator aggregates
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().validationExecutions(List.of(validationExecution)), platform, id, versionId, "");
         extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(List.of(workflowExecution)), platform, id, versionId, "");
         extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().taskExecutions(List.of(taskExecutions)), platform, id, versionId, "");
-        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().validationExecutions(List.of(validationExecution)), platform, id, versionId, "");
 
         MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
         // Get workflow version to verify aggregated metrics
@@ -609,11 +609,11 @@ class MetricsAggregatorClientIT {
         version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
         Metrics metrics = version.getMetricsByPlatform().get(platform);
         assertNotNull(metrics);
-        // Should be aggregated from validationExecution because it was submitted last
+        // Should be aggregated from taskExecutions because it was submitted last
         MetricsByStatus successfulMetrics = metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name());
-        assertNotNull(metrics.getValidationStatus()); // Verify that the metric from validation execution was used
+        assertNotNull(successfulMetrics.getCpu()); // Verify that the metric from task executions was used
         assertNull(successfulMetrics.getExecutionTime()); // Verify that the metric from workflow execution wasn't used
-        assertNull(successfulMetrics.getCpu()); // Verify that the metric from task executions weren't used
+        assertNull(metrics.getValidationStatus()); // Verify that the metric from validation execution wasn't used
 
         // Submit a workflow execution. The metric should be from the latest workflow execution.
         workflowExecution.setExecutionTime("PT0S"); // Change execution time so it's different from the first workflow execution
