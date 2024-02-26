@@ -96,7 +96,7 @@ public class ExecutionStatusAggregator extends RunExecutionAggregator<ExecutionS
     }
 
     @Override
-    public Optional<ExecutionStatusMetric> calculateAggregatedMetricFromAggregatedMetrics(List<ExecutionStatusMetric> aggregatedMetrics) {
+    protected Optional<ExecutionStatusMetric> calculateAggregatedMetricFromAggregatedMetrics(List<ExecutionStatusMetric> aggregatedMetrics) {
         if (!aggregatedMetrics.isEmpty()) {
             Map<String, List<MetricsByStatus>> statusToMetricsByStatus = aggregatedMetrics.stream()
                     .filter(Objects::nonNull)

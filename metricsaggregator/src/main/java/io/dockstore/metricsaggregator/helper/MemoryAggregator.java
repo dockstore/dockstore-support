@@ -59,7 +59,7 @@ public class MemoryAggregator extends RunExecutionAggregator<MemoryMetric, Doubl
     }
 
     @Override
-    public Optional<MemoryMetric> calculateAggregatedMetricFromAggregatedMetrics(List<MemoryMetric> aggregatedMetrics) {
+    protected Optional<MemoryMetric> calculateAggregatedMetricFromAggregatedMetrics(List<MemoryMetric> aggregatedMetrics) {
         if (!aggregatedMetrics.isEmpty()) {
             List<DoubleStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();

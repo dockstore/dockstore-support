@@ -63,7 +63,7 @@ public class CpuAggregator extends RunExecutionAggregator<CpuMetric, Integer> {
     }
 
     @Override
-    public Optional<CpuMetric> calculateAggregatedMetricFromAggregatedMetrics(List<CpuMetric> aggregatedMetrics) {
+    protected Optional<CpuMetric> calculateAggregatedMetricFromAggregatedMetrics(List<CpuMetric> aggregatedMetrics) {
         if (!aggregatedMetrics.isEmpty()) {
             List<DoubleStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage())).toList();

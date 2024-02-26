@@ -106,7 +106,8 @@ public class ValidationStatusAggregator extends ValidationExecutionAggregator<Va
     }
 
     @Override
-    public Optional<ValidationStatusMetric> calculateAggregatedMetricFromAggregatedMetrics(List<ValidationStatusMetric> aggregatedMetrics) {
+    protected Optional<ValidationStatusMetric> calculateAggregatedMetricFromAggregatedMetrics(
+            List<ValidationStatusMetric> aggregatedMetrics) {
         Map<String, ValidatorInfo> newValidatorToolToValidatorInfo = new HashMap<>();
         if (!aggregatedMetrics.isEmpty()) {
             // Go through all the ValidationStatusMetrics and group the ValidationVersionInfos by validator tool

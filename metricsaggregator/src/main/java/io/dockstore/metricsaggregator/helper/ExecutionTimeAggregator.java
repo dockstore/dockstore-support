@@ -95,7 +95,7 @@ public final class ExecutionTimeAggregator extends RunExecutionAggregator<Execut
     }
 
     @Override
-    public Optional<ExecutionTimeMetric> calculateAggregatedMetricFromAggregatedMetrics(List<ExecutionTimeMetric> aggregatedMetrics) {
+    protected Optional<ExecutionTimeMetric> calculateAggregatedMetricFromAggregatedMetrics(List<ExecutionTimeMetric> aggregatedMetrics) {
         if (!aggregatedMetrics.isEmpty()) {
             List<DoubleStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage()))

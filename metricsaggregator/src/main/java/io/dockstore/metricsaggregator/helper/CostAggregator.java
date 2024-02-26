@@ -40,7 +40,6 @@ public class CostAggregator extends RunExecutionAggregator<CostMetric, Cost> {
                     .map(RunExecution::getCost)
                     .filter(Objects::nonNull)
                     .toList();
-            // This shouldn't happen until we allow users to submit any currency they want
             if (!taskCosts.isEmpty()) {
                 Money totalCost = taskCosts.stream()
                         .map(cost -> Money.of(cost.getValue(), cost.getCurrency()))
@@ -68,7 +67,7 @@ public class CostAggregator extends RunExecutionAggregator<CostMetric, Cost> {
     }
 
     @Override
-    public Optional<CostMetric> calculateAggregatedMetricFromAggregatedMetrics(List<CostMetric> aggregatedMetrics) {
+    protected Optional<CostMetric> calculateAggregatedMetricFromAggregatedMetrics(List<CostMetric> aggregatedMetrics) {
         if (!aggregatedMetrics.isEmpty()) {
             List<MoneyStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new MoneyStatistics(

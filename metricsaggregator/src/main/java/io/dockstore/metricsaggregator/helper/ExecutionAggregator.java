@@ -56,7 +56,7 @@ public abstract class ExecutionAggregator<T extends Execution, M extends Metric,
      * @param aggregatedMetrics
      * @return
      */
-    public abstract Optional<M> calculateAggregatedMetricFromAggregatedMetrics(List<M> aggregatedMetrics);
+    protected abstract Optional<M> calculateAggregatedMetricFromAggregatedMetrics(List<M> aggregatedMetrics);
 
     /**
      * Aggregate metrics from all submissions in the ExecutionsRequestBody.
@@ -65,6 +65,11 @@ public abstract class ExecutionAggregator<T extends Execution, M extends Metric,
      */
     public abstract Optional<M> getAggregatedMetricFromAllSubmissions(ExecutionsRequestBody allSubmissions);
 
+    /**
+     * Aggregates workflow executions into an aggregated metric and calculates the number of skipped executions.
+     * @param executions
+     * @return
+     */
 
     public final Optional<M> getAggregatedMetricFromExecutions(List<T> executions) {
         final List<E> executionsWithNonNullMetric = executions.stream().map(this::getMetricFromExecution).filter(Objects::nonNull).toList();
@@ -79,7 +84,7 @@ public abstract class ExecutionAggregator<T extends Execution, M extends Metric,
     }
 
     /**
-     * Aggregates a list of aggregated metrics into one aggregated metric.
+     * Aggregates a list of aggregated metrics into one aggregated metric  nd calculates the number of skipped executions.
      * @param aggregatedMetrics
      * @return
      */
