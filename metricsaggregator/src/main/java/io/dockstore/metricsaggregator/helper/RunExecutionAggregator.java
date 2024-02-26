@@ -23,7 +23,8 @@ public abstract class RunExecutionAggregator<M extends Metric, E> extends Execut
     }
 
     /**
-     * Aggregates TaskExecutions that belong to a single workflow run into a workflow-level RunExecution. Does NOT check that the resulting workflow run is valid.
+     * Aggregates TaskExecutions that belong to a single workflow run into a workflow-level RunExecution. 
+     * Does NOT check that the resulting workflow run is valid. The validity check is done when workflow executions are aggregated so that the aggregator can recognize that task metrics were skipped.
      * @param taskExecutionsForOneWorkflowRun
      * @return
      */
