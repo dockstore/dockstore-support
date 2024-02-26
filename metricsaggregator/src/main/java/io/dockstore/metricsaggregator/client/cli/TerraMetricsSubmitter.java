@@ -227,7 +227,7 @@ public class TerraMetricsSubmitter {
             return;
         }
         // only count if there was no exception
-        numberOfExecutionsSubmitted.addAndGet(workflowMetricRecords.size());
+        numberOfExecutionsSubmitted.addAndGet(workflowExecutionsToSubmit.size());
     }
 
     /**
