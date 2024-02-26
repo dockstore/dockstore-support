@@ -51,12 +51,6 @@ public abstract class RunExecutionAggregator<M extends Metric, E> extends Execut
     public Optional<M> getAggregatedMetricFromAllSubmissions(ExecutionsRequestBody allSubmissions) {
         final List<RunExecution> workflowExecutions = new ArrayList<>(getExecutionsFromExecutionRequestBody(allSubmissions));
 
-        // Get aggregated metrics that were submitted to Dockstore
-        List<M> aggregatedMetrics = allSubmissions.getAggregatedExecutions().stream()
-                .map(this::getMetricFromMetrics)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(ArrayList::new));
-
         // If task executions are present, calculate the workflow RunExecution containing the overall workflow-level execution time for each list of tasks
         if (!allSubmissions.getTaskExecutions().isEmpty()) {
             final List<TaskExecutions> taskExecutionsWithMetric = getTaskExecutionsWithMetric(allSubmissions.getTaskExecutions());
@@ -67,6 +61,12 @@ public abstract class RunExecutionAggregator<M extends Metric, E> extends Execut
                     .toList();
             workflowExecutions.addAll(calculatedWorkflowExecutionsFromTasks);
         }
+
+        // Get aggregated metrics that were submitted to Dockstore
+        List<M> aggregatedMetrics = allSubmissions.getAggregatedExecutions().stream()
+                .map(this::getMetricFromMetrics)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(ArrayList::new));
 
         // Aggregate workflow executions into one metric and add it to the list of aggregated metrics
         Optional<M> aggregatedMetricFromWorkflowExecutions = getAggregatedMetricFromExecutions(workflowExecutions);
