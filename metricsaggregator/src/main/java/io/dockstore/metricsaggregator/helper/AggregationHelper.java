@@ -49,12 +49,12 @@ public final class AggregationHelper {
     public static Optional<Metrics> getAggregatedMetrics(List<Metrics> aggregatedMetrics) {
         Metrics overallMetrics = new Metrics();
         // Set run metrics
-        Optional<ExecutionStatusMetric> aggregatedExecutionStatus = new ExecutionStatusAggregator().getAggregatedMetricFromMetricsList(aggregatedMetrics);
+        Optional<ExecutionStatusMetric> aggregatedExecutionStatus = new ExecutionStatusAggregator().getAggregatedMetricsFromAggregatedMetrics(aggregatedMetrics.stream().map(Metrics::getExecutionStatusCount).toList());
         boolean containsRunMetrics = aggregatedExecutionStatus.isPresent();
         aggregatedExecutionStatus.ifPresent(overallMetrics::setExecutionStatusCount);
 
         // Set validation metrics
-        Optional<ValidationStatusMetric> aggregatedValidationStatus = new ValidationStatusAggregator().getAggregatedMetricFromMetricsList(aggregatedMetrics);
+        Optional<ValidationStatusMetric> aggregatedValidationStatus = new ValidationStatusAggregator().getAggregatedMetricsFromAggregatedMetrics(aggregatedMetrics.stream().map(Metrics::getValidationStatus).toList());
         boolean containsValidationMetrics = aggregatedValidationStatus.isPresent();
         aggregatedValidationStatus.ifPresent(overallMetrics::setValidationStatus);
 

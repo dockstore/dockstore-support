@@ -5,7 +5,6 @@ import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.metricsaggregator.DoubleStatistics;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
-import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.TaskExecutions;
 import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum;
@@ -27,11 +26,6 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class ValidationStatusAggregator implements
         ExecutionsRequestBodyAggregator<ValidationExecution, ValidationStatusMetric, ValidationExecution> {
-
-    @Override
-    public ValidationStatusMetric getMetricFromMetrics(Metrics metrics) {
-        return metrics.getValidationStatus();
-    }
 
     @Override
     public ValidationExecution getMetricFromExecution(ValidationExecution execution) {
