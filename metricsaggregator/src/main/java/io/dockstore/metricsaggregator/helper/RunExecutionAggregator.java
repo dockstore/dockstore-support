@@ -1,9 +1,9 @@
 package io.dockstore.metricsaggregator.helper;
 
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
+import io.dockstore.common.metrics.ExecutionsRequestBody;
+import io.dockstore.common.metrics.RunExecution;
+import io.dockstore.common.metrics.TaskExecutions;
 import io.dockstore.openapi.client.model.Metric;
-import io.dockstore.openapi.client.model.RunExecution;
-import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -29,11 +29,6 @@ public abstract class RunExecutionAggregator<M extends Metric, E> extends Execut
      */
     public abstract Optional<RunExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun);
 
-    @Override
-    public List<RunExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
-        return executionsRequestBody.getRunExecutions();
-    }
-
     /**
      * Aggregate metrics from all submissions in the ExecutionsRequestBody.
      * This method uses the runExecutions, and taskExecutions from ExecutionRequestBody to create an aggregated metric.
@@ -47,7 +42,7 @@ public abstract class RunExecutionAggregator<M extends Metric, E> extends Execut
      */
     @Override
     public Optional<M> getAggregatedMetricFromAllSubmissions(ExecutionsRequestBody allSubmissions) {
-        final List<RunExecution> workflowExecutions = new ArrayList<>(getExecutionsFromExecutionRequestBody(allSubmissions));
+        final List<RunExecution> workflowExecutions = new ArrayList<>(allSubmissions.getRunExecutions());
 
         // If task executions are present, calculate the workflow RunExecution containing the overall workflow-level execution time for each list of tasks
         if (!allSubmissions.getTaskExecutions().isEmpty()) {

@@ -23,14 +23,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.common.Partner;
 import io.dockstore.common.S3ClientHelper;
+import io.dockstore.common.metrics.ExecutionsRequestBody;
 import io.dockstore.common.metrics.MetricsData;
 import io.dockstore.common.metrics.MetricsDataS3Client;
+import io.dockstore.common.metrics.RunExecution;
+import io.dockstore.common.metrics.TaskExecutions;
+import io.dockstore.common.metrics.ValidationExecution;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
-import io.dockstore.openapi.client.model.RunExecution;
-import io.dockstore.openapi.client.model.TaskExecutions;
-import io.dockstore.openapi.client.model.ValidationExecution;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayDeque;
@@ -201,10 +201,11 @@ public class MetricsAggregatorS3Client {
             });
         }
 
-        return new ExecutionsRequestBody()
-                .runExecutions(executionIdToWorkflowExecutionMap.values().stream().toList())
-                .taskExecutions(executionIdToTaskExecutionsMap.values().stream().toList())
-                .validationExecutions(executionIdToValidationExecutionMap.values().stream().toList());
+        ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody();
+        executionsRequestBody.setRunExecutions(executionIdToWorkflowExecutionMap.values().stream().toList());
+        executionsRequestBody.setTaskExecutions(executionIdToTaskExecutionsMap.values().stream().toList());
+        executionsRequestBody.setValidationExecutions(executionIdToValidationExecutionMap.values().stream().toList());
+        return executionsRequestBody;
     }
 
     /**

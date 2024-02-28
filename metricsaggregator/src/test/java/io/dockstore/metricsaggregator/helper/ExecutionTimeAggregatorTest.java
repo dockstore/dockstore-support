@@ -3,9 +3,9 @@ package io.dockstore.metricsaggregator.helper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.dockstore.common.metrics.RunExecution;
+import io.dockstore.common.metrics.TaskExecutions;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
-import io.dockstore.openapi.client.model.RunExecution;
-import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,8 @@ class ExecutionTimeAggregatorTest {
 
         // The workflow execution generated from a single task should have the executionTime as the one task
         String tenSecondsExecutionTime = "PT10S";
-        TaskExecutions taskExecutions = new TaskExecutions().taskExecutions(List.of(new RunExecution().executionTime(tenSecondsExecutionTime)));
+        TaskExecutions taskExecutions = new TaskExecutions();
+        taskExecutions.setTaskExecutions(List.of(createRunExecution(tenSecondsExecutionTime)));
         workflowExecution = EXECUTION_TIME_AGGREGATOR.getWorkflowExecutionFromTaskExecutions(taskExecutions);
         assertTrue(workflowExecution.isPresent());
         assertEquals(tenSecondsExecutionTime, workflowExecution.get().getExecutionTime());
@@ -35,7 +36,7 @@ class ExecutionTimeAggregatorTest {
         taskExecutions.setTaskExecutions(iso8601Dates.stream()
                 .map(dateExecuted -> {
                     // Setting the execution time, but this isn't used to calculate the workflow RunExecution execution time
-                    RunExecution taskExecution = new RunExecution().executionTime(tenSecondsExecutionTime);
+                    RunExecution taskExecution = createRunExecution(tenSecondsExecutionTime);
                     taskExecution.setDateExecuted(dateExecuted);
                     return taskExecution;
                 })
@@ -57,7 +58,7 @@ class ExecutionTimeAggregatorTest {
         assertTrue(executionTimeMetric.isEmpty());
 
         // Test the metric calculated from a single workflow execution. The min, max, and average should be the same value as the single execution
-        List<RunExecution> workflowExecutions = List.of(new RunExecution().executionTime("PT10S")); // 10 seconds
+        List<RunExecution> workflowExecutions = List.of(createRunExecution("PT10S")); // 10 seconds
         executionTimeMetric = EXECUTION_TIME_AGGREGATOR.getAggregatedMetricFromExecutions(workflowExecutions);
         assertTrue(executionTimeMetric.isPresent());
         assertEquals(10.0, executionTimeMetric.get().getMinimum());
@@ -67,9 +68,9 @@ class ExecutionTimeAggregatorTest {
 
         // Test the metric calculated from multiple workflow executions.
         workflowExecutions = List.of(
-                new RunExecution().executionTime("PT10S"), // 10 seconds
-                new RunExecution().executionTime("PT20S"), // 20 seconds
-                new RunExecution().executionTime("PT30S") // 30 seconds
+                createRunExecution("PT10S"), // 10 seconds
+                createRunExecution("PT20S"), // 20 seconds
+                createRunExecution("PT30S") // 30 seconds
         );
         executionTimeMetric = EXECUTION_TIME_AGGREGATOR.getAggregatedMetricFromExecutions(workflowExecutions);
         assertTrue(executionTimeMetric.isPresent());
@@ -77,5 +78,11 @@ class ExecutionTimeAggregatorTest {
         assertEquals(30.0, executionTimeMetric.get().getMaximum());
         assertEquals(20.0, executionTimeMetric.get().getAverage());
         assertEquals(3, executionTimeMetric.get().getNumberOfDataPointsForAverage());
+    }
+    
+    private RunExecution createRunExecution(String executionTime) {
+        RunExecution runExecution = new RunExecution();
+        runExecution.setExecutionTime(executionTime);
+        return runExecution;
     }
 }

@@ -1,10 +1,9 @@
 package io.dockstore.metricsaggregator.helper;
 
+import io.dockstore.common.metrics.RunExecution;
+import io.dockstore.common.metrics.TaskExecutions;
 import io.dockstore.metricsaggregator.DoubleStatistics;
 import io.dockstore.openapi.client.model.CpuMetric;
-import io.dockstore.openapi.client.model.Metrics;
-import io.dockstore.openapi.client.model.RunExecution;
-import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -21,26 +20,28 @@ public class CpuAggregator extends RunExecutionAggregator<CpuMetric, Integer> {
     }
 
     @Override
-    public CpuMetric getMetricFromMetrics(Metrics metrics) {
-        return null; // There is no CpuMetric in Metrics
-    }
-
-    @Override
     public boolean validateExecutionMetric(Integer executionMetric) {
         return executionMetric != null && executionMetric >= 0;
     }
 
     @Override
+    public String getPropertyPathToValidate() {
+        return "cpuRequirements";
+    }
+
+    @Override
     public Optional<RunExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun) {
         final List<RunExecution> taskExecutions = taskExecutionsForOneWorkflowRun.getTaskExecutions();
-        if (taskExecutions != null && taskExecutions.stream().map(RunExecution::getCpuRequirements).allMatch(Objects::nonNull)) {
+        if (!taskExecutions.isEmpty() && taskExecutions.stream().map(RunExecution::getCpuRequirements).allMatch(Objects::nonNull)) {
             // Get the overall CPU requirement by getting the maximum CPU value used
             final Optional<Integer> maxCpuRequirement = taskExecutions.stream()
                     .map(RunExecution::getCpuRequirements)
                     .filter(Objects::nonNull)
                     .max(Integer::compareTo);
             if (maxCpuRequirement.isPresent()) {
-                return Optional.ofNullable(new RunExecution().cpuRequirements(maxCpuRequirement.get()));
+                RunExecution workflowExecution = new RunExecution();
+                workflowExecution.setCpuRequirements(maxCpuRequirement.get());
+                return Optional.ofNullable(workflowExecution);
             }
         }
         return Optional.empty();

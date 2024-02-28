@@ -1,12 +1,14 @@
 package io.dockstore.metricsaggregator.helper;
 
-import io.dockstore.openapi.client.model.Execution;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
+import io.dockstore.common.metrics.Execution;
+import io.dockstore.common.metrics.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metric;
-import io.dockstore.openapi.client.model.Metrics;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A class defining the methods needed to aggregate workflow executions into aggregated metrics.
@@ -16,26 +18,14 @@ import java.util.Optional;
  */
 public abstract class ExecutionAggregator<T extends Execution, M extends Metric, E> {
 
+    private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+
     /**
      * Get the metric to aggregate from a single workflow execution.
      * @param execution
      * @return
      */
     public abstract E getMetricFromExecution(T execution);
-
-    /**
-     * Get the aggregated metric associated with the metric type from the aggregated Metrics class, which contains multiple types of aggregated metrics.
-     * @param metrics
-     * @return
-     */
-    public abstract M getMetricFromMetrics(Metrics metrics);
-
-    /**
-     * Get the executions containing the metric to aggregate from ExecutionsRequestBody.
-     * @param executionsRequestBody
-     * @return
-     */
-    public abstract List<T> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody);
 
     /**
      * Returns a boolean indicating if the execution metric is valid.
@@ -66,14 +56,21 @@ public abstract class ExecutionAggregator<T extends Execution, M extends Metric,
     public abstract Optional<M> getAggregatedMetricFromAllSubmissions(ExecutionsRequestBody allSubmissions);
 
     /**
+     * Returns the property name of the metric in the Execution class to validate.
+     * This is used to determine if a Java Bean validation violation is for this particular execution metric.
+     * @return
+     */
+    public abstract String getPropertyPathToValidate();
+
+    /**
      * Aggregates workflow executions into an aggregated metric and calculates the number of skipped executions.
      * @param executions
      * @return
      */
 
     public final Optional<M> getAggregatedMetricFromExecutions(List<T> executions) {
-        final List<E> executionsWithNonNullMetric = executions.stream().map(this::getMetricFromExecution).filter(Objects::nonNull).toList();
-        final List<E> validExecutionMetrics = executionsWithNonNullMetric.stream().filter(this::validateExecutionMetric).toList();
+        final List<T> executionsWithNonNullMetric = executions.stream().filter(execution -> getMetricFromExecution(execution) != null).toList();
+        final List<E> validExecutionMetrics = executionsWithNonNullMetric.stream().filter(this::isValid).map(this::getMetricFromExecution).toList();
         if (!validExecutionMetrics.isEmpty()) {
             Optional<M> calculatedMetric = calculateAggregatedMetricFromExecutionMetrics(validExecutionMetrics);
             final int numberOfSkippedExecutions = executionsWithNonNullMetric.size() - validExecutionMetrics.size();
@@ -100,16 +97,12 @@ public abstract class ExecutionAggregator<T extends Execution, M extends Metric,
     }
 
     /**
-     * Given a list of Metrics, a class containing multiple types of aggregated metrics, get the metrics associated with the metric type and
-     * aggregate them into a metric of this type.
-     * @param metricsList
+     * Validate executions using Java Bean Validation
+     * @param execution
      * @return
      */
-    public Optional<M> getAggregatedMetricFromMetricsList(List<Metrics> metricsList) {
-        List<M> specificMetrics = metricsList.stream()
-                .map(this::getMetricFromMetrics)
-                .filter(Objects::nonNull)
-                .toList();
-        return getAggregatedMetricsFromAggregatedMetrics(specificMetrics);
+    public boolean isValid(T execution) {
+        Set<ConstraintViolation<T>> violations = validator.validate(execution);
+        return violations.stream().noneMatch(violation -> violation.getPropertyPath().toString().startsWith(getPropertyPathToValidate()));
     }
 }

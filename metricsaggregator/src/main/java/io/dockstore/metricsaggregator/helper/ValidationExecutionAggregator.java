@@ -1,13 +1,11 @@
 package io.dockstore.metricsaggregator.helper;
 
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
+import io.dockstore.common.metrics.ExecutionsRequestBody;
+import io.dockstore.common.metrics.ValidationExecution;
 import io.dockstore.openapi.client.model.Metric;
-import io.dockstore.openapi.client.model.ValidationExecution;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * A class defining the methods needed to aggregate workflow ValidationExecutions into aggregated metrics.
@@ -16,39 +14,20 @@ import java.util.stream.Collectors;
  */
 public abstract class ValidationExecutionAggregator<M extends Metric, E> extends ExecutionAggregator<ValidationExecution, M, E> {
 
-    @Override
-    public List<ValidationExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
-        return executionsRequestBody.getValidationExecutions();
-    }
-
     /**
      * Aggregate metrics from all submissions in the ExecutionsRequestBody.
-     * This method uses the validationExecutions, and aggregatedExecutions from ExecutionRequestBody to create an aggregated metric.
+     * This method uses the validationExecutions from ExecutionRequestBody to create an aggregated metric.
      * Metrics are aggregated by:
      * <ol>
      *     <li>Aggregating workflow executions,submitted via ExecutionRequestBody.validationExecutions into an aggregated metric.
-     *     <li>Aggregating the list of aggregated metrics, submitted via ExecutionRequestBody.aggregatedExecutions and the aggregated metric that was aggregated from workflow executions, into one aggregated metric.</li>
      * </ol>
      * @param allSubmissions
      * @return
      */
     public Optional<M> getAggregatedMetricFromAllSubmissions(ExecutionsRequestBody allSubmissions) {
-        final List<ValidationExecution> workflowExecutions = new ArrayList<>(getExecutionsFromExecutionRequestBody(allSubmissions));
+        final List<ValidationExecution> workflowExecutions = new ArrayList<>(allSubmissions.getValidationExecutions());
 
-        // Get aggregated metrics that were submitted to Dockstore
-        List<M> aggregatedMetrics = allSubmissions.getAggregatedExecutions().stream()
-                .map(this::getMetricFromMetrics)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(ArrayList::new));
-
-        // Aggregate workflow executions into one metric and add it to the list of aggregated metrics
-        Optional<M> aggregatedMetricFromWorkflowExecutions = getAggregatedMetricFromExecutions(workflowExecutions);
-        aggregatedMetricFromWorkflowExecutions.ifPresent(aggregatedMetrics::add);
-
-        if (!aggregatedMetrics.isEmpty()) {
-            // Calculate the new aggregated metric from the list of aggregated metrics
-            return getAggregatedMetricsFromAggregatedMetrics(aggregatedMetrics);
-        }
-        return Optional.empty();
+        // Aggregate workflow executions into one metric
+        return getAggregatedMetricFromExecutions(workflowExecutions);
     }
 }

@@ -1,7 +1,7 @@
 package io.dockstore.metricsaggregator.helper;
 
+import io.dockstore.common.metrics.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import java.util.List;

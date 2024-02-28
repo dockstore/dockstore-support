@@ -161,6 +161,10 @@
             <artifactId>guava</artifactId>
         </dependency>
         <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <scope>test</scope>
@@ -297,6 +301,7 @@
                                 <usedDependency>ch.qos.logback:logback-classic</usedDependency>
                                 <usedDependency>ch.qos.logback:logback-core</usedDependency>
                                 <usedDependency>com.google.guava:guava</usedDependency>
+                                <usedDependency>jakarta.validation:jakarta.validation-api</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>

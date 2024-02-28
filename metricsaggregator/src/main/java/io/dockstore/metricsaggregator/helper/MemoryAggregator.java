@@ -1,10 +1,9 @@
 package io.dockstore.metricsaggregator.helper;
 
+import io.dockstore.common.metrics.RunExecution;
+import io.dockstore.common.metrics.TaskExecutions;
 import io.dockstore.metricsaggregator.DoubleStatistics;
 import io.dockstore.openapi.client.model.MemoryMetric;
-import io.dockstore.openapi.client.model.Metrics;
-import io.dockstore.openapi.client.model.RunExecution;
-import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -20,26 +19,28 @@ public class MemoryAggregator extends RunExecutionAggregator<MemoryMetric, Doubl
     }
 
     @Override
-    public MemoryMetric getMetricFromMetrics(Metrics metrics) {
-        return null; // There is no MemoryMetric in Metrics
-    }
-
-    @Override
     public boolean validateExecutionMetric(Double executionMetric) {
         return executionMetric != null && executionMetric >= 0;
     }
 
     @Override
+    public String getPropertyPathToValidate() {
+        return "memoryRequirementsGB";
+    }
+
+    @Override
     public Optional<RunExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun) {
         final List<RunExecution> taskExecutions = taskExecutionsForOneWorkflowRun.getTaskExecutions();
-        if (taskExecutions != null && taskExecutions.stream().map(RunExecution::getMemoryRequirementsGB).allMatch(Objects::nonNull)) {
+        if (!taskExecutions.isEmpty() && taskExecutions.stream().map(RunExecution::getMemoryRequirementsGB).allMatch(Objects::nonNull)) {
             // Get the overall memory requirement by getting the maximum memory value used
             final Optional<Double> maxMemoryRequirement = taskExecutions.stream()
                     .map(RunExecution::getMemoryRequirementsGB)
                     .filter(Objects::nonNull)
                     .max(Double::compareTo);
             if (maxMemoryRequirement.isPresent()) {
-                return Optional.of(new RunExecution().memoryRequirementsGB(maxMemoryRequirement.get()));
+                RunExecution workflowExecution = new RunExecution();
+                workflowExecution.setMemoryRequirementsGB(maxMemoryRequirement.get());
+                return Optional.of(workflowExecution);
             }
         }
         return Optional.empty();

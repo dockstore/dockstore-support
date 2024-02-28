@@ -3,12 +3,11 @@ package io.dockstore.metricsaggregator.helper;
 import static io.dockstore.common.metrics.FormatCheckHelper.isValidCurrencyCode;
 import static io.dockstore.metricsaggregator.MoneyStatistics.CURRENCY;
 
+import io.dockstore.common.metrics.Cost;
+import io.dockstore.common.metrics.RunExecution;
+import io.dockstore.common.metrics.TaskExecutions;
 import io.dockstore.metricsaggregator.MoneyStatistics;
-import io.dockstore.openapi.client.model.Cost;
 import io.dockstore.openapi.client.model.CostMetric;
-import io.dockstore.openapi.client.model.Metrics;
-import io.dockstore.openapi.client.model.RunExecution;
-import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -22,19 +21,19 @@ public class CostAggregator extends RunExecutionAggregator<CostMetric, Cost> {
     }
 
     @Override
-    public CostMetric getMetricFromMetrics(Metrics metrics) {
-        return null; // There is no CostMetric in Metrics
-    }
-
-    @Override
     public boolean validateExecutionMetric(Cost executionMetric) {
         return executionMetric != null && isValidCurrencyCode(executionMetric.getCurrency()) && executionMetric.getValue() >= 0;
     }
 
     @Override
+    public String getPropertyPathToValidate() {
+        return "cost";
+    }
+
+    @Override
     public Optional<RunExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun) {
         final List<RunExecution> taskExecutions = taskExecutionsForOneWorkflowRun.getTaskExecutions();
-        if (taskExecutions != null && taskExecutions.stream().map(RunExecution::getCost).allMatch(Objects::nonNull)) {
+        if (!taskExecutions.isEmpty() && taskExecutions.stream().map(RunExecution::getCost).allMatch(Objects::nonNull)) {
             // Get the overall cost by summing up the cost of each task
             List<Cost> taskCosts = taskExecutions.stream()
                     .map(RunExecution::getCost)
@@ -44,7 +43,9 @@ public class CostAggregator extends RunExecutionAggregator<CostMetric, Cost> {
                 Money totalCost = taskCosts.stream()
                         .map(cost -> Money.of(cost.getValue(), cost.getCurrency()))
                         .reduce(Money.of(0, CURRENCY), Money::add);
-                return Optional.of(new RunExecution().cost(new Cost().value(totalCost.getNumber().doubleValue())));
+                RunExecution workflowExecution = new RunExecution();
+                workflowExecution.setCost(new Cost(totalCost.getNumber().doubleValue()));
+                return Optional.of(workflowExecution);
             }
         }
         return Optional.empty();

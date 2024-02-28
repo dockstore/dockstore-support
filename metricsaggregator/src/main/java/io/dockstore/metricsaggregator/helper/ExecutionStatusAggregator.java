@@ -2,12 +2,11 @@ package io.dockstore.metricsaggregator.helper;
 
 import static java.util.stream.Collectors.groupingBy;
 
+import io.dockstore.common.metrics.ExecutionStatus;
+import io.dockstore.common.metrics.RunExecution;
+import io.dockstore.common.metrics.TaskExecutions;
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
-import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.MetricsByStatus;
-import io.dockstore.openapi.client.model.RunExecution;
-import io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum;
-import io.dockstore.openapi.client.model.TaskExecutions;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -28,13 +27,13 @@ public class ExecutionStatusAggregator extends RunExecutionAggregator<ExecutionS
     private final CostAggregator costAggregator = new CostAggregator();
 
     @Override
-    public ExecutionStatusMetric getMetricFromMetrics(Metrics metrics) {
-        return metrics.getExecutionStatusCount();
+    public boolean validateExecutionMetric(RunExecution executionMetric) {
+        return executionMetric.getExecutionStatus() != null;
     }
 
     @Override
-    public boolean validateExecutionMetric(RunExecution executionMetric) {
-        return executionMetric.getExecutionStatus() != null;
+    public String getPropertyPathToValidate() {
+        return "executionStatus";
     }
 
     @Override
@@ -46,15 +45,15 @@ public class ExecutionStatusAggregator extends RunExecutionAggregator<ExecutionS
     public Optional<RunExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun) {
         final List<RunExecution> taskExecutions = taskExecutionsForOneWorkflowRun.getTaskExecutions();
         RunExecution workflowExecution = new RunExecution();
-        if (taskExecutions != null && taskExecutions.stream().map(RunExecution::getExecutionStatus).allMatch(Objects::nonNull)) {
-            if (taskExecutions.stream().allMatch(taskRunExecution -> taskRunExecution.getExecutionStatus() == ExecutionStatusEnum.SUCCESSFUL)) {
+        if (!taskExecutions.isEmpty() && taskExecutions.stream().map(RunExecution::getExecutionStatus).allMatch(Objects::nonNull)) {
+            if (taskExecutions.stream().allMatch(taskRunExecution -> taskRunExecution.getExecutionStatus() == ExecutionStatus.SUCCESSFUL)) {
                 // All executions were successful
-                workflowExecution.setExecutionStatus(ExecutionStatusEnum.SUCCESSFUL);
+                workflowExecution.setExecutionStatus(ExecutionStatus.SUCCESSFUL);
             } else {
                 // If there were failed executions, set the overall status to the most frequent failed status
-                Optional<ExecutionStatusEnum> mostFrequentFailedStatus = taskExecutions.stream()
+                Optional<ExecutionStatus> mostFrequentFailedStatus = taskExecutions.stream()
                         .map(RunExecution::getExecutionStatus)
-                        .filter(taskExecutionStatus -> taskExecutionStatus != ExecutionStatusEnum.SUCCESSFUL)
+                        .filter(taskExecutionStatus -> taskExecutionStatus != ExecutionStatus.SUCCESSFUL)
                         .collect(groupingBy(Function.identity(), Collectors.reducing(0, e -> 1, Integer::sum)))
                         .entrySet()
                         .stream()
@@ -77,7 +76,7 @@ public class ExecutionStatusAggregator extends RunExecutionAggregator<ExecutionS
     @Override
     protected Optional<ExecutionStatusMetric> calculateAggregatedMetricFromExecutionMetrics(List<RunExecution> executionMetrics) {
         if (!executionMetrics.isEmpty()) {
-            Map<ExecutionStatusEnum, List<RunExecution>> executionsByStatus = executionMetrics.stream()
+            Map<ExecutionStatus, List<RunExecution>> executionsByStatus = executionMetrics.stream()
                     .collect(groupingBy(RunExecution::getExecutionStatus));
 
             ExecutionStatusMetric executionStatusMetric = new ExecutionStatusMetric();
@@ -88,7 +87,7 @@ public class ExecutionStatusAggregator extends RunExecutionAggregator<ExecutionS
 
             // Figure out metrics over all statuses
             MetricsByStatus overallMetricsByStatus = getMetricsByStatusFromExecutions(executionsByStatus.values().stream().flatMap(Collection::stream).toList());
-            executionStatusMetric.getCount().put(ExecutionStatusEnum.ALL.name(), overallMetricsByStatus);
+            executionStatusMetric.getCount().put(ExecutionStatus.ALL.name(), overallMetricsByStatus);
 
             return Optional.of(executionStatusMetric);
         }
@@ -116,13 +115,13 @@ public class ExecutionStatusAggregator extends RunExecutionAggregator<ExecutionS
 
             // Calculate metrics over all statuses
             // Calculate from previous ALL MetricsByStatus (aggregate using aggregated data)
-            List<MetricsByStatus> metricsByStatusesToCalculateAllStatus = statusToMetricsByStatus.get(ExecutionStatusEnum.ALL.name());
+            List<MetricsByStatus> metricsByStatusesToCalculateAllStatus = statusToMetricsByStatus.get(ExecutionStatus.ALL.name());
             if (metricsByStatusesToCalculateAllStatus == null) {
                 // If there's no ALL key, calculate from other statuses
                 metricsByStatusesToCalculateAllStatus = statusToMetricsByStatus.values().stream().flatMap(Collection::stream).toList();
             }
             MetricsByStatus overallMetricsByStatus = getMetricsByStatusFromMetricsByStatusList(metricsByStatusesToCalculateAllStatus);
-            executionStatusMetric.getCount().put(ExecutionStatusEnum.ALL.name(), overallMetricsByStatus);
+            executionStatusMetric.getCount().put(ExecutionStatus.ALL.name(), overallMetricsByStatus);
             return Optional.of(executionStatusMetric);
         }
         return Optional.empty();
