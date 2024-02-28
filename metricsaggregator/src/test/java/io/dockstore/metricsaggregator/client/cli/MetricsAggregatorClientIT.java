@@ -60,11 +60,8 @@ import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.UsersApi;
 import io.dockstore.openapi.client.api.WorkflowsApi;
-import io.dockstore.openapi.client.model.AggregatedExecution;
 import io.dockstore.openapi.client.model.Cost;
-import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
-import io.dockstore.openapi.client.model.MemoryMetric;
 import io.dockstore.openapi.client.model.Metric;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.MetricsByStatus;
@@ -596,30 +593,18 @@ class MetricsAggregatorClientIT {
         // Check if metric is aggregated from validation execution by checking if it has a validation status metric
         ValidationExecution validationExecution = createValidationExecution(MINIWDL, "v1", true);
         validationExecution.setExecutionId(executionId);
-        // Check if metric is aggregated from aggregated execution by checking memory metric
-        AggregatedExecution aggregatedExecution = new AggregatedExecution().executionId(executionId);
-        aggregatedExecution.executionStatusCount(new ExecutionStatusMetric().putCountItem(SUCCESSFUL.name(),
-                new MetricsByStatus()
-                        .executionStatusCount(1)
-                        .memory(new MemoryMetric()
-                                .minimum(1.0)
-                                .maximum(1.0)
-                                .average(1.0)
-                                .numberOfDataPointsForAverage(1))));
 
         // Try to send all of them in one POST. Should fail because the webservice validates that one submission does not include duplicate IDs
         assertThrows(ApiException.class, () -> extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody()
                 .runExecutions(List.of(workflowExecution))
                 .taskExecutions(List.of(taskExecutions))
-                .validationExecutions(List.of(validationExecution))
-                .aggregatedExecutions(List.of(aggregatedExecution)),
+                .validationExecutions(List.of(validationExecution)),
                 platform, id, versionId, ""));
 
         // Send them one at a time. The last execution sent should be the one that the metrics aggregator aggregates
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().validationExecutions(List.of(validationExecution)), platform, id, versionId, "");
         extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(List.of(workflowExecution)), platform, id, versionId, "");
         extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().taskExecutions(List.of(taskExecutions)), platform, id, versionId, "");
-        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().validationExecutions(List.of(validationExecution)), platform, id, versionId, "");
-        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().aggregatedExecutions(List.of(aggregatedExecution)), platform, id, versionId, "");
 
         MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
         // Get workflow version to verify aggregated metrics
@@ -627,11 +612,10 @@ class MetricsAggregatorClientIT {
         version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
         Metrics metrics = version.getMetricsByPlatform().get(platform);
         assertNotNull(metrics);
-        // Should be aggregated from aggregatedExecution because it was submitted last
+        // Should be aggregated from taskExecutions because it was submitted last
         MetricsByStatus successfulMetrics = metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name());
-        assertNotNull(successfulMetrics.getMemory());
+        assertNotNull(successfulMetrics.getCpu()); // Verify that the metric from task executions was used
         assertNull(successfulMetrics.getExecutionTime()); // Verify that the metric from workflow execution wasn't used
-        assertNull(successfulMetrics.getCpu()); // Verify that the metric from task executions weren't used
         assertNull(metrics.getValidationStatus()); // Verify that the metric from validation execution wasn't used
 
         // Submit a workflow execution. The metric should be from the latest workflow execution.
@@ -643,13 +627,12 @@ class MetricsAggregatorClientIT {
         version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
         metrics = version.getMetricsByPlatform().get(platform);
         assertNotNull(metrics);
-        // Should be aggregated from aggregatedExecution because it was submitted last
+        // Should be aggregated from runExecution because it was submitted last
         successfulMetrics = metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name());
         assertNotNull(successfulMetrics.getExecutionTime());
         assertEquals(0, successfulMetrics.getExecutionTime().getMinimum()); // Verify that the execution time is from the second workflow execution
         assertNull(successfulMetrics.getCpu()); // Verify that the metric from task executions weren't used
         assertNull(metrics.getValidationStatus()); // Verify that the metric from validation execution wasn't used
-        assertNull(successfulMetrics.getMemory()); // Verify that the metric from aggregated execution wasn't used
     }
 
     @Test

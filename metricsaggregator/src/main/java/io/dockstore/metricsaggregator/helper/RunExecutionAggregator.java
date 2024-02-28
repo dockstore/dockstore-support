@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * A class defining the methods needed to aggregate workflow RunExecutions into aggregated metrics.
@@ -37,12 +36,11 @@ public abstract class RunExecutionAggregator<M extends Metric, E> extends Execut
 
     /**
      * Aggregate metrics from all submissions in the ExecutionsRequestBody.
-     * This method uses the runExecutions, taskExecutions, and aggregatedExecutions from ExecutionRequestBody to create an aggregated metric.
+     * This method uses the runExecutions, and taskExecutions from ExecutionRequestBody to create an aggregated metric.
      * Metrics are aggregated by:
      * <ol>
      *     <li>Aggregating task executions, provided via ExecutionRequestBody.taskExecutions, into workflow executions.</li>
      *     <li>Aggregating workflow executions,submitted via ExecutionRequestBody.runExecutions and workflow executions that were aggregated from task executions, into an aggregated metric.
-     *     <li>Aggregating the list of aggregated metrics, submitted via ExecutionRequestBody.aggregatedExecutions and the aggregated metric that was aggregated from workflow executions, into one aggregated metric.</li>
      * </ol>
      * @param allSubmissions
      * @return
@@ -62,20 +60,8 @@ public abstract class RunExecutionAggregator<M extends Metric, E> extends Execut
             workflowExecutions.addAll(calculatedWorkflowExecutionsFromTasks);
         }
 
-        // Get aggregated metrics that were submitted to Dockstore
-        List<M> aggregatedMetrics = allSubmissions.getAggregatedExecutions().stream()
-                .map(this::getMetricFromMetrics)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(ArrayList::new));
 
-        // Aggregate workflow executions into one metric and add it to the list of aggregated metrics
-        Optional<M> aggregatedMetricFromWorkflowExecutions = getAggregatedMetricFromExecutions(workflowExecutions);
-        aggregatedMetricFromWorkflowExecutions.ifPresent(aggregatedMetrics::add);
-
-        if (!aggregatedMetrics.isEmpty()) {
-            // Calculate the new aggregated metric from the list of aggregated metrics
-            return getAggregatedMetricsFromAggregatedMetrics(aggregatedMetrics);
-        }
-        return Optional.empty();
+        // Aggregate workflow executions into one metric
+        return getAggregatedMetricFromExecutions(workflowExecutions);
     }
 }
