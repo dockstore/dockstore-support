@@ -26,7 +26,6 @@ import io.dockstore.common.S3ClientHelper;
 import io.dockstore.common.metrics.MetricsData;
 import io.dockstore.common.metrics.MetricsDataS3Client;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
-import io.dockstore.openapi.client.model.AggregatedExecution;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RunExecution;
@@ -166,7 +165,6 @@ public class MetricsAggregatorS3Client {
         Map<String, RunExecution> executionIdToWorkflowExecutionMap = new HashMap<>();
         Map<String, TaskExecutions> executionIdToTaskExecutionsMap = new HashMap<>();
         Map<String, ValidationExecution> executionIdToValidationExecutionMap = new HashMap<>();
-        Map<String, AggregatedExecution> executionIdToAggregatedExecutionMap = new HashMap<>();
 
         for (MetricsData metricsData : metricsDataList) {
             String fileContent = metricsDataS3Client.getMetricsDataFileContent(metricsData.toolId(), metricsData.toolVersionName(),
@@ -188,36 +186,25 @@ public class MetricsAggregatorS3Client {
                 executionIdToWorkflowExecutionMap.put(executionId, workflowExecution);
                 executionIdToValidationExecutionMap.remove(executionId);
                 executionIdToTaskExecutionsMap.remove(executionId);
-                executionIdToAggregatedExecutionMap.remove(executionId);
             });
             executionsFromOneSubmission.getTaskExecutions().forEach(taskExecutions -> {
                 final String executionId = taskExecutions.getExecutionId();
                 executionIdToTaskExecutionsMap.put(executionId, taskExecutions);
                 executionIdToWorkflowExecutionMap.remove(executionId);
                 executionIdToValidationExecutionMap.remove(executionId);
-                executionIdToAggregatedExecutionMap.remove(executionId);
             });
             executionsFromOneSubmission.getValidationExecutions().forEach(validationExecution -> {
                 final String executionId = validationExecution.getExecutionId();
                 executionIdToValidationExecutionMap.put(executionId, validationExecution);
                 executionIdToWorkflowExecutionMap.remove(executionId);
                 executionIdToTaskExecutionsMap.remove(executionId);
-                executionIdToAggregatedExecutionMap.remove(executionId);
-            });
-            executionsFromOneSubmission.getAggregatedExecutions().forEach(aggregatedExecution -> {
-                final String executionId = aggregatedExecution.getExecutionId();
-                executionIdToAggregatedExecutionMap.put(executionId, aggregatedExecution);
-                executionIdToWorkflowExecutionMap.remove(executionId);
-                executionIdToTaskExecutionsMap.remove(executionId);
-                executionIdToValidationExecutionMap.remove(executionId);
             });
         }
 
         return new ExecutionsRequestBody()
                 .runExecutions(executionIdToWorkflowExecutionMap.values().stream().toList())
                 .taskExecutions(executionIdToTaskExecutionsMap.values().stream().toList())
-                .validationExecutions(executionIdToValidationExecutionMap.values().stream().toList())
-                .aggregatedExecutions(executionIdToAggregatedExecutionMap.values().stream().toList());
+                .validationExecutions(executionIdToValidationExecutionMap.values().stream().toList());
     }
 
     /**

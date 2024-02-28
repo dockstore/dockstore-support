@@ -4,7 +4,6 @@ import static java.util.stream.Collectors.groupingBy;
 
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
-import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.MetricsByStatus;
 import io.dockstore.openapi.client.model.RunExecution;
 import io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum;
@@ -28,11 +27,6 @@ public class ExecutionStatusAggregator implements
     private final CpuAggregator cpuAggregator = new CpuAggregator();
     private final MemoryAggregator memoryAggregator = new MemoryAggregator();
     private final CostAggregator costAggregator = new CostAggregator();
-
-    @Override
-    public ExecutionStatusMetric getMetricFromMetrics(Metrics metrics) {
-        return metrics.getExecutionStatusCount();
-    }
 
     @Override
     public ExecutionStatusEnum getMetricFromExecution(RunExecution execution) {
