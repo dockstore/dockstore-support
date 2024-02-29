@@ -30,5 +30,26 @@ public class TopicGeneratorCommandLineArgs {
         public String getEntriesCsvFilePath() {
             return entriesCsvFilePath;
         }
+
+        /**
+         * Headers for the input data file of entries to generate AI topics for.
+         */
+        public enum InputCsvHeaders {
+            trsId, version
+        }
+
+        /**
+         * Headers for the output file containing the AI generated topics.
+         */
+        public enum OutputCsvHeaders {
+            trsId,
+            version,
+            descriptorUrl, // Raw GitHub URL of the descriptor file used to generate the topic
+            isTruncated, // Whether the descriptor file content truncated because it exceeded the token maximum
+            promptTokens, // Number of tokens in prompt
+            completionTokens, // Number of tokens in response
+            finishReason, // The reason that the response stopped
+            aiTopic
+        }
     }
 }
