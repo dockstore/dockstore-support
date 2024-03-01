@@ -221,6 +221,7 @@ public class TopicGeneratorClient {
         try {
             return Optional.of(ga4Ghv20Api.toolsIdVersionsVersionIdTypeDescriptorRelativePathGet(trsId, descriptorType.toString(), versionId, mainScriptPath));
         } catch (ApiException exception) {
+            LOG.error("Could not get Nextflow main script {}", mainScriptPath, exception);
             return Optional.empty();
         }
     }
