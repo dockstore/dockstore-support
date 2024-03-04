@@ -45,6 +45,7 @@ public class TopicGeneratorCommandLineArgs {
             trsId,
             version,
             descriptorUrl, // Raw GitHub URL of the descriptor file used to generate the topic
+            descriptorChecksum, // Checksum of the descriptor file used to generate the topic. Can be used to determine if the content has changed
             isTruncated, // Whether the descriptor file content truncated because it exceeded the token maximum
             promptTokens, // Number of tokens in prompt
             completionTokens, // Number of tokens in response

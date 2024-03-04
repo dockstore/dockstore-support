@@ -174,7 +174,7 @@ public class TopicGeneratorClient {
      */
     private void getAiGeneratedTopicAndRecordToCsv(OpenAiService openAiService, CSVPrinter csvPrinter, String trsId, String versionId, String entryType, FileWrapper descriptorFile) {
         // A character limit is specified but ChatGPT doesn't follow it strictly
-        final String systemPrompt = "You will be provided with a " + entryType + ", and your task is to summarize it in one sentence where the first word is a verb. Use a maximum of 150 characters.";
+        final String systemPrompt = "Summarize the " + entryType + " in one sentence that starts with a verb. Use a maximum of 150 characters.";
         final ChatMessage systemMessage = new ChatMessage(ChatMessageRole.SYSTEM.value(), systemPrompt);
         // The sum of the number of tokens in the request and response cannot exceed the model's maximum context length.
         final int maxResponseTokens = 100; // One token is roughly 4 characters. Using 100 tokens because setting it too low might truncate the response
@@ -207,10 +207,11 @@ public class TopicGeneratorClient {
         final String finishReason = chatCompletionChoice.getFinishReason();
         final long promptTokens = chatCompletionResult.getUsage().getPromptTokens();
         final long completionTokens = chatCompletionResult.getUsage().getCompletionTokens();
+        String descriptorFileChecksum = descriptorFile.getChecksum().isEmpty() ? "" : descriptorFile.getChecksum().get(0).getChecksum();
 
         // Write response to new CSV file
         try {
-            csvPrinter.printRecord(trsId, versionId, descriptorFile.getUrl(), encoded.isTruncated(), promptTokens, completionTokens, finishReason, aiGeneratedTopic);
+            csvPrinter.printRecord(trsId, versionId, descriptorFile.getUrl(), descriptorFileChecksum, encoded.isTruncated(), promptTokens, completionTokens, finishReason, aiGeneratedTopic);
         } catch (IOException e) {
             LOG.error("Unable to write CSV record to file, skipping", e);
         }
