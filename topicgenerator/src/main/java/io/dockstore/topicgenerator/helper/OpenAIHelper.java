@@ -55,11 +55,11 @@ public final class OpenAIHelper {
      * @param maxResponseToken
      * @return
      */
-    public static int getMaximumAmountOfTokensForUserMessageContent(EncodingRegistry registry, ModelType aiModel, ChatMessage systemMessage, int maxResponseToken) {
+    public static int getMaximumAmountOfTokensForUserMessageContent(EncodingRegistry registry, ModelType aiModel, int maxContextLength, ChatMessage systemMessage, int maxResponseToken) {
         ChatMessage userMessageWithoutContent = new ChatMessage(ChatMessageRole.USER.value());
         List<ChatMessage> messages = List.of(systemMessage, userMessageWithoutContent);
 
         final int tokenCountWithoutUserContent = countMessageTokens(registry, aiModel.getName(), messages);
-        return aiModel.getMaxContextLength() - maxResponseToken - tokenCountWithoutUserContent;
+        return maxContextLength - maxResponseToken - tokenCountWithoutUserContent;
     }
 }
