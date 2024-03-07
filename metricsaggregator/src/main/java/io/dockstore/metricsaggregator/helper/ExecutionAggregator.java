@@ -7,6 +7,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -81,13 +82,13 @@ public abstract class ExecutionAggregator<T extends Execution, M extends Metric,
     }
 
     /**
-     * Aggregates a list of aggregated metrics into one aggregated metric  nd calculates the number of skipped executions.
+     * Aggregates a list of aggregated metrics into one aggregated metric and calculates the number of skipped executions.
      * @param aggregatedMetrics
      * @return
      */
     public final Optional<M> getAggregatedMetricsFromAggregatedMetrics(List<M> aggregatedMetrics) {
         if (!aggregatedMetrics.isEmpty()) {
-            Optional<M> calculatedMetric = calculateAggregatedMetricFromAggregatedMetrics(aggregatedMetrics);
+            Optional<M> calculatedMetric = calculateAggregatedMetricFromAggregatedMetrics(aggregatedMetrics.stream().filter(Objects::nonNull).toList());
             // Sum number of skipped executions from the aggregated metrics
             final int numberOfSkippedExecutions =  aggregatedMetrics.stream().map(Metric::getNumberOfSkippedExecutions).reduce(0, Integer::sum);
             calculatedMetric.ifPresent(metric -> metric.setNumberOfSkippedExecutions(numberOfSkippedExecutions));
