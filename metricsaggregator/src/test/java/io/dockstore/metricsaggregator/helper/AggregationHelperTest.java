@@ -1,14 +1,15 @@
 package io.dockstore.metricsaggregator.helper;
 
-import static io.dockstore.metricsaggregator.common.TestUtilities.createValidationExecution;
+import static io.dockstore.metricsaggregator.common.TestUtilities.generateExecutionId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
-import io.dockstore.openapi.client.model.ValidationExecution;
+import io.dockstore.common.metrics.ExecutionsRequestBody;
+import io.dockstore.common.metrics.ValidationExecution;
+import io.dockstore.common.metrics.ValidationExecution.ValidatorTool;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import io.dockstore.openapi.client.model.ValidatorInfo;
 import io.dockstore.openapi.client.model.ValidatorVersionInfo;
@@ -23,14 +24,14 @@ class AggregationHelperTest {
     @Test
     void testGetAggregatedValidationStatus() {
         List<ValidationExecution> executions = new ArrayList<>();
-        Optional<ValidationStatusMetric> validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().validationExecutions(executions));
+        Optional<ValidationStatusMetric> validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(createExecutionsRequestBody(executions));
         assertTrue(validationStatusMetric.isEmpty());
 
         // Add an execution with validation data
-        final ValidationExecution.ValidatorToolEnum validatorTool = ValidationExecution.ValidatorToolEnum.MINIWDL;
+        final ValidatorTool validatorTool = ValidatorTool.MINIWDL;
         final String validatorToolVersion1 = "1.0";
         executions.add(createValidationExecution(validatorTool, validatorToolVersion1, true));
-        validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().validationExecutions(executions));
+        validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(createExecutionsRequestBody(executions));
         assertTrue(validationStatusMetric.isPresent());
         ValidatorInfo validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
         assertNotNull(validatorInfo);
@@ -47,8 +48,10 @@ class AggregationHelperTest {
 
         // Add an execution that isn't valid for the same validator
         final String validatorToolVersion2 = "2.0";
-        executions.add(createValidationExecution(validatorTool, validatorToolVersion2, false).errorMessage("This is an error message"));
-        validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().validationExecutions(executions));
+        ValidationExecution failedValidationExecution = createValidationExecution(validatorTool, validatorToolVersion2, false);
+        failedValidationExecution.setErrorMessage("This is an error message");
+        executions.add(failedValidationExecution);
+        validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(createExecutionsRequestBody(executions));
         assertTrue(validationStatusMetric.isPresent());
         validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
         mostRecentValidatorVersion = validatorInfo.getValidatorVersions().stream().filter(validatorVersion -> validatorToolVersion2.equals(validatorVersion.getName())).findFirst().get();
@@ -66,7 +69,7 @@ class AggregationHelperTest {
         ValidationExecution validationExecution = createValidationExecution(validatorTool, validatorToolVersion1, true);
         validationExecution.setDateExecuted(expectedDateExecuted);
         executions.add(validationExecution);
-        validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(new ExecutionsRequestBody().validationExecutions(executions));
+        validationStatusMetric = new ValidationStatusAggregator().getAggregatedMetricFromAllSubmissions(createExecutionsRequestBody(executions));
         assertTrue(validationStatusMetric.isPresent());
         validatorInfo = validationStatusMetric.get().getValidatorTools().get(validatorTool.toString());
         mostRecentValidatorVersion = validatorInfo.getValidatorVersions().stream().filter(validationVersion -> validatorToolVersion1.equals(validationVersion.getName())).findFirst().get();
@@ -79,5 +82,19 @@ class AggregationHelperTest {
         assertEquals(2, validatorInfo.getValidatorVersions().size(), "There should be 2 ValidatorVersionInfo objects because 2 versions ran");
         assertEquals(3, validatorInfo.getNumberOfRuns());
         assertEquals(66.66666666666666, validatorInfo.getPassingRate());
+    }
+
+    private ValidationExecution createValidationExecution(ValidatorTool validatorTool, String validatorToolVersion, boolean isValid) {
+        ValidationExecution validationExecution = new ValidationExecution(validatorTool, isValid);
+        validationExecution.setValidatorToolVersion(validatorToolVersion);
+        validationExecution.setExecutionId(generateExecutionId());
+        validationExecution.setDateExecuted(Instant.now().toString());
+        return validationExecution;
+    }
+
+    private ExecutionsRequestBody createExecutionsRequestBody(List<ValidationExecution> validationExecutions) {
+        ExecutionsRequestBody executionsRequestBody = new ExecutionsRequestBody();
+        executionsRequestBody.setValidationExecutions(validationExecutions);
+        return executionsRequestBody;
     }
 }

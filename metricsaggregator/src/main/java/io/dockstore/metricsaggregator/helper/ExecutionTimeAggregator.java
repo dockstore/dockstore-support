@@ -3,10 +3,10 @@ package io.dockstore.metricsaggregator.helper;
 import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionDateISO8601Format;
 import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionTimeISO8601Format;
 
+import io.dockstore.common.metrics.RunExecution;
+import io.dockstore.common.metrics.TaskExecutions;
 import io.dockstore.metricsaggregator.DoubleStatistics;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
-import io.dockstore.openapi.client.model.RunExecution;
-import io.dockstore.openapi.client.model.TaskExecutions;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
@@ -18,21 +18,33 @@ import java.util.Optional;
 /**
  * Aggregate Execution Time metrics by calculating the minimum, maximum, and average.
  */
-public final class ExecutionTimeAggregator implements ExecutionAggregator<RunExecution, ExecutionTimeMetric, String> {
+public final class ExecutionTimeAggregator extends RunExecutionAggregator<ExecutionTimeMetric, String> {
     @Override
     public String getMetricFromExecution(RunExecution execution) {
         return execution.getExecutionTime();
     }
 
     @Override
+    public boolean validateExecutionMetric(String executionMetric) {
+        return checkExecutionTimeISO8601Format(executionMetric).isPresent();
+    }
+
+    @Override
+    public String getPropertyPathToValidate() {
+        return "executionTime";
+    }
+
+    @Override
     public Optional<RunExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun) {
         final List<RunExecution> taskExecutions = taskExecutionsForOneWorkflowRun.getTaskExecutions();
-        if (taskExecutions != null && taskExecutions.stream().map(RunExecution::getExecutionTime).allMatch(Objects::nonNull)) {
+        if (!taskExecutions.isEmpty() && taskExecutions.stream().map(RunExecution::getExecutionTime).allMatch(Objects::nonNull)) {
+            RunExecution workflowExecution = new RunExecution();
             // We cannot calculate the overall total time from RunExecution's executionTime, which is in ISO 8601 duration format.
             // Calculate a best guess using RunExecution's dateExecuted, which is in ISO 8601 date format
             if (taskExecutions.size() == 1 && taskExecutions.get(0).getExecutionTime() != null) {
                 // If there's only one task, set the workflow-level execution time to be the execution time of the single task
-                return Optional.of(new RunExecution().executionTime(taskExecutions.get(0).getExecutionTime()));
+                workflowExecution.setExecutionTime(taskExecutions.get(0).getExecutionTime());
+                return Optional.of(workflowExecution);
 
             // Calculate a duration if all task executions have a valid dateExecuted
             } else if (taskExecutions.stream().allMatch(execution -> checkExecutionDateISO8601Format(execution.getDateExecuted()).isPresent())) {
@@ -55,7 +67,8 @@ public final class ExecutionTimeAggregator implements ExecutionAggregator<RunExe
                     if (latestTaskExecutionTime.isPresent()) {
                         duration = duration.plus(latestTaskExecutionTime.get());
                     }
-                    return Optional.of(new RunExecution().executionTime(duration.toString()));
+                    workflowExecution.setExecutionTime(duration.toString());
+                    return Optional.of(workflowExecution);
                 }
             }
         }
@@ -63,16 +76,8 @@ public final class ExecutionTimeAggregator implements ExecutionAggregator<RunExe
     }
 
     @Override
-    public Optional<ExecutionTimeMetric> getAggregatedMetricFromExecutions(List<RunExecution> executions) {
-        List<String> executionTimes = getNonNullMetricsFromExecutions(executions);
-
-        boolean containsMalformedExecutionTimes = executionTimes.stream().anyMatch(executionTime -> checkExecutionTimeISO8601Format(executionTime).isEmpty());
-        // This really shouldn't happen because the webservice validates that the ExecutionTime is in the correct format
-        if (containsMalformedExecutionTimes) {
-            return Optional.empty(); // Don't aggregate if there's malformed data
-        }
-
-        List<Double> executionTimesInSeconds = executionTimes.stream()
+    protected Optional<ExecutionTimeMetric> calculateAggregatedMetricFromExecutionMetrics(List<String> executionMetrics) {
+        List<Double> executionTimesInSeconds = executionMetrics.stream()
                 .map(executionTime -> {
                     // Convert executionTime in ISO 8601 duration format to seconds
                     Duration parsedISO8601ExecutionTime = checkExecutionTimeISO8601Format(executionTime).get();
@@ -92,7 +97,7 @@ public final class ExecutionTimeAggregator implements ExecutionAggregator<RunExe
     }
 
     @Override
-    public Optional<ExecutionTimeMetric> getAggregatedMetricsFromAggregatedMetrics(List<ExecutionTimeMetric> aggregatedMetrics) {
+    protected Optional<ExecutionTimeMetric> calculateAggregatedMetricFromAggregatedMetrics(List<ExecutionTimeMetric> aggregatedMetrics) {
         if (!aggregatedMetrics.isEmpty()) {
             List<DoubleStatistics> statistics = aggregatedMetrics.stream()
                     .map(metric -> new DoubleStatistics(metric.getMinimum(), metric.getMaximum(), metric.getAverage(), metric.getNumberOfDataPointsForAverage()))

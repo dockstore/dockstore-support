@@ -1,10 +1,11 @@
 package io.dockstore.metricsaggregator.helper;
 
+import io.dockstore.common.metrics.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,12 +50,18 @@ public final class AggregationHelper {
     public static Optional<Metrics> getAggregatedMetrics(List<Metrics> aggregatedMetrics) {
         Metrics overallMetrics = new Metrics();
         // Set run metrics
-        Optional<ExecutionStatusMetric> aggregatedExecutionStatus = new ExecutionStatusAggregator().getAggregatedMetricsFromAggregatedMetrics(aggregatedMetrics.stream().map(Metrics::getExecutionStatusCount).toList());
+        Optional<ExecutionStatusMetric> aggregatedExecutionStatus = new ExecutionStatusAggregator().getAggregatedMetricsFromAggregatedMetrics(aggregatedMetrics.stream()
+                .map(Metrics::getExecutionStatusCount)
+                .filter(Objects::nonNull)
+                .toList());
         boolean containsRunMetrics = aggregatedExecutionStatus.isPresent();
         aggregatedExecutionStatus.ifPresent(overallMetrics::setExecutionStatusCount);
 
         // Set validation metrics
-        Optional<ValidationStatusMetric> aggregatedValidationStatus = new ValidationStatusAggregator().getAggregatedMetricsFromAggregatedMetrics(aggregatedMetrics.stream().map(Metrics::getValidationStatus).toList());
+        Optional<ValidationStatusMetric> aggregatedValidationStatus = new ValidationStatusAggregator().getAggregatedMetricsFromAggregatedMetrics(aggregatedMetrics.stream()
+                .map(Metrics::getValidationStatus)
+                .filter(Objects::nonNull)
+                .toList());
         boolean containsValidationMetrics = aggregatedValidationStatus.isPresent();
         aggregatedValidationStatus.ifPresent(overallMetrics::setValidationStatus);
 

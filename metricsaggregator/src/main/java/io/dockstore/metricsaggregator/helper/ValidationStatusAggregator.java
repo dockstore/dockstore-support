@@ -3,11 +3,9 @@ package io.dockstore.metricsaggregator.helper;
 import static io.dockstore.common.metrics.FormatCheckHelper.checkExecutionDateISO8601Format;
 import static java.util.stream.Collectors.groupingBy;
 
+import io.dockstore.common.metrics.ValidationExecution;
+import io.dockstore.common.metrics.ValidationExecution.ValidatorTool;
 import io.dockstore.metricsaggregator.DoubleStatistics;
-import io.dockstore.openapi.client.model.ExecutionsRequestBody;
-import io.dockstore.openapi.client.model.TaskExecutions;
-import io.dockstore.openapi.client.model.ValidationExecution;
-import io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import io.dockstore.openapi.client.model.ValidatorInfo;
 import io.dockstore.openapi.client.model.ValidatorVersionInfo;
@@ -24,8 +22,7 @@ import org.apache.commons.lang3.StringUtils;
  * Aggregate Validation metrics from the list of validation executions by retrieving the validation information for the most recent execution of
  * each validator tool version.
  */
-public class ValidationStatusAggregator implements
-        ExecutionsRequestBodyAggregator<ValidationExecution, ValidationStatusMetric, ValidationExecution> {
+public class ValidationStatusAggregator extends ValidationExecutionAggregator<ValidationStatusMetric, ValidationExecution> {
 
     @Override
     public ValidationExecution getMetricFromExecution(ValidationExecution execution) {
@@ -33,24 +30,29 @@ public class ValidationStatusAggregator implements
     }
 
     @Override
-    public List<ValidationExecution> getExecutionsFromExecutionRequestBody(ExecutionsRequestBody executionsRequestBody) {
-        return executionsRequestBody.getValidationExecutions();
+    public boolean validateExecutionMetric(ValidationExecution executionMetric) {
+        return true;
+    }
+
+    @Override
+    public String getPropertyPathToValidate() {
+        return "";
     }
 
     /**
      * Aggregate Validation metrics from the list of validation executions by retrieving the validation information for the most recent execution of
      * each validator tool version.
-     * @param executions
+     * @param executionMetrics
      * @return
      */
     @Override
-    public Optional<ValidationStatusMetric> getAggregatedMetricFromExecutions(List<ValidationExecution> executions) {
-        if (executions.isEmpty()) {
+    protected Optional<ValidationStatusMetric> calculateAggregatedMetricFromExecutionMetrics(List<ValidationExecution> executionMetrics) {
+        if (executionMetrics.isEmpty()) {
             return Optional.empty();
         }
 
         // Group executions by validator tool
-        Map<ValidatorToolEnum, List<ValidationExecution>> validatorToolToValidations = executions.stream()
+        Map<ValidatorTool, List<ValidationExecution>> validatorToolToValidations = executionMetrics.stream()
                 .collect(groupingBy(ValidationExecution::getValidatorTool));
 
         // For each validator tool, aggregate validation metrics for it
@@ -71,12 +73,12 @@ public class ValidationStatusAggregator implements
                     latestValidationExecutionForVersion.ifPresent(validationExecution -> {
                         ValidatorVersionInfo validatorVersionInfo = new ValidatorVersionInfo()
                                 .name(validatorVersionName)
-                                .isValid(validationExecution.isIsValid())
+                                .isValid(validationExecution.getIsValid())
                                 .dateExecuted(validationExecution.getDateExecuted())
                                 .numberOfRuns(validatorVersionExecutions.size())
                                 .passingRate(getPassingRate(validatorVersionExecutions));
 
-                        if (!validationExecution.isIsValid() && StringUtils.isNotBlank(validationExecution.getErrorMessage())) {
+                        if (!validationExecution.getIsValid() && StringUtils.isNotBlank(validationExecution.getErrorMessage())) {
                             validatorVersionInfo.errorMessage(validationExecution.getErrorMessage());
                         }
 
@@ -103,12 +105,8 @@ public class ValidationStatusAggregator implements
     }
 
     @Override
-    public Optional<ValidationExecution> getWorkflowExecutionFromTaskExecutions(TaskExecutions taskExecutionsForOneWorkflowRun) {
-        return Optional.empty(); // Task executions don't apply to validation executions
-    }
-
-    @Override
-    public Optional<ValidationStatusMetric> getAggregatedMetricsFromAggregatedMetrics(List<ValidationStatusMetric> aggregatedMetrics) {
+    protected Optional<ValidationStatusMetric> calculateAggregatedMetricFromAggregatedMetrics(
+            List<ValidationStatusMetric> aggregatedMetrics) {
         Map<String, ValidatorInfo> newValidatorToolToValidatorInfo = new HashMap<>();
         if (!aggregatedMetrics.isEmpty()) {
             // Go through all the ValidationStatusMetrics and group the ValidationVersionInfos by validator tool
@@ -195,7 +193,7 @@ public class ValidationStatusAggregator implements
     static double getPassingRate(List<ValidationExecution> executions) {
         final int oneHundredPercent = 100;
         final double numberOfPassingExecutions = executions.stream()
-                .filter(ValidationExecution::isIsValid)
+                .filter(ValidationExecution::getIsValid)
                 .count();
 
         return (numberOfPassingExecutions / executions.size()) * oneHundredPercent;
