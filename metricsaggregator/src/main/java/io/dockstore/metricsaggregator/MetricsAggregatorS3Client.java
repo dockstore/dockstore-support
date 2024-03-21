@@ -63,7 +63,7 @@ public class MetricsAggregatorS3Client {
 
     public MetricsAggregatorS3Client(String bucketName) {
         this.bucketName = bucketName;
-        this.s3Client = S3ClientHelper.createS3Client();
+        this.s3Client = S3ClientHelper.getS3Client();
         this.metricsDataS3Client = new MetricsDataS3Client(bucketName, this.s3Client);
     }
 

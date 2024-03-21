@@ -47,6 +47,7 @@ workflows:
           <<: *common_filters
           requires:
             - metrics-aggregator-tests
+            - topicgenerator-tests
             - tooltester-tests
             - toolbackup-tests
           context: sonarcloud
@@ -57,6 +58,21 @@ jobs:
     parallelism: 1
     environment:
       DIRECTORY: metricsaggregator
+      MAVEN_GOAL: verify
+    steps:
+      - get_workspace_and_dependencies
+      - setup_machine
+      - setup_for_tests
+      - setup_for_postgres
+      - wait_for_elastic_search
+      - run_tests
+      - save_test_results
+      - send_coverage
+  topicgenerator-tests:
+    executor: machine_integration_test_exec
+    parallelism: 1
+    environment:
+      DIRECTORY: topicgenerator
       MAVEN_GOAL: verify
     steps:
       - get_workspace_and_dependencies

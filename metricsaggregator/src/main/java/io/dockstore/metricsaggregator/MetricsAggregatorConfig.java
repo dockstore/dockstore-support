@@ -17,6 +17,7 @@
 
 package io.dockstore.metricsaggregator;
 
+import io.dockstore.utils.ConfigFileUtils;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.configuration2.SubnodeConfiguration;
 
@@ -31,7 +32,7 @@ public class MetricsAggregatorConfig {
     }
 
     public MetricsAggregatorConfig(INIConfiguration config) {
-        SubnodeConfiguration dockstoreSection = config.getSection("dockstore");
+        SubnodeConfiguration dockstoreSection = ConfigFileUtils.getDockstoreSection(config);
         SubnodeConfiguration s3Section = config.getSection("s3");
         this.dockstoreServerUrl = dockstoreSection.getString("server-url", "http://localhost:8080");
         this.dockstoreToken = dockstoreSection.getString("token");

@@ -23,13 +23,15 @@ import com.theokanning.openai.service.OpenAiService;
 import io.dockstore.common.NextflowUtilities;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.ApiException;
+import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.ToolVersion;
 import io.dockstore.openapi.client.model.ToolVersion.DescriptorTypeEnum;
+import io.dockstore.openapi.client.model.UpdateAITopicRequest;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand;
-import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.InputCsvHeaders;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.OutputCsvHeaders;
+import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.UploadTopicsCommand;
 import io.dockstore.topicgenerator.helper.OpenAIHelper;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -65,7 +67,9 @@ public class TopicGeneratorClient {
         final TopicGeneratorCommandLineArgs commandLineArgs = new TopicGeneratorCommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
         final GenerateTopicsCommand generateTopicsCommand = new GenerateTopicsCommand();
+        final UploadTopicsCommand uploadTopicsCommand = new UploadTopicsCommand();
         jCommander.addCommand(generateTopicsCommand);
+        jCommander.addCommand(uploadTopicsCommand);
 
         try {
             jCommander.parse(args);
@@ -84,29 +88,17 @@ public class TopicGeneratorClient {
 
         if (jCommander.getParsedCommand() == null || commandLineArgs.isHelp()) {
             jCommander.usage();
-        } else if ("generate-topics".equals(jCommander.getParsedCommand())) {
-            if (generateTopicsCommand.isHelp()) {
-                jCommander.usage();
-            } else {
-                final INIConfiguration config = getConfiguration(generateTopicsCommand.getConfig());
-                final TopicGeneratorConfig topicGeneratorConfig = new TopicGeneratorConfig(config);
+        } else {
+            final INIConfiguration config = getConfiguration(commandLineArgs.getConfig());
+            final TopicGeneratorConfig topicGeneratorConfig = new TopicGeneratorConfig(config);
+            final TopicGeneratorClient topicGeneratorClient = new TopicGeneratorClient();
 
+            if ("generate-topics".equals(jCommander.getParsedCommand())) {
                 // Read CSV file
-                Iterable<CSVRecord> entriesCsvRecords = null;
-                try {
-                    final Reader entriesCsv = new FileReader(generateTopicsCommand.getEntriesCsvFilePath());
-                    CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
-                            .setHeader(InputCsvHeaders.class)
-                            .setSkipHeaderRecord(true)
-                            .setTrim(true)
-                            .build();
-                    entriesCsvRecords = csvFormat.parse(entriesCsv);
-                } catch (IOException e) {
-                    exceptionMessage(e, "Unable to read input CSV file", IO_ERROR);
-                }
-
-                final TopicGeneratorClient topicGeneratorClient = new TopicGeneratorClient();
-                topicGeneratorClient.generateTopics(topicGeneratorConfig, entriesCsvRecords);
+                topicGeneratorClient.generateTopics(topicGeneratorConfig, generateTopicsCommand.getEntriesCsvFilePath());
+            } else if ("upload-topics".equals(jCommander.getParsedCommand())) {
+                // Read CSV file
+                topicGeneratorClient.uploadTopics(topicGeneratorConfig, uploadTopicsCommand.getAiTopicsCsvFilePath());
             }
         }
     }
@@ -114,18 +106,19 @@ public class TopicGeneratorClient {
     /**
      * Generates a topic for public entries by asking the GPT-3.5-turbo-16k AI model to summarize the content of the entry's primary descriptor.
      * @param topicGeneratorConfig
-     * @param entriesCsvRecords
+     * @param inputCsvFilePath
      */
-    private void generateTopics(TopicGeneratorConfig topicGeneratorConfig, Iterable<CSVRecord> entriesCsvRecords) {
+    private void generateTopics(TopicGeneratorConfig topicGeneratorConfig, String inputCsvFilePath) {
         final ApiClient apiClient = setupApiClient(topicGeneratorConfig.dockstoreServerUrl());
         final Ga4Ghv20Api ga4Ghv20Api = new Ga4Ghv20Api(apiClient);
         final OpenAiService openAiService = new OpenAiService(topicGeneratorConfig.openaiApiKey());
         final String outputFileName = OUTPUT_FILE_PREFIX + "_" + AI_MODEL + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
+        final Iterable<CSVRecord> entriesCsvRecords = readCsvFile(inputCsvFilePath, GenerateTopicsCommand.InputCsvHeaders.class);
 
         try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(outputFileName, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(OutputCsvHeaders.class).build())) {
             for (CSVRecord entry: entriesCsvRecords) {
-                final String trsId = entry.get(InputCsvHeaders.trsId);
-                final String versionId = entry.get(InputCsvHeaders.version);
+                final String trsId = entry.get(GenerateTopicsCommand.InputCsvHeaders.trsId);
+                final String versionId = entry.get(GenerateTopicsCommand.InputCsvHeaders.version);
 
                 // Get descriptor file content and entry type
                 FileWrapper descriptorFile;
@@ -225,5 +218,39 @@ public class TopicGeneratorClient {
             LOG.error("Could not get Nextflow main script {}", mainScriptPath, exception);
             return Optional.empty();
         }
+    }
+
+    private void uploadTopics(TopicGeneratorConfig topicGeneratorConfig, String inputCsvFilePath) {
+        final ApiClient apiClient = setupApiClient(topicGeneratorConfig.dockstoreServerUrl(), topicGeneratorConfig.dockstoreToken());
+        final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
+        final Iterable<CSVRecord> entriesWithAITopics = readCsvFile(inputCsvFilePath, GenerateTopicsCommand.OutputCsvHeaders.class);
+
+        for (CSVRecord entryWithAITopic: entriesWithAITopics) {
+            // This command's input CSV headers are the generate-topic command's output headers
+            final String trsId = entryWithAITopic.get(GenerateTopicsCommand.OutputCsvHeaders.trsId);
+            final String aiTopic = entryWithAITopic.get(GenerateTopicsCommand.OutputCsvHeaders.aiTopic);
+            try {
+                extendedGa4GhApi.updateAITopic(new UpdateAITopicRequest().aiTopic(aiTopic), trsId);
+            } catch (ApiException exception) {
+                LOG.error("Could not upload AI topic for {}", trsId);
+            }
+        }
+    }
+
+    private Iterable<CSVRecord> readCsvFile(String inputCsvFilePath, Class<? extends Enum<?>> csvHeaders) {
+        // Read CSV file
+        Iterable<CSVRecord> csvRecords = null;
+        try {
+            final Reader entriesCsv = new FileReader(inputCsvFilePath);
+            CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
+                    .setHeader(csvHeaders)
+                    .setSkipHeaderRecord(true)
+                    .setTrim(true)
+                    .build();
+            csvRecords = csvFormat.parse(entriesCsv);
+        } catch (IOException e) {
+            exceptionMessage(e, "Unable to read input CSV file", IO_ERROR);
+        }
+        return csvRecords;
     }
 }
