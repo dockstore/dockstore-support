@@ -26,7 +26,7 @@ openai-api-key: <OpenAI API key>
         - `https://staging.dockstore.org/api`
         - `https://dockstore.org/api`
 - `token`: The Dockstore token of an admin or curator. This token is used to upload topics to the webservice.
-- `openai-api-key`: The OpenAI API key required for using the OpenAI APIs. See https://platform.openai.com/docs/api-reference/authentication for more details.
+- `openai-api-key`: The OpenAI API key required for using the OpenAI APIs. See https://platform.openai.com/docs/api-reference/authentication for more details. This is used to generate topics.
 
 ## Running the program
 
