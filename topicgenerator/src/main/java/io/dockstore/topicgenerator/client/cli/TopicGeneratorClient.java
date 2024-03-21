@@ -231,6 +231,7 @@ public class TopicGeneratorClient {
             final String aiTopic = entryWithAITopic.get(GenerateTopicsCommand.OutputCsvHeaders.aiTopic);
             try {
                 extendedGa4GhApi.updateAITopic(new UpdateAITopicRequest().aiTopic(aiTopic), trsId);
+                LOG.info("Uploaded AI topic for {}", trsId);
             } catch (ApiException exception) {
                 LOG.error("Could not upload AI topic for {}", trsId);
             }
