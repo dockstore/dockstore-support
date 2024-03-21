@@ -35,6 +35,10 @@ workflows:
           <<: *common_filters
           requires:
             - build-all
+      - topicgenerator-tests:
+          <<: *common_filters
+          requires:
+            - build-all
       - tooltester-tests:
           <<: *common_filters
           requires:
