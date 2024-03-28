@@ -22,7 +22,7 @@ public class TopicGeneratorCommandLineArgs {
         return config;
     }
 
-    @Parameters(commandNames = { "generate-topics" }, commandDescription = "Generate topics for public Dockstore entries using the gpt-3.5-turbo AI model. Use the upload-topics command to upload these topics to Dockstore.")
+    @Parameters(commandNames = { "generate-topics" }, commandDescription = "Generate topics for public Dockstore entries using AI. Use the upload-topics command to upload these topics to Dockstore.")
     public static class GenerateTopicsCommand {
 
         @Parameter(names = {"-e", "--entries"}, description = "The file path to the CSV file containing the TRS ID, and version name of the entries to generate topics for. The first line of the file should contain the CSV fields: trsID,version")
