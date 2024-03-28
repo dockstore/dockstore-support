@@ -15,6 +15,7 @@ public final class ConfigFileUtils {
     public static final String CONFIG_FILE_ERROR = "Could not get configuration file";
     public static final String DOCKSTORE_SECTION = "dockstore";
     public static final String DOCKSTORE_SERVER_URL = "server-url";
+    public static final String DOCKSTORE_TOKEN = "token";
     public static final String AI_SECTION = "ai";
     public static final String OPENAI_API_KEY = "openai-api-key";
     private static final Logger LOG = LoggerFactory.getLogger(ConfigFileUtils.class);
@@ -40,6 +41,10 @@ public final class ConfigFileUtils {
 
     public static String getDockstoreServerUrl(INIConfiguration iniConfig) {
         return getDockstoreSection(iniConfig).getString(DOCKSTORE_SERVER_URL);
+    }
+
+    public static String getDockstoreToken(INIConfiguration iniConfig) {
+        return getDockstoreSection(iniConfig).getString(DOCKSTORE_TOKEN);
     }
 
     public static SubnodeConfiguration getAISection(INIConfiguration iniConfig) {
