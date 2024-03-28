@@ -41,6 +41,11 @@
             <artifactId>metricsaggregator</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>topicgenerator</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
