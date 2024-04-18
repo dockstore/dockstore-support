@@ -57,8 +57,8 @@ public class MetricsAggregatorAthenaClient {
      * @param extendedGa4GhApi
      * @param skipPostingToDockstore
      */
-    public void aggregateMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, boolean skipPostingToDockstore) {
-        String tableName = createTable(); // Create table if it doesn't exist
+    public void aggregateMetrics(String metricsBucketName, List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, boolean skipPostingToDockstore) {
+        String tableName = createTable(metricsBucketName); // Create table if it doesn't exist
         // Aggregate metrics for each directory
         s3DirectoriesToAggregate.stream().parallel().forEach(s3DirectoryInfo -> {
             Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(tableName, s3DirectoryInfo);
@@ -76,8 +76,8 @@ public class MetricsAggregatorAthenaClient {
      * Create a table with a JSON schema and projected partitions, which removes the need to manually manage partitions.
      * @return
      */
-    public String createTable() {
-        final String tableName = "qa_metrics_prototype";
+    public String createTable(String metricsBucketName) {
+        final String tableName = metricsBucketName.replace("-", "_"); // The metrics bucket name is usually in the form of "env-dockstore-metrics-data"
         LOG.info("Creating table: {}", tableName);
         final String entityProjectionValues = String.join(",", metadataApi.getEntryTypeMetadataList()
                 .stream()
@@ -137,7 +137,7 @@ public class MetricsAggregatorAthenaClient {
                     `platform` string
                 )
                 ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-                LOCATION 's3://qa-dockstore-metrics-data/'
+                LOCATION 's3://%s/'
                 TBLPROPERTIES (
                     "projection.enabled" = "true",
                     "projection.entity.type" = "enum",
@@ -151,7 +151,7 @@ public class MetricsAggregatorAthenaClient {
                     "projection.platform.values" = "%s",
                     "storage.location.template" = "s3://qa-dockstore-metrics-data/${entity}/${registry}/${org}/${name}/${version}/${platform}/"
                 )
-                """, tableName, entityProjectionValues, registryProjectionValues, platformProjectionValues);
+                """, tableName, metricsBucketName, entityProjectionValues, registryProjectionValues, platformProjectionValues);
         executeQuery(query);
         return tableName;
     }

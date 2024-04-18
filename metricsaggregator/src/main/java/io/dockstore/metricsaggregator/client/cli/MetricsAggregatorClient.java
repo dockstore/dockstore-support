@@ -168,7 +168,7 @@ public class MetricsAggregatorClient {
 
         if (aggregateMetricsCommand.isWithAthena()) {
             MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config);
-            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
+            metricsAggregatorAthenaClient.aggregateMetrics(config.getS3Config().bucket(), s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
         } else {
             metricsAggregatorS3Client.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
         }
