@@ -149,9 +149,9 @@ public class MetricsAggregatorAthenaClient {
                     "projection.version.type" = "injected",
                     "projection.platform.type" = "enum",
                     "projection.platform.values" = "%s",
-                    "storage.location.template" = "s3://qa-dockstore-metrics-data/${entity}/${registry}/${org}/${name}/${version}/${platform}/"
+                    "storage.location.template" = "s3://%s/${entity}/${registry}/${org}/${name}/${version}/${platform}/"
                 )
-                """, tableName, metricsBucketName, entityProjectionValues, registryProjectionValues, platformProjectionValues);
+                """, tableName, metricsBucketName, entityProjectionValues, registryProjectionValues, platformProjectionValues, metricsBucketName);
         executeQuery(query);
         return tableName;
     }
