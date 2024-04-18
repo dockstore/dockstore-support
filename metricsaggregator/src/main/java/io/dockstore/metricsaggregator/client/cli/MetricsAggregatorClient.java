@@ -31,7 +31,6 @@ import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
 import io.dockstore.metricsaggregator.MetricsAggregatorS3Client;
 import io.dockstore.metricsaggregator.MetricsAggregatorS3Client.S3DirectoryInfo;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.AggregateMetricsCommand;
-import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.ExecuteAthenaQuery;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitTerraMetrics;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitValidationData;
 import io.dockstore.openapi.client.ApiClient;
@@ -74,12 +73,10 @@ public class MetricsAggregatorClient {
         final AggregateMetricsCommand aggregateMetricsCommand = new AggregateMetricsCommand();
         final SubmitValidationData submitValidationData = new SubmitValidationData();
         final SubmitTerraMetrics submitTerraMetrics = new SubmitTerraMetrics();
-        final ExecuteAthenaQuery executeAthenaQuery = new ExecuteAthenaQuery();
 
         jCommander.addCommand(aggregateMetricsCommand);
         jCommander.addCommand(submitValidationData);
         jCommander.addCommand(submitTerraMetrics);
-        jCommander.addCommand(executeAthenaQuery);
 
         try {
             jCommander.parse(args);
@@ -110,14 +107,6 @@ public class MetricsAggregatorClient {
                 } catch (Exception e) {
                     exceptionMessage(e, "Could not aggregate metrics", GENERIC_ERROR);
                 }
-            }
-        } else if ("execute-athena-query".equals(jCommander.getParsedCommand())) {
-            if (executeAthenaQuery.isHelp()) {
-                jCommander.usage();
-            } else {
-                INIConfiguration config = getConfiguration(executeAthenaQuery.getConfig());
-                final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config);
-                metricsAggregatorClient.executeAthenaQuery(metricsAggregatorConfig, executeAthenaQuery.getAthenaQuery());
             }
         } else if ("submit-validation-data".equals(jCommander.getParsedCommand())) {
             if (submitValidationData.isHelp()) {
@@ -182,15 +171,6 @@ public class MetricsAggregatorClient {
             metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
         } else {
             metricsAggregatorS3Client.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
-        }
-    }
-
-    private void executeAthenaQuery(MetricsAggregatorConfig config, String query) {
-        try {
-            MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config);
-            metricsAggregatorAthenaClient.executeQuery(query);
-        } catch (URISyntaxException e) {
-            exceptionMessage(e, "Could not create AWS Athena client", GENERIC_ERROR);
         }
     }
 

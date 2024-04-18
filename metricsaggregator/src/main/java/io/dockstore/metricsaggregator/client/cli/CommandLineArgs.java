@@ -62,23 +62,6 @@ public class CommandLineArgs {
         }
     }
 
-    @Parameters(commandNames = { "execute-athena-query" }, commandDescription = "Execute an AWS athena query")
-    public static class ExecuteAthenaQuery extends CommandLineArgs {
-        @Parameter(names = { "-c", "--config" }, description = "The config file path.")
-        private File config = new File("./" + MetricsAggregatorClient.CONFIG_FILE_NAME);
-
-        @Parameter(names = { "-q", "--query" }, description = "The query to execute")
-        private String athenaQuery;
-
-        public File getConfig() {
-            return config;
-        }
-
-        public String getAthenaQuery() {
-            return athenaQuery;
-        }
-    }
-
     @Parameters(commandNames = { "submit-validation-data" }, commandDescription = "Formats workflow validation data specified in a file then submits it to Dockstore")
     public static class SubmitValidationData extends CommandLineArgs {
         @Parameter(names = {"-c", "--config"}, description = "The config file path.")
