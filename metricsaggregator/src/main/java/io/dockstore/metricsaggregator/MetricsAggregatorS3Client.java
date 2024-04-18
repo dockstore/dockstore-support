@@ -73,23 +73,12 @@ public class MetricsAggregatorS3Client {
         this.metricsDataS3Client = new MetricsDataS3Client(bucketName, s3EndpointOverride);
     }
 
-    public void aggregateMetrics(ExtendedGa4GhApi extendedGa4GhApi) {
-        LOG.info("Getting directories to process...");
-        List<S3DirectoryInfo> metricsDirectories = getDirectories();
-
-        if (metricsDirectories.isEmpty()) {
-            LOG.info("No directories found to aggregate metrics");
-            return;
-        }
-
-        LOG.info("Aggregating metrics for {} directories", metricsDirectories.size());
-        metricsDirectories.stream()
-                .parallel()
-                .forEach(directoryInfo -> aggregateMetricsForDirectory(directoryInfo, extendedGa4GhApi));
+    public void aggregateMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, boolean skipDockstore) {
+        s3DirectoriesToAggregate.stream().parallel().forEach(directoryInfo -> aggregateMetricsForDirectory(directoryInfo, extendedGa4GhApi, skipDockstore));
         LOG.info("Completed aggregating metrics. Processed {} directories, submitted {} platform metrics, and skipped {} platform metrics", numberOfDirectoriesProcessed, numberOfMetricsSubmitted, numberOfMetricsSkipped);
     }
 
-    private void aggregateMetricsForDirectory(S3DirectoryInfo directoryInfo, ExtendedGa4GhApi extendedGa4GhApi) {
+    private void aggregateMetricsForDirectory(S3DirectoryInfo directoryInfo, ExtendedGa4GhApi extendedGa4GhApi, boolean skipDockstore) {
         LOG.info("Processing directory {}", directoryInfo);
         String toolId = directoryInfo.toolId();
         String versionName = directoryInfo.versionId();
@@ -112,7 +101,9 @@ public class MetricsAggregatorS3Client {
             try {
                 Optional<Metrics> aggregatedPlatformMetric = getAggregatedMetrics(allSubmissions);
                 if (aggregatedPlatformMetric.isPresent()) {
-                    extendedGa4GhApi.aggregatedMetricsPut(aggregatedPlatformMetric.get(), platform, toolId, versionName);
+                    if (!skipDockstore) {
+                        extendedGa4GhApi.aggregatedMetricsPut(aggregatedPlatformMetric.get(), platform, toolId, versionName);
+                    }
                     LOG.info("Aggregated metrics for tool ID {}, version {}, platform {} from directory {}", toolId, versionName, platform,
                             versionS3KeyPrefix);
                     allMetrics.add(aggregatedPlatformMetric.get());
@@ -131,7 +122,9 @@ public class MetricsAggregatorS3Client {
             // Calculate metrics across all platforms by aggregating the aggregated metrics from each platform
             try {
                 getAggregatedMetrics(allMetrics).ifPresent(metrics -> {
-                    extendedGa4GhApi.aggregatedMetricsPut(metrics, Partner.ALL.name(), toolId, versionName);
+                    if (!skipDockstore) {
+                        extendedGa4GhApi.aggregatedMetricsPut(metrics, Partner.ALL.name(), toolId, versionName);
+                    }
                     LOG.info("Aggregated metrics across all platforms ({}) for tool ID {}, version {} from directory {}",
                             platformsString, toolId, versionName, versionS3KeyPrefix);
                     allMetrics.add(metrics);
@@ -248,8 +241,13 @@ public class MetricsAggregatorS3Client {
      *
      * @return
      */
-    public List<S3DirectoryInfo> getDirectories() {
-        ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucketName).delimiter("/").build();
+    @SuppressWarnings("checkstyle:magicnumber")
+    public List<S3DirectoryInfo> getDirectories(String s3KeyPrefix) {
+        ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder().bucket(bucketName).delimiter("/");
+        if (s3KeyPrefix != null) {
+            requestBuilder.prefix(s3KeyPrefix);
+        }
+        ListObjectsV2Request request = requestBuilder.build();
         ListObjectsV2Response listObjectsV2Response = s3Client.listObjectsV2(request);
         Queue<CommonPrefix> commonPrefixesToProcess = new ArrayDeque<>(listObjectsV2Response.commonPrefixes());
         List<S3DirectoryInfo> s3DirectoryInfos = new ArrayList<>();
@@ -266,7 +264,13 @@ public class MetricsAggregatorS3Client {
                 List<String> platforms = listObjectsV2Response.commonPrefixes().stream()
                         .map(commonPrefix -> S3ClientHelper.getMetricsPlatform(commonPrefix.prefix()))
                         .toList();
-                s3DirectoryInfos.add(new S3DirectoryInfo(toolId, versionId, platforms, prefix));
+                // Athena partition values. We don't want to decode these otherwise they won't match the partition values in S3
+                String entityPartition = S3ClientHelper.getElementFromKey(prefix, 0);
+                String registryPartition = S3ClientHelper.getElementFromKey(prefix, 1);
+                String orgPartition = S3ClientHelper.getElementFromKey(prefix, 2);
+                String namePartition = S3ClientHelper.getElementFromKey(prefix, 3);
+                String versionPartition = S3ClientHelper.getElementFromKey(prefix, 4);
+                s3DirectoryInfos.add(new S3DirectoryInfo(toolId, versionId, platforms, prefix, entityPartition, registryPartition, orgPartition, namePartition, versionPartition));
             } else {
                 commonPrefixesToProcess.addAll(listObjectsV2Response.commonPrefixes());
             }
@@ -275,6 +279,17 @@ public class MetricsAggregatorS3Client {
         return s3DirectoryInfos;
     }
 
-    public record S3DirectoryInfo(String toolId, String versionId, List<String> platforms, String versionS3KeyPrefix) {
+    public List<S3DirectoryInfo> getDirectories() {
+        LOG.info("Getting all directories");
+        return getDirectories(null);
+    }
+
+    public List<S3DirectoryInfo> getDirectoriesForTrsId(String trsId) {
+        final String s3KeyPrefix = S3ClientHelper.convertToolIdToPartialKey(trsId);
+        LOG.info("Getting directories for TRS ID {} with S3 key prefix {}", trsId, s3KeyPrefix);
+        return getDirectories(s3KeyPrefix);
+    }
+
+    public record S3DirectoryInfo(String toolId, String versionId, List<String> platforms, String versionS3KeyPrefix, String entityPartition, String registryPartition, String orgPartition, String namePartition, String versionPartition) {
     }
 }

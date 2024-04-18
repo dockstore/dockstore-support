@@ -145,6 +145,14 @@
             <artifactId>s3</artifactId>
         </dependency>
         <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>athena</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>auth</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.javamoney.moneta</groupId>
             <artifactId>moneta-core</artifactId>
         </dependency>
@@ -172,6 +180,11 @@
         <dependency>
             <groupId>org.glassfish</groupId>
             <artifactId>jakarta.el</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq</artifactId>
+            <version>3.19.7</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -313,6 +326,7 @@
                                 <usedDependency>jakarta.validation:jakarta.validation-api</usedDependency>
                                 <usedDependency>org.hibernate:hibernate-validator</usedDependency>
                                 <usedDependency>org.glassfish:jakarta.el</usedDependency>
+                                <usedDependency>software.amazon.awssdk:auth</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>

@@ -36,8 +36,46 @@ public class CommandLineArgs {
         @Parameter(names = {"-c", "--config"}, description = "The config file path.")
         private File config = new File("./" + MetricsAggregatorClient.CONFIG_FILE_NAME);
 
+        @Parameter(names = {"--athena"}, description = "Aggregate metrics in S3 using AWS Athena")
+        private boolean withAthena = false;
+
+        @Parameter(names = {"--skipDockstore"}, description = "Skip posting the metrics to Dockstore")
+        private boolean skipDockstore = false;
+
+        @Parameter(names = {"--trsId"}, description = "Aggregate metrics for the tool specified by the TRS ID")
+        private String trsId;
+
         public File getConfig() {
             return config;
+        }
+
+        public boolean isWithAthena() {
+            return withAthena;
+        }
+
+        public boolean isSkipDockstore() {
+            return skipDockstore;
+        }
+
+        public String getTrsId() {
+            return trsId;
+        }
+    }
+
+    @Parameters(commandNames = { "execute-athena-query" }, commandDescription = "Execute an AWS athena query")
+    public static class ExecuteAthenaQuery extends CommandLineArgs {
+        @Parameter(names = { "-c", "--config" }, description = "The config file path.")
+        private File config = new File("./" + MetricsAggregatorClient.CONFIG_FILE_NAME);
+
+        @Parameter(names = { "-q", "--query" }, description = "The query to execute")
+        private String athenaQuery;
+
+        public File getConfig() {
+            return config;
+        }
+
+        public String getAthenaQuery() {
+            return athenaQuery;
         }
     }
 

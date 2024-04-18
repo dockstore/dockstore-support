@@ -35,8 +35,8 @@ import org.apache.commons.configuration2.INIConfiguration;
 public final class TestUtilities {
     public static final String CONFIG_FILE_PATH = ResourceHelpers.resourceFilePath("metrics-aggregator.config");
     public static final MetricsAggregatorConfig METRICS_AGGREGATOR_CONFIG = getMetricsConfig();
-    public static final String BUCKET_NAME = METRICS_AGGREGATOR_CONFIG.getS3Bucket();
-    public static final String ENDPOINT_OVERRIDE = METRICS_AGGREGATOR_CONFIG.getS3EndpointOverride();
+    public static final String BUCKET_NAME = METRICS_AGGREGATOR_CONFIG.getS3Config().bucket();
+    public static final String ENDPOINT_OVERRIDE = METRICS_AGGREGATOR_CONFIG.getS3Config().endpointOverride();
 
     private TestUtilities() {
     }

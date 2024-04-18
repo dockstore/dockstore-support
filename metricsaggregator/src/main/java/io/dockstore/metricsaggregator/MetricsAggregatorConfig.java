@@ -22,53 +22,38 @@ import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.configuration2.SubnodeConfiguration;
 
 public class MetricsAggregatorConfig {
-
-    private String dockstoreServerUrl;
-    private String dockstoreToken;
-    private String s3Bucket;
-    private String s3EndpointOverride;
-
-    public MetricsAggregatorConfig() {
-    }
+    private DockstoreConfig dockstoreConfig;
+    private S3Config s3Config;
+    private AthenaConfig athenaConfig;
 
     public MetricsAggregatorConfig(INIConfiguration config) {
         SubnodeConfiguration dockstoreSection = ConfigFileUtils.getDockstoreSection(config);
         SubnodeConfiguration s3Section = config.getSection("s3");
-        this.dockstoreServerUrl = dockstoreSection.getString("server-url", "http://localhost:8080");
-        this.dockstoreToken = dockstoreSection.getString("token");
-        this.s3Bucket = s3Section.getString("bucketName", "local-dockstore-metrics-data");
-        this.s3EndpointOverride = s3Section.getString("endpointOverride");
+        SubnodeConfiguration athenaSection = config.getSection("athena");
+
+        this.dockstoreConfig = new DockstoreConfig(dockstoreSection.getString("server-url", "http://localhost:8080"), dockstoreSection.getString("token"));
+        this.s3Config = new S3Config(s3Section.getString("bucketName", "local-dockstore-metrics-data"), s3Section.getString("endpointOverride"));
+        this.athenaConfig = new AthenaConfig(athenaSection.getString("database"), athenaSection.getString("outputS3Bucket"));
     }
 
-    public String getDockstoreServerUrl() {
-        return dockstoreServerUrl;
+    public DockstoreConfig getDockstoreConfig() {
+        return dockstoreConfig;
     }
 
-    public void setDockstoreServerUrl(String dockstoreServerUrl) {
-        this.dockstoreServerUrl = dockstoreServerUrl;
+    public S3Config getS3Config() {
+        return s3Config;
     }
 
-    public String getDockstoreToken() {
-        return dockstoreToken;
+    public AthenaConfig getAthenaConfig() {
+        return athenaConfig;
     }
 
-    public void setDockstoreToken(String dockstoreToken) {
-        this.dockstoreToken = dockstoreToken;
+    public record DockstoreConfig(String serverUrl, String token) {
     }
 
-    public String getS3Bucket() {
-        return s3Bucket;
+    public record S3Config(String bucket, String endpointOverride) {
     }
 
-    public void setS3Bucket(String s3Bucket) {
-        this.s3Bucket = s3Bucket;
-    }
-
-    public String getS3EndpointOverride() {
-        return s3EndpointOverride;
-    }
-
-    public void setS3EndpointOverride(String s3Endpoint) {
-        this.s3EndpointOverride = s3Endpoint;
+    public record AthenaConfig(String database, String outputS3Bucket) {
     }
 }

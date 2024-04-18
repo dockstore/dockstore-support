@@ -1,5 +1,5 @@
 
-Lists of 417 third-party dependencies.
+Lists of 421 third-party dependencies.
      (The Apache Software License, Version 2.0) Adapter: RxJava 2 (com.squareup.retrofit2:adapter-rxjava2:2.9.0 - https://github.com/square/retrofit)
      (Apache License, Version 2.0) akka-actor (com.typesafe.akka:akka-actor_2.13:2.5.32 - https://akka.io/)
      (Apache License, Version 2.0) akka-protobuf (com.typesafe.akka:akka-protobuf_2.13:2.5.32 - https://akka.io/)
@@ -66,6 +66,7 @@ Lists of 417 third-party dependencies.
      (Apache License, Version 2.0) AWS Java SDK :: Profiles (software.amazon.awssdk:profiles:2.17.186 - https://aws.amazon.com/sdkforjava)
      (Apache License, Version 2.0) AWS Java SDK :: Regions (software.amazon.awssdk:regions:2.17.186 - https://aws.amazon.com/sdkforjava/core/regions)
      (Apache License, Version 2.0) AWS Java SDK :: SDK Core (software.amazon.awssdk:sdk-core:2.17.186 - https://aws.amazon.com/sdkforjava)
+     (Apache License, Version 2.0) AWS Java SDK :: Services :: Amazon Athena (software.amazon.awssdk:athena:2.17.186 - https://aws.amazon.com/sdkforjava)
      (Apache License, Version 2.0) AWS Java SDK :: Services :: Amazon CloudWatch (software.amazon.awssdk:cloudwatch:2.17.186 - https://aws.amazon.com/sdkforjava)
      (Apache License, Version 2.0) AWS Java SDK :: Services :: Amazon EC2 Container Service (software.amazon.awssdk:ecs:2.17.186 - https://aws.amazon.com/sdkforjava)
      (Apache License, Version 2.0) AWS Java SDK :: Services :: Amazon Kinesis (software.amazon.awssdk:kinesis:2.17.186 - https://aws.amazon.com/sdkforjava)
@@ -284,6 +285,7 @@ Lists of 417 third-party dependencies.
      (The Apache Software License, Version 2.0) jnr-unixsocket (com.github.jnr:jnr-unixsocket:0.18 - http://github.com/jnr/jnr-unixsocket)
      (MIT License) jnr-x86asm (com.github.jnr:jnr-x86asm:1.0.2 - http://github.com/jnr/jnr-x86asm)
      (Apache License, Version 2.0) Joda-Time (joda-time:joda-time:2.12.5 - https://www.joda.org/joda-time/)
+     (Apache License, Version 2.0) jOOQ (org.jooq:jooq:3.19.7 - http://www.jooq.org/jooq)
      (The MIT License) JOpt Simple (net.sf.jopt-simple:jopt-simple:5.0.3 - http://pholser.github.io/jopt-simple)
      (Public Domain) JSON in Java (org.json:json:20231013 - https://github.com/douglascrockford/JSON-java)
      (Revised BSD License) JSONLD Java :: Core (com.github.jsonld-java:jsonld-java:0.8.3 - http://github.com/jsonld-java/jsonld-java/jsonld-java/)
@@ -366,6 +368,7 @@ Lists of 417 third-party dependencies.
      (BSD-2-Clause) PostgreSQL JDBC Driver (org.postgresql:postgresql:42.7.2 - https://jdbc.postgresql.org)
      (MIT) pprint_2.13 (com.lihaoyi:pprint_2.13:0.7.3 - https://github.com/lihaoyi/PPrint)
      (The Apache Software License, Version 2.0) rank-eval (org.elasticsearch.plugin:rank-eval-client:7.10.2 - https://github.com/elastic/elasticsearch)
+     (Apache License 2.0) Reactive Relational Database Connectivity - SPI (io.r2dbc:r2dbc-spi:1.0.0.RELEASE - https://r2dbc.io/r2dbc-spi)
      (CC0) reactive-streams (org.reactivestreams:reactive-streams:1.0.3 - http://www.reactive-streams.org/)
      (MIT) refined (eu.timepit:refined_2.13:0.10.1 - https://github.com/fthomas/refined)
      (The Apache Software License, Version 2.0) rest (org.elasticsearch.client:elasticsearch-rest-client:7.10.2 - https://github.com/elastic/elasticsearch)
@@ -412,6 +415,7 @@ Lists of 417 third-party dependencies.
      (Apache License, Version 2.0) tomcat-juli (org.apache.tomcat:tomcat-juli:10.1.13 - https://tomcat.apache.org/)
      (GNU General Public License (GPLv3)) toolbackup (io.dockstore:toolbackup:1.16.0-SNAPSHOT - https://github.com/dockstore/dockstore-support)
      (GNU General Public License (GPLv3)) tooltester (io.dockstore:tooltester:1.16.0-SNAPSHOT - https://github.com/dockstore/dockstore-support)
+     (GNU General Public License (GPLv3)) topicgenerator (io.dockstore:topicgenerator:1.16.0-SNAPSHOT - https://github.com/dockstore/dockstore-support)
      (Eclipse Distribution License - v 1.0) TXW2 Runtime (org.glassfish.jaxb:txw2:3.0.2 - https://eclipse-ee4j.github.io/jaxb-ri/)
      (GNU General Public License (GPLv3)) utils (io.dockstore:utils:1.16.0-SNAPSHOT - https://github.com/dockstore/dockstore-support)
      (WDL License https://github.com/openwdl/wdl/blob/master/LICENSE) wdl-biscayne (org.broadinstitute:wdl-biscayne_2.13:85 - no url defined)
