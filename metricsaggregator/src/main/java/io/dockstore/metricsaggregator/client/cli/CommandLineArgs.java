@@ -22,6 +22,7 @@ import com.beust.jcommander.Parameters;
 import io.dockstore.common.Partner;
 import io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum;
 import java.io.File;
+import java.util.List;
 
 public class CommandLineArgs {
     @Parameter(names = "--help", description = "Prints help for metricsaggregator", help = true)
@@ -42,8 +43,8 @@ public class CommandLineArgs {
         @Parameter(names = {"--skipDockstore"}, description = "Skip posting the metrics to Dockstore")
         private boolean skipDockstore = false;
 
-        @Parameter(names = {"--trsId"}, description = "Aggregate metrics for the tool specified by the TRS ID")
-        private String trsId;
+        @Parameter(names = {"--trsIds"}, description = "Aggregate metrics for the tools specified TRS ID")
+        private List<String> trsIds;
 
         public File getConfig() {
             return config;
@@ -57,8 +58,8 @@ public class CommandLineArgs {
             return skipDockstore;
         }
 
-        public String getTrsId() {
-            return trsId;
+        public List<String> getTrsIds() {
+            return trsIds;
         }
     }
 

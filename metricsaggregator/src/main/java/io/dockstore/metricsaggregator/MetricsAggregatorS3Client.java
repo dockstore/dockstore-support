@@ -29,6 +29,7 @@ import io.dockstore.common.metrics.MetricsDataS3Client;
 import io.dockstore.common.metrics.RunExecution;
 import io.dockstore.common.metrics.TaskExecutions;
 import io.dockstore.common.metrics.ValidationExecution;
+import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.AthenaTablePartition;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.model.Metrics;
 import java.io.IOException;
@@ -270,7 +271,8 @@ public class MetricsAggregatorS3Client {
                 String orgPartition = S3ClientHelper.getElementFromKey(prefix, 2);
                 String namePartition = S3ClientHelper.getElementFromKey(prefix, 3);
                 String versionPartition = S3ClientHelper.getElementFromKey(prefix, 4);
-                s3DirectoryInfos.add(new S3DirectoryInfo(toolId, versionId, platforms, prefix, entityPartition, registryPartition, orgPartition, namePartition, versionPartition));
+                AthenaTablePartition athenaTablePartition = new AthenaTablePartition(entityPartition, registryPartition, orgPartition, namePartition, versionPartition);
+                s3DirectoryInfos.add(new S3DirectoryInfo(toolId, versionId, platforms, prefix, athenaTablePartition));
             } else {
                 commonPrefixesToProcess.addAll(listObjectsV2Response.commonPrefixes());
             }
@@ -290,6 +292,6 @@ public class MetricsAggregatorS3Client {
         return getDirectories(s3KeyPrefix);
     }
 
-    public record S3DirectoryInfo(String toolId, String versionId, List<String> platforms, String versionS3KeyPrefix, String entityPartition, String registryPartition, String orgPartition, String namePartition, String versionPartition) {
+    public record S3DirectoryInfo(String toolId, String versionId, List<String> platforms, String versionS3KeyPrefix, AthenaTablePartition athenaTablePartition) {
     }
 }

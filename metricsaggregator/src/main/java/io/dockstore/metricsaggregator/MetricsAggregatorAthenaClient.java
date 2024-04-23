@@ -14,13 +14,14 @@ import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.RegistryBean;
 import io.dockstore.openapi.client.model.SourceControlBean;
-import java.net.URISyntaxException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -37,18 +38,28 @@ import software.amazon.awssdk.services.athena.paginators.GetQueryResultsIterable
  */
 public class MetricsAggregatorAthenaClient {
     private static final Logger LOG = LoggerFactory.getLogger(MetricsAggregatorAthenaClient.class);
+    private final AtomicInteger numberOfDirectoriesProcessed = new AtomicInteger(0);
     private final ExecutionStatusAthenaAggregator executionStatusAggregator = new ExecutionStatusAthenaAggregator();
 
-    private final String database;
+    private final String metricsBucketName;
     private final String outputS3Bucket;
+    private final String databaseName;
+    private final String tableName;
     private final AthenaClient athenaClient;
     private final MetadataApi metadataApi;
 
-    public MetricsAggregatorAthenaClient(MetricsAggregatorConfig config) throws URISyntaxException {
-        this.database = config.getAthenaConfig().database();
+    public MetricsAggregatorAthenaClient(MetricsAggregatorConfig config) {
+        this.metricsBucketName = config.getS3Config().bucket();
         this.outputS3Bucket = config.getAthenaConfig().outputS3Bucket();
+
+        final String underscoredMetricsBucketName = metricsBucketName.replace("-", "_"); // The metrics bucket name is usually in the form of "env-dockstore-metrics-data"
+        this.databaseName = underscoredMetricsBucketName + "_database";
+        this.tableName = underscoredMetricsBucketName + "_table";
         this.athenaClient = createAthenaClient();
         this.metadataApi = new MetadataApi(setupApiClient(config.getDockstoreConfig().serverUrl())); // Anonymous client
+
+        createDatabase();
+        createTable();
     }
 
     /**
@@ -57,27 +68,35 @@ public class MetricsAggregatorAthenaClient {
      * @param extendedGa4GhApi
      * @param skipPostingToDockstore
      */
-    public void aggregateMetrics(String metricsBucketName, List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, boolean skipPostingToDockstore) {
-        String tableName = createTable(metricsBucketName); // Create table if it doesn't exist
+    public void aggregateMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, boolean skipPostingToDockstore) {
         // Aggregate metrics for each directory
         s3DirectoriesToAggregate.stream().parallel().forEach(s3DirectoryInfo -> {
-            Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(tableName, s3DirectoryInfo);
+            Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(s3DirectoryInfo);
+            if (platformToMetrics.isEmpty()) {
+                LOG.error("No metrics were aggregated");
+            }
             platformToMetrics.forEach((platform, metrics) -> {
-                LOG.info("Tool ID: {}, version {}, platform: {}\n{}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platform, metrics);
+                //LOG.info("Tool ID: {}, version {}, platform: {}\n{}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platform, metrics);
                 if (!skipPostingToDockstore) {
                     // TODO: Allow posting to webservice when the Athena prototype is complete
                     extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
                 }
             });
         });
+        LOG.info("Completed aggregating metrics. Processed {} directories", numberOfDirectoriesProcessed);
+    }
+
+    public void createDatabase() {
+        LOG.info("Creating database: {}", databaseName);
+        final String query = String.format("CREATE DATABASE IF NOT EXISTS %s;", databaseName);
+        executeQuery(query);
     }
 
     /**
      * Create a table with a JSON schema and projected partitions, which removes the need to manually manage partitions.
      * @return
      */
-    public String createTable(String metricsBucketName) {
-        final String tableName = metricsBucketName.replace("-", "_"); // The metrics bucket name is usually in the form of "env-dockstore-metrics-data"
+    public void createTable() {
         LOG.info("Creating table: {}", tableName);
         final String entityProjectionValues = String.join(",", metadataApi.getEntryTypeMetadataList()
                 .stream()
@@ -88,8 +107,8 @@ public class MetricsAggregatorAthenaClient {
                     metadataApi.getDockerRegistries().stream().map(RegistryBean::getDockerPath))
                 .collect(Collectors.joining(","));
         final String platformProjectionValues = String.join(",", Arrays.stream(Partner.values()).map(Partner::name).toList());
-        final String query = String.format("""
-                CREATE EXTERNAL TABLE IF NOT EXISTS %s (
+        final String query = MessageFormat.format("""
+                CREATE EXTERNAL TABLE IF NOT EXISTS {0} (
                     runexecutions array<struct<
                         executionid:string,
                         dateexecuted:string,
@@ -136,101 +155,99 @@ public class MetricsAggregatorAthenaClient {
                     `version` string,
                     `platform` string
                 )
-                ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
-                LOCATION 's3://%s/'
+                ROW FORMAT SERDE "org.openx.data.jsonserde.JsonSerDe"
+                LOCATION "s3://{1}/"
                 TBLPROPERTIES (
                     "projection.enabled" = "true",
                     "projection.entity.type" = "enum",
-                    "projection.entity.values" = "%s",
+                    "projection.entity.values" = "{2}",
                     "projection.registry.type" = "enum",
-                    "projection.registry.values" = "%s",
+                    "projection.registry.values" = "{3}",
                     "projection.org.type" = "injected",
                     "projection.name.type" = "injected",
                     "projection.version.type" = "injected",
                     "projection.platform.type" = "enum",
-                    "projection.platform.values" = "%s",
-                    "storage.location.template" = "s3://%s/${entity}/${registry}/${org}/${name}/${version}/${platform}/"
+                    "projection.platform.values" = "{4}",
+                    "storage.location.template" = "s3://{1}/$'{entity}'/$'{registry}'/$'{org}'/$'{name}'/$'{version}'/$'{platform}'/"
                 )
-                """, tableName, metricsBucketName, entityProjectionValues, registryProjectionValues, platformProjectionValues, metricsBucketName);
+                """, tableName, metricsBucketName, entityProjectionValues, registryProjectionValues, platformProjectionValues);
         executeQuery(query);
-        return tableName;
+    }
+
+    public Optional<PartitionExecutionsCount> getPartitionExecutionCount(AthenaTablePartition athenaTablePartition) {
+        LOG.info("Getting executions count for partition");
+        final String runExecutionsCountColumn = "runexecutionscount";
+        final String taskExecutionsCountColumn = "taskexecutionscount";
+        final String validationExecutionsCountColumn = "validationexecutionscount";
+        final String query = MessageFormat.format("""
+                SELECT SUM(cardinality(runexecutions)) AS {0}, SUM(cardinality(taskexecutions)) AS {1}, SUM(cardinality(validationexecutions)) AS {2}
+                FROM {3}
+                {4}
+                """, runExecutionsCountColumn, taskExecutionsCountColumn, validationExecutionsCountColumn, tableName, athenaTablePartition.getWhereCondition());
+        List<QueryResultRow> queryResultRows = executeQuery(query);
+        if (queryResultRows.isEmpty()) {
+            return Optional.empty();
+        }
+        QueryResultRow countResult = queryResultRows.get(0);
+        final int runExecutionsCount = Integer.parseInt(countResult.getColumnValue(runExecutionsCountColumn).orElse("0"));
+        final int taskExecutionsCount = Integer.parseInt(countResult.getColumnValue(taskExecutionsCountColumn).orElse("0"));
+        final int validationExecutionsCount = Integer.parseInt(countResult.getColumnValue(validationExecutionsCountColumn).orElse("0"));
+        return Optional.of(new PartitionExecutionsCount(athenaTablePartition, runExecutionsCount, taskExecutionsCount, validationExecutionsCount));
     }
 
     /**
      * Creates a view for the runExecutions array.
-     * @param entity
-     * @param registry
-     * @param org
-     * @param name
-     * @param version
+     * @param athenaTablePartition
      * @return
-     * @throws InterruptedException
-     */
-    public String createRunExecutionsView(String tableName, String entity, String registry, String org, String name, String version) throws InterruptedException {
-        final String viewName = createViewName(entity, registry, org, name, version, "runexecutions");
+=     */
+    public String createRunExecutionsView(AthenaTablePartition athenaTablePartition) {
+        final String viewName = athenaTablePartition.createViewName("runexecutions");
+        final String partitionWhereCondition = athenaTablePartition.getWhereCondition();
         LOG.info("Creating runexecutions view: {}", viewName);
-        final String query = String.format("""
-                CREATE OR REPLACE VIEW "%s" AS
+        final String query = MessageFormat.format("""
+                CREATE OR REPLACE VIEW "{0}" AS
                 WITH dataset AS (
                     SELECT platform, runexecutions
-                    FROM %s
-                    WHERE entity = '%s' AND registry = '%s' AND org = '%s' AND name = '%s' AND version = '%s'
+                    FROM {1}
+                    {2}
                 )
                 SELECT platform, unnested.executionid, unnested.dateexecuted, unnested.executionstatus, unnested.executiontime, unnested.memoryrequirementsgb, unnested.cpurequirements, unnested.cost, unnested.region
                 FROM dataset, UNNEST(dataset.runexecutions) AS t(unnested);
-                """, viewName, tableName, entity, registry, org, name, version);
+                """, viewName, tableName, partitionWhereCondition);
         executeQuery(query);
         return viewName;
     }
 
-    public String createRunExecutionsView(String tableName, S3DirectoryInfo s3DirectoryInfo) throws InterruptedException {
-        return createRunExecutionsView(tableName, s3DirectoryInfo.entityPartition(), s3DirectoryInfo.registryPartition(), s3DirectoryInfo.orgPartition(), s3DirectoryInfo.namePartition(), s3DirectoryInfo.versionPartition());
-    }
-
-    public String createTaskExecutionsView(String entity, String registry, String org, String name, String version) {
-        final String viewName = String.join("/", entity, registry, org, name, version, "taskexecutions");
-        executeQuery(String.format("""
-            CREATE OR REPLACE VIEW '%s' AS
+    public String createTaskExecutionsView(AthenaTablePartition athenaTablePartition) {
+        final String viewName = athenaTablePartition.createViewName("taskexecutions");
+        executeQuery(MessageFormat.format("""
+            CREATE OR REPLACE VIEW "{0}" AS
             WITH dataset AS (
                 SELECT platform, taskexecutions
-                FROM kathys_projected_metrics
-                WHERE entity = '%s' AND registry = '%s' AND org = '%s' AND name = '%s' AND version = '%s'
+                FROM {1}
+                {2}
             )
             SELECT platform, unnested.taskexecutions
             FROM dataset, UNNEST(dataset.taskexecutions) AS t(unnested);
-            """, viewName, entity, registry, org, name, version));
+            """, viewName, tableName, athenaTablePartition.getWhereCondition()));
         return viewName;
     }
 
-    public String createValidationExecutionsView(String entity, String registry, String org, String name, String version) {
-        final String viewName = createViewName(entity, registry, org, name, version, "validationexecutions");
+    public String createValidationExecutionsView(AthenaTablePartition athenaTablePartition) {
+        final String viewName = athenaTablePartition.createViewName("validationexecutions");
         LOG.info("Creating validationexecutions view: {}", viewName);
-        final String query = String.format("""
-                CREATE OR REPLACE VIEW "%s" AS
+        final String query = MessageFormat.format("""
+                CREATE OR REPLACE VIEW "{0}" AS
                 WITH dataset AS (
                     SELECT platform, validationexecutions
-                    FROM kathys_projected_metrics
-                    WHERE entity = '%s' AND registry = '%s' AND org = '%s' AND name = '%s' AND version = '%s'
+                    FROM {1}
+                    {2}
                 )
                 SELECT platform, unnested.executionid, unnested.dateexecuted, unnested.validatortool, unnested.validatortoolversion, unnested.isvalid, unnested.errormessage
                 FROM dataset, UNNEST(dataset.validationexecutions) AS t(unnested);
-                """, viewName, entity, registry, org, name, version);
+                """, viewName, tableName, athenaTablePartition.getWhereCondition());
         executeQuery(query);
         return viewName;
-    }
-
-    /**
-     * Creates a view name. These view names will need to be enclosed with double quotes in queries because the entry components may contain special characters like dashes.
-     * @param entity
-     * @param registry
-     * @param org
-     * @param name
-     * @param version
-     * @param viewType
-     * @return
-     */
-    public String createViewName(String entity, String registry, String org, String name, String version, String viewType) {
-        return String.join("_", entity, registry, org, name, version, viewType);
     }
 
     public void dropView(String viewName) {
@@ -248,8 +265,8 @@ public class MetricsAggregatorAthenaClient {
     public List<QueryResultRow> executeQuery(String query) {
         List<QueryResultRow> queryResultRows = new ArrayList<>();
 
-        LOG.info("Running SQL query: {}", query);
-        Optional<GetQueryResultsIterable> getQueryResultsIterable = AthenaClientHelper.executeQuery(athenaClient, database, outputS3Bucket, query);
+        //LOG.info("Running SQL query: {}", query);
+        Optional<GetQueryResultsIterable> getQueryResultsIterable = AthenaClientHelper.executeQuery(athenaClient, databaseName, outputS3Bucket, query);
         if (getQueryResultsIterable.isPresent()) {
             Map<String, Integer> columnNameToColumnIndex = new HashMap<>();
 
@@ -282,44 +299,53 @@ public class MetricsAggregatorAthenaClient {
 
     /**
      * Calculate aggregated metrics for all platforms in the S3 directory.
-     * @param tableName
      * @param s3DirectoryInfo
      * @return
      */
-    public Map<String, Metrics> getAggregatedMetricsForPlatforms(String tableName, S3DirectoryInfo s3DirectoryInfo) {
+    public Map<String, Metrics> getAggregatedMetricsForPlatforms(S3DirectoryInfo s3DirectoryInfo) {
+        LOG.info("Aggregating metrics for directory: {}", s3DirectoryInfo.versionS3KeyPrefix());
         Map<String, Metrics> platformToMetrics = new HashMap<>();
         // Calculate metrics for runexecutions
+        // Check if run executions exist before creating view
         // TODO: Calculate metrics for taskexecutions and validationexecutions
-        String runExecutionsView = "";
-        try {
-            runExecutionsView = createRunExecutionsView(tableName, s3DirectoryInfo);
-        } catch (InterruptedException e) {
-            LOG.error("Could not create runexecutions view");
+        AthenaTablePartition athenaTablePartition = s3DirectoryInfo.athenaTablePartition();
+        Optional<PartitionExecutionsCount> partitionExecutionsCount = getPartitionExecutionCount(athenaTablePartition);
+        if (partitionExecutionsCount.isEmpty()) {
+            LOG.error("Could not get executions count for partition");
+            return platformToMetrics;
         }
 
-        try {
-            if (!runExecutionsView.isEmpty()) {
-                LOG.info("Aggregating workflow executions");
-                String query = executionStatusAggregator.createQuery(runExecutionsView);
-                Map<String, ExecutionStatusMetric> platformToExecutionStatusMetric = executionStatusAggregator.createMetricByPlatform(
-                        executeQuery(query));
-                platformToExecutionStatusMetric.forEach((platform, executionStatusMetric) -> {
-                    if (platformToMetrics.containsKey(platform)) {
-                        platformToMetrics.get(platform).executionStatusCount(executionStatusMetric);
-                    } else {
-                        platformToMetrics.put(platform, new Metrics().executionStatusCount(executionStatusMetric));
-                    }
-                    LOG.info("Aggregated metrics for tool ID {}, version {}, platform {} from directory {}", s3DirectoryInfo.toolId(),
-                            s3DirectoryInfo.versionId(), platform, s3DirectoryInfo.versionS3KeyPrefix());
-                });
+        LOG.info("Execution count: {}", partitionExecutionsCount.get());
+
+        if (partitionExecutionsCount.get().runExecutionsCount() > 0) {
+            String runExecutionsView = createRunExecutionsView(s3DirectoryInfo.athenaTablePartition());
+            try {
+                if (!runExecutionsView.isEmpty()) {
+                    LOG.info("Aggregating workflow executions");
+                    String query = executionStatusAggregator.createQuery(runExecutionsView);
+                    Map<String, ExecutionStatusMetric> platformToExecutionStatusMetric = executionStatusAggregator.createMetricByPlatform(
+                            executeQuery(query));
+                    platformToExecutionStatusMetric.forEach((platform, executionStatusMetric) -> {
+                        if (platformToMetrics.containsKey(platform)) {
+                            platformToMetrics.get(platform).executionStatusCount(executionStatusMetric);
+                        } else {
+                            platformToMetrics.put(platform, new Metrics().executionStatusCount(executionStatusMetric));
+                        }
+                        LOG.info("Aggregated metrics for tool ID {}, version {}, platform {} from directory {}", s3DirectoryInfo.toolId(),
+                                s3DirectoryInfo.versionId(), platform, s3DirectoryInfo.versionS3KeyPrefix());
+                    });
+                }
+            } catch (Exception e) {
+                LOG.error("Could not aggregate metrics for tool ID {}, version {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(),
+                        e);
+            } finally {
+                // Delete views
+                dropView(runExecutionsView);
             }
-        } catch (Exception e) {
-            LOG.error("Could not aggregate metrics for tool ID {}, version {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), e);
-        } finally {
-            // Delete views
-            dropView(runExecutionsView);
         }
 
+        numberOfDirectoriesProcessed.incrementAndGet();
+        LOG.info("Processed {} directories", numberOfDirectoriesProcessed);
         return platformToMetrics;
     }
 
@@ -338,5 +364,23 @@ public class MetricsAggregatorAthenaClient {
             Integer columnIndex = columnNameToColumnIndex.get(columnName);
             return columnIndex == null || columnValues.get(columnIndex) == null ? Optional.empty() : Optional.of(columnValues.get(columnIndex));
         }
+    }
+
+    public record AthenaTablePartition(String entity, String registry, String org, String name, String version) {
+        /**
+         * Creates a view name. These view names will need to be enclosed with double quotes in queries because the entry components may contain special characters like dashes.
+         * @param viewType
+         * @return
+         */
+        public String createViewName(String viewType) {
+            return String.join("_", entity, registry, org, name, version, viewType);
+        }
+
+        public String getWhereCondition() {
+            return String.format("WHERE entity = '%s' AND registry = '%s' AND org = '%s' AND name = '%s' AND version = '%s'", entity, registry, org, name, version);
+        }
+    }
+
+    public record PartitionExecutionsCount(AthenaTablePartition athenaTablePartition, int runExecutionsCount, int taskExecutionsCount, int validationExecutionsCount) {
     }
 }

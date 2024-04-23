@@ -44,6 +44,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.slf4j.Logger;
@@ -148,7 +149,7 @@ public class MetricsAggregatorClient {
     }
 
     private void aggregateMetrics(AggregateMetricsCommand aggregateMetricsCommand, MetricsAggregatorConfig config) throws URISyntaxException {
-        final String trsIdToAggregate = aggregateMetricsCommand.getTrsId();
+        final List<String> trsIdsToAggregate = aggregateMetricsCommand.getTrsIds();
         final boolean skipPostingToDockstore = aggregateMetricsCommand.isSkipDockstore();
         ApiClient apiClient = setupApiClient(config.getDockstoreConfig().serverUrl(), config.getDockstoreConfig().token());
         ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
@@ -159,7 +160,19 @@ public class MetricsAggregatorClient {
         } else {
             metricsAggregatorS3Client = new MetricsAggregatorS3Client(config.getS3Config().bucket(), config.getS3Config().endpointOverride());
         }
-        List<S3DirectoryInfo> s3DirectoriesToAggregate = trsIdToAggregate == null ? metricsAggregatorS3Client.getDirectories() : metricsAggregatorS3Client.getDirectoriesForTrsId(trsIdToAggregate);
+        final Instant getDirectoriesStartTime = Instant.now();
+        List<S3DirectoryInfo> s3DirectoriesToAggregate;
+        if (trsIdsToAggregate == null || trsIdsToAggregate.isEmpty()) {
+            LOG.info("Aggregating metrics for all entries");
+            s3DirectoriesToAggregate = metricsAggregatorS3Client.getDirectories(); // Aggregate all directories
+        } else {
+            LOG.info("Aggregating metrics for TRS IDs: {}", trsIdsToAggregate);
+            s3DirectoriesToAggregate = trsIdsToAggregate.stream()
+                    .map(metricsAggregatorS3Client::getDirectoriesForTrsId)
+                    .flatMap(Collection::stream)
+                    .toList();
+        }
+        LOG.info("Getting directories to aggregate took {}", Duration.between(getDirectoriesStartTime, Instant.now()));
         LOG.info("Aggregating metrics for {} directories", s3DirectoriesToAggregate.size());
         if (s3DirectoriesToAggregate.isEmpty()) {
             LOG.info("No directories found to aggregate metrics");
@@ -168,7 +181,7 @@ public class MetricsAggregatorClient {
 
         if (aggregateMetricsCommand.isWithAthena()) {
             MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config);
-            metricsAggregatorAthenaClient.aggregateMetrics(config.getS3Config().bucket(), s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
+            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
         } else {
             metricsAggregatorS3Client.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
         }
