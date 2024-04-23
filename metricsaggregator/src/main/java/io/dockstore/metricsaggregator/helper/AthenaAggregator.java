@@ -8,9 +8,12 @@ import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.max;
 import static org.jooq.impl.DSL.min;
+import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.table;
+import static org.jooq.impl.DSL.unnest;
 
 import io.dockstore.common.Partner;
+import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.AthenaTablePartition;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.Metric;
 import java.util.HashMap;
@@ -74,14 +77,27 @@ public abstract class AthenaAggregator<M extends Metric> {
     }
 
     /**
-     * Create the query string using the SELECT and GROUP BY fields.
-     * @param runExecutionsView
+     * Create the runexecutions query string using the SELECT and GROUP BY fields.
+     * @param tableName
      * @return
      */
-    public String createQuery(String runExecutionsView) {
+    public String createRunExecutionsQuery(String tableName, AthenaTablePartition partition) {
         return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true))
+                // Sub-query that flattens the runexecutions array for the partition
+                .with("unnestedrunexecutions").as(
+                        select(PLATFORM_FIELD, field("unnested.executionid"), field("unnested.dateexecuted"),
+                                field("unnested.executionstatus"), field("unnested.executiontime"), field("unnested.memoryrequirementsgb"),
+                                field("unnested.cpurequirements"), field("unnested.cost"), field("unnested.region"))
+                        .from(table(tableName), unnest(field("runexecutions", String[].class)).as("t", "unnested"))
+                        .where(field("entity").eq(inline(partition.entity()))
+                                .and(field("registry").eq(inline(partition.registry())))
+                                .and(field("org").eq(inline(partition.org())))
+                                .and(field("name").eq(inline(partition.name())))
+                                .and(field("version").eq(inline(partition.version()))))
+                )
+                // Main query that uses the results of the subquery
                 .select(this.selectFields)
-                .from(table(String.format("\"%s\"", runExecutionsView))) // Need to quote the view name because it can contain special characters
+                .from(table("unnestedrunexecutions"))
                 .groupBy(cube(this.groupFields.toArray(Field[]::new))) // CUBE generates sub-totals for all combinations of the GROUP BY columns.
                 .getSQL();
     }
