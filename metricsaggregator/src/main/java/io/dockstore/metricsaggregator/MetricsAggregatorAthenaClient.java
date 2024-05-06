@@ -7,6 +7,7 @@ import io.dockstore.common.Partner;
 import io.dockstore.metricsaggregator.MetricsAggregatorS3Client.S3DirectoryInfo;
 import io.dockstore.metricsaggregator.helper.AthenaClientHelper;
 import io.dockstore.metricsaggregator.helper.ExecutionStatusAthenaAggregator;
+import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.MetadataApi;
 import io.dockstore.openapi.client.model.EntryTypeMetadata;
@@ -73,13 +74,18 @@ public class MetricsAggregatorAthenaClient {
         s3DirectoriesToAggregate.stream().parallel().forEach(s3DirectoryInfo -> {
             Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(s3DirectoryInfo);
             if (platformToMetrics.isEmpty()) {
-                LOG.error("No metrics were aggregated");
+                LOG.error("No metrics were aggregated for tool ID: {}, version {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
             }
             platformToMetrics.forEach((platform, metrics) -> {
-                //LOG.info("Tool ID: {}, version {}, platform: {}\n{}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platform, metrics);
                 if (!skipPostingToDockstore) {
-                    // TODO: Allow posting to webservice when the Athena prototype is complete
-                    extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
+                    try {
+                        extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
+                        LOG.info("Posted aggregated metrics to Dockstore for tool ID: {}, version {}, platform: {}",
+                                s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platform);
+                    } catch (ApiException exception) {
+                        // Log error and continue processing for other platforms
+                        LOG.error("Could not post aggregated metrics to Dockstore for tool ID: {}, version {}, platform: {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platform);
+                    }
                 }
             });
         });
@@ -261,7 +267,7 @@ public class MetricsAggregatorAthenaClient {
          */
         public Optional<String> getColumnValue(String columnName) {
             Integer columnIndex = columnNameToColumnIndex.get(columnName);
-            return columnIndex == null || columnValues.get(columnIndex) == null ? Optional.empty() : Optional.of(columnValues.get(columnIndex));
+            return columnIndex == null ? Optional.empty() : Optional.ofNullable(columnValues.get(columnIndex));
         }
     }
 

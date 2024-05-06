@@ -59,30 +59,25 @@ public final class AthenaClientHelper {
      * @param query
      * @return Athena query execution ID
      */
-    public static String submitAthenaQuery(AthenaClient athenaClient, String athenaDatabase, String athenaOutputS3Bucket, String query) {
-        try {
-            // The QueryExecutionContext allows us to set the database.
-            QueryExecutionContext queryExecutionContext = QueryExecutionContext.builder()
-                    .database(athenaDatabase)
-                    .build();
+    public static String submitAthenaQuery(AthenaClient athenaClient, String athenaDatabase, String athenaOutputS3Bucket, String query) throws AthenaException {
+        // The QueryExecutionContext allows us to set the database.
+        QueryExecutionContext queryExecutionContext = QueryExecutionContext.builder()
+                .database(athenaDatabase)
+                .build();
 
-            // The result configuration specifies where the results of the query should go.
-            ResultConfiguration resultConfiguration = ResultConfiguration.builder()
-                    .outputLocation(athenaOutputS3Bucket)
-                    .build();
+        // The result configuration specifies where the results of the query should go.
+        ResultConfiguration resultConfiguration = ResultConfiguration.builder()
+                .outputLocation(athenaOutputS3Bucket)
+                .build();
 
-            StartQueryExecutionRequest startQueryExecutionRequest = StartQueryExecutionRequest.builder()
-                    .queryString(query)
-                    .queryExecutionContext(queryExecutionContext)
-                    .resultConfiguration(resultConfiguration)
-                    .build();
+        StartQueryExecutionRequest startQueryExecutionRequest = StartQueryExecutionRequest.builder()
+                .queryString(query)
+                .queryExecutionContext(queryExecutionContext)
+                .resultConfiguration(resultConfiguration)
+                .build();
 
-            StartQueryExecutionResponse startQueryExecutionResponse = athenaClient.startQueryExecution(startQueryExecutionRequest);
-            return startQueryExecutionResponse.queryExecutionId();
-        } catch (AthenaException e) {
-            LOG.error("Could not submit AWS Athena query", e);
-        }
-        return "";
+        StartQueryExecutionResponse startQueryExecutionResponse = athenaClient.startQueryExecution(startQueryExecutionRequest);
+        return startQueryExecutionResponse.queryExecutionId();
     }
 
     /**
@@ -100,14 +95,14 @@ public final class AthenaClientHelper {
         boolean isQueryStillRunning = true;
         while (isQueryStillRunning) {
             getQueryExecutionResponse = athenaClient.getQueryExecution(getQueryExecutionRequest);
-            String queryState = getQueryExecutionResponse.queryExecution().status().state().toString();
-            if (queryState.equals(QueryExecutionState.FAILED.toString())) {
+            QueryExecutionState queryState = getQueryExecutionResponse.queryExecution().status().state();
+            if (queryState == QueryExecutionState.FAILED) {
                 throw new RuntimeException(
                         "The Amazon Athena query failed to run with error message: " + getQueryExecutionResponse
                                 .queryExecution().status().stateChangeReason());
-            } else if (queryState.equals(QueryExecutionState.CANCELLED.toString())) {
+            } else if (queryState == QueryExecutionState.CANCELLED) {
                 throw new RuntimeException("The Amazon Athena query was cancelled.");
-            } else if (queryState.equals(QueryExecutionState.SUCCEEDED.toString())) {
+            } else if (queryState == QueryExecutionState.SUCCEEDED) {
                 isQueryStillRunning = false;
             } else {
                 // Sleep an amount of time before retrying again.
