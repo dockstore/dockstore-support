@@ -26,8 +26,10 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
 import io.dockstore.common.Partner;
+import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
 import io.dockstore.metricsaggregator.MetricsAggregatorS3Client;
+import io.dockstore.metricsaggregator.MetricsAggregatorS3Client.S3DirectoryInfo;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.AggregateMetricsCommand;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitTerraMetrics;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitValidationData;
@@ -42,6 +44,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.slf4j.Logger;
@@ -101,7 +104,7 @@ public class MetricsAggregatorClient {
 
                 try {
                     final MetricsAggregatorConfig metricsAggregatorConfig = new MetricsAggregatorConfig(config);
-                    metricsAggregatorClient.aggregateMetrics(metricsAggregatorConfig);
+                    metricsAggregatorClient.aggregateMetrics(aggregateMetricsCommand, metricsAggregatorConfig);
                 } catch (Exception e) {
                     exceptionMessage(e, "Could not aggregate metrics", GENERIC_ERROR);
                 }
@@ -145,23 +148,47 @@ public class MetricsAggregatorClient {
         }
     }
 
-    private void aggregateMetrics(MetricsAggregatorConfig config) throws URISyntaxException {
-        ApiClient apiClient = setupApiClient(config.getDockstoreServerUrl(), config.getDockstoreToken());
+    private void aggregateMetrics(AggregateMetricsCommand aggregateMetricsCommand, MetricsAggregatorConfig config) throws URISyntaxException {
+        final List<String> trsIdsToAggregate = aggregateMetricsCommand.getTrsIds();
+        final boolean skipPostingToDockstore = aggregateMetricsCommand.isSkipDockstore();
+        ApiClient apiClient = setupApiClient(config.getDockstoreConfig().serverUrl(), config.getDockstoreConfig().token());
         ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
 
         MetricsAggregatorS3Client metricsAggregatorS3Client;
-        if (config.getS3EndpointOverride() == null) {
-            metricsAggregatorS3Client = new MetricsAggregatorS3Client(config.getS3Bucket());
+        if (config.getS3Config().endpointOverride() == null) {
+            metricsAggregatorS3Client = new MetricsAggregatorS3Client(config.getS3Config().bucket());
         } else {
-            metricsAggregatorS3Client = new MetricsAggregatorS3Client(config.getS3Bucket(), config.getS3EndpointOverride());
+            metricsAggregatorS3Client = new MetricsAggregatorS3Client(config.getS3Config().bucket(), config.getS3Config().endpointOverride());
+        }
+        final Instant getDirectoriesStartTime = Instant.now();
+        List<S3DirectoryInfo> s3DirectoriesToAggregate;
+        if (trsIdsToAggregate == null || trsIdsToAggregate.isEmpty()) {
+            LOG.info("Aggregating metrics for all entries");
+            s3DirectoriesToAggregate = metricsAggregatorS3Client.getDirectories(); // Aggregate all directories
+        } else {
+            LOG.info("Aggregating metrics for TRS IDs: {}", trsIdsToAggregate);
+            s3DirectoriesToAggregate = trsIdsToAggregate.stream()
+                    .map(metricsAggregatorS3Client::getDirectoriesForTrsId)
+                    .flatMap(Collection::stream)
+                    .toList();
+        }
+        LOG.info("Getting directories to aggregate took {}", Duration.between(getDirectoriesStartTime, Instant.now()));
+        LOG.info("Aggregating metrics for {} directories", s3DirectoriesToAggregate.size());
+        if (s3DirectoriesToAggregate.isEmpty()) {
+            LOG.info("No directories found to aggregate metrics");
+            return;
         }
 
-        metricsAggregatorS3Client.aggregateMetrics(extendedGa4GhApi);
+        if (aggregateMetricsCommand.isWithAthena()) {
+            MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config);
+            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
+        } else {
+            metricsAggregatorS3Client.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
+        }
     }
 
-
     private void submitValidationData(MetricsAggregatorConfig config, ValidatorToolEnum validator, String validatorVersion, String dataFilePath, Partner platform, String executionId) throws IOException {
-        ApiClient apiClient = setupApiClient(config.getDockstoreServerUrl(), config.getDockstoreToken());
+        ApiClient apiClient = setupApiClient(config.getDockstoreConfig().serverUrl(), config.getDockstoreConfig().token());
         ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
 
         final File dataFile = new File(dataFilePath);

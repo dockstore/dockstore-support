@@ -82,7 +82,7 @@ public class TerraMetricsSubmitter {
     }
 
     public void submitTerraMetrics() {
-        ApiClient apiClient = setupApiClient(config.getDockstoreServerUrl(), config.getDockstoreToken());
+        ApiClient apiClient = setupApiClient(config.getDockstoreConfig().serverUrl(), config.getDockstoreConfig().token());
         ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
         WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
 
