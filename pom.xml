@@ -123,6 +123,7 @@
 
     <modules>
         <module>metricsaggregator</module>
+        <module>githubdelivery</module>
         <module>toolbackup</module>
         <module>tooltester</module>
         <module>dockstore-support-reports</module>
