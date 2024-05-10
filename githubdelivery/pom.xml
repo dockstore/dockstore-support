@@ -90,55 +90,12 @@
     <dependencies>
         <dependency>
             <groupId>io.dockstore</groupId>
-            <artifactId>utils</artifactId>
-            <version>${revision}${changelist}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>openapi-java-client</artifactId>
-            <version>${dockstore-core.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.dockstore</groupId>
             <artifactId>dockstore-common</artifactId>
             <version>${dockstore-core.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>dockstore-webservice</artifactId>
-            <version>${dockstore-core.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>dockstore-integration-testing</artifactId>
-            <version>${dockstore-core.version}</version>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.inject</groupId>
-            <artifactId>jersey-hk2</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.beust</groupId>
-            <artifactId>jcommander</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-configuration2</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
@@ -146,71 +103,8 @@
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
-            <artifactId>athena</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>auth</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.javamoney.moneta</groupId>
-            <artifactId>moneta-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>javax.money</groupId>
-            <artifactId>money-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-csv</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.validation</groupId>
-            <artifactId>jakarta.validation-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-validator</artifactId>
-            <version>7.0.5.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>jakarta.el</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
-            <version>3.19.7</version>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.dropwizard</groupId>
-            <artifactId>dropwizard-testing</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/cloud.localstack/localstack-utils -->
-        <dependency>
-            <groupId>cloud.localstack</groupId>
-            <artifactId>localstack-utils</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>uk.org.webcompere</groupId>
-            <artifactId>system-stubs-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>uk.org.webcompere</groupId>
-            <artifactId>system-stubs-core</artifactId>
-            <scope>test</scope>
+            <artifactId>sdk-core</artifactId>
+            <version>2.17.186</version>
         </dependency>
     </dependencies>
 
@@ -295,21 +189,6 @@
                             <failOnWarning>true</failOnWarning>
                             <outputXML>true</outputXML>
                             <ignoreNonCompile>true</ignoreNonCompile>
-                            <usedDependencies>
-                                <usedDependency>org.apache.commons:commons-configuration2</usedDependency>
-                                <usedDependency>org.slf4j:slf4j-api</usedDependency>
-                                <usedDependency>software.amazon.awssdk:s3</usedDependency>
-                                <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
-                                <usedDependency>javax.money:money-api</usedDependency>
-                                <usedDependency>org.javamoney.moneta:moneta-core</usedDependency>
-                                <usedDependency>ch.qos.logback:logback-classic</usedDependency>
-                                <usedDependency>ch.qos.logback:logback-core</usedDependency>
-                                <usedDependency>com.google.guava:guava</usedDependency>
-                                <usedDependency>jakarta.validation:jakarta.validation-api</usedDependency>
-                                <usedDependency>org.hibernate:hibernate-validator</usedDependency>
-                                <usedDependency>org.glassfish:jakarta.el</usedDependency>
-                                <usedDependency>software.amazon.awssdk:auth</usedDependency>
-                            </usedDependencies>
                         </configuration>
                     </execution>
                 </executions>
@@ -320,21 +199,6 @@
                 <configuration>
                     <release>17</release>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <inherited>false</inherited>
-                <executions>
-                    <execution>
-                        <inherited>false</inherited>
-                        <phase>site-deploy</phase>
-                        <goals>
-                            <goal>aggregate</goal>
-                            <goal>test-aggregate</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -391,28 +255,6 @@
                         <goals>
                             <goal>verify</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>add_script</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>attach-artifact</goal>
-                        </goals>
-                        <configuration>
-                            <artifacts>
-                                <artifact>
-                                    <file>scripts/format-dnastack-validation-data.sh</file>
-                                    <type>format-dnastack-validation-data.sh</type>
-                                    <classifier>dist</classifier>
-                                </artifact>
-                            </artifacts>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

@@ -4,7 +4,8 @@ import io.dockstore.common.S3ClientHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 public class GithubDeliveryS3Client {
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
@@ -24,7 +25,6 @@ public class GithubDeliveryS3Client {
                 .build();
 
         return this.s3Client.getObject(objectRequest).response();
-
     }
 
 
