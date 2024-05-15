@@ -106,6 +106,16 @@
             <artifactId>sdk-core</artifactId>
             <version>2.17.186</version>
         </dependency>
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>utils</artifactId>
+            <version>1.16.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
