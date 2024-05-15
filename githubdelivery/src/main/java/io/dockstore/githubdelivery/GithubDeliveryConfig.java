@@ -1,9 +1,5 @@
 package io.dockstore.githubdelivery;
 
-import static io.dockstore.utils.ConfigFileUtils.getDockstoreServerUrl;
-import static io.dockstore.utils.ConfigFileUtils.getDockstoreToken;
-import static io.dockstore.utils.ConfigFileUtils.getOpenAIApiKey;
-
 import io.dockstore.utils.ConfigFileUtils;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.configuration2.SubnodeConfiguration;
