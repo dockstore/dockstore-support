@@ -4,7 +4,7 @@ import io.dockstore.utils.ConfigFileUtils;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.configuration2.SubnodeConfiguration;
 
-public class GithubDeliveryConfig{
+public class GithubDeliveryConfig {
     private DockstoreConfig dockstoreConfig;
     private S3Config s3Config;
     public GithubDeliveryConfig(INIConfiguration config) {

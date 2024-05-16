@@ -1,22 +1,20 @@
 package io.dockstore.githubdelivery;
 
+import static io.dockstore.utils.ConfigFileUtils.getConfiguration;
+import static io.dockstore.utils.ExceptionHandler.GENERIC_ERROR;
+import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
 import io.dockstore.common.S3ClientHelper;
+import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.DownloadEventCommand;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-
-import static io.dockstore.utils.ConfigFileUtils.getConfiguration;
-import static io.dockstore.utils.ExceptionHandler.GENERIC_ERROR;
-import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
-
-import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.DownloadEventCommand;
-
 
 public class GithubDeliveryS3Client {
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
@@ -57,9 +55,10 @@ public class GithubDeliveryS3Client {
             final GithubDeliveryS3Client githubDeliveryS3Client = new GithubDeliveryS3Client(githubDeliveryConfig.getS3Config().bucket());
 
             if ("download-event".equals(jCommander.getParsedCommand())) {
-//                githubDeliveryS3Client.getGitHubDeliveryEventByKey(key);
+                System.out.println(githubDeliveryS3Client.getGitHubDeliveryEventByKey(downloadEventCommand.getBucketKey()));
             }
         }
+
     }
     private GetObjectResponse getGitHubDeliveryEventByKey(String key) {
         GetObjectRequest objectRequest = GetObjectRequest
