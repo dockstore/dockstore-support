@@ -67,6 +67,24 @@
     <plugins>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>githubDeliveryS3Client</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer>
+                  <manifestEntries>
+                    <Main-Class>io.dockstore.githubdelivery.GithubDeliveryS3Client</Main-Class>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
         <configuration>
           <filters>
             <filter>
