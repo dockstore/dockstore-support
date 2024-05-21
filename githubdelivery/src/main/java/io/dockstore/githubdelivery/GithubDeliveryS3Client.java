@@ -12,6 +12,8 @@ import com.google.gson.JsonSyntaxException;
 import io.dockstore.common.S3ClientHelper;
 import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.DownloadEventCommand;
 import io.dockstore.openapi.client.model.PushPayload;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
@@ -21,9 +23,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 public class GithubDeliveryS3Client {
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
