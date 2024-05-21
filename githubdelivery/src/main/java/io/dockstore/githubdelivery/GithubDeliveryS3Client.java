@@ -7,17 +7,27 @@ import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import io.dockstore.common.S3ClientHelper;
 import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.DownloadEventCommand;
+import io.dockstore.openapi.client.model.PushPayload;
 import org.apache.commons.configuration2.INIConfiguration;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class GithubDeliveryS3Client {
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
+    private static final Gson GSON = new Gson();
     private final S3Client s3Client;
     private final String bucketName;
 
@@ -26,7 +36,7 @@ public class GithubDeliveryS3Client {
         this.s3Client = S3ClientHelper.getS3Client();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         final GithubDeliveryCommandLineArgs commandLineArgs = new GithubDeliveryCommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
         final DownloadEventCommand downloadEventCommand = new DownloadEventCommand();
@@ -60,13 +70,21 @@ public class GithubDeliveryS3Client {
         }
 
     }
-    private GetObjectResponse getGitHubDeliveryEventByKey(String key) {
+    private PushPayload getGitHubDeliveryEventByKey(String key) throws IOException, NoSuchKeyException {
         GetObjectRequest objectRequest = GetObjectRequest
                 .builder()
                 .key(key)
                 .bucket(bucketName)
                 .build();
+        ResponseInputStream<GetObjectResponse> object = this.s3Client.getObject(objectRequest);
 
-        return this.s3Client.getObject(objectRequest).response();
+        try {
+            PushPayload pushPayload;
+            pushPayload = GSON.fromJson(IOUtils.toString(object, StandardCharsets.UTF_8), PushPayload.class);
+            return pushPayload;
+        } catch (JsonSyntaxException e) {
+            LOG.error("Could not read github event from key {}",key, e);
+        }
+        return null;
     }
 }
