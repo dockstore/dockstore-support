@@ -83,7 +83,7 @@ public class GithubDeliveryS3Client {
             pushPayload = GSON.fromJson(IOUtils.toString(object, StandardCharsets.UTF_8), PushPayload.class);
             return pushPayload;
         } catch (JsonSyntaxException e) {
-            LOG.error("Could not read github event from key {}",key, e);
+            LOG.error("Could not read github event from key {}", key, e);
         }
         return null;
     }
