@@ -90,13 +90,6 @@
     <dependencies>
         <dependency>
             <groupId>io.dockstore</groupId>
-            <artifactId>bom-internal</artifactId>
-            <type>pom</type>
-            <version>${dockstore-core.version}</version>
-            <scope>import</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.dockstore</groupId>
             <artifactId>dockstore-common</artifactId>
             <version>${dockstore-core.version}</version>
         </dependency>
@@ -111,12 +104,10 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-configuration2</artifactId>
-            <version>2.10.1</version>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>sdk-core</artifactId>
-            <version>2.17.186</version>
         </dependency>
         <dependency>
             <groupId>io.dockstore</groupId>
@@ -136,12 +127,10 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.9.0</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.15.1</version>
         </dependency>
 
     </dependencies>

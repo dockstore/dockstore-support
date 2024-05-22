@@ -42,12 +42,11 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 public class GithubDeliveryS3Client {
+    public static final String DOWNLOAD_COMMAND = "download-event";
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
     private static final Gson GSON = new Gson();
     private final S3Client s3Client;
     private final String bucketName;
-    public static final String DOWNLOAD_COMMAND = "download-event";
-
 
     public GithubDeliveryS3Client(String bucketName) {
         this.bucketName = bucketName;

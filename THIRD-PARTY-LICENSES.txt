@@ -1,5 +1,5 @@
 
-Lists of 422 third-party dependencies.
+Lists of 421 third-party dependencies.
      (The Apache Software License, Version 2.0) Adapter: RxJava 2 (com.squareup.retrofit2:adapter-rxjava2:2.9.0 - https://github.com/square/retrofit)
      (Apache License, Version 2.0) akka-actor (com.typesafe.akka:akka-actor_2.13:2.5.32 - https://akka.io/)
      (Apache License, Version 2.0) akka-protobuf (com.typesafe.akka:akka-protobuf_2.13:2.5.32 - https://akka.io/)
@@ -80,7 +80,6 @@ Lists of 422 third-party dependencies.
      (Apache License, Version 2.0) AWS SDK for Java - Core (com.amazonaws:aws-java-sdk-core:1.11.83 - https://aws.amazon.com/sdkforjava)
      (Apache License 2.0) (The Apache Software License, Version 2.0) Bean Validation API (javax.validation:validation-api:2.0.1.Final - http://beanvalidation.org)
      (MIT) better-files (com.github.pathikrit:better-files_2.13:3.9.1 - https://github.com/pathikrit/better-files)
-     (Unknown license) bom-internal (io.dockstore:bom-internal:1.16.0-alpha.3 - no url defined)
      (Bouncy Castle Licence) Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs (org.bouncycastle:bcpkix-jdk15on:1.60 - http://www.bouncycastle.org/java.html)
      (Bouncy Castle Licence) Bouncy Castle Provider (org.bouncycastle:bcprov-jdk15on:1.69 - https://www.bouncycastle.org/java.html)
      (Apache License, Version 2.0) Byte Buddy (without dependencies) (net.bytebuddy:byte-buddy:1.14.8 - https://bytebuddy.net/byte-buddy)
