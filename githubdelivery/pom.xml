@@ -1,5 +1,5 @@
 <!--
-  ~    Copyright 2023 OICR
+  ~    Copyright 2024 OICR, UCSC
   ~
   ~    Licensed under the Apache License, Version 2.0 (the "License");
   ~    you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@
     <packaging>jar</packaging>
 
     <name>githubdelivery</name>
-    <description>A service for rerunning github release events</description>
+    <description>A command-line client for rerunning github release events</description>
     <url>https://github.com/dockstore/dockstore-support</url>
 
 
@@ -47,7 +47,7 @@
         <developerConnection>${github.url}</developerConnection>
         <url>${github.url}</url>
       <tag>HEAD</tag>
-  </scm>
+    </scm>
 
     <repositories>
         <repository>
@@ -74,8 +74,8 @@
 
     <licenses>
         <license>
-            <name>GNU General Public License (GPLv3)</name>
-            <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
+            <name>Apache Software License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
         </license>
     </licenses>
 
@@ -88,6 +88,13 @@
     </distributionManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>bom-internal</artifactId>
+            <type>pom</type>
+            <version>${dockstore-core.version}</version>
+            <scope>import</scope>
+        </dependency>
         <dependency>
             <groupId>io.dockstore</groupId>
             <artifactId>dockstore-common</artifactId>
@@ -114,7 +121,7 @@
         <dependency>
             <groupId>io.dockstore</groupId>
             <artifactId>utils</artifactId>
-            <version>1.16.0-SNAPSHOT</version>
+            <version>${revision}${changelist}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -124,7 +131,7 @@
         <dependency>
             <groupId>io.dockstore</groupId>
             <artifactId>openapi-java-client</artifactId>
-            <version>1.16.0-alpha.3</version>
+            <version>${dockstore-core.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -158,27 +165,11 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <!-- Fake AWS credentials used for testing with localstack so that the AWS SDK can create clients properly -->
-                        <environmentVariables>
-                            <AWS_REGION>us-east-1</AWS_REGION>
-                            <AWS_ACCESS_KEY_ID>foobar</AWS_ACCESS_KEY_ID>
-                            <AWS_SECRET_ACCESS_KEY>foobar</AWS_SECRET_ACCESS_KEY>
-                        </environmentVariables>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${maven-fire.version}</version>
-                    <configuration>
-                        <!-- Fake AWS credentials used for testing with localstack so that the AWS SDK can create clients properly -->
-                        <environmentVariables>
-                            <AWS_REGION>us-east-1</AWS_REGION>
-                            <AWS_ACCESS_KEY_ID>foobar</AWS_ACCESS_KEY_ID>
-                            <AWS_SECRET_ACCESS_KEY>foobar</AWS_SECRET_ACCESS_KEY>
-                        </environmentVariables>
-                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -213,9 +204,6 @@
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
-                                <!-- not sure why this results in error unline our other repos  if not excluded -->
-                                <exclude>migrations.xml</exclude>
-                                <exclude>migrations.*.xml</exclude>
                             </excludes>
                         </filter>
                     </filters>

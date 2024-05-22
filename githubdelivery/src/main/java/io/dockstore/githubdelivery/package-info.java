@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 OICR and UCSC
+ * Copyright 2024 OICR and UCSC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,6 @@
  */
 
 /**
- * Everything used in MetricsAggregator including s3 integration, config file handling, and the CLI
+ * Everything used in GithubDelivery including s3 integration, config file handling, and the CLI
  */
 package io.dockstore.githubdelivery;

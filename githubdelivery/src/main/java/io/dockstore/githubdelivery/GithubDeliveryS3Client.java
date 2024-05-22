@@ -1,3 +1,20 @@
+/*
+ * Copyright 2024 OICR and UCSC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *           http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package io.dockstore.githubdelivery;
 
 import static io.dockstore.utils.ConfigFileUtils.getConfiguration;
@@ -29,6 +46,8 @@ public class GithubDeliveryS3Client {
     private static final Gson GSON = new Gson();
     private final S3Client s3Client;
     private final String bucketName;
+    public static final String DOWNLOAD_COMMAND = "download-event";
+
 
     public GithubDeliveryS3Client(String bucketName) {
         this.bucketName = bucketName;
@@ -63,7 +82,7 @@ public class GithubDeliveryS3Client {
             final GithubDeliveryConfig githubDeliveryConfig = new GithubDeliveryConfig(config);
             final GithubDeliveryS3Client githubDeliveryS3Client = new GithubDeliveryS3Client(githubDeliveryConfig.getS3Config().bucket());
 
-            if ("download-event".equals(jCommander.getParsedCommand())) {
+            if (DOWNLOAD_COMMAND.equals(jCommander.getParsedCommand())) {
                 System.out.println(githubDeliveryS3Client.getGitHubDeliveryEventByKey(downloadEventCommand.getBucketKey()));
             }
         }
@@ -75,7 +94,7 @@ public class GithubDeliveryS3Client {
                 .key(key)
                 .bucket(bucketName)
                 .build();
-        ResponseInputStream<GetObjectResponse> object = this.s3Client.getObject(objectRequest);
+        ResponseInputStream<GetObjectResponse> object = s3Client.getObject(objectRequest);
 
         try {
             PushPayload pushPayload;
@@ -83,6 +102,7 @@ public class GithubDeliveryS3Client {
             return pushPayload;
         } catch (JsonSyntaxException e) {
             LOG.error("Could not read github event from key {}", key, e);
+            System.exit(1);
         }
         return null;
     }
