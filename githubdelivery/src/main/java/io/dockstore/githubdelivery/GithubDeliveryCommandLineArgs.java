@@ -34,10 +34,6 @@ public class GithubDeliveryCommandLineArgs {
         public String getBucketKey() {
             return bucketKey;
         }
-
-        public String getDate() {
-            return date;
-        }
     }
     @Parameters(commandNames = { "submit-events" }, commandDescription = "Submit all github events from S3 bucket from a specific date to the webservice.")
     public static class SubmitEventsCommand {
