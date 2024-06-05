@@ -66,8 +66,9 @@ public class GithubDeliveryS3Client {
         final GithubDeliveryCommandLineArgs commandLineArgs = new GithubDeliveryCommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
         final DownloadEventCommand downloadEventCommand = new DownloadEventCommand();
-        final GithubDeliveryCommandLineArgs.SubmitEventsCommand submitEventsCommand = new SubmitEventsCommand();
+        final SubmitEventsCommand submitEventsCommand = new SubmitEventsCommand();
         jCommander.addCommand(downloadEventCommand);
+        jCommander.addCommand(submitEventsCommand);
 
         try {
             jCommander.parse(args);
