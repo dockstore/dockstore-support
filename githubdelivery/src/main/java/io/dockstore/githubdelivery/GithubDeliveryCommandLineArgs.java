@@ -28,9 +28,6 @@ public class GithubDeliveryCommandLineArgs {
         @Parameter(names = {"-k", "--key"}, description = "The key of the event in bucket. Format should be YYYY-MM-DD/deliveryid")
         private String bucketKey;
 
-        @Parameter(names = {"-d", "--date"}, description = "All events from the date. Format should be YYYY-MM-DD")
-        private String date;
-
         public String getBucketKey() {
             return bucketKey;
         }
