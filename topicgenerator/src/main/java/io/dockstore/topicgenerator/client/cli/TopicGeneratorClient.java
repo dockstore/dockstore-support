@@ -229,8 +229,9 @@ public class TopicGeneratorClient {
             // This command's input CSV headers are the generate-topic command's output headers
             final String trsId = entryWithAITopic.get(GenerateTopicsCommand.OutputCsvHeaders.trsId);
             final String aiTopic = entryWithAITopic.get(GenerateTopicsCommand.OutputCsvHeaders.aiTopic);
+            final String version = entryWithAITopic.get(OutputCsvHeaders.version);
             try {
-                extendedGa4GhApi.updateAITopic(new UpdateAITopicRequest().aiTopic(aiTopic), trsId);
+                extendedGa4GhApi.updateAITopic(new UpdateAITopicRequest().aiTopic(aiTopic), version, trsId);
                 LOG.info("Uploaded AI topic for {}", trsId);
             } catch (ApiException exception) {
                 LOG.error("Could not upload AI topic for {}", trsId);
