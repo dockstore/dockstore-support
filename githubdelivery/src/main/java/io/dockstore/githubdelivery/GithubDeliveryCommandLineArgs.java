@@ -32,8 +32,18 @@ public class GithubDeliveryCommandLineArgs {
             return bucketKey;
         }
     }
-    @Parameters(commandNames = { "submit-events" }, commandDescription = "Submit all github events from S3 bucket from a specific date to the webservice.")
-    public static class SubmitEventsCommand {
+    @Parameters(commandNames = { "submit-event" }, commandDescription = "Submit a github event from S3 bucket using its key to the webservice.")
+    public static class SubmitEventCommand {
+
+        @Parameter(names = {"-k", "--key"}, description = "The key of the event in bucket. Format should be YYYY-MM-DD/deliveryid")
+        private String bucketKey;
+
+        public String getBucketKey() {
+            return bucketKey;
+        }
+    }
+    @Parameters(commandNames = { "submit-all" }, commandDescription = "Submit all github events from S3 bucket from a specific date to the webservice.")
+    public static class SubmitAllEventsCommand {
 
         @Parameter(names = {"-d", "--date"}, description = "All events from the date. Format should be YYYY-MM-DD")
         private String date;

@@ -29,7 +29,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.common.S3ClientHelper;
 import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.DownloadEventCommand;
-import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitEventsCommand;
+import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitEventCommand;
+import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitAllEventsCommand;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.PushPayload;
@@ -51,7 +52,8 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 public class GithubDeliveryS3Client {
     public static final String DOWNLOAD_EVENT_COMMAND = "download-event";
-    public static final String SUBMIT_EVENTS_COMMAND = "submit-events";
+    public static final String SUBMIT_EVENT_COMMAND = "submit-event";
+    public static final String SUBMIT_ALL_COMMAND = "submit-all";
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
     private static final Gson GSON = new Gson();
     private final S3Client s3Client;
@@ -66,9 +68,11 @@ public class GithubDeliveryS3Client {
         final GithubDeliveryCommandLineArgs commandLineArgs = new GithubDeliveryCommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
         final DownloadEventCommand downloadEventCommand = new DownloadEventCommand();
-        final SubmitEventsCommand submitEventsCommand = new SubmitEventsCommand();
+        final SubmitEventCommand submitEventCommand = new SubmitEventCommand();
+        final SubmitAllEventsCommand submitAllEventsCommand = new SubmitAllEventsCommand();
         jCommander.addCommand(downloadEventCommand);
-        jCommander.addCommand(submitEventsCommand);
+        jCommander.addCommand(submitEventCommand);
+        jCommander.addCommand(submitAllEventsCommand);
 
         try {
             jCommander.parse(args);
@@ -95,8 +99,11 @@ public class GithubDeliveryS3Client {
             if (DOWNLOAD_EVENT_COMMAND.equals(jCommander.getParsedCommand())) {
                 System.out.println(githubDeliveryS3Client.getGitHubDeliveryEventByKey(downloadEventCommand.getBucketKey()));
             }
-            if (SUBMIT_EVENTS_COMMAND.equals(jCommander.getParsedCommand())) {
-                githubDeliveryS3Client.submitGitHubDeliveryEventsByDate(githubDeliveryConfig, submitEventsCommand.getDate());
+            if (SUBMIT_EVENT_COMMAND.equals(jCommander.getParsedCommand())) {
+                githubDeliveryS3Client.submitGitHubDeliveryEventsByKey(githubDeliveryConfig, submitEventCommand.getBucketKey());
+            }
+            if (SUBMIT_ALL_COMMAND.equals(jCommander.getParsedCommand())) {
+                githubDeliveryS3Client.submitGitHubDeliveryEventsByDate(githubDeliveryConfig, submitAllEventsCommand.getDate());
             }
         }
 
@@ -142,6 +149,18 @@ public class GithubDeliveryS3Client {
                     System.exit(1);
                 }
             });
+        }
+    }
+    private void submitGitHubDeliveryEventsByKey(GithubDeliveryConfig config, String key) {
+        ApiClient apiClient = setupApiClient(config.getDockstoreConfig().serverUrl(), config.getDockstoreConfig().token());
+        WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
+        try {
+            String deliveryid = key.split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
+            PushPayload body = getGitHubDeliveryEventByKey(key);
+            workflowsApi.handleGitHubRelease(body, deliveryid);
+        } catch (IOException e) {
+            LOG.error("Could not submit github event from key {}", key, e);
+            System.exit(1);
         }
     }
 }
