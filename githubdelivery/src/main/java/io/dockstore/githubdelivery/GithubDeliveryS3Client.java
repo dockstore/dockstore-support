@@ -25,6 +25,7 @@ import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.common.S3ClientHelper;
@@ -55,7 +56,7 @@ public class GithubDeliveryS3Client {
     public static final String SUBMIT_EVENT_COMMAND = "submit-event";
     public static final String SUBMIT_ALL_COMMAND = "submit-all";
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
-    private static final Gson GSON = new Gson();
+    private static final ObjectMapper MAPPER = new ObjectMapper();
     private final S3Client s3Client;
     private final String bucketName;
 
@@ -119,7 +120,7 @@ public class GithubDeliveryS3Client {
         try {
             PushPayload pushPayload;
             System.out.println(IOUtils.toString(object, StandardCharsets.UTF_8));
-            pushPayload = GSON.fromJson(IOUtils.toString(object, StandardCharsets.UTF_8), PushPayload.class);
+            pushPayload = MAPPER.readValue(IOUtils.toString(object, StandardCharsets.UTF_8), PushPayload.class);
             return pushPayload;
         } catch (JsonSyntaxException e) {
             LOG.error("Could not read github event from key {}", key, e);
