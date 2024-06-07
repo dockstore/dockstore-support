@@ -157,6 +157,7 @@ public class GithubDeliveryS3Client {
         try {
             String deliveryid = key.split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
             PushPayload body = getGitHubDeliveryEventByKey(key);
+            System.out.println(body);
             workflowsApi.handleGitHubRelease(body, deliveryid);
         } catch (IOException e) {
             LOG.error("Could not submit github event from key {}", key, e);
