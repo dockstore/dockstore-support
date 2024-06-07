@@ -118,8 +118,7 @@ public class GithubDeliveryS3Client {
 
         try {
             PushPayload pushPayload;
-            System.out.println(IOUtils.toString(object, StandardCharsets.UTF_8));
-            pushPayload = MAPPER.readValue(object, PushPayload.class);
+            pushPayload = MAPPER.readValue(IOUtils.toString(object, StandardCharsets.UTF_8), PushPayload.class);
             return pushPayload;
         } catch (JsonSyntaxException e) {
             LOG.error("Could not read github event from key {}", key, e);
