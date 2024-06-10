@@ -25,6 +25,7 @@ import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.common.S3ClientHelper;
@@ -55,7 +56,7 @@ public class GithubDeliveryS3Client {
     public static final String SUBMIT_EVENT_COMMAND = "submit-event";
     public static final String SUBMIT_ALL_COMMAND = "submit-all";
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private final S3Client s3Client;
     private final String bucketName;
 
