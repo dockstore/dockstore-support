@@ -478,7 +478,7 @@ public class TerraMetricsSubmitter {
     private Optional<String> getPrimaryDescriptorAbsolutePath(WorkflowsApi workflowsApi, MinimalWorkflowInfo workflow, String version) {
         Optional<String> primaryDescriptorPath = Optional.empty();
         try {
-            primaryDescriptorPath = Optional.of(workflowsApi.primaryDescriptor1(workflow.id(), version, workflow.descriptorType().toString()).getAbsolutePath());
+            primaryDescriptorPath = Optional.of(workflowsApi.primaryDescriptor1(workflow.id(), workflow.descriptorType().toString(), version).getAbsolutePath());
         } catch (ApiException e) {
             LOG.debug("Could not get primary descriptor path", e);
         }
