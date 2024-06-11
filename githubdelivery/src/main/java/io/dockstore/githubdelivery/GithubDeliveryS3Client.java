@@ -163,10 +163,10 @@ public class GithubDeliveryS3Client {
         String deliveryid = key.split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
         try {
             String body = getObject(key);
-            if (body.contains("\"action\":\"added\"") || body.contains("\"action\":\"removed\",")) {
+            if (body.contains("\"action\": \"added\"") || body.contains("\"action\": \"removed\",")) {
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
                 workflowsApi.handleGitHubInstallation(payload, deliveryid);
-            } else if (body.contains("\"deleted\":")) {
+            } else if (body.contains("\"deleted\": false")) {
                 PushPayload payload = getGitHubPushPayloadByKey(body, key);
                 workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
             } else {
