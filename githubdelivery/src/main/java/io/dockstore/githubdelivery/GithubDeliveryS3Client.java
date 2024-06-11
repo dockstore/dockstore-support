@@ -35,7 +35,6 @@ import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitEventComm
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.InstallationRepositoriesPayload;
-import io.dockstore.openapi.client.model.Payload;
 import io.dockstore.openapi.client.model.PushPayload;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -99,9 +98,9 @@ public class GithubDeliveryS3Client {
             final GithubDeliveryConfig githubDeliveryConfig = new GithubDeliveryConfig(config);
             final GithubDeliveryS3Client githubDeliveryS3Client = new GithubDeliveryS3Client(githubDeliveryConfig.getS3Config().bucket());
 
-//            if (DOWNLOAD_EVENT_COMMAND.equals(jCommander.getParsedCommand())) {
-//                System.out.println(githubDeliveryS3Client.getGitHubPushPayloadByKey(downloadEventCommand.getBucketKey()));
-//            }
+            //            if (DOWNLOAD_EVENT_COMMAND.equals(jCommander.getParsedCommand())) {
+            //                System.out.println(githubDeliveryS3Client.getGitHubPushPayloadByKey(downloadEventCommand.getBucketKey()));
+            //            }
             if (SUBMIT_EVENT_COMMAND.equals(jCommander.getParsedCommand())) {
                 githubDeliveryS3Client.submitGitHubDeliveryEventsByKey(githubDeliveryConfig, submitEventCommand.getBucketKey());
             }
@@ -167,7 +166,7 @@ public class GithubDeliveryS3Client {
             if (body.contains("\"action\":\"added\"") || body.contains("\"action\":\"removed\",")) {
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
                 workflowsApi.handleGitHubInstallation(payload, deliveryid);
-            } else if (body.contains("\"deleted\":")){
+            } else if (body.contains("\"deleted\":")) {
                 PushPayload payload = getGitHubPushPayloadByKey(body, key);
                 workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
             } else {
