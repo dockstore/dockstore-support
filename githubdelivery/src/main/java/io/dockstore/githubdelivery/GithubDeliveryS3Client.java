@@ -164,11 +164,11 @@ public class GithubDeliveryS3Client {
         try {
             String body = getObject(key);
             System.out.println(body);
-            if (body.contains("\"action\": \"added\"") || body.contains("\"action\": \"removed\"")) {
+            if (body.contains("\"action\":\"added\"") || body.contains("\"action\":\"removed\"")) {
                 System.out.println("ins");
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
                 workflowsApi.handleGitHubInstallation(payload, deliveryid);
-            } else if (body.contains("\"deleted\": true")) {
+            } else if (body.contains("\"deleted\":true")) {
                 PushPayload payload = getGitHubPushPayloadByKey(body, key);
                 workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
             } else {
