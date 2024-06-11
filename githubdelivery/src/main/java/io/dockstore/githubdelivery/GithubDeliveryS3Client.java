@@ -163,6 +163,7 @@ public class GithubDeliveryS3Client {
         String deliveryid = key.split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
         try {
             String body = getObject(key);
+            System.out.println(body);
             if (body.contains("\"action\": \"added\"") || body.contains("\"action\": \"removed\"")) {
                 System.out.println("ins");
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
