@@ -34,6 +34,8 @@ import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitAllEvents
 import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitEventCommand;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.api.WorkflowsApi;
+import io.dockstore.openapi.client.model.InstallationRepositoriesPayload;
+import io.dockstore.openapi.client.model.Payload;
 import io.dockstore.openapi.client.model.PushPayload;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -97,9 +99,9 @@ public class GithubDeliveryS3Client {
             final GithubDeliveryConfig githubDeliveryConfig = new GithubDeliveryConfig(config);
             final GithubDeliveryS3Client githubDeliveryS3Client = new GithubDeliveryS3Client(githubDeliveryConfig.getS3Config().bucket());
 
-            if (DOWNLOAD_EVENT_COMMAND.equals(jCommander.getParsedCommand())) {
-                System.out.println(githubDeliveryS3Client.getGitHubDeliveryEventByKey(downloadEventCommand.getBucketKey()));
-            }
+//            if (DOWNLOAD_EVENT_COMMAND.equals(jCommander.getParsedCommand())) {
+//                System.out.println(githubDeliveryS3Client.getGitHubPushPayloadByKey(downloadEventCommand.getBucketKey()));
+//            }
             if (SUBMIT_EVENT_COMMAND.equals(jCommander.getParsedCommand())) {
                 githubDeliveryS3Client.submitGitHubDeliveryEventsByKey(githubDeliveryConfig, submitEventCommand.getBucketKey());
             }
@@ -109,18 +111,31 @@ public class GithubDeliveryS3Client {
         }
 
     }
-    private PushPayload getGitHubDeliveryEventByKey(String key) throws IOException, NoSuchKeyException {
+    private String getObject(String key) throws IOException {
         GetObjectRequest objectRequest = GetObjectRequest
                 .builder()
                 .key(key)
                 .bucket(bucketName)
                 .build();
         ResponseInputStream<GetObjectResponse> object = s3Client.getObject(objectRequest);
-
+        return IOUtils.toString(object, StandardCharsets.UTF_8);
+    }
+    private PushPayload getGitHubPushPayloadByKey(String body, String key) throws IOException, NoSuchKeyException {
         try {
             PushPayload pushPayload;
-            pushPayload = MAPPER.readValue(IOUtils.toString(object, StandardCharsets.UTF_8), PushPayload.class);
+            pushPayload = MAPPER.readValue(body, PushPayload.class);
             return pushPayload;
+        } catch (JsonSyntaxException e) {
+            LOG.error("Could not read github event from key {}", key, e);
+            System.exit(1);
+        }
+        return null;
+    }
+    private InstallationRepositoriesPayload getGitHubInstallationRepositoriesPayloadByKey(String body, String key) throws IOException, NoSuchKeyException {
+        try {
+            InstallationRepositoriesPayload installationRepositoriesPayload;
+            installationRepositoriesPayload = MAPPER.readValue(body, InstallationRepositoriesPayload.class);
+            return installationRepositoriesPayload;
         } catch (JsonSyntaxException e) {
             LOG.error("Could not read github event from key {}", key, e);
             System.exit(1);
@@ -135,31 +150,30 @@ public class GithubDeliveryS3Client {
                 .prefix(date)
                 .build();
         ListObjectsV2Iterable listObjectsV2Iterable = s3Client.listObjectsV2Paginator(listObjectsV2Request);
-
         ApiClient apiClient = setupApiClient(config.getDockstoreConfig().serverUrl(), config.getDockstoreConfig().token());
-        WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
 
         for (ListObjectsV2Response response : listObjectsV2Iterable) {
             response.contents().forEach((S3Object event) -> {
-                try {
-                    String deliveryid = event.key().split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
-                    PushPayload body = getGitHubDeliveryEventByKey(event.key());
-                    workflowsApi.handleGitHubRelease(body, deliveryid);
-                } catch (IOException e) {
-                    LOG.error("Could not submit github event from key {}", event.key(), e);
-                    System.exit(1);
-                }
+                submitGitHubDeliveryEventsByKey(config, event.key());
             });
         }
     }
     private void submitGitHubDeliveryEventsByKey(GithubDeliveryConfig config, String key) {
         ApiClient apiClient = setupApiClient(config.getDockstoreConfig().serverUrl(), config.getDockstoreConfig().token());
         WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
+        String deliveryid = key.split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
         try {
-            String deliveryid = key.split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
-            PushPayload body = getGitHubDeliveryEventByKey(key);
-            System.out.println(body);
-            workflowsApi.handleGitHubRelease(body, deliveryid);
+            String body = getObject(key);
+            if (body.contains("\"action\":\"added\"") || body.contains("\"action\":\"removed\",")) {
+                InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
+                workflowsApi.handleGitHubInstallation(payload, deliveryid);
+            } else if (body.contains("\"deleted\":")){
+                PushPayload payload = getGitHubPushPayloadByKey(body, key);
+                workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
+            } else {
+                PushPayload payload = getGitHubPushPayloadByKey(body, key);
+                workflowsApi.handleGitHubRelease(payload, deliveryid);
+            }
         } catch (IOException e) {
             LOG.error("Could not submit github event from key {}", key, e);
             System.exit(1);
