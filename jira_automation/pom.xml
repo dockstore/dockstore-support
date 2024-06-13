@@ -20,11 +20,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
-
-    <!-- the following properties set sane defaults when no revision properties are set from the command-line -->
-    <revision>1.0</revision>
-    <changelist>.0-SNAPSHOT</changelist>
-
   </properties>
 
   <organization>
