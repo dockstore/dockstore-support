@@ -134,6 +134,7 @@ public class GithubDeliveryS3Client {
         try {
             InstallationRepositoriesPayload installationRepositoriesPayload;
             installationRepositoriesPayload = MAPPER.readValue(body, InstallationRepositoriesPayload.class);
+            System.out.println(installationRepositoriesPayload);
             return installationRepositoriesPayload;
         } catch (JsonSyntaxException e) {
             LOG.error("Could not read github event from key {}", key, e);
