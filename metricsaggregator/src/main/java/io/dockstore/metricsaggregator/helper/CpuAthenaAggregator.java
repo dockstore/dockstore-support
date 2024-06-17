@@ -7,7 +7,7 @@ import java.util.Optional;
 /**
  * Aggregate CPU metrics by calculating the min, average, max, and number of data points using AWS Athena.
  */
-public class CpuAthenaAggregator extends AthenaAggregator<CpuMetric> {
+public class CpuAthenaAggregator extends RunExecutionAthenaAggregator<CpuMetric> {
     public CpuAthenaAggregator() {
         super();
         this.addSelectFields(getStatisticSelectFields());

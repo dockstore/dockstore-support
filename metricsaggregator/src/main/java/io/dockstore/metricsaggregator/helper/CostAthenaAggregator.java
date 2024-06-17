@@ -7,7 +7,7 @@ import java.util.Optional;
 /**
  * Aggregate cost metrics by calculating the min, average, max, and number of data points using AWS Athena.
  */
-public class CostAthenaAggregator extends AthenaAggregator<CostMetric> {
+public class CostAthenaAggregator extends RunExecutionAthenaAggregator<CostMetric> {
     public CostAthenaAggregator() {
         super();
         this.addSelectFields(getStatisticSelectFields());

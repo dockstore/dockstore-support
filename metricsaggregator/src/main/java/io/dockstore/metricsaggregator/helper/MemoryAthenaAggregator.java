@@ -7,7 +7,7 @@ import java.util.Optional;
 /**
  * Aggregate memory metrics by calculating the min, average, max, and number of data points using AWS Athena.
  */
-public class MemoryAthenaAggregator extends AthenaAggregator<MemoryMetric> {
+public class MemoryAthenaAggregator extends RunExecutionAthenaAggregator<MemoryMetric> {
     public MemoryAthenaAggregator() {
         super();
         this.addSelectFields(getStatisticSelectFields());

@@ -19,7 +19,7 @@ import java.util.Set;
 import org.jooq.Field;
 import org.jooq.SelectField;
 
-public class ExecutionStatusAthenaAggregator extends AthenaAggregator<ExecutionStatusMetric> {
+public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregator<ExecutionStatusMetric> {
     // Aggregators used to calculate metrics by execution status
     private final ExecutionTimeAthenaAggregator executionTimeAggregator = new ExecutionTimeAthenaAggregator();
     private final CpuAthenaAggregator cpuAggregator = new CpuAthenaAggregator();
