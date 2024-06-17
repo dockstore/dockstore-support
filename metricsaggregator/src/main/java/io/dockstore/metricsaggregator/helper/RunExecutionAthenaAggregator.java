@@ -81,7 +81,7 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
                 // Sub-query that flattens the runexecutions array for the partition
                 .with("unnestedrunexecutions").as(
                         select(PLATFORM_FIELD, field("unnested.executionid"), field("unnested.dateexecuted"),
-                                field("unnested.executionstatus"), field("unnested.executiontime"), field("unnested.memoryrequirementsgb"),
+                                field("unnested.executionstatus"), field("unnested.executiontimeseconds"), field("unnested.memoryrequirementsgb"),
                                 field("unnested.cpurequirements"), field("unnested.cost"), field("unnested.region"), field("unnested.additionalproperties"))
                                 .from(table(tableName), unnest(field("runexecutions", String[].class)).as("t", "unnested"))
                                 .where(ENTITY_FIELD.eq(inline(partition.entity()))
