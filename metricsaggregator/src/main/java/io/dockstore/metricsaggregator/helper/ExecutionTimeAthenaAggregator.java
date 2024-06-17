@@ -6,17 +6,32 @@ import java.util.Optional;
 
 /**
  * Aggregate execution time metrics by calculating the min, average, max, and number of data points using AWS Athena.
- * TODO: Implement the executiontime aggregator. Dockstore records executiontime metrics as an ISO-8601 duration which does not translate well in SQL and Athena. We may need to re-evalute how we record this metric.
  */
 public class ExecutionTimeAthenaAggregator extends RunExecutionAthenaAggregator<ExecutionTimeMetric> {
 
+    public ExecutionTimeAthenaAggregator() {
+        super();
+        this.addSelectFields(getStatisticSelectFields());
+    }
+
     @Override
     public String getMetricColumnName() {
-        return "executiontime";
+        return "executiontimeseconds";
     }
 
     @Override
     public Optional<ExecutionTimeMetric> createMetricFromQueryResultRow(QueryResultRow queryResultRow) {
+        Optional<Double> min = getMinColumnValue(queryResultRow);
+        Optional<Double> avg = getAvgColumnValue(queryResultRow);
+        Optional<Double> max = getMaxColumnValue(queryResultRow);
+        Optional<Integer> numberOfDataPoints = getCountColumnValue(queryResultRow);
+        if (min.isPresent() && avg.isPresent() && max.isPresent() && numberOfDataPoints.isPresent()) {
+            return Optional.of(new ExecutionTimeMetric()
+                    .minimum(min.get())
+                    .average(avg.get())
+                    .maximum(max.get())
+                    .numberOfDataPointsForAverage(numberOfDataPoints.get()));
+        }
         return Optional.empty();
     }
 }
