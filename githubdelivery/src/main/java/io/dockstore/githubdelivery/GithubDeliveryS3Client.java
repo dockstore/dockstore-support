@@ -29,7 +29,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.common.S3ClientHelper;
-import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.DownloadEventCommand;
 import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitAllEventsCommand;
 import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitEventCommand;
 import io.dockstore.openapi.client.ApiClient;
@@ -53,7 +52,6 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 public class GithubDeliveryS3Client {
-    public static final String DOWNLOAD_EVENT_COMMAND = "download-event";
     public static final String SUBMIT_EVENT_COMMAND = "submit-event";
     public static final String SUBMIT_ALL_COMMAND = "submit-all";
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
@@ -69,10 +67,8 @@ public class GithubDeliveryS3Client {
     public static void main(String[] args) throws IOException {
         final GithubDeliveryCommandLineArgs commandLineArgs = new GithubDeliveryCommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
-        final DownloadEventCommand downloadEventCommand = new DownloadEventCommand();
         final SubmitEventCommand submitEventCommand = new SubmitEventCommand();
         final SubmitAllEventsCommand submitAllEventsCommand = new SubmitAllEventsCommand();
-        jCommander.addCommand(downloadEventCommand);
         jCommander.addCommand(submitEventCommand);
         jCommander.addCommand(submitAllEventsCommand);
 
@@ -97,10 +93,6 @@ public class GithubDeliveryS3Client {
             final INIConfiguration config = getConfiguration(commandLineArgs.getConfig());
             final GithubDeliveryConfig githubDeliveryConfig = new GithubDeliveryConfig(config);
             final GithubDeliveryS3Client githubDeliveryS3Client = new GithubDeliveryS3Client(githubDeliveryConfig.getS3Config().bucket());
-
-            //            if (DOWNLOAD_EVENT_COMMAND.equals(jCommander.getParsedCommand())) {
-            //                System.out.println(githubDeliveryS3Client.getGitHubPushPayloadByKey(downloadEventCommand.getBucketKey()));
-            //            }
             if (SUBMIT_EVENT_COMMAND.equals(jCommander.getParsedCommand())) {
                 githubDeliveryS3Client.submitGitHubDeliveryEventsByKey(githubDeliveryConfig, submitEventCommand.getBucketKey());
             }
@@ -134,7 +126,6 @@ public class GithubDeliveryS3Client {
         try {
             InstallationRepositoriesPayload installationRepositoriesPayload;
             installationRepositoriesPayload = MAPPER.readValue(body, InstallationRepositoriesPayload.class);
-            System.out.println(installationRepositoriesPayload.getAction());
             return installationRepositoriesPayload;
         } catch (JsonSyntaxException e) {
             LOG.error("Could not read github event from key {}", key, e);
@@ -150,8 +141,6 @@ public class GithubDeliveryS3Client {
                 .prefix(date)
                 .build();
         ListObjectsV2Iterable listObjectsV2Iterable = s3Client.listObjectsV2Paginator(listObjectsV2Request);
-        ApiClient apiClient = setupApiClient(config.getDockstoreConfig().serverUrl(), config.getDockstoreConfig().token());
-
         for (ListObjectsV2Response response : listObjectsV2Iterable) {
             response.contents().forEach((S3Object event) -> {
                 submitGitHubDeliveryEventsByKey(config, event.key());
@@ -164,16 +153,13 @@ public class GithubDeliveryS3Client {
         String deliveryid = key.split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
         try {
             String body = getObject(key);
-            System.out.println(body);
             if (body.contains("\"action\":\"added\"") || body.contains("\"action\":\"removed\"")) {
-                System.out.println("ins");
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
                 workflowsApi.handleGitHubInstallation(payload, deliveryid);
             } else if (body.contains("\"deleted\":true")) {
                 PushPayload payload = getGitHubPushPayloadByKey(body, key);
                 workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
             } else {
-                System.out.println("pay");
                 PushPayload payload = getGitHubPushPayloadByKey(body, key);
                 workflowsApi.handleGitHubRelease(payload, deliveryid);
             }
