@@ -7,6 +7,7 @@ import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.inline;
 
 import io.dockstore.common.metrics.ExecutionStatus;
+import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.MetricsByStatus;
@@ -21,17 +22,18 @@ import org.jooq.SelectField;
 
 public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregator<ExecutionStatusMetric> {
     // Aggregators used to calculate metrics by execution status
-    private final ExecutionTimeAthenaAggregator executionTimeAggregator = new ExecutionTimeAthenaAggregator();
-    private final CpuAthenaAggregator cpuAggregator = new CpuAthenaAggregator();
-    private final MemoryAthenaAggregator memoryAggregator = new MemoryAthenaAggregator();
-    private final CostAthenaAggregator costAggregator = new CostAthenaAggregator();
+    private final ExecutionTimeAthenaAggregator executionTimeAggregator = new ExecutionTimeAthenaAggregator(metricsAggregatorAthenaClient, tableName);
+    private final CpuAthenaAggregator cpuAggregator = new CpuAthenaAggregator(metricsAggregatorAthenaClient, tableName);
+    private final MemoryAthenaAggregator memoryAggregator = new MemoryAthenaAggregator(metricsAggregatorAthenaClient, tableName);
+    private final CostAthenaAggregator costAggregator = new CostAthenaAggregator(metricsAggregatorAthenaClient, tableName);
 
-    public ExecutionStatusAthenaAggregator() {
-        super();
+    public ExecutionStatusAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
+        super(metricsAggregatorAthenaClient, tableName);
         Field<?> executionStatusField = field(getMetricColumnName());
         Set<SelectField<?>> selectFields = new HashSet<>();
         selectFields.add(coalesce(executionStatusField, inline(ExecutionStatus.ALL.name())).as(getMetricColumnName()));
         selectFields.add(count(executionStatusField).as(getCountColumnName()));
+        selectFields.addAll(executionTimeAggregator.getSelectFields());
         selectFields.addAll(cpuAggregator.getSelectFields());
         selectFields.addAll(memoryAggregator.getSelectFields());
         selectFields.addAll(costAggregator.getSelectFields());
@@ -40,12 +42,12 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
     }
 
     @Override
-    public String getMetricColumnName() {
+    String getMetricColumnName() {
         return "executionstatus";
     }
 
     @Override
-    public Optional<ExecutionStatusMetric> createMetricFromQueryResultRow(QueryResultRow queryResultRow) {
+    Optional<ExecutionStatusMetric> createMetricFromQueryResultRow(QueryResultRow queryResultRow) {
         Optional<String> executionStatus = queryResultRow.getColumnValue(getMetricColumnName());
         Optional<Integer> executionStatusCount = getCountColumnValue(queryResultRow);
         if (executionStatus.isEmpty() || executionStatusCount.isEmpty()) {
@@ -63,7 +65,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
     }
 
     @Override
-    public Map<String, ExecutionStatusMetric> createMetricByPlatform(List<QueryResultRow> queryResultRows) {
+    protected Map<String, ExecutionStatusMetric> createMetricByPlatform(List<QueryResultRow> queryResultRows) {
         Map<String, ExecutionStatusMetric> metricsByPlatform = new HashMap<>();
         // Group query results by platform
         Map<String, List<QueryResultRow>> queryResultRowsByPlatform = queryResultRows.stream()

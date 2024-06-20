@@ -1,5 +1,6 @@
 package io.dockstore.metricsaggregator.helper;
 
+import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
 import java.util.Optional;
@@ -9,18 +10,18 @@ import java.util.Optional;
  */
 public class ExecutionTimeAthenaAggregator extends RunExecutionAthenaAggregator<ExecutionTimeMetric> {
 
-    public ExecutionTimeAthenaAggregator() {
-        super();
+    public ExecutionTimeAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
+        super(metricsAggregatorAthenaClient, tableName);
         this.addSelectFields(getStatisticSelectFields());
     }
 
     @Override
-    public String getMetricColumnName() {
+    String getMetricColumnName() {
         return "executiontimeseconds";
     }
 
     @Override
-    public Optional<ExecutionTimeMetric> createMetricFromQueryResultRow(QueryResultRow queryResultRow) {
+    Optional<ExecutionTimeMetric> createMetricFromQueryResultRow(QueryResultRow queryResultRow) {
         Optional<Double> min = getMinColumnValue(queryResultRow);
         Optional<Double> avg = getAvgColumnValue(queryResultRow);
         Optional<Double> max = getMaxColumnValue(queryResultRow);

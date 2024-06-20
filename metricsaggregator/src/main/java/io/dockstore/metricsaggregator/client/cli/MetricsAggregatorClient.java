@@ -160,6 +160,8 @@ public class MetricsAggregatorClient {
         } else {
             metricsAggregatorS3Client = new MetricsAggregatorS3Client(config.getS3Config().bucket(), config.getS3Config().endpointOverride());
         }
+        LOG.info("Aggregating metrics with {}. Submitting metrics to Dockstore is {}", aggregateMetricsCommand.isWithAthena() ? "AWS Athena" : "Java", skipPostingToDockstore ? "skipped" : "enabled");
+
         final Instant getDirectoriesStartTime = Instant.now();
         List<S3DirectoryInfo> s3DirectoriesToAggregate;
         if (trsIdsToAggregate == null || trsIdsToAggregate.isEmpty()) {

@@ -8,11 +8,13 @@ import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.max;
 import static org.jooq.impl.DSL.min;
+import static org.jooq.impl.DSL.name;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.table;
 import static org.jooq.impl.DSL.unnest;
 
 import io.dockstore.common.Partner;
+import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.AthenaTablePartition;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.Metric;
@@ -22,19 +24,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.jooq.CommonTableExpression;
 import org.jooq.Field;
+import org.jooq.Record7;
 import org.jooq.SQLDialect;
 import org.jooq.SelectField;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 
 public abstract class RunExecutionAthenaAggregator<M extends Metric> extends AthenaAggregator<M> {
+    private static final Field<String> EXECUTION_STATUS_FIELD = field("executionstatus", String.class);
+    private static final Field<Integer> EXECUTION_TIME_SECONDS_FIELD = field("executiontimeseconds", Integer.class);
+    private static final Field<Double> MEMORY_REQUIREMENTS_GB_FIELD = field("memoryrequirementsgb", Double.class);
+    private static final Field<Integer> CPU_REQUIREMENTS_FIELD = field("cpurequirements", Integer.class);
+    private static final Field<String> COST_FIELD = field("cost", String.class);
+
     // Fields for the SELECT clause
     private final Set<SelectField<?>> selectFields = new HashSet<>();
     // Fields for the GROUP BY clause
     private final Set<Field<?>> groupFields = new HashSet<>();
 
-    protected RunExecutionAthenaAggregator() {
+    protected RunExecutionAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
+        super(metricsAggregatorAthenaClient, tableName);
         // All queries will be grouped by platform at a minimum
         selectFields.add(coalesce(PLATFORM_FIELD, inline(Partner.ALL.name())).as(PLATFORM_FIELD.getName())); // Coalesce null platform values to "ALL"
         groupFields.add(PLATFORM_FIELD);
@@ -45,14 +56,14 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
      * @param queryResultRow
      * @return
      */
-    public abstract Optional<M> createMetricFromQueryResultRow(QueryResultRow queryResultRow);
+    abstract Optional<M> createMetricFromQueryResultRow(QueryResultRow queryResultRow);
 
     /**
      * Get the column name containing the metric.
      * Athena columns are lowercase, but if a non-lowercase column is provided (ex: camelCase), Athena automatically lowercases it.
      * @return
      */
-    public abstract String getMetricColumnName();
+    abstract String getMetricColumnName();
 
     public Set<SelectField<?>> getSelectFields() {
         return this.selectFields;
@@ -72,27 +83,58 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
 
     /**
      * Create the runexecutions query string using the SELECT and GROUP BY fields.
-     * @param tableName
+     *
      * @return
      */
     @Override
-    public String createQuery(String tableName, AthenaTablePartition partition) {
-        return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true))
-                // Sub-query that flattens the runexecutions array for the partition
-                .with("unnestedrunexecutions").as(
-                        select(PLATFORM_FIELD, field("unnested.executionid"), field("unnested.dateexecuted"),
-                                field("unnested.executionstatus"), field("unnested.executiontimeseconds"), field("unnested.memoryrequirementsgb"),
-                                field("unnested.cpurequirements"), field("unnested.cost"), field("unnested.region"), field("unnested.additionalproperties"))
-                                .from(table(tableName), unnest(field("runexecutions", String[].class)).as("t", "unnested"))
+    protected String createQuery(AthenaTablePartition partition) {
+        // Sub-query that flattens the runexecutions array for the partition
+        final CommonTableExpression<Record7<String, String, String, Integer, Double, Integer, String>> executionsTable = name("executions")
+                .fields(PLATFORM_FIELD.getName(), DATE_EXECUTED_FIELD.getName(), EXECUTION_STATUS_FIELD.getName(), EXECUTION_TIME_SECONDS_FIELD.getName(),
+                        MEMORY_REQUIREMENTS_GB_FIELD.getName(), CPU_REQUIREMENTS_FIELD.getName(), COST_FIELD.getName())
+                .as(select(PLATFORM_FIELD,
+                        field("unnested." + DATE_EXECUTED_FIELD, String.class),
+                        field("unnested." + EXECUTION_STATUS_FIELD, String.class),
+                        field("unnested." + EXECUTION_TIME_SECONDS_FIELD, Integer.class),
+                        field("unnested." + MEMORY_REQUIREMENTS_GB_FIELD, Double.class),
+                        field("unnested." + CPU_REQUIREMENTS_FIELD, Integer.class),
+                        field("unnested." + COST_FIELD, String.class))
+                        .from(table(tableName), unnest(field("runexecutions", String[].class)).as("t", "unnested"))
+                        .where(ENTITY_FIELD.eq(inline(partition.entity()))
+                                .and(REGISTRY_FIELD.eq(inline(partition.registry())))
+                                .and(ORG_FIELD.eq(inline(partition.org())))
+                                .and(NAME_FIELD.eq(inline(partition.name())))
+                                .and(VERSION_FIELD.eq(inline(partition.version())))));
+        // This query created a workflow execution from each array of tasks. This will be unioned with the actual workflow executions submitted
+        final CommonTableExpression<Record7<String, String, String, Integer, Double, Integer, String>> runExecutionsFromTasksTable = name("runexecutionfromtasks")
+                .fields(PLATFORM_FIELD.getName(), DATE_EXECUTED_FIELD.getName(), EXECUTION_STATUS_FIELD.getName(), EXECUTION_TIME_SECONDS_FIELD.getName(),
+                        MEMORY_REQUIREMENTS_GB_FIELD.getName(), CPU_REQUIREMENTS_FIELD.getName(), COST_FIELD.getName())
+                .as(select(PLATFORM_FIELD,
+                        field("array_min(transform(taskexecutions, t -> t.dateexecuted))", String.class).as(DATE_EXECUTED_FIELD),
+                        // If all tasks are successful, set the workflow execution status as successful. Otherwise, assume failed
+                        field("case when all_match(transform(taskexecutions, t -> t.executionstatus), t -> t = 'SUCCESSFUL') then 'SUCCESSFUL' else 'FAILED' end", String.class).as(EXECUTION_STATUS_FIELD),
+                        field("array_max(transform(taskexecutions, t -> t.executiontimeseconds))", Integer.class).as(EXECUTION_TIME_SECONDS_FIELD),
+                        field("array_max(transform(taskexecutions, t -> t.memoryrequirementsgb))", Double.class).as(MEMORY_REQUIREMENTS_GB_FIELD),
+                        field("array_max(transform(taskexecutions, t -> t.cpurequirements))", Integer.class).as(CPU_REQUIREMENTS_FIELD),
+                        field("array_max(transform(taskexecutions, t -> t.cost))", String.class).as(COST_FIELD))
+                        .from(select(PLATFORM_FIELD, field("unnested.taskexecutions"))
+                                .from(table(tableName), unnest(field("taskexecutions", String[].class)).as("t", "unnested"))
                                 .where(ENTITY_FIELD.eq(inline(partition.entity()))
                                         .and(REGISTRY_FIELD.eq(inline(partition.registry())))
                                         .and(ORG_FIELD.eq(inline(partition.org())))
                                         .and(NAME_FIELD.eq(inline(partition.name())))
                                         .and(VERSION_FIELD.eq(inline(partition.version()))))
-                )
+                        ));
+
+        return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true))
+                // Sub-query that flattens the runexecutions array for the partition
+                .with(executionsTable)
+                .with(runExecutionsFromTasksTable)
                 // Main query that uses the results of the subquery
                 .select(this.selectFields)
-                .from(table("unnestedrunexecutions"))
+                .from(select().from(executionsTable)
+                        .unionAll(select().from(runExecutionsFromTasksTable))
+                )
                 .groupBy(cube(this.groupFields.toArray(Field[]::new))) // CUBE generates sub-totals for all combinations of the GROUP BY columns.
                 .getSQL();
     }
@@ -103,7 +145,7 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
      * @return
      */
     @Override
-    public Map<String, M> createMetricByPlatform(List<QueryResultRow> queryResultRows) {
+    protected Map<String, M> createMetricByPlatform(List<QueryResultRow> queryResultRows) {
         Map<String, M> metricByPlatform = new HashMap<>();
         queryResultRows.forEach(queryResultRow -> {
             Optional<String> platform = getPlatformFromQueryResultRow(queryResultRow);
@@ -120,46 +162,46 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
      *
      * @return
      */
-    public Set<SelectField<?>> getStatisticSelectFields() {
+    protected Set<SelectField<?>> getStatisticSelectFields() {
         return Set.of(min(field(getMetricColumnName())).as(getMinColumnName()),
                 avg(field(getMetricColumnName(), Double.class)).as(getAvgColumnName()),
                 max(field(getMetricColumnName())).as(getMaxColumnName()),
                 count(field(getMetricColumnName())).as(getCountColumnName()));
     }
 
-    public String substitutePeriodsForUnderscores(String columnName) {
+    protected String substitutePeriodsForUnderscores(String columnName) {
         return columnName.replace(".", "_");
     }
 
-    public String getMinColumnName() {
+    protected String getMinColumnName() {
         return "min_" + substitutePeriodsForUnderscores(getMetricColumnName());
     }
 
-    public String getAvgColumnName() {
+    protected String getAvgColumnName() {
         return "avg_" + substitutePeriodsForUnderscores(getMetricColumnName());
     }
 
-    public String getMaxColumnName() {
+    protected String getMaxColumnName() {
         return "max_" + substitutePeriodsForUnderscores(getMetricColumnName());
     }
 
-    public String getCountColumnName() {
+    protected String getCountColumnName() {
         return "count_" + substitutePeriodsForUnderscores(getMetricColumnName());
     }
 
-    public Optional<Double> getMinColumnValue(QueryResultRow queryResultRow) {
+    protected Optional<Double> getMinColumnValue(QueryResultRow queryResultRow) {
         return queryResultRow.getColumnValue(getMinColumnName()).map(Double::valueOf);
     }
 
-    public Optional<Double> getAvgColumnValue(QueryResultRow queryResultRow) {
+    protected Optional<Double> getAvgColumnValue(QueryResultRow queryResultRow) {
         return queryResultRow.getColumnValue(getAvgColumnName()).map(Double::valueOf);
     }
 
-    public Optional<Double> getMaxColumnValue(QueryResultRow queryResultRow) {
+    protected Optional<Double> getMaxColumnValue(QueryResultRow queryResultRow) {
         return queryResultRow.getColumnValue(getMaxColumnName()).map(Double::valueOf);
     }
 
-    public Optional<Integer> getCountColumnValue(QueryResultRow queryResultRow) {
+    protected Optional<Integer> getCountColumnValue(QueryResultRow queryResultRow) {
         Optional<Integer> countColumnValue = queryResultRow.getColumnValue(getCountColumnName()).map(Integer::valueOf);
         if (countColumnValue.isPresent() && countColumnValue.get() == 0) { // There were 0 non-null column values
             return Optional.empty();
