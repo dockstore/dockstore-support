@@ -27,11 +27,13 @@ import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.common.S3ClientHelper;
 import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitAllEventsCommand;
 import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitEventCommand;
 import io.dockstore.openapi.client.ApiClient;
+import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.InstallationRepositoriesPayload;
 import io.dockstore.openapi.client.model.PushPayload;
@@ -94,10 +96,14 @@ public class GithubDeliveryS3Client {
             final GithubDeliveryConfig githubDeliveryConfig = new GithubDeliveryConfig(config);
             final GithubDeliveryS3Client githubDeliveryS3Client = new GithubDeliveryS3Client(githubDeliveryConfig.getS3Config().bucket());
             if (SUBMIT_EVENT_COMMAND.equals(jCommander.getParsedCommand())) {
-                githubDeliveryS3Client.submitGitHubDeliveryEventsByKey(githubDeliveryConfig, submitEventCommand.getBucketKey());
+                ApiClient apiClient = setupApiClient(githubDeliveryConfig.getDockstoreConfig().serverUrl(), githubDeliveryConfig.getDockstoreConfig().token());
+                WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
+                githubDeliveryS3Client.submitGitHubDeliveryEventsByKey(submitEventCommand.getBucketKey(), workflowsApi);
             }
             if (SUBMIT_ALL_COMMAND.equals(jCommander.getParsedCommand())) {
-                githubDeliveryS3Client.submitGitHubDeliveryEventsByDate(githubDeliveryConfig, submitAllEventsCommand.getDate());
+                ApiClient apiClient = setupApiClient(githubDeliveryConfig.getDockstoreConfig().serverUrl(), githubDeliveryConfig.getDockstoreConfig().token());
+                WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
+                githubDeliveryS3Client.submitGitHubDeliveryEventsByDate(submitAllEventsCommand.getDate(), workflowsApi);
             }
         }
 
@@ -115,10 +121,12 @@ public class GithubDeliveryS3Client {
         try {
             PushPayload pushPayload;
             pushPayload = MAPPER.readValue(body, PushPayload.class);
+            if (pushPayload == null) {
+                LOG.error("Could not read github event from key {}", key);
+            }
             return pushPayload;
         } catch (JsonSyntaxException e) {
-            LOG.error("Could not read github event from key {}", key, e);
-            System.exit(1);
+            exceptionMessage(e, String.format("Could not read github event from key %s", key), 1);
         }
         return null;
     }
@@ -128,12 +136,11 @@ public class GithubDeliveryS3Client {
             installationRepositoriesPayload = MAPPER.readValue(body, InstallationRepositoriesPayload.class);
             return installationRepositoriesPayload;
         } catch (JsonSyntaxException e) {
-            LOG.error("Could not read github event from key {}", key, e);
-            System.exit(1);
+            exceptionMessage(e, String.format("Could not read github event from key %s", key), 1);
         }
         return null;
     }
-    private void submitGitHubDeliveryEventsByDate(GithubDeliveryConfig config, String date) {
+    private void submitGitHubDeliveryEventsByDate(String date, WorkflowsApi workflowsApi) {
 
         ListObjectsV2Request listObjectsV2Request = ListObjectsV2Request
                 .builder()
@@ -143,29 +150,42 @@ public class GithubDeliveryS3Client {
         ListObjectsV2Iterable listObjectsV2Iterable = s3Client.listObjectsV2Paginator(listObjectsV2Request);
         for (ListObjectsV2Response response : listObjectsV2Iterable) {
             response.contents().forEach((S3Object event) -> {
-                submitGitHubDeliveryEventsByKey(config, event.key());
+                submitGitHubDeliveryEventsByKey(event.key(), workflowsApi);
             });
         }
+        LOG.info("Successfully submitted events for date {}", date);
     }
-    private void submitGitHubDeliveryEventsByKey(GithubDeliveryConfig config, String key) {
-        ApiClient apiClient = setupApiClient(config.getDockstoreConfig().serverUrl(), config.getDockstoreConfig().token());
-        WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
+    private void submitGitHubDeliveryEventsByKey(String key, WorkflowsApi workflowsApi) {
         String deliveryid = key.split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
         try {
             String body = getObject(key);
-            if (body.contains("\"action\":\"added\"") || body.contains("\"action\":\"removed\"")) {
+            JsonObject jsonObject = MAPPER.readValue(body, JsonObject.class);
+            if (jsonObject.get("action").getAsString().equals("added") || jsonObject.get("action").getAsString().equals("removed")){
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
-                workflowsApi.handleGitHubInstallation(payload, deliveryid);
-            } else if (body.contains("\"deleted\":true")) {
+                if (payload != null) {
+                    workflowsApi.handleGitHubInstallation(payload, deliveryid);
+                } else {
+                    LOG.error("Could not read github event from key {}", key);
+                }
+
+            } else if (jsonObject.get("deleted").getAsBoolean()) {
                 PushPayload payload = getGitHubPushPayloadByKey(body, key);
-                workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
+                if (payload != null) {
+                    workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
+                } else {
+                    LOG.error("Could not read github event from key {}", key);
+                }
             } else {
                 PushPayload payload = getGitHubPushPayloadByKey(body, key);
-                workflowsApi.handleGitHubRelease(payload, deliveryid);
+                if (payload != null) {
+                    workflowsApi.handleGitHubRelease(payload, deliveryid);
+                } else {
+                    LOG.error("Could not read github event from key {}", key);
+                }
             }
-        } catch (IOException e) {
-            LOG.error("Could not submit github event from key {}", key, e);
-            System.exit(1);
+            LOG.info("Successfully submitted events for key {}", key);
+        } catch (ApiException | IOException e) {
+            exceptionMessage(e, String.format("Could not submit github event from key %s", key), 1);
         }
     }
 }
