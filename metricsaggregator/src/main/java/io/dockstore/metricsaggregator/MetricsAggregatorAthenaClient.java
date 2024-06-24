@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jooq.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.athena.AthenaClient;
 import software.amazon.awssdk.services.athena.model.ColumnInfo;
 import software.amazon.awssdk.services.athena.model.Datum;
@@ -104,10 +106,10 @@ public class MetricsAggregatorAthenaClient {
      * @param query
      * @return
      */
-    public List<QueryResultRow> executeQuery(String query) throws Exception {
+    public List<QueryResultRow> executeQuery(String query) throws AwsServiceException, SdkClientException, InterruptedException {
         List<QueryResultRow> queryResultRows = new ArrayList<>();
 
-        //LOG.info("Running SQL query:\n{}", query);
+        LOG.debug("Running SQL query:\n{}", query);
         GetQueryResultsIterable getQueryResultsIterable = AthenaClientHelper.executeQuery(athenaClient, databaseName, outputS3Bucket, query);
         Map<String, Integer> columnNameToColumnIndex = new HashMap<>();
 

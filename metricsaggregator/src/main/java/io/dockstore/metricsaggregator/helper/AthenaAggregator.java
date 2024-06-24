@@ -23,6 +23,8 @@ import java.util.stream.Stream;
 import org.jooq.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.exception.SdkClientException;
 
 /**
  * An abstract class that helps create SQL statements to aggregate metrics that are executed by AWS Athena.
@@ -64,7 +66,7 @@ public abstract class AthenaAggregator<M extends Metric> {
         List<QueryResultRow> queryResultRows;
         try {
             queryResultRows = metricsAggregatorAthenaClient.executeQuery(createQuery(partition));
-        } catch (Exception e) {
+        } catch (AwsServiceException | SdkClientException | InterruptedException e) {
             LOG.error("Could not execute query for partition {}", partition, e);
             return Map.of();
         }
@@ -91,7 +93,7 @@ public abstract class AthenaAggregator<M extends Metric> {
         final String query = String.format("CREATE DATABASE IF NOT EXISTS %s;", databaseName);
         try {
             metricsAggregatorAthenaClient.executeQuery(query);
-        } catch (Exception e) {
+        } catch (AwsServiceException | SdkClientException | InterruptedException e) {
             exceptionMessage(e, "Could not execute query to create Athena database", GENERIC_ERROR);
         }
     }
@@ -105,7 +107,7 @@ public abstract class AthenaAggregator<M extends Metric> {
         LOG.info("Dropping table: {}", tableName);
         try {
             metricsAggregatorAthenaClient.executeQuery(String.format("DROP TABLE IF EXISTS %s;", tableName));
-        } catch (Exception e) {
+        } catch (AwsServiceException | SdkClientException | InterruptedException e) {
             exceptionMessage(e, "Could not execute query to drop Athena table", GENERIC_ERROR);
         }
 
@@ -188,7 +190,7 @@ public abstract class AthenaAggregator<M extends Metric> {
 
         try {
             metricsAggregatorAthenaClient.executeQuery(query);
-        } catch (Exception e) {
+        } catch (AwsServiceException | SdkClientException | InterruptedException e) {
             exceptionMessage(e, "Could not execute query to create Athena table", GENERIC_ERROR);
         }
     }
