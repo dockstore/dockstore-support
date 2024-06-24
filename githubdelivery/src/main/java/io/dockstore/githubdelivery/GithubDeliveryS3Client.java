@@ -160,7 +160,7 @@ public class GithubDeliveryS3Client {
         try {
             String body = getObject(key);
             JsonObject jsonObject = MAPPER.readValue(body, JsonObject.class);
-            if (jsonObject.get("action").getAsString().equals("added") || jsonObject.get("action").getAsString().equals("removed")){
+            if (jsonObject.get("action").getAsString().equals("added") || jsonObject.get("action").getAsString().equals("removed")) {
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
                 if (payload != null) {
                     workflowsApi.handleGitHubInstallation(payload, deliveryid);
