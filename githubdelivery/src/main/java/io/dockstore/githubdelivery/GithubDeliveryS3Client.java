@@ -27,6 +27,7 @@ import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.common.S3ClientHelper;
@@ -54,6 +55,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 public class GithubDeliveryS3Client {
+    public static final Gson GSON = new Gson();
     public static final String SUBMIT_EVENT_COMMAND = "submit-event";
     public static final String SUBMIT_ALL_COMMAND = "submit-all";
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
@@ -159,7 +161,7 @@ public class GithubDeliveryS3Client {
         String deliveryid = key.split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
         try {
             String body = getObject(key);
-            JsonObject jsonObject = MAPPER.readValue(body, JsonObject.class);
+            JsonObject jsonObject = GSON.fromJson(body, JsonObject.class);
             System.out.println(jsonObject);
             if (jsonObject.get("action").getAsString().equals("added") || jsonObject.get("action").getAsString().equals("removed")) {
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
