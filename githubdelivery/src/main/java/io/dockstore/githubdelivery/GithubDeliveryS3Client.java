@@ -122,7 +122,7 @@ public class GithubDeliveryS3Client {
             PushPayload pushPayload;
             pushPayload = MAPPER.readValue(body, PushPayload.class);
             if (pushPayload == null) {
-                LOG.error("Could not read github event from key {}", key);
+                logReadError(key);
             }
             return pushPayload;
         } catch (JsonSyntaxException e) {
@@ -160,12 +160,13 @@ public class GithubDeliveryS3Client {
         try {
             String body = getObject(key);
             JsonObject jsonObject = MAPPER.readValue(body, JsonObject.class);
+            System.out.println(jsonObject);
             if (jsonObject.get("action").getAsString().equals("added") || jsonObject.get("action").getAsString().equals("removed")) {
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
                 if (payload != null) {
                     workflowsApi.handleGitHubInstallation(payload, deliveryid);
                 } else {
-                    LOG.error("Could not read github event from key {}", key);
+                    logReadError(key);
                 }
 
             } else if (jsonObject.get("deleted").getAsBoolean()) {
@@ -173,19 +174,22 @@ public class GithubDeliveryS3Client {
                 if (payload != null) {
                     workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
                 } else {
-                    LOG.error("Could not read github event from key {}", key);
+                    logReadError(key);
                 }
             } else {
                 PushPayload payload = getGitHubPushPayloadByKey(body, key);
                 if (payload != null) {
                     workflowsApi.handleGitHubRelease(payload, deliveryid);
                 } else {
-                    LOG.error("Could not read github event from key {}", key);
+                    logReadError(key);
                 }
             }
             LOG.info("Successfully submitted events for key {}", key);
         } catch (ApiException | IOException e) {
             exceptionMessage(e, String.format("Could not submit github event from key %s", key), 1);
         }
+    }
+    private void logReadError(String key) {
+        LOG.error("Could not read github event from key {}", key);
     }
 }
