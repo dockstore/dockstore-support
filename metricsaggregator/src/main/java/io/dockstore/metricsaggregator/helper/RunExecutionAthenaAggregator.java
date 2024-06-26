@@ -33,11 +33,11 @@ import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 
 public abstract class RunExecutionAthenaAggregator<M extends Metric> extends AthenaAggregator<M> {
-    private static final Field<String> EXECUTION_STATUS_FIELD = field("executionstatus", String.class);
-    private static final Field<Integer> EXECUTION_TIME_SECONDS_FIELD = field("executiontimeseconds", Integer.class);
-    private static final Field<Double> MEMORY_REQUIREMENTS_GB_FIELD = field("memoryrequirementsgb", Double.class);
-    private static final Field<Integer> CPU_REQUIREMENTS_FIELD = field("cpurequirements", Integer.class);
-    private static final Field<String> COST_FIELD = field("cost", String.class);
+    protected static final Field<String> EXECUTION_STATUS_FIELD = field("executionstatus", String.class);
+    protected static final Field<Integer> EXECUTION_TIME_SECONDS_FIELD = field("executiontimeseconds", Integer.class);
+    protected static final Field<Double> MEMORY_REQUIREMENTS_GB_FIELD = field("memoryrequirementsgb", Double.class);
+    protected static final Field<Integer> CPU_REQUIREMENTS_FIELD = field("cpurequirements", Integer.class);
+    protected static final Field<String> COST_FIELD = field("cost", String.class);
 
     // Fields for the SELECT clause
     private final Set<SelectField<?>> selectFields = new HashSet<>();

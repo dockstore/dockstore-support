@@ -16,7 +16,7 @@ public class CpuAthenaAggregator extends RunExecutionAthenaAggregator<CpuMetric>
 
     @Override
     String getMetricColumnName() {
-        return "cpurequirements";
+        return CPU_REQUIREMENTS_FIELD.getName();
     }
 
     @Override

@@ -43,7 +43,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
 
     @Override
     String getMetricColumnName() {
-        return "executionstatus";
+        return EXECUTION_STATUS_FIELD.getName();
     }
 
     @Override

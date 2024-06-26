@@ -16,7 +16,7 @@ public class CostAthenaAggregator extends RunExecutionAthenaAggregator<CostMetri
 
     @Override
     String getMetricColumnName() {
-        return "cost.value";
+        return COST_FIELD.getName() + ".value"; // Only aggregate the cost values
     }
 
     @Override

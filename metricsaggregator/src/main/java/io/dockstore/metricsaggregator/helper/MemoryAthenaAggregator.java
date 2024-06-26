@@ -16,7 +16,7 @@ public class MemoryAthenaAggregator extends RunExecutionAthenaAggregator<MemoryM
 
     @Override
     String getMetricColumnName() {
-        return "memoryrequirementsgb";
+        return MEMORY_REQUIREMENTS_GB_FIELD.getName();
     }
 
     @Override

@@ -17,7 +17,7 @@ public class ExecutionTimeAthenaAggregator extends RunExecutionAthenaAggregator<
 
     @Override
     String getMetricColumnName() {
-        return "executiontimeseconds";
+        return EXECUTION_TIME_SECONDS_FIELD.getName();
     }
 
     @Override
