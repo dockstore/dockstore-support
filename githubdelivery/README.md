@@ -81,6 +81,14 @@ Usage: <main class> [options] [command] [command options]
 `java -jar target/githubdelivery-*-SNAPSHOT.jar submit-all --date <date>`
 ```
 
+### submit-hourly
+
+**Using the default configuration file path:**
+
+```
+`java -jar target/githubdelivery-*-SNAPSHOT.jar submit-hourly --date <date> --hour <hour>`
+```
+
 **Using a custom configuration file path:**
 
-`java -jar target/githubdelivery-*-SNAPSHOT.jar submit-all --config my-custom-config --date <date>`
+`java -jar target/githubdelivery-*-SNAPSHOT.jar submit-hourly --config my-custom-config --date <date> --hour <hour>`

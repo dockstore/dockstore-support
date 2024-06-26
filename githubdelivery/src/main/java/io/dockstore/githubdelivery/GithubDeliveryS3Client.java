@@ -32,6 +32,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.common.S3ClientHelper;
 import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitAllEventsCommand;
+import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitAllHourlyEventsCommand;
 import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitEventCommand;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.ApiException;
@@ -58,6 +59,7 @@ public class GithubDeliveryS3Client {
     public static final Gson GSON = new Gson();
     public static final String SUBMIT_EVENT_COMMAND = "submit-event";
     public static final String SUBMIT_ALL_COMMAND = "submit-all";
+    public static final String SUBMIT_HOURLY_COMMAND = "submit-hourly";
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private final S3Client s3Client;
@@ -73,8 +75,10 @@ public class GithubDeliveryS3Client {
         final JCommander jCommander = new JCommander(commandLineArgs);
         final SubmitEventCommand submitEventCommand = new SubmitEventCommand();
         final SubmitAllEventsCommand submitAllEventsCommand = new SubmitAllEventsCommand();
+        final SubmitAllHourlyEventsCommand submitAllHourlyEventsCommand = new SubmitAllHourlyEventsCommand();
         jCommander.addCommand(submitEventCommand);
         jCommander.addCommand(submitAllEventsCommand);
+        jCommander.addCommand(submitAllHourlyEventsCommand);
 
         try {
             jCommander.parse(args);
@@ -106,6 +110,11 @@ public class GithubDeliveryS3Client {
                 ApiClient apiClient = setupApiClient(githubDeliveryConfig.getDockstoreConfig().serverUrl(), githubDeliveryConfig.getDockstoreConfig().token());
                 WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
                 githubDeliveryS3Client.submitGitHubDeliveryEventsByDate(submitAllEventsCommand.getDate(), workflowsApi);
+            }
+            if (SUBMIT_HOURLY_COMMAND.equals(jCommander.getParsedCommand())) {
+                ApiClient apiClient = setupApiClient(githubDeliveryConfig.getDockstoreConfig().serverUrl(), githubDeliveryConfig.getDockstoreConfig().token());
+                WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
+                githubDeliveryS3Client.submitGitHubDeliveryEventsByHour(submitAllHourlyEventsCommand.getDate(), submitAllHourlyEventsCommand.getHour(), workflowsApi);
             }
         }
 
@@ -157,12 +166,24 @@ public class GithubDeliveryS3Client {
         }
         LOG.info("Successfully submitted events for date {}", date);
     }
+    private void submitGitHubDeliveryEventsByHour(String date, String hour, WorkflowsApi workflowsApi) {
+        ListObjectsV2Request listObjectsV2Request = ListObjectsV2Request
+                .builder()
+                .bucket(bucketName)
+                .prefix(date + "/" + hour)
+                .build();
+        ListObjectsV2Iterable listObjectsV2Iterable = s3Client.listObjectsV2Paginator(listObjectsV2Request);
+        for (ListObjectsV2Response response : listObjectsV2Iterable) {
+            response.contents().forEach((S3Object event) -> {
+                submitGitHubDeliveryEventsByKey(event.key(), workflowsApi);
+            });
+        }
+    }
     private void submitGitHubDeliveryEventsByKey(String key, WorkflowsApi workflowsApi) {
         String deliveryid = key.split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
         try {
             String body = getObject(key);
             JsonObject jsonObject = GSON.fromJson(body, JsonObject.class);
-            System.out.println(jsonObject);
             if (jsonObject.get("action").getAsString().equals("added") || jsonObject.get("action").getAsString().equals("removed")) {
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
                 if (payload != null) {
@@ -187,8 +208,10 @@ public class GithubDeliveryS3Client {
                 }
             }
             LOG.info("Successfully submitted events for key {}", key);
-        } catch (ApiException | IOException e) {
+        } catch (IOException e) {
             exceptionMessage(e, String.format("Could not submit github event from key %s", key), 1);
+        } catch (ApiException e) {
+            LOG.error("Could not submit github event from key {}", key, e);
         }
     }
     private void logReadError(String key) {

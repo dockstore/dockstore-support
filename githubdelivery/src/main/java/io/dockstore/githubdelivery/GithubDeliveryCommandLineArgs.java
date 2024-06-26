@@ -55,4 +55,28 @@ public class GithubDeliveryCommandLineArgs {
             return date;
         }
     }
+    @Parameters(commandNames = { "submit-hour" }, commandDescription = "Submit all github events from S3 bucket from a specific date and hour to the webservice.")
+    public static class SubmitAllHourlyEventsCommand {
+
+        @Parameter(names = {"-c", "--config"}, description = "The config file path.")
+        private File config = new File("./" + DEFAULT_CONFIG_FILE_NAME);
+
+        @Parameter(names = {"-d", "--date"}, description = "Desired date. Format should be YYYY-MM-DD")
+        private String date;
+
+        @Parameter(names = {"-h", "--hour"}, description = "All events from this hour. Format should be HH")
+        private String hour;
+
+        public File getConfig() {
+            return config;
+        }
+
+        public String getDate() {
+            return date;
+        }
+
+        public String getHour() {
+            return hour;
+        }
+    }
 }
