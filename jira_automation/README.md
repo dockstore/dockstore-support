@@ -13,8 +13,8 @@ a configuration issue again, it could be useful in the future.
 
 # Auth
 
-* ResolutionChecker and MilestoneCheck require environment variable `GITHUB_TOKEN` be set to a GitHub personal access token.
-* SprintStart requires the environment variable `JIRA_TOKEN` be set to a JIRA token.
+* ResolutionChecker, MilestoneChecker, and MilestoneResolver require the environment variable `GITHUB_TOKEN` be set to a GitHub personal access token that has access to dockstore GitHub issues
+* SprintStart and MilestoneResolver require the environment variable `JIRA_TOKEN` be set to a JIRA token.
 
 # Usage
 
@@ -24,6 +24,6 @@ I usually run in IntelliJ with a Run Configuration
 2. Add the environment variable `GITHUB_TOKEN` to your GitHub token.
 3. For MilestoneResolver, you also need to set these environment variables:
     * `JIRA_USERNAME` to your JIRA user, e.g., jdoe@ucsc.edu
-    * `JIRA_TOKEN` to a your JIRA token
-3. The console will print out generated queries, which you then paste into your browser.
+    * `JIRA_TOKEN` to your JIRA token
+3. The console will print out generated urls, which you then paste into your browser.
 
