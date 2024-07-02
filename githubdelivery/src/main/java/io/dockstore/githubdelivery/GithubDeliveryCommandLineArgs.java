@@ -28,7 +28,7 @@ public class GithubDeliveryCommandLineArgs {
         @Parameter(names = {"-c", "--config"}, description = "The config file path.")
         private File config = new File("./" + DEFAULT_CONFIG_FILE_NAME);
 
-        @Parameter(names = {"-k", "--key"}, description = "The key of the event in bucket. Format should be YYYY-MM-DD/deliveryid")
+        @Parameter(names = {"-k", "--key"}, description = "The key of the event in bucket. Format should be YYYY-MM-DD/HH/deliveryid")
         private String bucketKey;
 
         public File getConfig() {
