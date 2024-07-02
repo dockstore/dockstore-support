@@ -38,10 +38,13 @@ Read [this](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/cred
 ```
 Usage: <main class> [options] [command] [command options]
   Options:
+    -c, --config
+      The config file path.
+      Default: ./github-delivery.config
     --help
       Prints help for githubdelivery
   Commands:
-    submit-event    Submit a github event from S3 bucket using its key to 
+    submit-event      Submit a github event from S3 bucket using its key to 
             the webservice.
       Usage: submit-event [options]
         Options:
@@ -50,7 +53,7 @@ Usage: <main class> [options] [command] [command options]
             Default: ./github-delivery.config
           -k, --key
             The key of the event in bucket. Format should be 
-            YYYY-MM-DD/deliveryid 
+            YYYY-MM-DD/HH/deliveryid 
 
     submit-all      Submit all github events from S3 bucket from a specific 
             date to the webservice.
@@ -61,6 +64,17 @@ Usage: <main class> [options] [command] [command options]
             Default: ./github-delivery.config
           -d, --date
             All events from the date. Format should be YYYY-MM-DD
+
+    submit-hourly      Submit all github events from S3 bucket from a specific 
+            date and hour to the webservice.
+      Usage: submit-hourly [options]
+        Options:
+          -c, --config
+            The config file path.
+            Default: ./github-delivery.config
+          -k, --key
+            Desired date and hour. Format should be YYYY-MM-DD/HH
+
 ```
 
 ### submit-event
@@ -86,9 +100,9 @@ Usage: <main class> [options] [command] [command options]
 **Using the default configuration file path:**
 
 ```
-`java -jar target/githubdelivery-*-SNAPSHOT.jar submit-hourly --date <date> --hour <hour>`
+`java -jar target/githubdelivery-*-SNAPSHOT.jar submit-hourly --key <key prefix>`
 ```
 
 **Using a custom configuration file path:**
 
-`java -jar target/githubdelivery-*-SNAPSHOT.jar submit-hourly --config my-custom-config --date <date> --hour <hour>`
+`java -jar target/githubdelivery-*-SNAPSHOT.jar submit-hourly --config my-custom-config --key <key prefix>`
