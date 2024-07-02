@@ -175,6 +175,7 @@ public class GithubDeliveryS3Client {
         ListObjectsV2Iterable listObjectsV2Iterable = s3Client.listObjectsV2Paginator(listObjectsV2Request);
         for (ListObjectsV2Response response : listObjectsV2Iterable) {
             response.contents().forEach((S3Object event) -> {
+                System.out.println(event);
                 submitGitHubDeliveryEventsByKey(event.key(), workflowsApi);
             });
         }
