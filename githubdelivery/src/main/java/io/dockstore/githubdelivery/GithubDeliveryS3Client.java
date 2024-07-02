@@ -167,6 +167,7 @@ public class GithubDeliveryS3Client {
         LOG.info("Successfully submitted events for date {}", date);
     }
     private void submitGitHubDeliveryEventsByHour(String prefix, WorkflowsApi workflowsApi) {
+        System.out.println("hi");
         ListObjectsV2Request listObjectsV2Request = ListObjectsV2Request
                 .builder()
                 .bucket(bucketName)
