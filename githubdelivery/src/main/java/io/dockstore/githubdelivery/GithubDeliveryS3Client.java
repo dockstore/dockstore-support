@@ -181,7 +181,7 @@ public class GithubDeliveryS3Client {
         LOG.info("Successfully submitted events for date/hour {}", prefix);
     }
     private void submitGitHubDeliveryEventsByKey(String key, WorkflowsApi workflowsApi) {
-        String deliveryid = key.split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
+        String deliveryid = key.split("/")[2]; //since key is in YYYY-MM-DD/HH/deliveryid format
         try {
             String body = getObject(key);
             JsonObject jsonObject = GSON.fromJson(body, JsonObject.class);
