@@ -167,7 +167,6 @@ public class GithubDeliveryS3Client {
         LOG.info("Successfully submitted events for date {}", date);
     }
     private void submitGitHubDeliveryEventsByHour(String prefix, WorkflowsApi workflowsApi) {
-        System.out.println("hi");
         ListObjectsV2Request listObjectsV2Request = ListObjectsV2Request
                 .builder()
                 .bucket(bucketName)
@@ -176,7 +175,6 @@ public class GithubDeliveryS3Client {
         ListObjectsV2Iterable listObjectsV2Iterable = s3Client.listObjectsV2Paginator(listObjectsV2Request);
         for (ListObjectsV2Response response : listObjectsV2Iterable) {
             response.contents().forEach((S3Object event) -> {
-                System.out.println(event);
                 submitGitHubDeliveryEventsByKey(event.key(), workflowsApi);
             });
         }
