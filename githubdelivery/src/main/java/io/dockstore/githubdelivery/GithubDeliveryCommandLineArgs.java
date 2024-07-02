@@ -61,22 +61,15 @@ public class GithubDeliveryCommandLineArgs {
         @Parameter(names = {"-c", "--config"}, description = "The config file path.")
         private File config = new File("./" + DEFAULT_CONFIG_FILE_NAME);
 
-        @Parameter(names = {"-d", "--date"}, description = "Desired date. Format should be YYYY-MM-DD")
-        private String date;
-
-        @Parameter(names = {"-h", "--hour"}, description = "All events from this hour. Format should be HH")
-        private String hour;
+        @Parameter(names = {"-k", "--key"}, description = "Desired date and hour. Format should be YYYY-MM-DD/HH")
+        private String key;
 
         public File getConfig() {
             return config;
         }
 
-        public String getDate() {
-            return date;
-        }
-
-        public String getHour() {
-            return hour;
+        public String getKey() {
+            return key;
         }
     }
 }

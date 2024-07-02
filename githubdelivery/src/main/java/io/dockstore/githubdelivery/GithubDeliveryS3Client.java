@@ -114,7 +114,7 @@ public class GithubDeliveryS3Client {
             if (SUBMIT_HOURLY_COMMAND.equals(jCommander.getParsedCommand())) {
                 ApiClient apiClient = setupApiClient(githubDeliveryConfig.getDockstoreConfig().serverUrl(), githubDeliveryConfig.getDockstoreConfig().token());
                 WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
-                githubDeliveryS3Client.submitGitHubDeliveryEventsByHour(submitAllHourlyEventsCommand.getDate(), submitAllHourlyEventsCommand.getHour(), workflowsApi);
+                githubDeliveryS3Client.submitGitHubDeliveryEventsByHour(submitAllHourlyEventsCommand.getKey(), workflowsApi);
             }
         }
 
@@ -166,11 +166,11 @@ public class GithubDeliveryS3Client {
         }
         LOG.info("Successfully submitted events for date {}", date);
     }
-    private void submitGitHubDeliveryEventsByHour(String date, String hour, WorkflowsApi workflowsApi) {
+    private void submitGitHubDeliveryEventsByHour(String prefix, WorkflowsApi workflowsApi) {
         ListObjectsV2Request listObjectsV2Request = ListObjectsV2Request
                 .builder()
                 .bucket(bucketName)
-                .prefix(date + "/" + hour)
+                .prefix(prefix)
                 .build();
         ListObjectsV2Iterable listObjectsV2Iterable = s3Client.listObjectsV2Paginator(listObjectsV2Request);
         for (ListObjectsV2Response response : listObjectsV2Iterable) {
@@ -178,6 +178,7 @@ public class GithubDeliveryS3Client {
                 submitGitHubDeliveryEventsByKey(event.key(), workflowsApi);
             });
         }
+        LOG.info("Successfully submitted events for date/hour {}", prefix);
     }
     private void submitGitHubDeliveryEventsByKey(String key, WorkflowsApi workflowsApi) {
         String deliveryid = key.split("/")[1]; //since key is in YYYY-MM-DD/deliveryid format
