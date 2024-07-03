@@ -59,7 +59,7 @@ public class GithubDeliveryS3Client {
     public static final Gson GSON = new Gson();
     public static final String SUBMIT_EVENT_COMMAND = "submit-event";
     public static final String SUBMIT_ALL_COMMAND = "submit-all";
-    public static final String SUBMIT_HOURLY_COMMAND = "submit-hourly";
+    public static final String SUBMIT_HOUR_COMMAND = "submit-hour";
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
     private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private final S3Client s3Client;
@@ -111,7 +111,7 @@ public class GithubDeliveryS3Client {
                 WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
                 githubDeliveryS3Client.submitGitHubDeliveryEventsByDate(submitAllEventsCommand.getDate(), workflowsApi);
             }
-            if (SUBMIT_HOURLY_COMMAND.equals(jCommander.getParsedCommand())) {
+            if (SUBMIT_HOUR_COMMAND.equals(jCommander.getParsedCommand())) {
                 ApiClient apiClient = setupApiClient(githubDeliveryConfig.getDockstoreConfig().serverUrl(), githubDeliveryConfig.getDockstoreConfig().token());
                 WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
                 githubDeliveryS3Client.submitGitHubDeliveryEventsByHour(submitAllHourlyEventsCommand.getKey(), workflowsApi);

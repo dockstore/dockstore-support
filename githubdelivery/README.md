@@ -23,7 +23,7 @@ bucketName: <S3-bucket-name>
     - `https://staging.dockstore.org/api`
     - `https://dockstore.org/api`
 - `token`: The Dockstore token of a Dockstore user. This user must be an admin or curator in order to be able to resubmit GitHub events to Dockstore.
-- `bucketName`: The S3 bucket name storing metrics data. This is the bucket that the client will go through in order
+- `bucketName`: The S3 bucket name storing GitHub events. This is the bucket that the client will go through in order
   to retrieve the events.
 
 Note that if the configuration file path is not passed as an argument via `--config` or `-c`, then the default location is set to `./github-delivery.config`. 
@@ -65,7 +65,7 @@ Usage: <main class> [options] [command] [command options]
           -d, --date
             All events from the date. Format should be YYYY-MM-DD
 
-    submit-hourly      Submit all github events from S3 bucket from a specific 
+    submit-hour      Submit all github events from S3 bucket from a specific 
             date and hour to the webservice.
       Usage: submit-hourly [options]
         Options:
@@ -95,7 +95,7 @@ Usage: <main class> [options] [command] [command options]
 `java -jar target/githubdelivery-*-SNAPSHOT.jar submit-all --date <date>`
 ```
 
-### submit-hourly
+### submit-hour
 
 **Using the default configuration file path:**
 

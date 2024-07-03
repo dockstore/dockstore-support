@@ -55,7 +55,7 @@ public class GithubDeliveryCommandLineArgs {
             return date;
         }
     }
-    @Parameters(commandNames = { "submit-hourly" }, commandDescription = "Submit all github events from S3 bucket from a specific date and hour to the webservice.")
+    @Parameters(commandNames = { "submit-hour" }, commandDescription = "Submit all github events from S3 bucket from a specific date and hour to the webservice.")
     public static class SubmitAllHourlyEventsCommand {
 
         @Parameter(names = {"-c", "--config"}, description = "The config file path.")
