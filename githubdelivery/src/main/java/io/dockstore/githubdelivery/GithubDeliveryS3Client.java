@@ -101,19 +101,15 @@ public class GithubDeliveryS3Client {
             final INIConfiguration config = getConfiguration(commandLineArgs.getConfig());
             final GithubDeliveryConfig githubDeliveryConfig = new GithubDeliveryConfig(config);
             final GithubDeliveryS3Client githubDeliveryS3Client = new GithubDeliveryS3Client(githubDeliveryConfig.getS3Config().bucket());
+            ApiClient apiClient = setupApiClient(githubDeliveryConfig.getDockstoreConfig().serverUrl(), githubDeliveryConfig.getDockstoreConfig().token());
+            WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
             if (SUBMIT_EVENT_COMMAND.equals(jCommander.getParsedCommand())) {
-                ApiClient apiClient = setupApiClient(githubDeliveryConfig.getDockstoreConfig().serverUrl(), githubDeliveryConfig.getDockstoreConfig().token());
-                WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
                 githubDeliveryS3Client.submitGitHubDeliveryEventsByKey(submitEventCommand.getBucketKey(), workflowsApi);
             }
             if (SUBMIT_ALL_COMMAND.equals(jCommander.getParsedCommand())) {
-                ApiClient apiClient = setupApiClient(githubDeliveryConfig.getDockstoreConfig().serverUrl(), githubDeliveryConfig.getDockstoreConfig().token());
-                WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
                 githubDeliveryS3Client.submitGitHubDeliveryEventsByDate(submitAllEventsCommand.getDate(), workflowsApi);
             }
             if (SUBMIT_HOUR_COMMAND.equals(jCommander.getParsedCommand())) {
-                ApiClient apiClient = setupApiClient(githubDeliveryConfig.getDockstoreConfig().serverUrl(), githubDeliveryConfig.getDockstoreConfig().token());
-                WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
                 githubDeliveryS3Client.submitGitHubDeliveryEventsByHour(submitAllHourlyEventsCommand.getKey(), workflowsApi);
             }
         }
@@ -193,19 +189,21 @@ public class GithubDeliveryS3Client {
                     logReadError(key);
                 }
 
-            } else if (jsonObject.get("deleted").getAsBoolean()) {
-                PushPayload payload = getGitHubPushPayloadByKey(body, key);
-                if (payload != null) {
-                    workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
+            } else  {
+                if (jsonObject.get("deleted").getAsBoolean()) {
+                    PushPayload payload = getGitHubPushPayloadByKey(body, key);
+                    if (payload != null) {
+                        workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
+                    } else {
+                        logReadError(key);
+                    }
                 } else {
-                    logReadError(key);
-                }
-            } else {
-                PushPayload payload = getGitHubPushPayloadByKey(body, key);
-                if (payload != null) {
-                    workflowsApi.handleGitHubRelease(payload, deliveryid);
-                } else {
-                    logReadError(key);
+                    PushPayload payload = getGitHubPushPayloadByKey(body, key);
+                    if (payload != null) {
+                        workflowsApi.handleGitHubRelease(payload, deliveryid);
+                    } else {
+                        logReadError(key);
+                    }
                 }
             }
             LOG.info("Successfully submitted events for key {}", key);
