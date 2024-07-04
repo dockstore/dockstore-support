@@ -1,5 +1,6 @@
 package io.dockstore.metricsaggregator.helper;
 
+import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.CpuMetric;
 import java.util.Optional;
@@ -7,19 +8,19 @@ import java.util.Optional;
 /**
  * Aggregate CPU metrics by calculating the min, average, max, and number of data points using AWS Athena.
  */
-public class CpuAthenaAggregator extends AthenaAggregator<CpuMetric> {
-    public CpuAthenaAggregator() {
-        super();
+public class CpuAthenaAggregator extends RunExecutionAthenaAggregator<CpuMetric> {
+    public CpuAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
+        super(metricsAggregatorAthenaClient, tableName);
         this.addSelectFields(getStatisticSelectFields());
     }
 
     @Override
-    public String getMetricColumnName() {
-        return "cpurequirements";
+    String getMetricColumnName() {
+        return CPU_REQUIREMENTS_FIELD.getName();
     }
 
     @Override
-    public Optional<CpuMetric> createMetricFromQueryResultRow(QueryResultRow queryResultRow) {
+    Optional<CpuMetric> createMetricFromQueryResultRow(QueryResultRow queryResultRow) {
         Optional<Double> min = getMinColumnValue(queryResultRow);
         Optional<Double> avg = getAvgColumnValue(queryResultRow);
         Optional<Double> max = getMaxColumnValue(queryResultRow);
