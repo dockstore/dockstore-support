@@ -181,7 +181,7 @@ public class GithubDeliveryS3Client {
         try {
             String body = getObject(key);
             JsonObject jsonObject = GSON.fromJson(body, JsonObject.class);
-            if (jsonObject.get("action").getAsString().equals("added") || jsonObject.get("action").getAsString().equals("removed")) {
+            if (jsonObject.get("action") != null) { //Instatllation and uninstallation events have action property
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
                 if (payload != null) {
                     workflowsApi.handleGitHubInstallation(payload, deliveryid);
@@ -189,7 +189,7 @@ public class GithubDeliveryS3Client {
                     logReadError(key);
                 }
 
-            } else  {
+            } else  { //push events
                 if (jsonObject.get("deleted").getAsBoolean()) {
                     PushPayload payload = getGitHubPushPayloadByKey(body, key);
                     if (payload != null) {
