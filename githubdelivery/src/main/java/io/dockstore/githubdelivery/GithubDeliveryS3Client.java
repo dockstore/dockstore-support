@@ -181,27 +181,24 @@ public class GithubDeliveryS3Client {
         try {
             String obj = getObject(key);
             JsonObject jsonObject = GSON.fromJson(obj, JsonObject.class);
-            String eventType = jsonObject.get("eventType").getAsString();
-            String body = jsonObject.get("body").getAsString();
-            System.out.println(eventType);
-            if ("installation_repositories".equals(eventType)) {
-                InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
+            if ("installation_repositories".equals(jsonObject.get("eventType").getAsString())) {
+                InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(jsonObject.get("body").getAsString(), key);
                 if (payload != null) {
                     workflowsApi.handleGitHubInstallation(payload, deliveryid);
                 } else {
                     logReadError(key);
                 }
 
-            } else if ("push".equals(eventType)) { //push events
+            } else if ("push".equals(jsonObject.get("eventType").getAsString())) { //push events
                 if (jsonObject.get("deleted").getAsBoolean()) {
-                    PushPayload payload = getGitHubPushPayloadByKey(body, key);
+                    PushPayload payload = getGitHubPushPayloadByKey(jsonObject.get("body").getAsString(), key);
                     if (payload != null) {
                         workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
                     } else {
                         logReadError(key);
                     }
                 } else {
-                    PushPayload payload = getGitHubPushPayloadByKey(body, key);
+                    PushPayload payload = getGitHubPushPayloadByKey(jsonObject.get("body").getAsString(), key);
                     if (payload != null) {
                         workflowsApi.handleGitHubRelease(payload, deliveryid);
                     } else {
