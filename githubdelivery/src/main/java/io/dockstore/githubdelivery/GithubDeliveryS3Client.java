@@ -181,8 +181,9 @@ public class GithubDeliveryS3Client {
         try {
             String obj = getObject(key);
             JsonObject jsonObject = GSON.fromJson(obj, JsonObject.class);
+            String body = jsonObject.get("body").getAsString();
             if (jsonObject.get("eventType").getAsString().equals("installation_repositories")) {
-                InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(jsonObject.get("body").getAsString(), key);
+                InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
                 if (payload != null) {
                     workflowsApi.handleGitHubInstallation(payload, deliveryid);
                 } else {
@@ -191,14 +192,14 @@ public class GithubDeliveryS3Client {
 
             } else if (jsonObject.get("eventType").getAsString().equals("push")) { //push events
                 if (jsonObject.get("deleted").getAsBoolean()) {
-                    PushPayload payload = getGitHubPushPayloadByKey(jsonObject.get("body").getAsString(), key);
+                    PushPayload payload = getGitHubPushPayloadByKey(body, key);
                     if (payload != null) {
                         workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
                     } else {
                         logReadError(key);
                     }
                 } else {
-                    PushPayload payload = getGitHubPushPayloadByKey(jsonObject.get("body").getAsString(), key);
+                    PushPayload payload = getGitHubPushPayloadByKey(body, key);
                     if (payload != null) {
                         workflowsApi.handleGitHubRelease(payload, deliveryid);
                     } else {
