@@ -183,6 +183,7 @@ public class GithubDeliveryS3Client {
             JsonObject jsonObject = GSON.fromJson(obj, JsonObject.class);
             String eventType = jsonObject.get("eventType").toString();
             String body = jsonObject.get("body").toString();
+            System.out.println(eventType);
             if ("installation_repositories".equals(eventType)) {
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
                 if (payload != null) {
@@ -209,6 +210,7 @@ public class GithubDeliveryS3Client {
                 }
             } else {
                 LOG.error("Invalid JSON format for event {}", key);
+                return;
             }
             LOG.info("Successfully submitted events for key {}", key);
         } catch (IOException e) {
