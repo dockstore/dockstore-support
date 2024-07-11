@@ -205,8 +205,7 @@ public class GithubDeliveryS3Client {
                         logReadError(key);
                     }
                 }
-            }
-            else {
+            } else {
                 LOG.error("Invalid JSON format for event {}", key);
             }
             LOG.info("Successfully submitted events for key {}", key);
