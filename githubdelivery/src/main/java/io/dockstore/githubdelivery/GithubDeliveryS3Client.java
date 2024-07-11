@@ -179,32 +179,35 @@ public class GithubDeliveryS3Client {
     private void submitGitHubDeliveryEventsByKey(String key, WorkflowsApi workflowsApi) {
         String deliveryid = key.split("/")[2]; //since key is in YYYY-MM-DD/HH/deliveryid format
         try {
-            String body = getObject(key);
-            JsonObject jsonObject = GSON.fromJson(body, JsonObject.class);
-            if (jsonObject.get("action") != null) { //Instatllation and uninstallation events have action property
-                InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body, key);
+            String obj = getObject(key);
+            JsonObject jsonObject = GSON.fromJson(obj, JsonObject.class);
+            if (jsonObject.get("eventType").getAsString().equals("installation_repositories")) {
+                InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(jsonObject.get("body").getAsString(), key);
                 if (payload != null) {
                     workflowsApi.handleGitHubInstallation(payload, deliveryid);
                 } else {
                     logReadError(key);
                 }
 
-            } else  { //push events
+            } else if (jsonObject.get("eventType").getAsString().equals("push")) { //push events
                 if (jsonObject.get("deleted").getAsBoolean()) {
-                    PushPayload payload = getGitHubPushPayloadByKey(body, key);
+                    PushPayload payload = getGitHubPushPayloadByKey(jsonObject.get("body").getAsString(), key);
                     if (payload != null) {
                         workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
                     } else {
                         logReadError(key);
                     }
                 } else {
-                    PushPayload payload = getGitHubPushPayloadByKey(body, key);
+                    PushPayload payload = getGitHubPushPayloadByKey(jsonObject.get("body").getAsString(), key);
                     if (payload != null) {
                         workflowsApi.handleGitHubRelease(payload, deliveryid);
                     } else {
                         logReadError(key);
                     }
                 }
+            }
+            else {
+                LOG.error("Invalid JSON format for event {}", key);
             }
             LOG.info("Successfully submitted events for key {}", key);
         } catch (IOException e) {
