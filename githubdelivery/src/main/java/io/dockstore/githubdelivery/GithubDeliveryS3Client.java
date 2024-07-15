@@ -191,7 +191,7 @@ public class GithubDeliveryS3Client {
                 }
 
             } else if ("push".equals(jsonObject.get("eventType").getAsString())) {
-               //push events
+                //push events
                 if (body.get("deleted").getAsBoolean()) {
                     PushPayload payload = getGitHubPushPayloadByKey(body.getAsString(), key);
                     if (payload != null) {
