@@ -181,8 +181,9 @@ public class GithubDeliveryS3Client {
         try {
             String obj = getObject(key);
             JsonObject jsonObject = GSON.fromJson(obj, JsonObject.class);
+            JsonObject body = jsonObject.get("body").getAsJsonObject();
             if ("installation_repositories".equals(jsonObject.get("eventType").getAsString())) {
-                InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(jsonObject.get("body").getAsString(), key);
+                InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(body.getAsString(), key);
                 if (payload != null) {
                     workflowsApi.handleGitHubInstallation(payload, deliveryid);
                 } else {
@@ -190,16 +191,16 @@ public class GithubDeliveryS3Client {
                 }
 
             } else if ("push".equals(jsonObject.get("eventType").getAsString())) {
-                JsonObject body = jsonObject.get("body").getAsJsonObject(); //push events
+               //push events
                 if (body.get("deleted").getAsBoolean()) {
-                    PushPayload payload = getGitHubPushPayloadByKey(jsonObject.get("body").getAsString(), key);
+                    PushPayload payload = getGitHubPushPayloadByKey(body.getAsString(), key);
                     if (payload != null) {
                         workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
                     } else {
                         logReadError(key);
                     }
                 } else {
-                    PushPayload payload = getGitHubPushPayloadByKey(jsonObject.get("body").getAsString(), key);
+                    PushPayload payload = getGitHubPushPayloadByKey(body.getAsString(), key);
                     if (payload != null) {
                         workflowsApi.handleGitHubRelease(payload, deliveryid);
                     } else {
