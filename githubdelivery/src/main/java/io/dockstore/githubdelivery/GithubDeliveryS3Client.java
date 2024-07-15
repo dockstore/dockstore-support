@@ -28,6 +28,7 @@ import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import io.dockstore.common.S3ClientHelper;
@@ -189,8 +190,9 @@ public class GithubDeliveryS3Client {
                     logReadError(key);
                 }
 
-            } else if ("push".equals(jsonObject.get("eventType").getAsString())) { //push events
-                if (jsonObject.get("deleted").getAsBoolean()) {
+            } else if ("push".equals(jsonObject.get("eventType").getAsString())) {
+                JsonObject body = jsonObject.get("body").getAsJsonObject(); //push events
+                if (body.get("deleted").getAsBoolean()) {
                     PushPayload payload = getGitHubPushPayloadByKey(jsonObject.get("body").getAsString(), key);
                     if (payload != null) {
                         workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
