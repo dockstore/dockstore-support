@@ -182,8 +182,8 @@ public class GithubDeliveryS3Client {
             String obj = getObject(key);
             JsonObject jsonObject = GSON.fromJson(obj, JsonObject.class);
             JsonObject body = jsonObject.get("body").getAsJsonObject();
-            String bodyString = body.toString().substring(1, body.toString().length() - 1);
-            System.out.println(bodyString);//removes the quotes that gets added with the toString method
+            String bodyString = body.toString().substring(1, body.toString().length() - 1); //removes the quotes that gets added with the toString method
+            System.out.println(bodyString);
             if ("installation_repositories".equals(jsonObject.get("eventType").getAsString())) {
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(bodyString, key);
                 if (payload != null) {
