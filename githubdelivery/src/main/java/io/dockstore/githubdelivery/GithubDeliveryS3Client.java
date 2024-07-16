@@ -221,6 +221,5 @@ public class GithubDeliveryS3Client {
     }
     private void exceptionReadError(Exception e, String eventType, String key) {
         exceptionMessage(e, String.format("Could not read github %s event from key %s", eventType, key), 1);
-
     }
 }
