@@ -179,37 +179,34 @@ public class GithubDeliveryS3Client {
     private void submitGitHubDeliveryEventsByKey(String key, WorkflowsApi workflowsApi) {
         String deliveryid = key.split("/")[2]; //since key is in YYYY-MM-DD/HH/deliveryid format
         try {
-            String obj = getObject(key);
-            JsonObject jsonObject = GSON.fromJson(obj, JsonObject.class);
+            String s3GithubObject = getObject(key);
+            JsonObject jsonObject = GSON.fromJson(s3GithubObject, JsonObject.class);
             JsonObject body = jsonObject.get("body").getAsJsonObject();
             String bodyString = body.toString();
-            if ("installation_repositories".equals(jsonObject.get("eventType").getAsString())) {
+            String eventType = jsonObject.get("event_type").getAsString();
+            if ("installation_repositories".equals(eventType)) {
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(bodyString, key);
                 if (payload != null) {
                     workflowsApi.handleGitHubInstallation(payload, deliveryid);
                 } else {
-                    logReadError(key);
+                    logReadError(eventType, key);
                 }
 
-            } else if ("push".equals(jsonObject.get("eventType").getAsString())) {
+            } else if ("push".equals(eventType)) {
                 //push events
-                if (body.get("deleted").getAsBoolean()) {
-                    PushPayload payload = getGitHubPushPayloadByKey(bodyString, key);
-                    if (payload != null) {
+                PushPayload payload = getGitHubPushPayloadByKey(bodyString, key);
+                if (payload != null) {
+                    if (body.get("deleted").getAsBoolean()) {
                         workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
                     } else {
-                        logReadError(key);
+                        workflowsApi.handleGitHubRelease(payload, deliveryid);
                     }
                 } else {
-                    PushPayload payload = getGitHubPushPayloadByKey(bodyString, key);
-                    if (payload != null) {
-                        workflowsApi.handleGitHubRelease(payload, deliveryid);
-                    } else {
-                        logReadError(key);
-                    }
+                    logReadError(eventType, key);
                 }
+
             } else {
-                LOG.error("Invalid JSON format for event {}", key);
+                LOG.error("Invalid eventType {} format for key {}", eventType, key);
                 return;
             }
             LOG.info("Successfully submitted events for key {}", key);
@@ -219,7 +216,7 @@ public class GithubDeliveryS3Client {
             LOG.error("Could not submit github event from key {}", key, e);
         }
     }
-    private void logReadError(String key) {
-        LOG.error("Could not read github event from key {}", key);
+    private void logReadError(String eventType, String key) {
+        LOG.error("Could not read github {} event from key {}", eventType, key);
     }
 }
