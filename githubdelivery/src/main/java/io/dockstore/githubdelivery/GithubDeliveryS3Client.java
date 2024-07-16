@@ -124,26 +124,26 @@ public class GithubDeliveryS3Client {
         ResponseInputStream<GetObjectResponse> object = s3Client.getObject(objectRequest);
         return IOUtils.toString(object, StandardCharsets.UTF_8);
     }
-    private PushPayload getGitHubPushPayloadByKey(String body, String key) throws IOException, NoSuchKeyException {
+    private PushPayload getGitHubPushPayloadByKey(String eventType, String body, String key) throws IOException, NoSuchKeyException {
         try {
             PushPayload pushPayload;
             pushPayload = MAPPER.readValue(body, PushPayload.class);
             if (pushPayload == null) {
-                logReadError(key);
+                logReadError(eventType, key);
             }
             return pushPayload;
         } catch (JsonSyntaxException e) {
-            exceptionMessage(e, String.format("Could not read github event from key %s", key), 1);
+            exceptionReadError(e, eventType, key);
         }
         return null;
     }
-    private InstallationRepositoriesPayload getGitHubInstallationRepositoriesPayloadByKey(String body, String key) throws IOException, NoSuchKeyException {
+    private InstallationRepositoriesPayload getGitHubInstallationRepositoriesPayloadByKey(String eventType, String body, String key) throws IOException, NoSuchKeyException {
         try {
             InstallationRepositoriesPayload installationRepositoriesPayload;
             installationRepositoriesPayload = MAPPER.readValue(body, InstallationRepositoriesPayload.class);
             return installationRepositoriesPayload;
         } catch (JsonSyntaxException e) {
-            exceptionMessage(e, String.format("Could not read github event from key %s", key), 1);
+            exceptionReadError(e, eventType, key);
         }
         return null;
     }
@@ -185,7 +185,7 @@ public class GithubDeliveryS3Client {
             String bodyString = body.toString();
             String eventType = jsonObject.get("event_type").getAsString();
             if ("installation_repositories".equals(eventType)) {
-                InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(bodyString, key);
+                InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(eventType, bodyString, key);
                 if (payload != null) {
                     workflowsApi.handleGitHubInstallation(payload, deliveryid);
                 } else {
@@ -194,7 +194,7 @@ public class GithubDeliveryS3Client {
 
             } else if ("push".equals(eventType)) {
                 //push events
-                PushPayload payload = getGitHubPushPayloadByKey(bodyString, key);
+                PushPayload payload = getGitHubPushPayloadByKey(eventType, bodyString, key);
                 if (payload != null) {
                     if (body.get("deleted").getAsBoolean()) {
                         workflowsApi.handleGitHubBranchDeletion(payload.getRepository().getFullName(), payload.getSender().getLogin(), payload.getRef(), deliveryid, payload.getInstallation().getId());
@@ -218,5 +218,9 @@ public class GithubDeliveryS3Client {
     }
     private void logReadError(String eventType, String key) {
         LOG.error("Could not read github {} event from key {}", eventType, key);
+    }
+    private void exceptionReadError(Exception e, String eventType, String key) {
+        exceptionMessage(e, String.format("Could not read github %s event from key %s", eventType, key), 1);
+
     }
 }
