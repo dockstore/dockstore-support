@@ -183,7 +183,7 @@ public class GithubDeliveryS3Client {
             JsonObject jsonObject = GSON.fromJson(s3GithubObject, JsonObject.class);
             JsonObject body = jsonObject.get("body").getAsJsonObject();
             String bodyString = body.toString();
-            String eventType = jsonObject.get("event_type").getAsString();
+            String eventType = jsonObject.get("eventType").getAsString();
             if ("installation_repositories".equals(eventType)) {
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(eventType, bodyString, key);
                 if (payload != null) {
