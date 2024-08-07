@@ -39,6 +39,7 @@ import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.InstallationRepositoriesPayload;
 import io.dockstore.openapi.client.model.PushPayload;
+import io.dockstore.openapi.client.model.ReleasePayload;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.configuration2.INIConfiguration;
@@ -125,23 +126,21 @@ public class GithubDeliveryS3Client {
         return IOUtils.toString(object, StandardCharsets.UTF_8);
     }
     private PushPayload getGitHubPushPayloadByKey(String eventType, String body, String key) throws IOException, NoSuchKeyException {
-        try {
-            PushPayload pushPayload;
-            pushPayload = MAPPER.readValue(body, PushPayload.class);
-            if (pushPayload == null) {
-                logReadError(eventType, key);
-            }
-            return pushPayload;
-        } catch (JsonSyntaxException e) {
-            exceptionReadError(e, eventType, key);
-        }
-        return null;
+        return getPayloadByKey(eventType, body, key, PushPayload.class);
     }
     private InstallationRepositoriesPayload getGitHubInstallationRepositoriesPayloadByKey(String eventType, String body, String key) throws IOException, NoSuchKeyException {
+        return getPayloadByKey(eventType, body, key, InstallationRepositoriesPayload.class);
+    }
+    private ReleasePayload getGitHubReleasePayloadByKey(String eventType, String body, String key) throws IOException, NoSuchKeyException {
+        return getPayloadByKey(eventType, body, key, ReleasePayload.class);
+    }
+    private <T> T getPayloadByKey(String eventType, String body, String key, Class<T> clazz) throws IOException, NoSuchKeyException {
         try {
-            InstallationRepositoriesPayload installationRepositoriesPayload;
-            installationRepositoriesPayload = MAPPER.readValue(body, InstallationRepositoriesPayload.class);
-            return installationRepositoriesPayload;
+            T payload = MAPPER.readValue(body, clazz);
+            if (payload == null) {
+                logReadError(eventType, key);
+            }
+            return payload;
         } catch (JsonSyntaxException e) {
             exceptionReadError(e, eventType, key);
         }
@@ -183,16 +182,17 @@ public class GithubDeliveryS3Client {
             JsonObject jsonObject = GSON.fromJson(s3GithubObject, JsonObject.class);
             JsonObject body = jsonObject.get("body").getAsJsonObject();
             String bodyString = body.toString();
-            String eventType = jsonObject.get("eventType").getAsString();
-            if ("installation_repositories".equals(eventType)) {
+            final String eventType = jsonObject.get("eventType").getAsString();
+            switch (eventType) {
+            case "installation_repositories" -> {
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(eventType, bodyString, key);
                 if (payload != null) {
                     workflowsApi.handleGitHubInstallation(payload, deliveryid);
                 } else {
                     logReadError(eventType, key);
                 }
-
-            } else if ("push".equals(eventType)) {
+            }
+            case "push" -> {
                 //push events
                 PushPayload payload = getGitHubPushPayloadByKey(eventType, bodyString, key);
                 if (payload != null) {
@@ -204,10 +204,19 @@ public class GithubDeliveryS3Client {
                 } else {
                     logReadError(eventType, key);
                 }
-
-            } else {
+            }
+            case "release" -> {
+                final ReleasePayload releasePayload = getGitHubReleasePayloadByKey(eventType, bodyString, key);
+                if (releasePayload != null) {
+                    workflowsApi.handleGitHubTaggedRelease(releasePayload, deliveryid);
+                } else {
+                    logReadError(eventType, key);
+                }
+            }
+            default -> {
                 LOG.error("Invalid eventType {} format for key {}", eventType, key);
                 return;
+            }
             }
             LOG.info("Successfully submitted events for key {}", key);
         } catch (IOException e) {
