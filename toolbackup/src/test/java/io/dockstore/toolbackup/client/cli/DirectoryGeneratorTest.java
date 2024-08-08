@@ -1,22 +1,21 @@
 package io.dockstore.toolbackup.client.cli;
 
+import static com.github.stefanbirkner.systemlambda.SystemLambda.catchSystemExit;
+import static io.dockstore.toolbackup.client.cli.Client.CLIENT_ERROR;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 import io.dockstore.toolbackup.client.cli.common.DirCleaner;
 import java.io.File;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 
 /**
  * Created by kcao on 25/01/17.
  */
 public class DirectoryGeneratorTest {
-    @Rule
-    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
     @BeforeClass
     public static void setUp() {
@@ -29,11 +28,13 @@ public class DirectoryGeneratorTest {
      */
     @Test
     public void createDirExistingFile() throws Exception {
-        exit.expectSystemExit();
-        File file = new File(DIR + File.separator + "sameName.txt");
-        assumeTrue(file.isFile() || !file.exists());
-        file.createNewFile();
-        DirectoryGenerator.createDir(file.getAbsolutePath());
+        int statusCode = catchSystemExit(() -> {
+            File file = new File(DIR + File.separator + "sameName.txt");
+            assumeTrue(file.isFile() || !file.exists());
+            file.createNewFile();
+            DirectoryGenerator.createDir(file.getAbsolutePath());
+        });
+        assertEquals(CLIENT_ERROR, statusCode);
     }
 
     @AfterClass
