@@ -14,7 +14,7 @@ import uk.org.webcompere.systemstubs.stream.SystemErr;
 import uk.org.webcompere.systemstubs.stream.SystemOut;
 
 /**
- * Many tests ignored due to reasons explained in this PR https://github.com/dockstore/dockstore-support/pull/448
+ * Many tests ignored due to reasons explained in this PR <a href="https://github.com/dockstore/dockstore-support/pull/448">...</a>
  */
 
 @ExtendWith(SystemStubsExtension.class)

@@ -1,5 +1,5 @@
 
-Lists of 417 third-party dependencies.
+Lists of 416 third-party dependencies.
      (The Apache Software License, Version 2.0) Adapter: RxJava 2 (com.squareup.retrofit2:adapter-rxjava2:2.9.0 - https://github.com/square/retrofit)
      (Apache License, Version 2.0) akka-actor (com.typesafe.akka:akka-actor_2.13:2.5.32 - https://akka.io/)
      (Apache License, Version 2.0) akka-protobuf (com.typesafe.akka:akka-protobuf_2.13:2.5.32 - https://akka.io/)
@@ -403,7 +403,6 @@ Lists of 417 third-party dependencies.
      (Apache License 2.0) swagger-jaxrs2-servlet-initializer-jakarta (io.swagger.core.v3:swagger-jaxrs2-servlet-initializer-jakarta:2.2.15 - https://github.com/swagger-api/swagger-core/modules/swagger-jaxrs2-servlet-initializer-jakarta)
      (Apache License 2.0) swagger-models (io.swagger:swagger-models:1.6.8 - https://github.com/swagger-api/swagger-core/modules/swagger-models)
      (Apache License 2.0) swagger-models-jakarta (io.swagger.core.v3:swagger-models-jakarta:2.2.15 - https://github.com/swagger-api/swagger-core/modules/swagger-models-jakarta)
-     (MIT License) System Lambda (com.github.stefanbirkner:system-lambda:1.2.1 - https://github.com/stefanbirkner/system-lambda/)
      (MIT License) System Stubs Core (uk.org.webcompere:system-stubs-core:2.0.1 - https://github.com/webcompere/system-stubs/system-stubs-core/)
      (MIT License) System Stubs Jupiter (uk.org.webcompere:system-stubs-jupiter:2.0.1 - https://github.com/webcompere/system-stubs/system-stubs-jupiter/)
      (Apache License 2.0) Throttling Appender (io.dropwizard.logback:logback-throttling-appender:1.4.0 - https://github.com/dropwizard/logback-throttling-appender/)
