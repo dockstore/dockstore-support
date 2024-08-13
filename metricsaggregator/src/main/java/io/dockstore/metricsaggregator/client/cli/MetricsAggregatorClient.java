@@ -35,6 +35,7 @@ import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitTerraMetr
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitValidationData;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
+import io.dockstore.openapi.client.model.EntryLiteAndVersionName;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
 import io.dockstore.openapi.client.model.ValidationExecution;
 import io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum;
@@ -165,8 +166,12 @@ public class MetricsAggregatorClient {
         final Instant getDirectoriesStartTime = Instant.now();
         List<S3DirectoryInfo> s3DirectoriesToAggregate;
         if (trsIdsToAggregate == null || trsIdsToAggregate.isEmpty()) {
-            LOG.info("Aggregating metrics for all entries");
-            s3DirectoriesToAggregate = metricsAggregatorS3Client.getDirectories(); // Aggregate all directories
+            LOG.info("Aggregating metrics for all entries that have new executions to aggregate");
+            List<EntryLiteAndVersionName> entryVersionsToAggregate = extendedGa4GhApi.getEntryVersionsToAggregate();
+            s3DirectoriesToAggregate = entryVersionsToAggregate.stream()
+                    .map(entryVersion -> metricsAggregatorS3Client.getDirectoriesForTrsIdVersion(entryVersion.getEntryLite().getTrsId(), entryVersion.getVersionName()))
+                    .flatMap(Collection::stream)
+                    .toList();
         } else {
             LOG.info("Aggregating metrics for TRS IDs: {}", trsIdsToAggregate);
             s3DirectoriesToAggregate = trsIdsToAggregate.stream()

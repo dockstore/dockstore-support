@@ -48,8 +48,8 @@ public class MetricsAggregatorAthenaClient {
     private final MetadataApi metadataApi;
 
     private final AtomicInteger numberOfDirectoriesProcessed = new AtomicInteger(0);
-    private final AtomicInteger numberOfMetricsSubmitted = new AtomicInteger(0);
-    private final AtomicInteger numberOfMetricsSkipped = new AtomicInteger(0);
+    private final AtomicInteger numberOfVersionsSubmitted = new AtomicInteger(0);
+    private final AtomicInteger numberOfVersionsSkipped = new AtomicInteger(0);
 
     public MetricsAggregatorAthenaClient(MetricsAggregatorConfig config) {
         this.metricsBucketName = config.getS3Config().bucket();
@@ -79,26 +79,25 @@ public class MetricsAggregatorAthenaClient {
             Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(s3DirectoryInfo);
             if (platformToMetrics.isEmpty()) {
                 LOG.error("No metrics were aggregated for tool ID: {}, version {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
-                numberOfMetricsSkipped.incrementAndGet();
+                numberOfVersionsSkipped.incrementAndGet();
             }
-            platformToMetrics.forEach((platform, metrics) -> {
-                if (!skipPostingToDockstore) {
-                    try {
-                        extendedGa4GhApi.aggregatedMetricsPut(metrics, platform, s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
-                        LOG.info("Posted aggregated metrics to Dockstore for tool ID: {}, version {}, platform: {}",
-                                s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platform);
-                        numberOfMetricsSubmitted.incrementAndGet();
-                    } catch (ApiException exception) {
-                        // Log error and continue processing for other platforms
-                        LOG.error("Could not post aggregated metrics to Dockstore for tool ID: {}, version {}, platform: {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platform);
-                        numberOfMetricsSkipped.incrementAndGet();
-                    }
+            if (!skipPostingToDockstore) {
+                try {
+                    extendedGa4GhApi.aggregatedMetricsPut(platformToMetrics, s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
+                    LOG.info("Posted aggregated metrics to Dockstore for tool ID: {}, version {}, platform(s): {}",
+                            s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platformToMetrics.keySet());
+                    numberOfVersionsSubmitted.incrementAndGet();
+                } catch (ApiException exception) {
+                    // Log error and continue processing for other platforms
+                    LOG.error("Could not post aggregated metrics to Dockstore for tool ID: {}, version {}, platform(s): {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platformToMetrics.keySet());
+                    numberOfVersionsSkipped.incrementAndGet();
                 }
-            });
+            }
             numberOfDirectoriesProcessed.incrementAndGet();
             LOG.info("Processed {} directories", numberOfDirectoriesProcessed);
         });
-        LOG.info("Completed aggregating metrics. Processed {} directories, submitted {} platform metrics, and skipped {} platform metrics", numberOfDirectoriesProcessed, numberOfMetricsSubmitted, numberOfMetricsSkipped);
+        LOG.info("Completed aggregating metrics. Processed {} directories, submitted metrics for {} versions, and skipped metrics for {} versions", numberOfDirectoriesProcessed,
+                numberOfVersionsSubmitted, numberOfVersionsSkipped);
     }
 
     /**
