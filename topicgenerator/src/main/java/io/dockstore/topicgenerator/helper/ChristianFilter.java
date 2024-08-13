@@ -13,7 +13,7 @@ import java.util.Set;
  * Coded it up before realizing the POV, but may as well have it as an example and see what happens.
  * Blocks a bit too much. e.g. "breast" in "breast cancer"
  */
-public class ChristianFilter implements StringFilter {
+public class ChristianFilter extends WordsFilter {
 
     private final Set<String> offensiveWords = new HashSet<>();
 
@@ -30,7 +30,7 @@ public class ChristianFilter implements StringFilter {
     }
 
     @Override
-    public boolean assessTopic(String topic) {
-        return assessTopic(topic, offensiveWords);
+    public boolean isSuspiciousTopic(String topic) {
+        return isSuspiciousTopic(topic, offensiveWords);
     }
 }

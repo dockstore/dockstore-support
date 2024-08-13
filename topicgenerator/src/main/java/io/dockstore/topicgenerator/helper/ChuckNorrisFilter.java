@@ -12,7 +12,7 @@ import org.apache.commons.io.IOUtils;
  * List from <a href="https://github.com/chucknorris-io/swear-words/tree/master/">GitHub</a>
  * Has a bunch of language options
  */
-public class ChuckNorrisFilter implements StringFilter {
+public class ChuckNorrisFilter extends WordsFilter {
 
     private final Set<String> offensiveWords;
 
@@ -27,7 +27,7 @@ public class ChuckNorrisFilter implements StringFilter {
     }
 
     @Override
-    public boolean assessTopic(String topic) {
-        return  assessTopic(topic, offensiveWords);
+    public boolean isSuspiciousTopic(String topic) {
+        return  isSuspiciousTopic(topic, offensiveWords);
     }
 }

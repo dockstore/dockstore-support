@@ -250,7 +250,7 @@ public class TopicGeneratorClient {
 
     private boolean assessTopic(String aiTopic) {
         for (StringFilter filter : this.stringFilters) {
-            if (filter.assessTopic(aiTopic)) {
+            if (filter.isSuspiciousTopic(aiTopic)) {
                 LOG.info(filter.getClass() + " blocked a topic sentence, please review: " + aiTopic);
                 return true;
             }
