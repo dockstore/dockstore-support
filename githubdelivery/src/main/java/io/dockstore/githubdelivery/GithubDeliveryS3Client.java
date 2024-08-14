@@ -134,7 +134,7 @@ public class GithubDeliveryS3Client {
     private ReleasePayload getGitHubReleasePayloadByKey(String eventType, String body, String key) throws IOException, NoSuchKeyException {
         return getPayloadByKey(eventType, body, key, ReleasePayload.class);
     }
-    private <T> T getPayloadByKey(String eventType, String body, String key, Class<T> clazz) throws IOException, NoSuchKeyException {
+    <T> T getPayloadByKey(String eventType, String body, String key, Class<T> clazz) throws IOException, NoSuchKeyException {
         try {
             T payload = MAPPER.readValue(body, clazz);
             if (payload == null) {
