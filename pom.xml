@@ -347,11 +347,6 @@
                         <runOrder>random</runOrder>
                         <!-- re-run flaky tests once -->
                         <rerunFailingTestsCount>1</rerunFailingTestsCount>
-                        <environmentVariables>
-                            <AWS_REGION>us-east-1</AWS_REGION>
-                            <AWS_ACCESS_KEY_ID>foobar</AWS_ACCESS_KEY_ID>
-                            <AWS_SECRET_ACCESS_KEY>foobar</AWS_SECRET_ACCESS_KEY>
-                        </environmentVariables>
                     </configuration>
                 </plugin>
                 <plugin>
