@@ -12,6 +12,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
+/**
+ * Helper for deserializing GitHub events in JSON to Java objects, as well as some logging
+ * methods.
+ */
 final class GithubDeliveryHelper {
 
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryHelper.class);
