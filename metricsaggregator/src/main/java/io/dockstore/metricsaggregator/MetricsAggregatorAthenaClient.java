@@ -112,7 +112,7 @@ public class MetricsAggregatorAthenaClient {
         List<QueryResultRow> queryResultRows = new ArrayList<>();
 
         LOG.debug("Running SQL query:\n{}", query);
-        GetQueryResultsIterable getQueryResultsIterable = AthenaClientHelper.executeQuery(athenaClient, databaseName, outputS3Bucket, query);
+        GetQueryResultsIterable getQueryResultsIterable = AthenaClientHelper.executeQuery(athenaClient, databaseName, athenaWorkgroup, query);
         Map<String, Integer> columnNameToColumnIndex = new HashMap<>();
 
         for (GetQueryResultsResponse result : getQueryResultsIterable) {
