@@ -11,7 +11,6 @@ import software.amazon.awssdk.services.athena.model.GetQueryExecutionResponse;
 import software.amazon.awssdk.services.athena.model.GetQueryResultsRequest;
 import software.amazon.awssdk.services.athena.model.QueryExecutionContext;
 import software.amazon.awssdk.services.athena.model.QueryExecutionState;
-import software.amazon.awssdk.services.athena.model.ResultConfiguration;
 import software.amazon.awssdk.services.athena.model.StartQueryExecutionRequest;
 import software.amazon.awssdk.services.athena.model.StartQueryExecutionResponse;
 import software.amazon.awssdk.services.athena.paginators.GetQueryResultsIterable;
@@ -35,14 +34,14 @@ public final class AthenaClientHelper {
      * Executes an Athena query and returns GetQueryResultsIterable containing the query results
      * @param athenaClient
      * @param athenaDatabase
-     * @param athenaOutputS3Bucket
+     * @param athenaWorkgroup
      * @param query
      * @return
      * @throws Exception
      */
-    public static GetQueryResultsIterable executeQuery(AthenaClient athenaClient, String athenaDatabase, String athenaOutputS3Bucket, String query)
+    public static GetQueryResultsIterable executeQuery(AthenaClient athenaClient, String athenaDatabase, String athenaWorkgroup, String query)
             throws AwsServiceException, SdkClientException, InterruptedException {
-        String queryExecutionId = submitAthenaQuery(athenaClient, athenaDatabase, athenaOutputS3Bucket, query);
+        String queryExecutionId = submitAthenaQuery(athenaClient, athenaDatabase, athenaWorkgroup, query);
         waitForQueryToComplete(athenaClient, queryExecutionId);
         return getQueryResults(athenaClient, queryExecutionId);
     }
@@ -51,25 +50,20 @@ public final class AthenaClientHelper {
      * Submits a query to Amazon Athena and returns the execution ID of the query.
      * @param athenaClient
      * @param athenaDatabase
-     * @param athenaOutputS3Bucket
+     * @param athenaWorkgroup
      * @param query
      * @return Athena query execution ID
      */
-    public static String submitAthenaQuery(AthenaClient athenaClient, String athenaDatabase, String athenaOutputS3Bucket, String query) throws AwsServiceException, SdkClientException {
+    public static String submitAthenaQuery(AthenaClient athenaClient, String athenaDatabase, String athenaWorkgroup, String query) throws AwsServiceException, SdkClientException {
         // The QueryExecutionContext allows us to set the database.
         QueryExecutionContext queryExecutionContext = QueryExecutionContext.builder()
                 .database(athenaDatabase)
                 .build();
 
-        // The result configuration specifies where the results of the query should go.
-        ResultConfiguration resultConfiguration = ResultConfiguration.builder()
-                .outputLocation(athenaOutputS3Bucket)
-                .build();
-
         StartQueryExecutionRequest startQueryExecutionRequest = StartQueryExecutionRequest.builder()
+                .workGroup(athenaWorkgroup)
                 .queryString(query)
                 .queryExecutionContext(queryExecutionContext)
-                .resultConfiguration(resultConfiguration)
                 .build();
 
         StartQueryExecutionResponse startQueryExecutionResponse = athenaClient.startQueryExecution(startQueryExecutionRequest);

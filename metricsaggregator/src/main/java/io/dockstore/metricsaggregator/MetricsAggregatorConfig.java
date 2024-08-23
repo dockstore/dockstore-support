@@ -33,7 +33,7 @@ public class MetricsAggregatorConfig {
 
         this.dockstoreConfig = new DockstoreConfig(dockstoreSection.getString("server-url", "http://localhost:8080"), dockstoreSection.getString("token"));
         this.s3Config = new S3Config(s3Section.getString("bucketName", "local-dockstore-metrics-data"), s3Section.getString("endpointOverride"));
-        this.athenaConfig = new AthenaConfig(athenaSection.getString("database"), athenaSection.getString("outputS3Bucket"));
+        this.athenaConfig = new AthenaConfig(athenaSection.getString("database"), athenaSection.getString("outputS3Bucket"), athenaSection.getString("workgroup"));
     }
 
     public DockstoreConfig getDockstoreConfig() {
@@ -54,6 +54,6 @@ public class MetricsAggregatorConfig {
     public record S3Config(String bucket, String endpointOverride) {
     }
 
-    public record AthenaConfig(String database, String outputS3Bucket) {
+    public record AthenaConfig(String database, String outputS3Bucket, String workgroup) {
     }
 }
