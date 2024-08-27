@@ -17,6 +17,9 @@ token: <Dockstore token>
 [s3]
 bucketName: <S3 metrics bucket name>
 endpointOverride: <Optional S3 endpoint override>
+
+[athena]
+workgroup: <Athena workgroup name>
 ```
 **Required:**
 - `server-url`: The Dockstore server URL that's used to send API requests to.
@@ -27,6 +30,7 @@ endpointOverride: <Optional S3 endpoint override>
 - `token`: The Dockstore token of a Dockstore user. This user must be an admin or curator in order to be able to post aggregated metrics to Dockstore.
 - `bucketName`: The S3 bucket name storing metrics data. This is the bucket that the metrics aggregator will go through in order
   to aggregate metrics.
+- `workgroup`: The Athena workgroup name that Athena queries are executed in.
 
 **Optional:**
 - `endpointOverride`: Endpoint override to use when creating the S3 clients. This is typically only used for local testing so that a LocalStack endpoint 

@@ -41,7 +41,6 @@ public class MetricsAggregatorAthenaClient {
     private final ExecutionStatusAthenaAggregator executionStatusAggregator;
     private final ValidationStatusAthenaAggregator validationStatusAggregator;
     private final String metricsBucketName;
-    private final String outputS3Bucket;
     private final String athenaWorkgroup;
     private final String databaseName;
     private final String tableName;
@@ -54,7 +53,6 @@ public class MetricsAggregatorAthenaClient {
 
     public MetricsAggregatorAthenaClient(MetricsAggregatorConfig config) {
         this.metricsBucketName = config.getS3Config().bucket();
-        this.outputS3Bucket = config.getAthenaConfig().outputS3Bucket();
         this.athenaWorkgroup = config.getAthenaConfig().workgroup();
 
         final String underscoredMetricsBucketName = metricsBucketName.replace("-", "_"); // The metrics bucket name is usually in the form of "env-dockstore-metrics-data"
