@@ -53,9 +53,9 @@ public final class MilestoneResolver {
     public static void main(String[] args) throws IOException {
         final List<JiraAndGithub> mismatchedIssues = findMismatchedIssues();
         if (mismatchedIssues.isEmpty()) {
-            System.out.println("The JIRA fix version and GitHub milestone are in sync for all DOCK issues");
+            LOG.info("The JIRA fix version and GitHub milestone are in sync for all DOCK issues");
         } else {
-            System.out.println("The following issues are mismatched:");
+            LOG.info("The following issues are mismatched:");
             mismatchedIssues.forEach(MilestoneResolver::printMismatchedIssue);
         }
         mismatchedIssues.forEach(issue -> {
@@ -64,7 +64,7 @@ public final class MilestoneResolver {
                 final JiraIssue jiraIssue = Utils.getJiraIssue(issue.jiraIssueId);
                 final GHMilestone ghMilestone = gitHubIssue.getMilestone();
                 final String jiraIssueUrl = getJiraIssueUrl(jiraIssue.key());
-                System.out.println("Processing JIRA issue %s".formatted(jiraIssueUrl));
+                LOG.info("Processing JIRA issue {}", jiraIssueUrl);
                 final FixVersion[] fixVersions = jiraIssue.fields().fixVersions();
                 if (fixVersions.length == 0) {
                     // There is GitHub milestone but no JIRA fix version
@@ -73,20 +73,19 @@ public final class MilestoneResolver {
                     // There's a JIRA fix version, but no GitHub milestone, set the GitHub milestone
                     updateGitHubMilestone(gitHubIssue.getNumber(), fixVersions[0].name());
                 } else {
-                    System.out.println("The fix version and milestone mismatch must be resolved manually for: %s".formatted(getJiraIssueUrl(issue.jiraIssueId)));
+                    LOG.info("The fix version and milestone mismatch must be resolved manually for: {}}", getJiraIssueUrl(issue.jiraIssueId));
                 }
             } catch (URISyntaxException | IOException | InterruptedException e) {
                 LOG.error("Error resolving %s".formatted(issue), e);
-                throw new RuntimeException(e);
             }
         });
     }
 
     private static void updateGitHubMilestone(int gitHubIssue, String jiraFixVersion) {
         if (Utils.updateGitHubMilestone(gitHubIssue, jiraFixVersion)) {
-            System.out.println("Updated GitHub milestone in %s to %s".formatted(gitHubIssue, jiraFixVersion));
+            LOG.info("Updated GitHub milestone in {} to {}", gitHubIssue, jiraFixVersion);
         } else {
-            System.err.println("Failed to update GitHub milestone in %s".formatted(gitHubIssue));
+            LOG.error("Failed to update GitHub milestone in {}", gitHubIssue);
         }
     }
 
@@ -94,10 +93,9 @@ public final class MilestoneResolver {
         throws URISyntaxException, IOException, InterruptedException {
         final String jiraIssueUrl = getJiraIssueUrl(jiraIssue);
         if (Utils.updateJiraFixVersion(jiraIssue, gitHubMilestone)) {
-            System.out.println("Updated fix version in %s to %s".formatted(jiraIssueUrl,
-                gitHubMilestone));
+            LOG.info("Updated fix version in {} to {}", jiraIssueUrl, gitHubMilestone);
         } else {
-            System.err.println("Failed to update fix version in %s".formatted(jiraIssueUrl));
+            LOG.error("Failed to update fix version in {}", jiraIssueUrl);
         }
     }
 
@@ -107,12 +105,12 @@ public final class MilestoneResolver {
         final String notSet = "<not set>";
         final String milestone = ghMilestone != null ? ghMilestone.getTitle() : notSet;
         final String jiraFixVersion = findJiraFixVersion(ghIssue.getBody()).orElse(notSet);
-        System.out.println(
-            "GitHub %s, milestone %s; JIRA %s, fix version %s".formatted(
+        LOG.info(
+            "GitHub {}, milestone {}; JIRA {}, fix version {}",
                 ghIssue.getNumber(),
                 milestone,
                 issue.jiraIssueId,
-                jiraFixVersion));
+                jiraFixVersion);
     }
 
     /**

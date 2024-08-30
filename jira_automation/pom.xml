@@ -62,7 +62,7 @@
         <artifactId>maven-shade-plugin</artifactId>
         <executions>
           <execution>
-            <id>topicGeneratorClient</id>
+            <id>milestoneResolverId</id>
             <phase>package</phase>
             <goals>
               <goal>shade</goal>
@@ -86,9 +86,6 @@
                 <exclude>META-INF/*.SF</exclude>
                 <exclude>META-INF/*.DSA</exclude>
                 <exclude>META-INF/*.RSA</exclude>
-                <!-- not sure why this results in error unline our other repos  if not excluded -->
-                <exclude>migrations.xml</exclude>
-                <exclude>migrations.*.xml</exclude>
               </excludes>
             </filter>
           </filters>

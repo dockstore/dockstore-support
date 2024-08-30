@@ -37,6 +37,7 @@ public final class Utils {
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
     private static final String JIRA_USERNAME = "JIRA_USERNAME";
     private static final String JIRA_TOKEN = "JIRA_TOKEN";
+    private static final Gson GSON = new Gson();
 
     private static final Logger LOG = LoggerFactory.getLogger(Utils.class);
 
@@ -51,9 +52,8 @@ public final class Utils {
             .uri(uri)
             .build();
         final HttpResponse<String> response = HTTP_CLIENT.send(httpRequest, BodyHandlers.ofString());
-        final Gson gson = new Gson();
         final String body = response.body();
-        final JiraIssue jiraIssue = gson.fromJson(body, JiraIssue.class);
+        final JiraIssue jiraIssue = GSON.fromJson(body, JiraIssue.class);
         return jiraIssue;
     }
 
