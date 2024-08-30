@@ -347,6 +347,12 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <argLine>
+                        -Djava.security.manager=allow
+                        @{argLine}
+                    </argLine>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -354,6 +360,10 @@
                 <version>${maven-failsafe.version}</version>
                 <configuration>
                     <skipITs>${skip-tooltester-ITs}</skipITs>
+                    <argLine>
+                        -Djava.security.manager=allow
+                        @{argLine}
+                    </argLine>
                 </configuration>
                 <executions>
                     <execution>

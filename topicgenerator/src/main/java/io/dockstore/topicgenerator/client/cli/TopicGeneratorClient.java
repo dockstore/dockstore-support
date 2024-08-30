@@ -9,6 +9,7 @@ import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
+import com.google.common.collect.Lists;
 import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingRegistry;
@@ -32,7 +33,9 @@ import io.dockstore.openapi.client.model.UpdateAITopicRequest;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.OutputCsvHeaders;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.UploadTopicsCommand;
+import io.dockstore.topicgenerator.helper.ChuckNorrisFilter;
 import io.dockstore.topicgenerator.helper.OpenAIHelper;
+import io.dockstore.topicgenerator.helper.StringFilter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -59,6 +62,7 @@ public class TopicGeneratorClient {
     private static final int MAX_CONTEXT_LENGTH = 16385;
     private static final EncodingRegistry REGISTRY = Encodings.newDefaultEncodingRegistry();
     private static final Encoding ENCODING = REGISTRY.getEncodingForModel(AI_MODEL);
+    private final List<StringFilter> stringFilters = Lists.newArrayList(new ChuckNorrisFilter("en"), new ChuckNorrisFilter("fr-CA-u-sd-caqc"));
 
     TopicGeneratorClient() {
     }
@@ -229,6 +233,11 @@ public class TopicGeneratorClient {
             // This command's input CSV headers are the generate-topic command's output headers
             final String trsId = entryWithAITopic.get(GenerateTopicsCommand.OutputCsvHeaders.trsId);
             final String aiTopic = entryWithAITopic.get(GenerateTopicsCommand.OutputCsvHeaders.aiTopic);
+            boolean caughtByFilter = assessTopic(aiTopic);
+            if (caughtByFilter) {
+                LOG.info("Topic for {} was deemed offensive, please review above", trsId);
+                continue;
+            }
             final String version = entryWithAITopic.get(OutputCsvHeaders.version);
             try {
                 extendedGa4GhApi.updateAITopic(new UpdateAITopicRequest().aiTopic(aiTopic), version, trsId);
@@ -237,6 +246,16 @@ public class TopicGeneratorClient {
                 LOG.error("Could not upload AI topic for {}", trsId);
             }
         }
+    }
+
+    private boolean assessTopic(String aiTopic) {
+        for (StringFilter filter : this.stringFilters) {
+            if (filter.isSuspiciousTopic(aiTopic)) {
+                LOG.info(filter.getClass() + " blocked a topic sentence, please review: " + aiTopic);
+                return true;
+            }
+        }
+        return false;
     }
 
     private Iterable<CSVRecord> readCsvFile(String inputCsvFilePath, Class<? extends Enum<?>> csvHeaders) {

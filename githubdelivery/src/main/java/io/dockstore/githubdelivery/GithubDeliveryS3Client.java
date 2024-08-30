@@ -17,6 +17,10 @@
 
 package io.dockstore.githubdelivery;
 
+import static io.dockstore.githubdelivery.GithubDeliveryHelper.getGitHubInstallationRepositoriesPayloadByKey;
+import static io.dockstore.githubdelivery.GithubDeliveryHelper.getGitHubPushPayloadByKey;
+import static io.dockstore.githubdelivery.GithubDeliveryHelper.getGitHubReleasePayloadByKey;
+import static io.dockstore.githubdelivery.GithubDeliveryHelper.logReadError;
 import static io.dockstore.utils.ConfigFileUtils.getConfiguration;
 import static io.dockstore.utils.DockstoreApiClientUtils.setupApiClient;
 import static io.dockstore.utils.ExceptionHandler.GENERIC_ERROR;
@@ -25,11 +29,8 @@ import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 import io.dockstore.common.S3ClientHelper;
 import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitAllEventsCommand;
 import io.dockstore.githubdelivery.GithubDeliveryCommandLineArgs.SubmitAllHourlyEventsCommand;
@@ -39,6 +40,7 @@ import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.InstallationRepositoriesPayload;
 import io.dockstore.openapi.client.model.PushPayload;
+import io.dockstore.openapi.client.model.ReleasePayload;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.configuration2.INIConfiguration;
@@ -51,7 +53,6 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
-import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
@@ -61,7 +62,6 @@ public class GithubDeliveryS3Client {
     public static final String SUBMIT_ALL_COMMAND = "submit-all";
     public static final String SUBMIT_HOUR_COMMAND = "submit-hour";
     private static final Logger LOG = LoggerFactory.getLogger(GithubDeliveryS3Client.class);
-    private static final ObjectMapper MAPPER = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     private final S3Client s3Client;
     private final String bucketName;
 
@@ -124,29 +124,7 @@ public class GithubDeliveryS3Client {
         ResponseInputStream<GetObjectResponse> object = s3Client.getObject(objectRequest);
         return IOUtils.toString(object, StandardCharsets.UTF_8);
     }
-    private PushPayload getGitHubPushPayloadByKey(String eventType, String body, String key) throws IOException, NoSuchKeyException {
-        try {
-            PushPayload pushPayload;
-            pushPayload = MAPPER.readValue(body, PushPayload.class);
-            if (pushPayload == null) {
-                logReadError(eventType, key);
-            }
-            return pushPayload;
-        } catch (JsonSyntaxException e) {
-            exceptionReadError(e, eventType, key);
-        }
-        return null;
-    }
-    private InstallationRepositoriesPayload getGitHubInstallationRepositoriesPayloadByKey(String eventType, String body, String key) throws IOException, NoSuchKeyException {
-        try {
-            InstallationRepositoriesPayload installationRepositoriesPayload;
-            installationRepositoriesPayload = MAPPER.readValue(body, InstallationRepositoriesPayload.class);
-            return installationRepositoriesPayload;
-        } catch (JsonSyntaxException e) {
-            exceptionReadError(e, eventType, key);
-        }
-        return null;
-    }
+
     private void submitGitHubDeliveryEventsByDate(String date, WorkflowsApi workflowsApi) {
 
         ListObjectsV2Request listObjectsV2Request = ListObjectsV2Request
@@ -183,16 +161,17 @@ public class GithubDeliveryS3Client {
             JsonObject jsonObject = GSON.fromJson(s3GithubObject, JsonObject.class);
             JsonObject body = jsonObject.get("body").getAsJsonObject();
             String bodyString = body.toString();
-            String eventType = jsonObject.get("eventType").getAsString();
-            if ("installation_repositories".equals(eventType)) {
+            final String eventType = jsonObject.get("eventType").getAsString();
+            switch (eventType) {
+            case "installation_repositories" -> {
                 InstallationRepositoriesPayload payload = getGitHubInstallationRepositoriesPayloadByKey(eventType, bodyString, key);
                 if (payload != null) {
                     workflowsApi.handleGitHubInstallation(payload, deliveryid);
                 } else {
                     logReadError(eventType, key);
                 }
-
-            } else if ("push".equals(eventType)) {
+            }
+            case "push" -> {
                 //push events
                 PushPayload payload = getGitHubPushPayloadByKey(eventType, bodyString, key);
                 if (payload != null) {
@@ -204,10 +183,19 @@ public class GithubDeliveryS3Client {
                 } else {
                     logReadError(eventType, key);
                 }
-
-            } else {
+            }
+            case "release" -> {
+                final ReleasePayload releasePayload = getGitHubReleasePayloadByKey(eventType, bodyString, key);
+                if (releasePayload != null) {
+                    workflowsApi.handleGitHubTaggedRelease(releasePayload, deliveryid);
+                } else {
+                    logReadError(eventType, key);
+                }
+            }
+            default -> {
                 LOG.error("Invalid eventType {} format for key {}", eventType, key);
                 return;
+            }
             }
             LOG.info("Successfully submitted events for key {}", key);
         } catch (IOException e) {
@@ -215,11 +203,5 @@ public class GithubDeliveryS3Client {
         } catch (ApiException e) {
             LOG.error("Could not submit github event from key {}", key, e);
         }
-    }
-    private void logReadError(String eventType, String key) {
-        LOG.error("Could not read github {} event from key {}", eventType, key);
-    }
-    private void exceptionReadError(Exception e, String eventType, String key) {
-        exceptionMessage(e, String.format("Could not read github %s event from key %s", eventType, key), 1);
     }
 }
