@@ -89,7 +89,7 @@ public class MetricsAggregatorAthenaClient {
                     numberOfVersionsSubmitted.incrementAndGet();
                 } catch (ApiException exception) {
                     // Log error and continue processing for other platforms
-                    LOG.error("Could not post aggregated metrics to Dockstore for tool ID: {}, version {}, platform(s): {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platformToMetrics.keySet());
+                    LOG.error("Could not post aggregated metrics to Dockstore for tool ID: {}, version {}, platform(s): {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platformToMetrics.keySet(), exception);
                     numberOfVersionsSkipped.incrementAndGet();
                 }
             }
