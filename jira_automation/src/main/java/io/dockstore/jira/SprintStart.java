@@ -16,7 +16,7 @@ import java.util.Base64;
 public final class SprintStart {
 
     private static final String PROJECT = "SEAB";
-    private static final String BASE_URL = "https://ucsc-cgl.atlassian.net/rest/api/3/";
+    private static final String BASE_URL = Utils.JIRA_REST_BASE_URL;
     private static final String USERS_URL = BASE_URL + "users?maxResults=500";
     private static final String PROJECT_URL = BASE_URL + "project/" + PROJECT;
 
