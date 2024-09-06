@@ -11,6 +11,7 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
@@ -67,7 +68,7 @@ public final class Utils {
         final URI uri = getJiraIssueRestUri(issueId);
         final UpdateJiraIssue updateJiraIssue = new UpdateJiraIssue(new UpdateFields(
             jiraFixVersionFromGitHubMilestone(gitHubMilestone)));
-        final String json = new Gson().toJson(updateJiraIssue);
+        final String json = GSON.toJson(updateJiraIssue);
         final HttpRequest httpRequest = authorizedRequestBuilder()
             .uri(uri)
             .PUT(BodyPublishers.ofString(json))
@@ -94,13 +95,12 @@ public final class Utils {
                 .filter(ghMilestone -> ghMilestoneDesc.equals(ghMilestone.getTitle()))
                 .findFirst();
             if (milestone.isEmpty()) {
-                System.err.println("Could not find GitHub milestone for %s".formatted(jiraFixVersion));
+                LOG.error("Could not find GitHub milestone for {}", jiraFixVersion);
                 return false;
             }
             issue.setMilestone(milestone.get());
         } catch (IOException e) {
             LOG.error("Error setting milestone on issue %s".formatted(number), e);
-            System.err.println("Error updating milestone for GitHub issue %s".formatted(number));
             return false;
         }
         return true;
@@ -141,7 +141,8 @@ public final class Utils {
         final String username = System.getenv(JIRA_USERNAME);
         final String jiraToken = System.getenv(JIRA_TOKEN);
         return "Basic %s".formatted(
-                Base64.getEncoder().encodeToString((username + ':' + jiraToken).getBytes()));
+                Base64.getEncoder().encodeToString((username + ':' + jiraToken).getBytes(
+                    StandardCharsets.UTF_8)));
     }
 
     /**
@@ -168,7 +169,7 @@ public final class Utils {
         } else if (JIRA_OPEN_ENDED_RESEARCH_TASKS.equals(jiraVersion)) {
             return GITHUB_OPEN_ENDED_RESEARCH_TASKS;
         }
-        System.err.println("Unexpected jiraVersion: %s".formatted(jiraVersion));
+        LOG.error("Unexpected jiraVersion: {}", jiraVersion);
         return jiraVersion;
     }
 

@@ -73,7 +73,7 @@ public final class MilestoneResolver {
                     // There's a JIRA fix version, but no GitHub milestone, set the GitHub milestone
                     updateGitHubMilestone(gitHubIssue.getNumber(), fixVersions[0].name());
                 } else {
-                    LOG.info("The fix version and milestone mismatch must be resolved manually for: {}}", getJiraIssueUrl(issue.jiraIssueId));
+                    LOG.info("The fix version and milestone mismatch must be resolved manually for: {}", getJiraIssueUrl(issue.jiraIssueId));
                 }
             } catch (URISyntaxException | IOException | InterruptedException e) {
                 LOG.error("Error resolving %s".formatted(issue), e);
@@ -144,12 +144,6 @@ public final class MilestoneResolver {
         } else { // No fix version in JIRA, is there one in GitHub?
             return milestone != null;
         }
-    }
-
-    private static String generateJiraIssuesUrl(final List<MilestoneResolver.JiraAndGithub> issues) {
-        return "https://ucsc-cgl.atlassian.net/issues/?jql=project=DOCK AND "
-            + issues.stream().map(issue -> "key=\"" + issue.jiraIssueId() + "\"")
-            .collect(Collectors.joining(" or "));
     }
 
     private static String getJiraIssueUrl(String issueNumber) {
