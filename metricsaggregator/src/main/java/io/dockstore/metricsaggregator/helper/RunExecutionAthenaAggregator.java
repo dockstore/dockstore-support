@@ -9,6 +9,7 @@ import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.max;
 import static org.jooq.impl.DSL.min;
 import static org.jooq.impl.DSL.name;
+import static org.jooq.impl.DSL.rowNumber;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.table;
 import static org.jooq.impl.DSL.unnest;
@@ -28,6 +29,7 @@ import org.jooq.CommonTableExpression;
 import org.jooq.Field;
 import org.jooq.Record7;
 import org.jooq.SQLDialect;
+import org.jooq.Select;
 import org.jooq.SelectField;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
@@ -38,6 +40,7 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
     protected static final Field<Double> MEMORY_REQUIREMENTS_GB_FIELD = field("memoryrequirementsgb", Double.class);
     protected static final Field<Integer> CPU_REQUIREMENTS_FIELD = field("cpurequirements", Integer.class);
     protected static final Field<String> COST_FIELD = field("cost", String.class);
+    protected static final Field<String[]> TASK_EXECUTIONS_FIELD = field("taskexecutions", String[].class);
 
     // Fields for the SELECT clause
     private final Set<SelectField<?>> selectFields = new HashSet<>();
@@ -89,24 +92,43 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
     @Override
     protected String createQuery(AthenaTablePartition partition) {
         // Sub-query that flattens the runexecutions array for the partition
-        final CommonTableExpression<Record7<String, String, String, Integer, Double, Integer, String>> executionsTable = name("executions")
+        final Select<?> runExecutionsNestedSelect = select(FILE_MODIFIED_TIME_FIELD,
+                rowNumber().over().orderBy(FILE_MODIFIED_TIME_FIELD.desc()).as(FILE_MODIFIED_TIME_ROW_NUM_FIELD),
+                PLATFORM_FIELD,
+                field("unnested." + DATE_EXECUTED_FIELD, String.class),
+                field("unnested." + EXECUTION_STATUS_FIELD, String.class),
+                field("unnested." + EXECUTION_TIME_SECONDS_FIELD, Integer.class),
+                field("unnested." + MEMORY_REQUIREMENTS_GB_FIELD, Double.class),
+                field("unnested." + CPU_REQUIREMENTS_FIELD, Integer.class),
+                field("unnested." + COST_FIELD, String.class))
+                .from(table(tableName), unnest(field("runexecutions", String[].class)).as("t", "unnested"))
+                .where(ENTITY_FIELD.eq(inline(partition.entity()))
+                        .and(REGISTRY_FIELD.eq(inline(partition.registry())))
+                        .and(ORG_FIELD.eq(inline(partition.org())))
+                        .and(NAME_FIELD.eq(inline(partition.name())))
+                        .and(VERSION_FIELD.eq(inline(partition.version()))));
+
+        final CommonTableExpression<Record7<String, String, String, Integer, Double, Integer, String>> dedupedExecutionsTable = name("dedupedexecutions")
                 .fields(PLATFORM_FIELD.getName(), DATE_EXECUTED_FIELD.getName(), EXECUTION_STATUS_FIELD.getName(), EXECUTION_TIME_SECONDS_FIELD.getName(),
                         MEMORY_REQUIREMENTS_GB_FIELD.getName(), CPU_REQUIREMENTS_FIELD.getName(), COST_FIELD.getName())
-                .as(select(PLATFORM_FIELD,
-                        field("unnested." + DATE_EXECUTED_FIELD, String.class),
-                        field("unnested." + EXECUTION_STATUS_FIELD, String.class),
-                        field("unnested." + EXECUTION_TIME_SECONDS_FIELD, Integer.class),
-                        field("unnested." + MEMORY_REQUIREMENTS_GB_FIELD, Double.class),
-                        field("unnested." + CPU_REQUIREMENTS_FIELD, Integer.class),
-                        field("unnested." + COST_FIELD, String.class))
-                        .from(table(tableName), unnest(field("runexecutions", String[].class)).as("t", "unnested"))
-                        .where(ENTITY_FIELD.eq(inline(partition.entity()))
+                .as(select(PLATFORM_FIELD, DATE_EXECUTED_FIELD, EXECUTION_STATUS_FIELD, EXECUTION_TIME_SECONDS_FIELD,
+                        MEMORY_REQUIREMENTS_GB_FIELD, CPU_REQUIREMENTS_FIELD, COST_FIELD)
+                        .from(runExecutionsNestedSelect)
+                        .where(FILE_MODIFIED_TIME_ROW_NUM_FIELD.eq(inline(1))));
+
+        final Select<?> taskExecutionsListNestedSelect = select(FILE_MODIFIED_TIME_FIELD,
+                rowNumber().over().orderBy(FILE_MODIFIED_TIME_FIELD.desc()).as(FILE_MODIFIED_TIME_ROW_NUM_FIELD),
+                PLATFORM_FIELD,
+                field("unnested." + TASK_EXECUTIONS_FIELD, String[].class))
+                .from(table(tableName), unnest(field("taskexecutions", String[].class)).as("t", "unnested"))
+                .where(ENTITY_FIELD.eq(inline(partition.entity()))
                                 .and(REGISTRY_FIELD.eq(inline(partition.registry())))
                                 .and(ORG_FIELD.eq(inline(partition.org())))
                                 .and(NAME_FIELD.eq(inline(partition.name())))
-                                .and(VERSION_FIELD.eq(inline(partition.version())))));
+                                .and(VERSION_FIELD.eq(inline(partition.version()))));
+
         // This query created a workflow execution from each array of tasks. This will be unioned with the actual workflow executions submitted
-        final CommonTableExpression<Record7<String, String, String, Integer, Double, Integer, String>> runExecutionsFromTasksTable = name("runexecutionfromtasks")
+        final CommonTableExpression<Record7<String, String, String, Integer, Double, Integer, String>> dedupedRunExecutionsFromTasksTable = name("runexecutionfromdedupedtasks")
                 .fields(PLATFORM_FIELD.getName(), DATE_EXECUTED_FIELD.getName(), EXECUTION_STATUS_FIELD.getName(), EXECUTION_TIME_SECONDS_FIELD.getName(),
                         MEMORY_REQUIREMENTS_GB_FIELD.getName(), CPU_REQUIREMENTS_FIELD.getName(), COST_FIELD.getName())
                 .as(select(PLATFORM_FIELD,
@@ -117,23 +139,17 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
                         field("array_max(transform(taskexecutions, t -> t.memoryrequirementsgb))", Double.class).as(MEMORY_REQUIREMENTS_GB_FIELD),
                         field("array_max(transform(taskexecutions, t -> t.cpurequirements))", Integer.class).as(CPU_REQUIREMENTS_FIELD),
                         field("array_max(transform(taskexecutions, t -> t.cost))", String.class).as(COST_FIELD))
-                        .from(select(PLATFORM_FIELD, field("unnested.taskexecutions"))
-                                .from(table(tableName), unnest(field("taskexecutions", String[].class)).as("t", "unnested"))
-                                .where(ENTITY_FIELD.eq(inline(partition.entity()))
-                                        .and(REGISTRY_FIELD.eq(inline(partition.registry())))
-                                        .and(ORG_FIELD.eq(inline(partition.org())))
-                                        .and(NAME_FIELD.eq(inline(partition.name())))
-                                        .and(VERSION_FIELD.eq(inline(partition.version()))))
-                        ));
+                        .from(taskExecutionsListNestedSelect)
+                        .where(FILE_MODIFIED_TIME_ROW_NUM_FIELD.eq(inline(1))));
 
         return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true))
                 // Sub-query that flattens the runexecutions array for the partition
-                .with(executionsTable)
-                .with(runExecutionsFromTasksTable)
+                .with(dedupedExecutionsTable)
+                .with(dedupedRunExecutionsFromTasksTable)
                 // Main query that uses the results of the subquery
                 .select(this.selectFields)
-                .from(select().from(executionsTable)
-                        .unionAll(select().from(runExecutionsFromTasksTable))
+                .from(select().from(dedupedExecutionsTable)
+                        .unionAll(select().from(dedupedRunExecutionsFromTasksTable))
                 )
                 .groupBy(cube(this.groupFields.toArray(Field[]::new))) // CUBE generates sub-totals for all combinations of the GROUP BY columns.
                 .getSQL();
