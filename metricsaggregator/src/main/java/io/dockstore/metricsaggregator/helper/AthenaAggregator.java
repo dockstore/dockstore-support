@@ -40,6 +40,10 @@ public abstract class AthenaAggregator<M extends Metric> {
     protected static final Field<String> VERSION_FIELD = field("version", String.class);
     protected static final Field<String> PLATFORM_FIELD = field("platform", String.class);
 
+    // S3 metadata fields
+    protected static final Field<String> FILE_MODIFIED_TIME_FIELD = field("\"$file_modified_time\"", String.class);
+    protected static final Field<Integer> FILE_MODIFIED_TIME_ROW_NUM_FIELD = field("filemodifiedtimerownum", Integer.class);
+
     private static final Logger LOG = LoggerFactory.getLogger(AthenaAggregator.class);
 
     protected MetricsAggregatorAthenaClient metricsAggregatorAthenaClient;
