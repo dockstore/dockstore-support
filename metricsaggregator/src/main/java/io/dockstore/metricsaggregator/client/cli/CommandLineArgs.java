@@ -37,21 +37,17 @@ public class CommandLineArgs {
         @Parameter(names = {"-c", "--config"}, description = "The config file path.")
         private File config = new File("./" + MetricsAggregatorClient.CONFIG_FILE_NAME);
 
-        @Parameter(names = {"--athena"}, description = "Aggregate metrics in S3 using AWS Athena")
-        private boolean withAthena = false;
-
         @Parameter(names = {"--skipDockstore"}, description = "Skip posting the metrics to Dockstore")
         private boolean skipDockstore = false;
 
         @Parameter(names = {"--trsIds"}, description = "Aggregate metrics for the tools specified TRS ID")
         private List<String> trsIds;
 
+        @Parameter(names = { "--dryRun" }, description = "Do a dry run with Athena by only generating the queries")
+        private boolean dryRun = false;
+
         public File getConfig() {
             return config;
-        }
-
-        public boolean isWithAthena() {
-            return withAthena;
         }
 
         public boolean isSkipDockstore() {
@@ -60,6 +56,10 @@ public class CommandLineArgs {
 
         public List<String> getTrsIds() {
             return trsIds;
+        }
+
+        public boolean isDryRun() {
+            return dryRun;
         }
     }
 
