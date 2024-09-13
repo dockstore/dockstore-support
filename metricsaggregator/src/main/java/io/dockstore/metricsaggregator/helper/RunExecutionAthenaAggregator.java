@@ -86,6 +86,7 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
 
     /**
      * Create the runexecutions query string using the SELECT and GROUP BY fields.
+     * De-duplicates executions with the same execution ID by taking the newest execution according to the S3 file modified time.
      *
      * @return
      */

@@ -161,7 +161,11 @@ public class MetricsAggregatorClient {
         } else {
             metricsAggregatorS3Client = new MetricsAggregatorS3Client(config.getS3Config().bucket(), config.getS3Config().endpointOverride());
         }
-        LOG.info("Aggregating metrics with {}. Submitting metrics to Dockstore is {}", aggregateMetricsCommand.isWithAthena() ? "AWS Athena" : "Java", skipPostingToDockstore ? "skipped" : "enabled");
+
+        if (aggregateMetricsCommand.isDryRun()) {
+            LOG.info("Executing dry run");
+        }
+        LOG.info("Submitting metrics to Dockstore is {}", skipPostingToDockstore ? "skipped" : "enabled");
 
         final Instant getDirectoriesStartTime = Instant.now();
         List<S3DirectoryInfo> s3DirectoriesToAggregate;
@@ -186,12 +190,10 @@ public class MetricsAggregatorClient {
             return;
         }
 
-        if (aggregateMetricsCommand.isWithAthena()) {
-            MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config);
-            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
-        } else {
-            metricsAggregatorS3Client.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
-        }
+        MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config,
+                aggregateMetricsCommand.isDryRun());
+        metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore,
+                aggregateMetricsCommand.isDryRun());
     }
 
     private void submitValidationData(MetricsAggregatorConfig config, ValidatorToolEnum validator, String validatorVersion, String dataFilePath, Partner platform, String executionId) throws IOException {

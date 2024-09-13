@@ -77,6 +77,10 @@ public abstract class AthenaAggregator<M extends Metric> {
         return createMetricByPlatform(queryResultRows);
     }
 
+    public void printQuery(AthenaTablePartition partition) {
+        LOG.info(createQuery(partition));
+    }
+
     /**
      * Get the platform column value from the query result row
      * @param queryResultRow
