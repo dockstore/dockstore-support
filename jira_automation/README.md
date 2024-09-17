@@ -21,9 +21,10 @@ a configuration issue again, it could be useful in the future.
 I usually run in IntelliJ with a Run Configuration
 
 1. In Run Configuration, set the main class to io.dockstore.jira.MilestoneChecker or io.dockstore.jira.ResolutionChecker
-2. Add the environment variable `GITHUB_TOKEN` to your GitHub token.
+2. Add the environment variable `GITHUB_TOKEN` to your GitHub token. Note that you can use a "fine-grained token" with only access to Issues as opposed to a classic token. 
 3. For MilestoneResolver, you also need to set these environment variables:
     * `JIRA_USERNAME` to your JIRA user, e.g., jdoe@ucsc.edu
     * `JIRA_TOKEN` to your JIRA token
-3. The console will print out generated urls, which you then paste into your browser.
+4. For MilestoneChecker, the console will print out generated urls, which you then paste into your browser. 
+5. For MilestoneResolver, the output is currently set to log INFO only, so you may need to tinker with slf4j to enable logging. 
 
