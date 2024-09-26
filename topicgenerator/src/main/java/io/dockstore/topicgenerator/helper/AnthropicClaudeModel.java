@@ -30,7 +30,6 @@ public class AnthropicClaudeModel extends AIModel {
 
     @Override
     public Optional<AIResponseInfo> generateTopic(String prompt) {
-        //String prompt = "Summarize the " + entryType + " in one sentence that starts with a verb in the <summary> tags. Use a maximum of 150 characters.\n<content>" + descriptorFile.getContent() + "</content>";
         if (estimateTokens(prompt) > getMaxContextLength()) {
             prompt = prompt.substring(0, getMaxContextLength());
         }

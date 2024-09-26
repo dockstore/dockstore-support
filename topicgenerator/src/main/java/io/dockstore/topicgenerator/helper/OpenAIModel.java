@@ -41,8 +41,6 @@ public class OpenAIModel extends AIModel {
      */
     @Override
     public Optional<AIResponseInfo> generateTopic(String prompt) {
-        // A character limit is specified but ChatGPT doesn't follow it strictly
-        //final String systemPrompt = "Summarize the " + entryType + " in one sentence that starts with a verb in the <summary> tags. Use a maximum of 150 characters.";
         // Chat completion API calls include additional tokens for message-based formatting. Calculate how long the descriptor content can be and truncate if needed
         ChatMessage userMessage = new ChatMessage(ChatMessageRole.USER.value(), prompt);
         boolean isPromptTruncated = false;
