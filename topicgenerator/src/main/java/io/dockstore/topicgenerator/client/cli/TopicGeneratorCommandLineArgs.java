@@ -2,6 +2,7 @@ package io.dockstore.topicgenerator.client.cli;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
+import io.dockstore.topicgenerator.helper.AIModelType;
 import java.io.File;
 
 public class TopicGeneratorCommandLineArgs {
@@ -28,8 +29,15 @@ public class TopicGeneratorCommandLineArgs {
         @Parameter(names = {"-e", "--entries"}, description = "The file path to the CSV file containing the TRS ID, and version name of the entries to generate topics for. The first line of the file should contain the CSV fields: trsID,version")
         private String entriesCsvFilePath = "./" + DEFAULT_ENTRIES_FILE_NAME;
 
+        @Parameter(names = {"-m", "--model"}, description = "The AI model to use")
+        private AIModelType aiModelType = AIModelType.CLAUDE_3_HAIKU;
+
         public String getEntriesCsvFilePath() {
             return entriesCsvFilePath;
+        }
+
+        public AIModelType getAiModel() {
+            return aiModelType;
         }
 
         /**
@@ -50,6 +58,7 @@ public class TopicGeneratorCommandLineArgs {
             isTruncated, // Whether the descriptor file content truncated because it exceeded the token maximum
             promptTokens, // Number of tokens in prompt
             completionTokens, // Number of tokens in response
+            cost, // Estimated cost of the prompt and completion tokens
             finishReason, // The reason that the response stopped
             aiTopic
         }
