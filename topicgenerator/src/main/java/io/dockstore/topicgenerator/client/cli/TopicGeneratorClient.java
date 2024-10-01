@@ -20,10 +20,12 @@ import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.ToolVersion;
 import io.dockstore.openapi.client.model.ToolVersion.DescriptorTypeEnum;
+import io.dockstore.openapi.client.model.TrsIdAndVersion;
 import io.dockstore.openapi.client.model.UpdateAITopicRequest;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.InputCsvHeaders;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.OutputCsvHeaders;
+import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GetTopicCandidates;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.UploadTopicsCommand;
 import io.dockstore.topicgenerator.helper.AIModelType;
 import io.dockstore.topicgenerator.helper.AnthropicClaudeModel;
@@ -58,8 +60,10 @@ public class TopicGeneratorClient {
     public static void main(String[] args) {
         final TopicGeneratorCommandLineArgs commandLineArgs = new TopicGeneratorCommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
+        final GetTopicCandidates getTopicCandidates = new GetTopicCandidates();
         final GenerateTopicsCommand generateTopicsCommand = new GenerateTopicsCommand();
         final UploadTopicsCommand uploadTopicsCommand = new UploadTopicsCommand();
+        jCommander.addCommand(getTopicCandidates);
         jCommander.addCommand(generateTopicsCommand);
         jCommander.addCommand(uploadTopicsCommand);
 
@@ -92,6 +96,33 @@ public class TopicGeneratorClient {
                 // Read CSV file
                 topicGeneratorClient.uploadTopics(topicGeneratorConfig, uploadTopicsCommand.getAiTopicsCsvFilePath());
             }
+        }
+    }
+
+    public void getAITopicCandidates(TopicGeneratorConfig topicGeneratorConfig, String outputCsvFilePath) {
+        final ApiClient apiClient = setupApiClient(topicGeneratorConfig.dockstoreServerUrl(), topicGeneratorConfig.dockstoreToken());
+        final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
+        LOG.info("Getting AI topic candidates from {}", topicGeneratorConfig.dockstoreServerUrl());
+
+        List<TrsIdAndVersion> aiTopicCandidates = extendedGa4GhApi.getAITopicCandidates();
+        LOG.info("There are {} AI topic candidates", aiTopicCandidates.size());
+
+        if (aiTopicCandidates.isEmpty()) {
+            LOG.info("No AI topic candidates found");
+            return;
+        }
+
+        try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(outputCsvFilePath, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(GenerateTopicsCommand.InputCsvHeaders.class).build())) {
+            aiTopicCandidates.forEach(aiTopicCandidate -> {
+                try {
+                    csvPrinter.printRecord(aiTopicCandidate.getTrsId(), aiTopicCandidate.getVersion());
+                } catch (IOException e) {
+                    LOG.error("Could not write record for TRS ID {}, version {}", aiTopicCandidate.getTrsId(), aiTopicCandidate.getVersion());
+                }
+            });
+            LOG.info("View AI topic candidates for {} in file {}", topicGeneratorConfig.dockstoreServerUrl(), outputCsvFilePath);
+        } catch (IOException e) {
+            exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
     }
 

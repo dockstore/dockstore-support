@@ -23,6 +23,16 @@ public class TopicGeneratorCommandLineArgs {
         return config;
     }
 
+    @Parameters(commandNames = { "get-topic-candidates" }, commandDescription = "Create a CSV file containing AI topic candidates from Dockstore. Use the generate-topics command to generate topics for these candidates.")
+    public static class GetTopicCandidates {
+        @Parameter(names = {"-o", "--outputPath"}, description = "The output file path used for the CSV file created containing AI topic candidates from Dockstore.")
+        private String entriesCsvOutputFilePath = DEFAULT_ENTRIES_FILE_NAME;
+
+        public String getEntriesCsvOutputFilePath() {
+            return entriesCsvOutputFilePath;
+        }
+    }
+
     @Parameters(commandNames = { "generate-topics" }, commandDescription = "Generate topics for public Dockstore entries using AI. Use the upload-topics command to upload these topics to Dockstore.")
     public static class GenerateTopicsCommand {
 
