@@ -4,6 +4,7 @@ import static io.dockstore.utils.ConfigFileUtils.getConfiguration;
 import static io.dockstore.utils.DockstoreApiClientUtils.setupApiClient;
 import static io.dockstore.utils.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.utils.ExceptionHandler.IO_ERROR;
+import static io.dockstore.utils.ExceptionHandler.errorMessage;
 import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 
 import com.beust.jcommander.JCommander;
@@ -29,9 +30,11 @@ import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.ToolVersion;
 import io.dockstore.openapi.client.model.ToolVersion.DescriptorTypeEnum;
+import io.dockstore.openapi.client.model.TrsIdAndVersion;
 import io.dockstore.openapi.client.model.UpdateAITopicRequest;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.OutputCsvHeaders;
+import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GetTopicCandidates;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.UploadTopicsCommand;
 import io.dockstore.topicgenerator.helper.ChuckNorrisFilter;
 import io.dockstore.topicgenerator.helper.OpenAIHelper;
@@ -70,8 +73,10 @@ public class TopicGeneratorClient {
     public static void main(String[] args) {
         final TopicGeneratorCommandLineArgs commandLineArgs = new TopicGeneratorCommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
+        final GetTopicCandidates getTopicCandidates = new GetTopicCandidates();
         final GenerateTopicsCommand generateTopicsCommand = new GenerateTopicsCommand();
         final UploadTopicsCommand uploadTopicsCommand = new UploadTopicsCommand();
+        jCommander.addCommand(getTopicCandidates);
         jCommander.addCommand(generateTopicsCommand);
         jCommander.addCommand(uploadTopicsCommand);
 
@@ -97,13 +102,39 @@ public class TopicGeneratorClient {
             final TopicGeneratorConfig topicGeneratorConfig = new TopicGeneratorConfig(config);
             final TopicGeneratorClient topicGeneratorClient = new TopicGeneratorClient();
 
-            if ("generate-topics".equals(jCommander.getParsedCommand())) {
-                // Read CSV file
-                topicGeneratorClient.generateTopics(topicGeneratorConfig, generateTopicsCommand.getEntriesCsvFilePath());
-            } else if ("upload-topics".equals(jCommander.getParsedCommand())) {
-                // Read CSV file
-                topicGeneratorClient.uploadTopics(topicGeneratorConfig, uploadTopicsCommand.getAiTopicsCsvFilePath());
+            switch (jCommander.getParsedCommand()) {
+            case "get-topic-candidates" -> topicGeneratorClient.getAITopicCandidates(topicGeneratorConfig, getTopicCandidates.getEntriesCsvOutputFilePath());
+            case "generate-topics" -> topicGeneratorClient.generateTopics(topicGeneratorConfig, generateTopicsCommand.getEntriesCsvFilePath());
+            case "upload-topics" -> topicGeneratorClient.uploadTopics(topicGeneratorConfig, uploadTopicsCommand.getAiTopicsCsvFilePath());
+            default -> errorMessage("Unknown command", GENERIC_ERROR);
             }
+        }
+    }
+
+    public void getAITopicCandidates(TopicGeneratorConfig topicGeneratorConfig, String outputCsvFilePath) {
+        final ApiClient apiClient = setupApiClient(topicGeneratorConfig.dockstoreServerUrl(), topicGeneratorConfig.dockstoreToken());
+        final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
+        LOG.info("Getting AI topic candidates from {}", topicGeneratorConfig.dockstoreServerUrl());
+
+        List<TrsIdAndVersion> aiTopicCandidates = extendedGa4GhApi.getAITopicCandidates();
+        LOG.info("There are {} AI topic candidates", aiTopicCandidates.size());
+
+        if (aiTopicCandidates.isEmpty()) {
+            LOG.info("No AI topic candidates found");
+            return;
+        }
+
+        try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(outputCsvFilePath, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(GenerateTopicsCommand.InputCsvHeaders.class).build())) {
+            aiTopicCandidates.forEach(aiTopicCandidate -> {
+                try {
+                    csvPrinter.printRecord(aiTopicCandidate.getTrsId(), aiTopicCandidate.getVersion());
+                } catch (IOException e) {
+                    LOG.error("Could not write record for TRS ID {}, version {}", aiTopicCandidate.getTrsId(), aiTopicCandidate.getVersion());
+                }
+            });
+            LOG.info("View AI topic candidates for {} in file {}", topicGeneratorConfig.dockstoreServerUrl(), outputCsvFilePath);
+        } catch (IOException e) {
+            exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
     }
 
@@ -148,7 +179,12 @@ public class TopicGeneratorClient {
 
                 // Create ChatGPT request
                 try {
-                    getAiGeneratedTopicAndRecordToCsv(openAiService, csvPrinter, trsId, versionId, entryType, descriptorFile);
+                    //getAiGeneratedTopicAndRecordToCsv(openAiService, csvPrinter, trsId, versionId, entryType, descriptorFile);
+                    try {
+                        csvPrinter.printRecord(trsId, versionId, descriptorFile.getUrl(), "foobarchecksum", false, 0, 0, "foobarFinishReason", "This is an AI generated topic from dockstore-support");
+                    } catch (IOException e) {
+                        LOG.error("Unable to write CSV record to file, skipping", e);
+                    }
                     LOG.info("Generated topic for entry with TRS ID {} and version {}", trsId, versionId);
                 } catch (Exception ex) {
                     LOG.error("Unable to generate topic for entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
