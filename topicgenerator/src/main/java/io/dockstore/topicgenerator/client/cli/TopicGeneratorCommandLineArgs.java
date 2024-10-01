@@ -3,6 +3,8 @@ package io.dockstore.topicgenerator.client.cli;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import java.io.File;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 public class TopicGeneratorCommandLineArgs {
     public static final String DEFAULT_CONFIG_FILE_NAME = "topic-generator.config";
@@ -24,8 +26,8 @@ public class TopicGeneratorCommandLineArgs {
 
     @Parameters(commandNames = { "get-topic-candidates" }, commandDescription = "Create a CSV file containing AI topic candidates from Dockstore. Use the generate-topics command to generate topics for these candidates.")
     public static class GetTopicCandidates {
-        @Parameter(names = {"-o", "--outputPath"}, description = "The output file path used for the CSV file created containing AI topic candidates from Dockstore.")
-        private String entriesCsvOutputFilePath = DEFAULT_ENTRIES_FILE_NAME;
+        @Parameter(names = {"-o", "--output"}, description = "The output file path used for the CSV file created containing AI topic candidates from Dockstore.")
+        private String entriesCsvOutputFilePath = "entries_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";;
 
         public String getEntriesCsvOutputFilePath() {
             return entriesCsvOutputFilePath;
