@@ -4,7 +4,7 @@ import static io.dockstore.utils.ExceptionHandler.IO_ERROR;
 import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 
 import io.dockstore.openapi.client.model.FileWrapper;
-import io.dockstore.topicgenerator.helper.AIModel.AIResponseInfo;
+import io.dockstore.topicgenerator.helper.BaseAIModel.AIResponseInfo;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -41,7 +41,7 @@ public final class CSVHelper {
     public static void writeRecord(CSVPrinter csvPrinter, String trsId, String versionId, FileWrapper descriptorFile, AIResponseInfo aiResponseInfo) {
         String descriptorChecksum = descriptorFile.getChecksum().isEmpty() ? "" : descriptorFile.getChecksum().get(0).getChecksum();
         try {
-            csvPrinter.printRecord(trsId, versionId, descriptorFile.getUrl(), descriptorChecksum, aiResponseInfo.isTruncated(), aiResponseInfo.inputTokens(), aiResponseInfo.outputTokens(), aiResponseInfo.cost(), aiResponseInfo.stopReason(), aiResponseInfo.aiTopic());
+            csvPrinter.printRecord(trsId, versionId, descriptorFile.getUrl(), descriptorChecksum, aiResponseInfo.isTruncated(), aiResponseInfo.inputTokens(), aiResponseInfo.outputTokens(), aiResponseInfo.cost(), aiResponseInfo.stopReason(), aiResponseInfo.aiResponse());
         } catch (IOException e) {
             LOG.error("Unable to write CSV record to file, skipping", e);
         }

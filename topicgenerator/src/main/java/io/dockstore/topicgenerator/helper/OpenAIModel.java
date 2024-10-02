@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Deprecated
-public class OpenAIModel extends AIModel {
+public class OpenAIModel extends BaseAIModel {
     private static final Logger LOG = LoggerFactory.getLogger(OpenAIModel.class);
     private static final EncodingRegistry REGISTRY = Encodings.newDefaultEncodingRegistry();
 
@@ -36,11 +36,8 @@ public class OpenAIModel extends AIModel {
         encoding = REGISTRY.getEncodingForModel(aiModel);
     }
 
-    /**
-     * Generates a topic for the entry by asking the AI model to summarize the contents of the entry's primary descriptor.
-     */
     @Override
-    public Optional<AIResponseInfo> generateTopic(String prompt) {
+    public Optional<AIResponseInfo> submitPrompt(String prompt) {
         // Chat completion API calls include additional tokens for message-based formatting. Calculate how long the descriptor content can be and truncate if needed
         ChatMessage userMessage = new ChatMessage(ChatMessageRole.USER.value(), prompt);
         boolean isPromptTruncated = false;
@@ -70,11 +67,11 @@ public class OpenAIModel extends AIModel {
         }
 
         final ChatCompletionChoice chatCompletionChoice = chatCompletionResult.getChoices().get(0);
-        final String aiGeneratedTopic = chatCompletionChoice.getMessage().getContent();
+        final String aiResponse = chatCompletionChoice.getMessage().getContent();
         final String finishReason = chatCompletionChoice.getFinishReason();
         final long promptTokens = chatCompletionResult.getUsage().getPromptTokens();
         final long completionTokens = chatCompletionResult.getUsage().getCompletionTokens();
-        return Optional.of(new AIResponseInfo(removeSummaryTagsFromTopic(aiGeneratedTopic), isPromptTruncated, promptTokens, completionTokens, this.calculatePrice(promptTokens, completionTokens), finishReason));
+        return Optional.of(new AIResponseInfo(removeSummaryTagsFromTopic(aiResponse), isPromptTruncated, promptTokens, completionTokens, this.calculatePrice(promptTokens, completionTokens), finishReason));
     }
 
     @Override

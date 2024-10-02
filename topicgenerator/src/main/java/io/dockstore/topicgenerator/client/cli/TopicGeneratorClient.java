@@ -25,10 +25,9 @@ import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.Gene
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.InputCsvHeaders;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.OutputCsvHeaders;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.UploadTopicsCommand;
-import io.dockstore.topicgenerator.helper.AIModel;
-import io.dockstore.topicgenerator.helper.AIModel.AIResponseInfo;
 import io.dockstore.topicgenerator.helper.AIModelType;
 import io.dockstore.topicgenerator.helper.AnthropicClaudeModel;
+import io.dockstore.topicgenerator.helper.BaseAIModel;
 import io.dockstore.topicgenerator.helper.CSVHelper;
 import io.dockstore.topicgenerator.helper.ChuckNorrisFilter;
 import io.dockstore.topicgenerator.helper.OpenAIModel;
@@ -105,7 +104,7 @@ public class TopicGeneratorClient {
         final ApiClient apiClient = setupApiClient(topicGeneratorConfig.dockstoreServerUrl());
         final Ga4Ghv20Api ga4Ghv20Api = new Ga4Ghv20Api(apiClient);
 
-        AIModel aiModel = null;
+        BaseAIModel aiModel = null;
         if (aiModelType == AIModelType.CLAUDE_3_HAIKU || aiModelType == AIModelType.CLAUDE_3_5_SONNET) {
             aiModel = new AnthropicClaudeModel(aiModelType);
         } else if (aiModelType == AIModelType.GPT_4O_MINI) {
@@ -152,13 +151,14 @@ public class TopicGeneratorClient {
                 // Create AI request
                 try {
                     String prompt = "Summarize the " + entryType + " in one sentence that starts with a verb in the <summary> tags. Use a maximum of 150 characters.\n<content>" + descriptorFile.getContent() + "</content>";
-                    Optional<AIResponseInfo> aiResponseInfo = aiModel.generateTopic(prompt);
-                    if (aiResponseInfo.isPresent()) {
-                        CSVHelper.writeRecord(csvPrinter, trsId, versionId, descriptorFile, aiResponseInfo.get());
-                        LOG.info("Generated topic for entry with TRS ID {} and version {}", trsId, versionId);
-                    } else {
-                        LOG.error("Unable to generate topic for entry with TRS ID {} and version {}, skipping", trsId, versionId);
-                    }
+                    FileWrapper finalDescriptorFile = descriptorFile;
+                    aiModel.submitPrompt(prompt).ifPresentOrElse(
+                            (aiResponseInfo) -> {
+                                CSVHelper.writeRecord(csvPrinter, trsId, versionId, finalDescriptorFile, aiResponseInfo);
+                                LOG.info("Generated topic for entry with TRS ID {} and version {}", trsId, versionId);
+                            },
+                            () -> LOG.error("Unable to generate topic for entry with TRS ID {} and version {}, skipping", trsId, versionId)
+                    );
                 } catch (Exception ex) {
                     LOG.error("Unable to generate topic for entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
                 }

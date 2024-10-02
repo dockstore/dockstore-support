@@ -15,7 +15,7 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 
-public class AnthropicClaudeModel extends AIModel {
+public class AnthropicClaudeModel extends BaseAIModel {
     private static final Logger LOG = LoggerFactory.getLogger(AnthropicClaudeModel.class);
     private static final Gson GSON = new Gson();
 
@@ -29,7 +29,7 @@ public class AnthropicClaudeModel extends AIModel {
     }
 
     @Override
-    public Optional<AIResponseInfo> generateTopic(String prompt) {
+    public Optional<AIResponseInfo> submitPrompt(String prompt) {
         if (estimateTokens(prompt) > getMaxContextLength()) {
             prompt = prompt.substring(0, getMaxContextLength());
         }
@@ -45,12 +45,12 @@ public class AnthropicClaudeModel extends AIModel {
 
             ClaudeResponse claudeResponse = GSON.fromJson(response.body().asUtf8String(), ClaudeResponse.class);
 
-            final String aiGeneratedTopic = claudeResponse.content().get(0).text();
+            final String aiResponse = claudeResponse.content().get(0).text();
             final String stopReason = claudeResponse.stopReason();
             final long inputTokens = claudeResponse.usage().inputTokens();
             final long outputTokens = claudeResponse.usage().outputTokens();
 
-            return Optional.of(new AIResponseInfo(removeSummaryTagsFromTopic(aiGeneratedTopic), false, inputTokens, outputTokens, this.calculatePrice(inputTokens, outputTokens), stopReason));
+            return Optional.of(new AIResponseInfo(removeSummaryTagsFromTopic(aiResponse), false, inputTokens, outputTokens, this.calculatePrice(inputTokens, outputTokens), stopReason));
         } catch (SdkClientException e) {
             LOG.error("Could not invoke model {}", this.getModelName(), e);
         }
