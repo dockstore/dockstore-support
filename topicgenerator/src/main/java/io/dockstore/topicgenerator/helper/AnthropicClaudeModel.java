@@ -18,6 +18,9 @@ import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 public class AnthropicClaudeModel extends BaseAIModel {
     private static final Logger LOG = LoggerFactory.getLogger(AnthropicClaudeModel.class);
     private static final Gson GSON = new Gson();
+    // Anthropic API version must be the value below.
+    // See https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-request-response
+    private static final String ANTHROPIC_API_VERSION = "bedrock-2023-05-31";
 
     private final BedrockRuntimeClient bedrockRuntimeClient;
 
@@ -34,7 +37,7 @@ public class AnthropicClaudeModel extends BaseAIModel {
             prompt = prompt.substring(0, getMaxContextLength());
         }
 
-        final String nativeRequest = createClaudeRequest(prompt);
+        final String nativeRequest = createNativeClaudeRequest(prompt);
 
         try {
             // Encode and send the request to the Bedrock Runtime.
@@ -57,10 +60,12 @@ public class AnthropicClaudeModel extends BaseAIModel {
         return Optional.empty();
     }
 
-    private String createClaudeRequest(String prompt) {
+    // Format the request payload using the model's native structure.
+    private String createNativeClaudeRequest(String prompt) {
+        // The amount of randomness injected into the response. Ranges from 0 to 1. Pick 0.5 as the middle ground between predictability and creativity.
         final double temperature = 0.5;
-        final String anthropicVersion = "bedrock-2023-05-31"; // Must be this value
-        ClaudeRequest claudeRequest = new ClaudeRequest(anthropicVersion, MAX_RESPONSE_TOKENS, temperature, List.of(new Message("user", List.of(new Content("text", prompt)))));
+        // See https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-request-response for examples
+        ClaudeRequest claudeRequest = new ClaudeRequest(ANTHROPIC_API_VERSION, MAX_RESPONSE_TOKENS, temperature, List.of(new Message("user", List.of(new Content("text", prompt)))));
         return GSON.toJson(claudeRequest);
     }
 }

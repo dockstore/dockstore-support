@@ -150,7 +150,7 @@ public class TopicGeneratorClient {
 
                 // Create AI request
                 try {
-                    String prompt = "Summarize the " + entryType + " in one sentence that starts with a verb in the <summary> tags. Use a maximum of 150 characters.\n<content>" + descriptorFile.getContent() + "</content>";
+                    String prompt = "Summarize the " + entryType + " in one sentence that starts with a present tense verb in the <summary> tags. Use a maximum of 150 characters.\n<content>" + descriptorFile.getContent() + "</content>";
                     FileWrapper finalDescriptorFile = descriptorFile;
                     aiModel.submitPrompt(prompt).ifPresentOrElse(
                             (aiResponseInfo) -> {
