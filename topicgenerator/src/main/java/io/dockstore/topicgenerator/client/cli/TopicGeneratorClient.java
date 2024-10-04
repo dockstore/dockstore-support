@@ -153,7 +153,7 @@ public class TopicGeneratorClient {
                     String prompt = "Summarize the " + entryType + " in one sentence that starts with a present tense verb in the <summary> tags. Use a maximum of 150 characters.\n<content>" + descriptorFile.getContent() + "</content>";
                     FileWrapper finalDescriptorFile = descriptorFile;
                     aiModel.submitPrompt(prompt).ifPresentOrElse(
-                            (aiResponseInfo) -> {
+                            aiResponseInfo -> {
                                 CSVHelper.writeRecord(csvPrinter, trsId, versionId, finalDescriptorFile, aiResponseInfo);
                                 LOG.info("Generated topic for entry with TRS ID {} and version {}", trsId, versionId);
                             },

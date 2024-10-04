@@ -10,7 +10,7 @@ public abstract class BaseAIModel implements AIModel {
     public static final int MAX_RESPONSE_TOKENS = 100; // One token is roughly 4 characters. Using 100 tokens because setting it too low might truncate the response
     private final AIModelType aiModelType;
 
-    public BaseAIModel(AIModelType modelType) {
+    protected BaseAIModel(AIModelType modelType) {
         this.aiModelType = modelType;
     }
 
