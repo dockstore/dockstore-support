@@ -8,5 +8,3 @@ RUN apt-get update \
 COPY topicgenerator/target/topicgenerator*[^s].jar /home/topic-generator.jar
 
 COPY topicgenerator/scripts/updateDockstoreTopicsFromDocker.sh /home/updateDockstoreTopicsFromDocker.sh
-
-CMD /home/updateDockstoreTopicsFromDocker.sh
