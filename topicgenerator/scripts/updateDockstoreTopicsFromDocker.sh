@@ -23,6 +23,8 @@ set -o nounset
 
 APP_JAR=/home/topic-generator.jar
 
+cd /home
+
 echo "Creating a CSV file of AI topic candidates from Dockstore"
 java -jar $APP_JAR get-topic-candidates
 
