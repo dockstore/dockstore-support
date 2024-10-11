@@ -147,6 +147,8 @@ public class TopicGeneratorClient {
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
         final String generatedTopicsFileName = OUTPUT_FILE_PREFIX + outputFileNameSuffix;
         final String errorsFileName = "errors" + outputFileNameSuffix;
+        int numberOfTopicsGenerated = 0;
+        int numberOfFailures = 0;
         try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(generatedTopicsFileName, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(OutputCsvHeaders.class).build());
                 CSVPrinter errorsCsvPrinter = new CSVPrinter(new FileWriter(errorsFileName, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(ErrorsCsvHeaders.class).build())) {
             for (TrsIdAndVersionId aiTopicCandidate: aiTopicCandidates) {
@@ -155,6 +157,7 @@ public class TopicGeneratorClient {
                 if (StringUtils.isEmpty(versionId)) {
                     LOG.error("Unable to generate topic for entry with TRS ID '{}' and version '{}' because version name is empty, skipping", trsId, versionId);
                     errorsCsvPrinter.printRecord(trsId, versionId, "Version name is empty");
+                    numberOfFailures += 1;
                     continue;
                 }
 
@@ -171,6 +174,7 @@ public class TopicGeneratorClient {
                                 "Unable to generate topic for entry with TRS ID '{}' and version '{}' because could not retrieve version, skipping",
                                 trsId, versionId);
                         errorsCsvPrinter.printRecord(trsId, versionId, "Could not retrieve version");
+                        numberOfFailures += 1;
                         continue;
                     }
 
@@ -179,6 +183,7 @@ public class TopicGeneratorClient {
                 } catch (ApiException ex) {
                     LOG.error("Failed to get information for AI topic candidate with TRS ID {} and version {} from Dockstore, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage().replace("\n", " "));
+                    numberOfFailures += 1;
                     continue;
                 }
 
@@ -191,13 +196,16 @@ public class TopicGeneratorClient {
                             "foobar"); //aiModel.get().submitPrompt(prompt);
                     CSVHelper.writeRecord(csvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
                     LOG.info("Generated topic for entry with TRS ID {} and version {}", trsId, versionId);
+                    numberOfTopicsGenerated += 1;
                 } catch (Exception ex) {
                     LOG.error("Unable to generate topic for entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage());
+                    numberOfFailures += 1;
                 }
             }
-            LOG.info("View generated AI topics in file {}", generatedTopicsFileName);
-            LOG.info("View entries that failed AI topic generation in file {}", errorsFileName);
+
+            LOG.info("Generated {} AI topics. View generated AI topics in file {}", numberOfTopicsGenerated, generatedTopicsFileName);
+            LOG.info("Failed to generate topics for {} entries. View entries that failed AI topic generation in file {}", numberOfFailures, errorsFileName);
         } catch (IOException e) {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
@@ -293,8 +301,7 @@ public class TopicGeneratorClient {
             try {
                 descriptorFile = ga4Ghv20Api.toolsIdVersionsVersionIdTypeDescriptorGet(trsId, descriptorType.toString(), versionId);
             } catch (ApiException ex) {
-                LOG.error("Could not get {} primary descriptor for TRS ID {} and version {}", descriptorType, trsId, versionId, ex);
-                // Rethrow exception if this is the last descriptor type and no descriptor file was found
+                // Rethrow exception if this is the last descriptor type and no descriptor file was found. Otherwise, try the next descriptor type
                 if (i == descriptorTypes.size() - 1) {
                     throw ex;
                 }
@@ -327,7 +334,8 @@ public class TopicGeneratorClient {
         final ApiClient apiClient = setupApiClient(topicGeneratorConfig.dockstoreServerUrl(), topicGeneratorConfig.dockstoreToken());
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
         final Iterable<CSVRecord> entriesWithAITopics = CSVHelper.readFile(inputCsvFilePath, OutputCsvHeaders.class);
-
+        int numberOfTopicsUploaded = 0;
+        int numberOfTopicsFailedToUpload = 0;
         for (CSVRecord entryWithAITopic: entriesWithAITopics) {
             // This command's input CSV headers are the generate-topic command's output headers
             final String trsId = entryWithAITopic.get(OutputCsvHeaders.trsId);
@@ -340,11 +348,14 @@ public class TopicGeneratorClient {
             final String version = entryWithAITopic.get(OutputCsvHeaders.version);
             try {
                 extendedGa4GhApi.updateAITopic(new UpdateAITopicRequest().aiTopic(aiTopic), version, trsId);
+                numberOfTopicsUploaded += 1;
                 LOG.info("Uploaded AI topic for {}", trsId);
             } catch (ApiException exception) {
+                numberOfTopicsFailedToUpload += 1;
                 LOG.error("Could not upload AI topic for {}", trsId, exception);
             }
         }
+        LOG.info("Uploaded {} AI topics. Failed to upload {} AI topics", numberOfTopicsUploaded, numberOfTopicsFailedToUpload);
     }
 
     private boolean assessTopic(String aiTopic) {

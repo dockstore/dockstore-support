@@ -31,7 +31,7 @@ public class TopicGeneratorCommandLineArgs {
         @Parameter(names = {"-a", "--ai"}, description = "The AI model to use")
         private AIModelType aiModel = AIModelType.CLAUDE_3_HAIKU;
 
-        @Parameter(names = {"-d", "--dryRun"}, description = "List the public Dockstore entries that are AI topic candidates")
+        @Parameter(names = {"-d", "--dryRun"}, description = "Write the public Dockstore entries that are AI topic candidates to a file")
         private boolean isDryRun = false;
 
         @Parameter(names = {"-m", "--max"}, description = "The max number of entries to process. If specified, the value must be greater than 0")
