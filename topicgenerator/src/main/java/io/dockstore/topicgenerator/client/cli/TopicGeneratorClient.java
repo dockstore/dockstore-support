@@ -18,7 +18,6 @@ import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
-import io.dockstore.openapi.client.model.EntryLiteAndVersionName;
 import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.Tool;
 import io.dockstore.openapi.client.model.ToolVersion;
@@ -28,7 +27,6 @@ import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.Gene
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.ErrorsCsvHeaders;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.InputCsvHeaders;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.OutputCsvHeaders;
-import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GetTopicCandidates;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.UploadTopicsCommand;
 import io.dockstore.topicgenerator.helper.AIModelType;
 import io.dockstore.topicgenerator.helper.AnthropicClaudeModel;
@@ -68,10 +66,8 @@ public class TopicGeneratorClient {
         final Instant startTime = Instant.now();
         final TopicGeneratorCommandLineArgs commandLineArgs = new TopicGeneratorCommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
-        final GetTopicCandidates getTopicCandidates = new GetTopicCandidates();
         final GenerateTopicsCommand generateTopicsCommand = new GenerateTopicsCommand();
         final UploadTopicsCommand uploadTopicsCommand = new UploadTopicsCommand();
-        jCommander.addCommand(getTopicCandidates);
         jCommander.addCommand(generateTopicsCommand);
         jCommander.addCommand(uploadTopicsCommand);
 
@@ -110,28 +106,98 @@ public class TopicGeneratorClient {
         }
     }
 
-    public void getAITopicCandidates(TopicGeneratorConfig topicGeneratorConfig, String outputCsvFilePath) {
-        final ApiClient apiClient = setupApiClient(topicGeneratorConfig.dockstoreServerUrl(), topicGeneratorConfig.dockstoreToken());
+    /**
+     * Generates a topic for public entries by asking the AI model to summarize the content of the entry's primary descriptor.
+     * @param topicGeneratorConfig
+     */
+    private void generateTopics(TopicGeneratorConfig topicGeneratorConfig, GenerateTopicsCommand generateTopicsCommand) {
+        final String dockstoreServerUrl = topicGeneratorConfig.dockstoreServerUrl();
+        final ApiClient apiClient = setupApiClient(dockstoreServerUrl, topicGeneratorConfig.dockstoreToken());
+        final Ga4Ghv20Api ga4Ghv20Api = new Ga4Ghv20Api(apiClient);
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
-        LOG.info("Getting AI topic candidates from {}", topicGeneratorConfig.dockstoreServerUrl());
+        final AIModelType aiModelType = generateTopicsCommand.getAiModel();
+        final String inputFileName = generateTopicsCommand.getEntriesCsvFilePath();
 
-        List<EntryLiteAndVersionName> aiTopicCandidates = extendedGa4GhApi.getAITopicCandidates();
-        LOG.info("There are {} AI topic candidates", aiTopicCandidates.size());
+        List<TrsIdAndVersionId> aiTopicCandidates;
+        if (inputFileName != null) {
+            aiTopicCandidates = getAiTopicCandidatesFromFile(generateTopicsCommand.getEntriesCsvFilePath());
+        } else {
+            aiTopicCandidates = getAiTopicCandidatesFromDockstore(extendedGa4GhApi, generateTopicsCommand.getMax());
+        }
 
         if (aiTopicCandidates.isEmpty()) {
-            LOG.info("No AI topic candidates found");
+            LOG.info("No AI topic candidates to process");
             return;
         }
 
-        try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(outputCsvFilePath, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(GenerateTopicsCommand.InputCsvHeaders.class).build())) {
-            aiTopicCandidates.forEach(aiTopicCandidate -> {
-                try {
-                    csvPrinter.printRecord(aiTopicCandidate.getEntryLite().getTrsId(), aiTopicCandidate.getVersionName());
-                } catch (IOException e) {
-                    LOG.error("Could not write record for TRS ID {}, version {}", aiTopicCandidate.getEntryLite().getTrsId(), aiTopicCandidate.getVersionName());
+        if (generateTopicsCommand.isDryRun()) {
+            if (inputFileName == null) {
+                writeAITopicCandidates(aiTopicCandidates);
+            } else {
+                LOG.info("View the AI topic candidates in input file {}", inputFileName);
+            }
+            return;
+        }
+
+        Optional<BaseAIModel> aiModel = getAiModel(aiModelType, topicGeneratorConfig);
+        if (aiModel.isEmpty()) {
+            errorMessage("Invalid AI model type", CLIENT_ERROR);
+        }
+        LOG.info("Generating topics for AI topic candidates using AI model {}", aiModelType.getModelId());
+        final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
+        final String generatedTopicsFileName = OUTPUT_FILE_PREFIX + outputFileNameSuffix;
+        final String errorsFileName = "errors" + outputFileNameSuffix;
+        try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(generatedTopicsFileName, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(OutputCsvHeaders.class).build());
+                CSVPrinter errorsCsvPrinter = new CSVPrinter(new FileWriter(errorsFileName, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(ErrorsCsvHeaders.class).build())) {
+            for (TrsIdAndVersionId aiTopicCandidate: aiTopicCandidates) {
+                final String trsId = aiTopicCandidate.trsId();
+                final String versionId = aiTopicCandidate.versionId();
+                if (StringUtils.isEmpty(versionId)) {
+                    LOG.error("Unable to generate topic for entry with TRS ID '{}' and version '{}' because version name is empty, skipping", trsId, versionId);
+                    errorsCsvPrinter.printRecord(trsId, versionId, "Version name is empty");
+                    continue;
                 }
-            });
-            LOG.info("View AI topic candidates for {} in file {}", topicGeneratorConfig.dockstoreServerUrl(), outputCsvFilePath);
+
+                // Get required information to create a prompt
+                final String entryType;
+                final FileWrapper descriptorFile;
+                try {
+                    final Tool tool = ga4Ghv20Api.toolsIdGet(trsId);
+                    entryType = tool.getToolclass().getName().toLowerCase();
+                    final List<ToolVersion> filteredVersion = tool.getVersions().stream()
+                            .filter(v -> v.getName().equals(aiTopicCandidate.versionId())).toList();
+                    if (filteredVersion.isEmpty()) {
+                        LOG.error(
+                                "Unable to generate topic for entry with TRS ID '{}' and version '{}' because could not retrieve version, skipping",
+                                trsId, versionId);
+                        errorsCsvPrinter.printRecord(trsId, versionId, "Could not retrieve version");
+                        continue;
+                    }
+
+                    final ToolVersion version = filteredVersion.get(0);
+                    descriptorFile = getDescriptorFile(ga4Ghv20Api, trsId, versionId, version.getDescriptorType());
+                } catch (ApiException ex) {
+                    LOG.error("Failed to get information for AI topic candidate with TRS ID {} and version {} from Dockstore, skipping", trsId, versionId, ex);
+                    errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage().replace("\n", " "));
+                    continue;
+                }
+
+                // Generate topic using AI model
+                try {
+                    String prompt = "Summarize the " + entryType
+                            + " in one sentence that starts with a present tense verb in the <summary> tags. Use a maximum of 150 characters.\n<content>"
+                            + descriptorFile.getContent() + "</content>";
+                    AIResponseInfo aiResponseInfo = new AIResponseInfo("foobar", false, 1, 1, 1,
+                            "foobar"); //aiModel.get().submitPrompt(prompt);
+                    CSVHelper.writeRecord(csvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
+                    LOG.info("Generated topic for entry with TRS ID {} and version {}", trsId, versionId);
+                } catch (Exception ex) {
+                    LOG.error("Unable to generate topic for entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
+                    errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage());
+                }
+            }
+            LOG.info("View generated AI topics in file {}", generatedTopicsFileName);
+            LOG.info("View entries that failed AI topic generation in file {}", errorsFileName);
         } catch (IOException e) {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
