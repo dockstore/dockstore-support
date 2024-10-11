@@ -4,12 +4,9 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import io.dockstore.topicgenerator.helper.AIModelType;
 import java.io.File;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 public class TopicGeneratorCommandLineArgs {
     public static final String DEFAULT_CONFIG_FILE_NAME = "topic-generator.config";
-    public static final String DEFAULT_ENTRIES_FILE_NAME = "entries.csv";
 
     @Parameter(names = "--help", description = "Prints help for topicgenerator", help = true)
     private boolean help = false;
@@ -25,31 +22,35 @@ public class TopicGeneratorCommandLineArgs {
         return config;
     }
 
-    @Parameters(commandNames = { "get-topic-candidates" }, commandDescription = "Create a CSV file containing AI topic candidates from Dockstore. Use the generate-topics command to generate topics for these candidates.")
-    public static class GetTopicCandidates {
-        @Parameter(names = {"-o", "--output"}, description = "The output file path used for the CSV file created containing AI topic candidates from Dockstore.")
-        private String entriesCsvOutputFilePath = "entries_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";;
-
-        public String getEntriesCsvOutputFilePath() {
-            return entriesCsvOutputFilePath;
-        }
-    }
-
     @Parameters(commandNames = { "generate-topics" }, commandDescription = "Generate topics for public Dockstore entries using AI. Use the upload-topics command to upload these topics to Dockstore.")
     public static class GenerateTopicsCommand {
 
-        @Parameter(names = {"-e", "--entries"}, description = "The file path to the CSV file containing the TRS ID, and version name of the entries to generate topics for. The first line of the file should contain the CSV fields: trsID,version")
-        private String entriesCsvFilePath = "./" + DEFAULT_ENTRIES_FILE_NAME;
+        @Parameter(names = {"-e", "--entries"}, description = "Optional file path to the CSV file containing the TRS ID, and version name of the entries to generate topics for. The first line of the file should contain the CSV fields: trsID,version")
+        private String entriesCsvFilePath;
 
-        @Parameter(names = {"-m", "--model"}, description = "The AI model to use")
-        private AIModelType aiModelType = AIModelType.CLAUDE_3_HAIKU;
+        @Parameter(names = {"-a", "--ai"}, description = "The AI model to use")
+        private AIModelType aiModel = AIModelType.CLAUDE_3_HAIKU;
+
+        @Parameter(names = {"-d", "--dryRun"}, description = "List the public Dockstore entries that are AI topic candidates")
+        private boolean isDryRun = false;
+
+        @Parameter(names = {"-m", "--max"}, description = "The max number of entries to process. If specified, the value must be greater than 0")
+        private Integer max;
 
         public String getEntriesCsvFilePath() {
             return entriesCsvFilePath;
         }
 
         public AIModelType getAiModel() {
-            return aiModelType;
+            return aiModel;
+        }
+
+        public boolean isDryRun() {
+            return isDryRun;
+        }
+
+        public Integer getMax() {
+            return max;
         }
 
         /**
@@ -73,6 +74,15 @@ public class TopicGeneratorCommandLineArgs {
             cost, // Estimated cost of the prompt and completion tokens
             finishReason, // The reason that the response stopped
             aiTopic
+        }
+
+        /**
+         * Headers for entries that failed to have AI topics generated.
+         */
+        public enum ErrorsCsvHeaders {
+            trsId,
+            version,
+            errorMessage
         }
     }
 

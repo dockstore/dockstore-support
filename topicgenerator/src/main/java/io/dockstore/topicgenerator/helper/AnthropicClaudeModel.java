@@ -6,12 +6,10 @@ import com.google.gson.Gson;
 import io.dockstore.topicgenerator.helper.ClaudeRequest.Message;
 import io.dockstore.topicgenerator.helper.ClaudeResponse.Content;
 import java.util.List;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
-import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 
@@ -32,32 +30,27 @@ public class AnthropicClaudeModel extends BaseAIModel {
     }
 
     @Override
-    public Optional<AIResponseInfo> submitPrompt(String prompt) {
+    public AIResponseInfo submitPrompt(String prompt) {
         if (estimateTokens(prompt) > getMaxContextLength()) {
             prompt = prompt.substring(0, getMaxContextLength());
         }
 
         final String nativeRequest = createNativeClaudeRequest(prompt);
 
-        try {
-            // Encode and send the request to the Bedrock Runtime.
-            InvokeModelResponse response = bedrockRuntimeClient.invokeModel(request -> request
-                    .body(SdkBytes.fromUtf8String(nativeRequest))
-                    .modelId(this.getModelName())
-            );
+        // Encode and send the request to the Bedrock Runtime.
+        InvokeModelResponse response = bedrockRuntimeClient.invokeModel(request -> request
+                .body(SdkBytes.fromUtf8String(nativeRequest))
+                .modelId(this.getModelName())
+        );
 
-            ClaudeResponse claudeResponse = GSON.fromJson(response.body().asUtf8String(), ClaudeResponse.class);
+        ClaudeResponse claudeResponse = GSON.fromJson(response.body().asUtf8String(), ClaudeResponse.class);
 
-            final String aiResponse = claudeResponse.content().get(0).text();
-            final String stopReason = claudeResponse.stopReason();
-            final long inputTokens = claudeResponse.usage().inputTokens();
-            final long outputTokens = claudeResponse.usage().outputTokens();
+        final String aiResponse = claudeResponse.content().get(0).text();
+        final String stopReason = claudeResponse.stopReason();
+        final long inputTokens = claudeResponse.usage().inputTokens();
+        final long outputTokens = claudeResponse.usage().outputTokens();
 
-            return Optional.of(new AIResponseInfo(removeSummaryTagsFromTopic(aiResponse), false, inputTokens, outputTokens, this.calculatePrice(inputTokens, outputTokens), stopReason));
-        } catch (SdkClientException e) {
-            LOG.error("Could not invoke model {}", this.getModelName(), e);
-        }
-        return Optional.empty();
+        return new AIResponseInfo(removeSummaryTagsFromTopic(aiResponse), false, inputTokens, outputTokens, this.calculatePrice(inputTokens, outputTokens), stopReason);
     }
 
     // Format the request payload using the model's native structure.

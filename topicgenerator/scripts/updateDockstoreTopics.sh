@@ -25,11 +25,8 @@ cd "${TOPIC_GENERATOR_DIR}"
 TOPIC_GENERATOR_JAR=topicgenerator-"${TOPIC_GENERATOR_VERSION}".jar
 wget https://artifacts.oicr.on.ca:443/artifactory/collab-release/io/dockstore/topicgenerator/"${TOPIC_GENERATOR_VERSION}"/"${TOPIC_GENERATOR_JAR}"
 
-echo "Creating a CSV file of AI topic candidates from Dockstore"
-java -jar "${TOPIC_GENERATOR_JAR}" -c "${TOPIC_GENERATOR_CONFIG_ABS_PATH}" get-topic-candidates
-
 echo "Generating topics"
-java -jar "${TOPIC_GENERATOR_JAR}" -c "${TOPIC_GENERATOR_CONFIG_ABS_PATH}" generate-topics --entries entries_*.csv
+java -jar "${TOPIC_GENERATOR_JAR}" -c "${TOPIC_GENERATOR_CONFIG_ABS_PATH}" generate-topics
 
 echo "Uploading generated AI topics to Dockstore"
 java -jar "${TOPIC_GENERATOR_JAR}" -c "${TOPIC_GENERATOR_CONFIG_ABS_PATH}" upload-topics --aiTopics generated-topics_*.csv

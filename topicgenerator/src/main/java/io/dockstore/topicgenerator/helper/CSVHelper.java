@@ -38,6 +38,14 @@ public final class CSVHelper {
         return csvRecords;
     }
 
+    public static void writeRecord(CSVPrinter csvPrinter, String trsId, String versionId) {
+        try {
+            csvPrinter.printRecord(trsId, versionId);
+        } catch (IOException e) {
+            LOG.error("Unable to write CSV record to file, skipping", e);
+        }
+    }
+
     public static void writeRecord(CSVPrinter csvPrinter, String trsId, String versionId, FileWrapper descriptorFile, AIResponseInfo aiResponseInfo) {
         String descriptorChecksum = descriptorFile.getChecksum().isEmpty() ? "" : descriptorFile.getChecksum().get(0).getChecksum();
         try {
