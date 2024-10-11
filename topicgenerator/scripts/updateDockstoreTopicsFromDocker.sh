@@ -17,22 +17,27 @@
 #
 #
 
+# This script gets entries from Dockstore that are AI topic candidates, generates topics for them, then uploads the topics to Dockstore. It assumes it's
+# running in a Docker container built by the /Dockerfile in this repo
+# 1. The jar is /home/topic-generator.jar. The Docker image has this.
+# 2. There is a /config/topic-generator.config. The host should create the file and make it available to the Docker container
 set -o errexit
 set -o pipefail
 set -o nounset
 
 APP_JAR=/home/topic-generator.jar
+CONFIG=/config/topic-generator.config
 
 cd /home
 
 echo "Creating a CSV file of AI topic candidates from Dockstore"
-java -jar $APP_JAR get-topic-candidates
+java -jar $APP_JAR -c $CONFIG get-topic-candidates
+cat entries_*.csv
 
 echo "Generating topics"
-java -jar $APP_JAR generate-topics --entries entries_*.csv
+java -jar $APP_JAR -c $CONFIG generate-topics --entries entries_*.csv
+cat generated-topics_*.csv
 
 echo "Uploading generated AI topics to Dockstore"
-java -jar $APP_JAR upload-topics --aiTopics generated-topics_*.csv
+java -jar $APP_JAR -c $CONFIG upload-topics --aiTopics generated-topics_*.csv
 
-cd ..
-echo "View results in directory ${TOPIC_GENERATOR_DIR}"
