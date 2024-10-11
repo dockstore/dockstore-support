@@ -23,8 +23,8 @@ TOPIC_GENERATOR_DIR=topicgenerator-"${LONG_DATE}"
 mkdir "${TOPIC_GENERATOR_DIR}"
 cd "${TOPIC_GENERATOR_DIR}"
 
-TOPIC_GENERATOR_JAR="/home/ktran/dev/dockstore-support/topicgenerator/target/topicgenerator-1.16.0-SNAPSHOT.jar" #topicgenerator-"${TOPIC_GENERATOR_VERSION}".jar
-#wget https://artifacts.oicr.on.ca:443/artifactory/collab-release/io/dockstore/topicgenerator/"${TOPIC_GENERATOR_VERSION}"/"${TOPIC_GENERATOR_JAR}"
+TOPIC_GENERATOR_JAR=topicgenerator-"${TOPIC_GENERATOR_VERSION}".jar
+wget https://artifacts.oicr.on.ca:443/artifactory/collab-release/io/dockstore/topicgenerator/"${TOPIC_GENERATOR_VERSION}"/"${TOPIC_GENERATOR_JAR}"
 
 if [ -z "${MAX_CANDIDATES}" ]; then
   echo "Generating topics for all AI topic candidates from Dockstore"
