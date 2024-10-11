@@ -147,6 +147,8 @@ public class TopicGeneratorClient {
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
         final String generatedTopicsFileName = OUTPUT_FILE_PREFIX + outputFileNameSuffix;
         final String errorsFileName = "errors" + outputFileNameSuffix;
+        int numberOfTopicsGenerated = 0;
+        int numberOfFailures = 0;
         try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(generatedTopicsFileName, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(OutputCsvHeaders.class).build());
                 CSVPrinter errorsCsvPrinter = new CSVPrinter(new FileWriter(errorsFileName, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(ErrorsCsvHeaders.class).build())) {
             for (TrsIdAndVersionId aiTopicCandidate: aiTopicCandidates) {
@@ -155,6 +157,7 @@ public class TopicGeneratorClient {
                 if (StringUtils.isEmpty(versionId)) {
                     LOG.error("Unable to generate topic for entry with TRS ID '{}' and version '{}' because version name is empty, skipping", trsId, versionId);
                     errorsCsvPrinter.printRecord(trsId, versionId, "Version name is empty");
+                    numberOfFailures += 1;
                     continue;
                 }
 
@@ -171,6 +174,7 @@ public class TopicGeneratorClient {
                                 "Unable to generate topic for entry with TRS ID '{}' and version '{}' because could not retrieve version, skipping",
                                 trsId, versionId);
                         errorsCsvPrinter.printRecord(trsId, versionId, "Could not retrieve version");
+                        numberOfFailures += 1;
                         continue;
                     }
 
@@ -179,6 +183,7 @@ public class TopicGeneratorClient {
                 } catch (ApiException ex) {
                     LOG.error("Failed to get information for AI topic candidate with TRS ID {} and version {} from Dockstore, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage().replace("\n", " "));
+                    numberOfFailures += 1;
                     continue;
                 }
 
@@ -191,13 +196,16 @@ public class TopicGeneratorClient {
                             "foobar"); //aiModel.get().submitPrompt(prompt);
                     CSVHelper.writeRecord(csvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
                     LOG.info("Generated topic for entry with TRS ID {} and version {}", trsId, versionId);
+                    numberOfTopicsGenerated += 1;
                 } catch (Exception ex) {
                     LOG.error("Unable to generate topic for entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage());
+                    numberOfFailures += 1;
                 }
             }
-            LOG.info("View generated AI topics in file {}", generatedTopicsFileName);
-            LOG.info("View entries that failed AI topic generation in file {}", errorsFileName);
+
+            LOG.info("Generated {} AI topics. View generated AI topics in file {}", numberOfTopicsGenerated, generatedTopicsFileName);
+            LOG.info("Failed to generate topics for {} entries. View entries that failed AI topic generation in file {}", numberOfFailures, errorsFileName);
         } catch (IOException e) {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
