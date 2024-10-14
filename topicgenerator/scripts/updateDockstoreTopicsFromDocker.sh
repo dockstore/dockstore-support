@@ -30,10 +30,6 @@ CONFIG=/config/topic-generator.config
 
 cd /home
 
-echo "Creating a CSV file of AI topic candidates from Dockstore"
-java -jar $APP_JAR -c $CONFIG get-topic-candidates
-cat entries_*.csv
-
 echo "Generating topics"
 java -jar $APP_JAR -c $CONFIG generate-topics --entries entries_*.csv
 cat generated-topics_*.csv
