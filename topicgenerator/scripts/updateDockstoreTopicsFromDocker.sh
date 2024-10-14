@@ -27,13 +27,14 @@ set -o nounset
 
 APP_JAR=/home/topic-generator.jar
 CONFIG=/config/topic-generator.config
+MAX_CANDIDATES=500
 
 cd /home
 
-echo "Generating topics"
-java -jar $APP_JAR -c $CONFIG generate-topics --entries entries_*.csv
+echo "Generating topics for all AI topic candidates from Dockstore"
+java -jar $APP_JAR -c "${CONFIG}" generate-topics --max "${MAX_CANDIDATES}"
 cat generated-topics_*.csv
 
 echo "Uploading generated AI topics to Dockstore"
-java -jar $APP_JAR -c $CONFIG upload-topics --aiTopics generated-topics_*.csv
+java -jar $APP_JAR -c "${CONFIG}" upload-topics --aiTopics generated-topics_*.csv
 
