@@ -14,6 +14,7 @@ import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
 import com.google.common.collect.Lists;
 import io.dockstore.common.NextflowUtilities;
+import io.dockstore.common.NextflowUtilities.NextflowParsingException;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
@@ -424,7 +425,13 @@ public class TopicGeneratorClient {
     }
 
     private Optional<FileWrapper> getNextflowMainScript(String nextflowConfigFileContent, Ga4Ghv20Api ga4Ghv20Api, String trsId, String versionId, DescriptorTypeEnum descriptorType) {
-        final String mainScriptPath = NextflowUtilities.grabConfig(nextflowConfigFileContent).getString("manifest.mainScript", "main.nf");
+        final String mainScriptPath;
+        try {
+            mainScriptPath = NextflowUtilities.grabConfig(nextflowConfigFileContent).getString("manifest.mainScript", "main.nf");
+        } catch (NextflowParsingException e) {
+            LOG.error("Could not get grab config", e);
+            return Optional.empty();
+        }
         try {
             return Optional.of(ga4Ghv20Api.toolsIdVersionsVersionIdTypeDescriptorRelativePathGet(trsId, descriptorType.toString(), versionId, mainScriptPath));
         } catch (ApiException exception) {
