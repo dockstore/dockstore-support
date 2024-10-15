@@ -429,7 +429,7 @@ public class TopicGeneratorClient {
         try {
             mainScriptPath = NextflowUtilities.grabConfig(nextflowConfigFileContent).getString("manifest.mainScript", "main.nf");
         } catch (NextflowParsingException e) {
-            LOG.error("Could not get grab config", e);
+            LOG.error("Could not grab config", e);
             return Optional.empty();
         }
         try {
