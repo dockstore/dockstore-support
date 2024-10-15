@@ -15,7 +15,6 @@ import com.theokanning.openai.completion.chat.ChatMessageRole;
 import com.theokanning.openai.service.OpenAiService;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +36,7 @@ public class OpenAIModel extends BaseAIModel {
     }
 
     @Override
-    public Optional<AIResponseInfo> submitPrompt(String prompt) {
+    public AIResponseInfo submitPrompt(String prompt) {
         // Chat completion API calls include additional tokens for message-based formatting. Calculate how long the descriptor content can be and truncate if needed
         ChatMessage userMessage = new ChatMessage(ChatMessageRole.USER.value(), prompt);
         boolean isPromptTruncated = false;
@@ -62,8 +61,7 @@ public class OpenAIModel extends BaseAIModel {
 
         if (chatCompletionResult.getChoices().isEmpty()) {
             // I don't think this should happen, but check anyway
-            LOG.error("There was no chat completion choices, skipping");
-            return Optional.empty();
+            throw new RuntimeException("AI model failed to return a response");
         }
 
         final ChatCompletionChoice chatCompletionChoice = chatCompletionResult.getChoices().get(0);
@@ -71,7 +69,7 @@ public class OpenAIModel extends BaseAIModel {
         final String finishReason = chatCompletionChoice.getFinishReason();
         final long promptTokens = chatCompletionResult.getUsage().getPromptTokens();
         final long completionTokens = chatCompletionResult.getUsage().getCompletionTokens();
-        return Optional.of(new AIResponseInfo(removeSummaryTagsFromTopic(aiResponse), isPromptTruncated, promptTokens, completionTokens, this.calculatePrice(promptTokens, completionTokens), finishReason));
+        return new AIResponseInfo(removeSummaryTagsFromTopic(aiResponse), isPromptTruncated, promptTokens, completionTokens, this.calculatePrice(promptTokens, completionTokens), finishReason);
     }
 
     @Override

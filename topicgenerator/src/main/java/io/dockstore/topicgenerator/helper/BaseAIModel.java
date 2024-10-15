@@ -1,7 +1,5 @@
 package io.dockstore.topicgenerator.helper;
 
-import java.util.Optional;
-
 /**
  * An AI model that generates topics.
  */
@@ -19,7 +17,7 @@ public abstract class BaseAIModel implements AIModel {
      *
      * @return
      */
-    public abstract Optional<AIResponseInfo> submitPrompt(String prompt);
+    public abstract AIResponseInfo submitPrompt(String prompt);
 
     @Override
     public String getModelName() {
