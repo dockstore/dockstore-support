@@ -6,5 +6,3 @@ RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends
 COPY topicgenerator/target/topicgenerator*[^s].jar /home/topic-generator.jar
-
-COPY topicgenerator/scripts/updateDockstoreTopicsFromDocker.sh /home/updateDockstoreTopicsFromDocker.sh
