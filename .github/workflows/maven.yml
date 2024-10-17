@@ -58,7 +58,6 @@ jobs:
           username: ${{ secrets.QUAY_USER }}
           password: ${{ secrets.QUAY_TOKEN }}
 
-      # Push the bootstrap image before running tests because the DockstoreStack test needs to get the digest of the bootstrap image
       - if: "!contains(github.ref, 'dependabot')"
         name: Build and push
         id: docker_build
@@ -67,22 +66,3 @@ jobs:
           context: .
           push: true
           tags: quay.io/dockstore/dockstore-support:${{env.QUAY_TAG}}
-
-      - if: "!contains(github.ref, 'dependabot')"
-        name: Create checksums
-        run: |
-          docker inspect quay.io/dockstore/dockstore-support:${{env.QUAY_TAG}} | grep -A 1 RepoDigests
-          docker inspect quay.io/dockstore/dockstore-support:${{env.QUAY_TAG}} | grep -A 1 RepoDigests | grep -oPm1 'sha256:\K\w+' > image-digest.txt      
-
-      - if: "!contains(github.ref, 'dependabot')"
-        name: Configure AWS Credentials to upload deploy assets
-        uses: aws-actions/configure-aws-credentials@v4.0.2
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          role-session-name: prod_deploy_upload_from_github
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - if: "!contains(github.ref, 'dependabot')"
-        name: Copy checksum files
-        # Copy the image to the dockstore-support directory to reduce the chances of overwriting the image-digest.txt file for the webservice image.
-        run: aws s3 cp image-digest.txt  s3://${{ secrets.AWS_BUCKET }}/${{ env.S3_FOLDER }}/dockstore-support/image-digest.txt
