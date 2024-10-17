@@ -34,3 +34,52 @@ jobs:
         run: ./mvnw -B clean install
       - name: code coverage
         run: bash <(curl -s https://codecov.io/bash)
+
+      - name: Set S3 folder name and quay tag name
+        run: |
+          S3_FOLDER=${GITHUB_REF##refs/tags/}
+          if [ $GITHUB_REF == $S3_FOLDER ]; then
+           # If this isn't a tag, it must be a branch
+           S3_FOLDER=${GITHUB_REF##refs/heads/}
+          fi
+          # QUAY_TAG differs from S3_FOLDER because it only contains the git ref with no short hash. It also replaces slashes with underscores.
+          echo "QUAY_TAG=${S3_FOLDER//\//_}" >> $GITHUB_ENV
+          echo "S3_FOLDER=${S3_FOLDER}-$(echo $GITHUB_SHA | cut -c -7)" >> $GITHUB_ENV
+          
+      # neat, quay itself uses manual github actions https://github.com/quay/quay/blob/master/.github/workflows/build-and-publish.yaml
+      - if: "!contains(github.ref, 'dependabot')"
+        name: Login to Quay.io
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USER }}
+          password: ${{ secrets.QUAY_TOKEN }}
+
+      # Push the bootstrap image before running tests because the DockstoreStack test needs to get the digest of the bootstrap image
+      - if: "!contains(github.ref, 'dependabot')"
+        name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: quay.io/dockstore/dockstore-support:${{env.QUAY_TAG}}
+
+      - if: "!contains(github.ref, 'dependabot')"
+        name: Create checksums
+        run: |
+          docker inspect quay.io/dockstore/dockstore-support:${{env.QUAY_TAG}} | grep -A 1 RepoDigests
+          docker inspect quay.io/dockstore/dockstore-support:${{env.QUAY_TAG}} | grep -A 1 RepoDigests | grep -oPm1 'sha256:\K\w+' > image-digest.txt      
+
+      - if: "!contains(github.ref, 'dependabot')"
+        name: Configure AWS Credentials to upload deploy assets
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: prod_deploy_upload_from_github
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - if: "!contains(github.ref, 'dependabot')"
+        name: Copy checksum files
+        # Copy the image to the dockstore-support directory to reduce the chances of overwriting the image-digest.txt file for the webservice image.
+        run: aws s3 cp image-digest.txt  s3://${{ secrets.AWS_BUCKET }}/${{ env.S3_FOLDER }}/dockstore-support/image-digest.txt
