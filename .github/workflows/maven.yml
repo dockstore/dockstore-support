@@ -33,7 +33,7 @@ jobs:
       - name: code coverage
         run: bash <(curl -s https://codecov.io/bash)
 
-      - if: github.ref == 'refs/heads/feature/seab-6653/topicUpdater'
+      - if: github.ref == 'refs/heads/develop'
         name: Set S3 folder name and quay tag name
         run: |
           S3_FOLDER=${GITHUB_REF##refs/tags/}
@@ -46,7 +46,7 @@ jobs:
           echo "S3_FOLDER=${S3_FOLDER}-$(echo $GITHUB_SHA | cut -c -7)" >> $GITHUB_ENV
           
       # neat, quay itself uses manual github actions https://github.com/quay/quay/blob/master/.github/workflows/build-and-publish.yaml
-      - if: github.ref == 'refs/heads/feature/seab-6653/topicUpdater'
+      - if: github.ref == 'refs/heads/develop'
         name: Login to Quay.io
         uses: docker/login-action@v3
         with:
@@ -54,7 +54,7 @@ jobs:
           username: ${{ secrets.QUAY_USER }}
           password: ${{ secrets.QUAY_TOKEN }}
 
-      - if: github.ref == 'refs/heads/feature/seab-6653/topicUpdater'
+      - if: github.ref == 'refs/heads/develop'
         name: Build and push
         id: docker_build
         uses: docker/build-push-action@v6
