@@ -4,7 +4,7 @@ FROM eclipse-temurin:21.0.2_13-jdk-jammy
 # Prepare for Java download
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install unzip -y --no-install-recommends
+    && apt-get install unzip jq -y --no-install-recommends
 
 # Install aws cli so dockstore-deploy can use the aws cli to upload files to S3
 RUN curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
