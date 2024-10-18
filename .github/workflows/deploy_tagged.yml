@@ -14,4 +14,6 @@ jobs:
     uses: dockstore/workflow-actions/.github/workflows/deploy_tagged.yaml@main
     with:
       changelist: ${{ inputs.changelist }}
+      createDockerImage: true
+      dockerTagPrefix: 'quay.io/dockstore/dockstore-support'
     secrets: inherit
