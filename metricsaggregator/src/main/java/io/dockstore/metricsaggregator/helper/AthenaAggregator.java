@@ -3,6 +3,11 @@ package io.dockstore.metricsaggregator.helper;
 import static io.dockstore.utils.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.inline;
+import static org.jooq.impl.DSL.rowNumber;
+import static org.jooq.impl.DSL.select;
+import static org.jooq.impl.DSL.table;
+import static org.jooq.impl.DSL.unnest;
 
 import io.dockstore.common.Partner;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
@@ -14,6 +19,7 @@ import io.dockstore.openapi.client.model.Metric;
 import io.dockstore.openapi.client.model.RegistryBean;
 import io.dockstore.openapi.client.model.SourceControlBean;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +27,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.Select;
+import org.jooq.SelectConditionStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
@@ -201,5 +210,38 @@ public abstract class AthenaAggregator<M extends Metric> {
         } catch (AwsServiceException | SdkClientException | InterruptedException e) {
             exceptionMessage(e, "Could not execute query to create Athena table", GENERIC_ERROR);
         }
+    }
+
+    /**
+     * Creates a query that unnests an executions array field and de-duplicates the executions if they have the same execution ID, taking the most recent execution.
+     * @param partition
+     * @param fieldToUnnest
+     * @param fieldsToSelectInUnnestField
+     * @return
+     */
+    protected SelectConditionStep<Record> createUnnestQueryWithModifiedTime(AthenaTablePartition partition, Field<?> fieldToUnnest, List<Field<?>> fieldsToSelectInUnnestField) {
+        final String unnestedFieldAlias = "unnestedexecution";
+        final Select<?> unnestedExecutionsWithFileModifiedTime = select(FILE_MODIFIED_TIME_FIELD,
+                rowNumber().over().orderBy(FILE_MODIFIED_TIME_FIELD.desc()).as(FILE_MODIFIED_TIME_ROW_NUM_FIELD),
+                PLATFORM_FIELD,
+                field(unnestedFieldAlias, String.class))
+                .from(table(tableName), unnest(fieldToUnnest).as("t", unnestedFieldAlias))
+                .where(ENTITY_FIELD.eq(inline(partition.entity()))
+                        .and(REGISTRY_FIELD.eq(inline(partition.registry())))
+                        .and(ORG_FIELD.eq(inline(partition.org())))
+                        .and(NAME_FIELD.eq(inline(partition.name())))
+                        .and(VERSION_FIELD.eq(inline(partition.version()))));
+
+        List<? extends Field<?>> unnestedFields = fieldsToSelectInUnnestField.stream()
+                .map(field -> field(unnestedFieldAlias + "." + field.getName(), field.getType()))
+                .toList();
+
+        List<Field<?>> fieldsWithPlatform = new ArrayList<>();
+        fieldsWithPlatform.add(PLATFORM_FIELD);
+        fieldsWithPlatform.addAll(unnestedFields);
+
+        return select(fieldsWithPlatform)
+                .from(unnestedExecutionsWithFileModifiedTime)
+                .where(FILE_MODIFIED_TIME_ROW_NUM_FIELD.eq(inline(1)));
     }
 }
