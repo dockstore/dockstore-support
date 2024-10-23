@@ -75,10 +75,10 @@ public class MetricsAggregatorAthenaClient {
      * @param extendedGa4GhApi
      * @param skipPostingToDockstore
      */
-    public void aggregateMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, boolean skipPostingToDockstore, boolean isDryRun) {
+    public void aggregateMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, boolean skipPostingToDockstore) {
         // Aggregate metrics for each directory
         s3DirectoriesToAggregate.stream().parallel().forEach(s3DirectoryInfo -> {
-            Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(s3DirectoryInfo, isDryRun);
+            Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(s3DirectoryInfo);
             if (platformToMetrics.isEmpty()) {
                 LOG.error("No metrics were aggregated for tool ID: {}, version {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
                 numberOfVersionsSkipped.incrementAndGet();
@@ -145,35 +145,29 @@ public class MetricsAggregatorAthenaClient {
      * @param s3DirectoryInfo
      * @return
      */
-    public Map<String, Metrics> getAggregatedMetricsForPlatforms(S3DirectoryInfo s3DirectoryInfo, boolean isDryRun) {
+    public Map<String, Metrics> getAggregatedMetricsForPlatforms(S3DirectoryInfo s3DirectoryInfo) {
         LOG.info("Aggregating metrics for directory: {}", s3DirectoryInfo.versionS3KeyPrefix());
         Map<String, Metrics> platformToMetrics = new HashMap<>();
         AthenaTablePartition athenaTablePartition = s3DirectoryInfo.athenaTablePartition();
         try {
-            if (isDryRun) {
-                executionStatusAggregator.printQuery(athenaTablePartition);
-                validationStatusAggregator.printQuery(athenaTablePartition);
-            } else {
+            // Calculate metrics for runexecutions
+            Map<String, ExecutionStatusMetric> executionStatusMetricByPlatform = executionStatusAggregator.createMetricByPlatform(
+                    athenaTablePartition);
+            // Calculate metrics for validationexecutions
+            Map<String, ValidationStatusMetric> validationStatusMetricByPlatform = validationStatusAggregator.createMetricByPlatform(
+                    athenaTablePartition);
 
-                // Calculate metrics for runexecutions
-                Map<String, ExecutionStatusMetric> executionStatusMetricByPlatform = executionStatusAggregator.createMetricByPlatform(
-                        athenaTablePartition);
-                // Calculate metrics for validationexecutions
-                Map<String, ValidationStatusMetric> validationStatusMetricByPlatform = validationStatusAggregator.createMetricByPlatform(
-                        athenaTablePartition);
+            s3DirectoryInfo.platforms().forEach(platform -> {
+                ExecutionStatusMetric executionStatusMetric = executionStatusMetricByPlatform.get(platform);
+                ValidationStatusMetric validationStatusMetric = validationStatusMetricByPlatform.get(platform);
 
-                s3DirectoryInfo.platforms().forEach(platform -> {
-                    ExecutionStatusMetric executionStatusMetric = executionStatusMetricByPlatform.get(platform);
-                    ValidationStatusMetric validationStatusMetric = validationStatusMetricByPlatform.get(platform);
-
-                    if (executionStatusMetric != null || validationStatusMetric != null) {
-                        platformToMetrics.putIfAbsent(platform,
-                                new Metrics().executionStatusCount(executionStatusMetric).validationStatus(validationStatusMetric));
-                        LOG.info("Aggregated metrics for tool ID {}, version {}, platform {} from directory {}", s3DirectoryInfo.toolId(),
-                                s3DirectoryInfo.versionId(), platform, s3DirectoryInfo.versionS3KeyPrefix());
-                    }
-                });
-            }
+                if (executionStatusMetric != null || validationStatusMetric != null) {
+                    platformToMetrics.putIfAbsent(platform,
+                            new Metrics().executionStatusCount(executionStatusMetric).validationStatus(validationStatusMetric));
+                    LOG.info("Aggregated metrics for tool ID {}, version {}, platform {} from directory {}", s3DirectoryInfo.toolId(),
+                            s3DirectoryInfo.versionId(), platform, s3DirectoryInfo.versionS3KeyPrefix());
+                }
+            });
         } catch (Exception e) {
             // Log error and continue
             LOG.error("Could not aggregate metrics for tool ID {}, version {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), e);

@@ -43,7 +43,10 @@ public class CommandLineArgs {
         @Parameter(names = {"--trsIds"}, description = "Aggregate metrics for the tools specified TRS ID")
         private List<String> trsIds;
 
-        @Parameter(names = { "--dryRun" }, description = "Do a dry run with Athena by only generating the queries")
+        @Parameter(names = {"--allS3"}, description = "Aggregate all entries in S3")
+        private boolean allS3 = false;
+
+        @Parameter(names = { "--dryRun" }, description = "Do a dry run by printing out the S3 directories that will be aggregated")
         private boolean dryRun = false;
 
         public File getConfig() {
@@ -56,6 +59,10 @@ public class CommandLineArgs {
 
         public List<String> getTrsIds() {
             return trsIds;
+        }
+
+        public boolean isAllS3() {
+            return allS3;
         }
 
         public boolean isDryRun() {

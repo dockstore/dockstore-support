@@ -169,7 +169,10 @@ public class MetricsAggregatorClient {
 
         final Instant getDirectoriesStartTime = Instant.now();
         List<S3DirectoryInfo> s3DirectoriesToAggregate;
-        if (trsIdsToAggregate == null || trsIdsToAggregate.isEmpty()) {
+        if (aggregateMetricsCommand.isAllS3()) {
+            LOG.info("Aggregating metrics for all entries in S3");
+            s3DirectoriesToAggregate = metricsAggregatorS3Client.getDirectories();
+        } else if (trsIdsToAggregate == null || trsIdsToAggregate.isEmpty()) {
             LOG.info("Aggregating metrics for all entries that have new executions to aggregate");
             List<EntryLiteAndVersionName> entryVersionsToAggregate = extendedGa4GhApi.getEntryVersionsToAggregate();
             s3DirectoriesToAggregate = entryVersionsToAggregate.stream()
@@ -190,10 +193,15 @@ public class MetricsAggregatorClient {
             return;
         }
 
+        if (aggregateMetricsCommand.isDryRun()) {
+            LOG.info("These S3 directories will be aggregated:");
+            s3DirectoriesToAggregate.forEach(s3Directory -> LOG.info("{}", s3Directory.versionS3KeyPrefix()));
+            return;
+        }
+
         MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config,
                 aggregateMetricsCommand.isDryRun());
-        metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore,
-                aggregateMetricsCommand.isDryRun());
+        metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
     }
 
     private void submitValidationData(MetricsAggregatorConfig config, ValidatorToolEnum validator, String validatorVersion, String dataFilePath, Partner platform, String executionId) throws IOException {
