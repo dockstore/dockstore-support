@@ -151,7 +151,6 @@ public class MetricsAggregatorClient {
 
     private void aggregateMetrics(AggregateMetricsCommand aggregateMetricsCommand, MetricsAggregatorConfig config) throws URISyntaxException {
         final List<String> trsIdsToAggregate = aggregateMetricsCommand.getTrsIds();
-        final boolean skipPostingToDockstore = aggregateMetricsCommand.isSkipDockstore();
         ApiClient apiClient = setupApiClient(config.getDockstoreConfig().serverUrl(), config.getDockstoreConfig().token());
         ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
 
@@ -165,7 +164,6 @@ public class MetricsAggregatorClient {
         if (aggregateMetricsCommand.isDryRun()) {
             LOG.info("Executing dry run");
         }
-        LOG.info("Submitting metrics to Dockstore is {}", skipPostingToDockstore ? "skipped" : "enabled");
 
         final Instant getDirectoriesStartTime = Instant.now();
         List<S3DirectoryInfo> s3DirectoriesToAggregate;
@@ -201,7 +199,7 @@ public class MetricsAggregatorClient {
 
         MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config,
                 aggregateMetricsCommand.isDryRun());
-        metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
+        metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi);
     }
 
     private void submitValidationData(MetricsAggregatorConfig config, ValidatorToolEnum validator, String validatorVersion, String dataFilePath, Partner platform, String executionId) throws IOException {

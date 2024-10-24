@@ -73,9 +73,8 @@ public class MetricsAggregatorAthenaClient {
      * Aggregate metrics using AWS Athena for the list of S3 directories and posts them to Dockstore.
      * @param s3DirectoriesToAggregate
      * @param extendedGa4GhApi
-     * @param skipPostingToDockstore
      */
-    public void aggregateMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, boolean skipPostingToDockstore) {
+    public void aggregateMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi) {
         // Aggregate metrics for each directory
         s3DirectoriesToAggregate.stream().parallel().forEach(s3DirectoryInfo -> {
             Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(s3DirectoryInfo);
@@ -83,17 +82,16 @@ public class MetricsAggregatorAthenaClient {
                 LOG.error("No metrics were aggregated for tool ID: {}, version {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
                 numberOfVersionsSkipped.incrementAndGet();
             }
-            if (!skipPostingToDockstore) {
-                try {
-                    extendedGa4GhApi.aggregatedMetricsPut(platformToMetrics, s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
-                    LOG.info("Posted aggregated metrics to Dockstore for tool ID: {}, version {}, platform(s): {}",
-                            s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platformToMetrics.keySet());
-                    numberOfVersionsSubmitted.incrementAndGet();
-                } catch (ApiException exception) {
-                    // Log error and continue processing for other platforms
-                    LOG.error("Could not post aggregated metrics to Dockstore for tool ID: {}, version {}, platform(s): {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platformToMetrics.keySet(), exception);
-                    numberOfVersionsSkipped.incrementAndGet();
-                }
+
+            try {
+                extendedGa4GhApi.aggregatedMetricsPut(platformToMetrics, s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
+                LOG.info("Posted aggregated metrics to Dockstore for tool ID: {}, version {}, platform(s): {}",
+                        s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platformToMetrics.keySet());
+                numberOfVersionsSubmitted.incrementAndGet();
+            } catch (ApiException exception) {
+                // Log error and continue processing for other platforms
+                LOG.error("Could not post aggregated metrics to Dockstore for tool ID: {}, version {}, platform(s): {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platformToMetrics.keySet(), exception);
+                numberOfVersionsSkipped.incrementAndGet();
             }
             numberOfDirectoriesProcessed.incrementAndGet();
             LOG.info("Processed {} directories", numberOfDirectoriesProcessed);

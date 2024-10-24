@@ -37,13 +37,10 @@ public class CommandLineArgs {
         @Parameter(names = {"-c", "--config"}, description = "The config file path.")
         private File config = new File("./" + MetricsAggregatorClient.CONFIG_FILE_NAME);
 
-        @Parameter(names = {"--skipDockstore"}, description = "Skip posting the metrics to Dockstore")
-        private boolean skipDockstore = false;
-
-        @Parameter(names = {"--trsIds"}, description = "Aggregate metrics for the tools specified TRS ID")
+        @Parameter(names = {"--trsIds"}, description = "Aggregate metrics for the tools specified by their TRS IDs")
         private List<String> trsIds;
 
-        @Parameter(names = {"--allS3"}, description = "Aggregate all entries in S3")
+        @Parameter(names = {"--allS3"}, description = "Aggregate all executions in S3, even if they have been aggregated before")
         private boolean allS3 = false;
 
         @Parameter(names = { "--dryRun" }, description = "Do a dry run by printing out the S3 directories that will be aggregated")
@@ -51,10 +48,6 @@ public class CommandLineArgs {
 
         public File getConfig() {
             return config;
-        }
-
-        public boolean isSkipDockstore() {
-            return skipDockstore;
         }
 
         public List<String> getTrsIds() {
