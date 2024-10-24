@@ -4,6 +4,7 @@ import static io.dockstore.utils.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.inline;
+import static org.jooq.impl.DSL.partitionBy;
 import static org.jooq.impl.DSL.rowNumber;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.table;
@@ -41,6 +42,7 @@ import software.amazon.awssdk.core.exception.SdkClientException;
  */
 public abstract class AthenaAggregator<M extends Metric> {
     protected static final Field<String> DATE_EXECUTED_FIELD = field("dateexecuted", String.class);
+    protected static final Field<String> EXECUTION_ID_FIELD = field("executionid", String.class);
     // Partition fields
     protected static final Field<String> ENTITY_FIELD = field("entity", String.class);
     protected static final Field<String> REGISTRY_FIELD = field("registry", String.class);
@@ -222,7 +224,7 @@ public abstract class AthenaAggregator<M extends Metric> {
     protected SelectConditionStep<Record> createUnnestQueryWithModifiedTime(AthenaTablePartition partition, Field<?> fieldToUnnest, List<Field<?>> fieldsToSelectInUnnestField) {
         final String unnestedFieldAlias = "unnestedexecution";
         final Select<?> unnestedExecutionsWithFileModifiedTime = select(FILE_MODIFIED_TIME_FIELD,
-                rowNumber().over().orderBy(FILE_MODIFIED_TIME_FIELD.desc()).as(FILE_MODIFIED_TIME_ROW_NUM_FIELD),
+                rowNumber().over(partitionBy(PLATFORM_FIELD, EXECUTION_ID_FIELD).orderBy(FILE_MODIFIED_TIME_FIELD.desc())).as(FILE_MODIFIED_TIME_ROW_NUM_FIELD),
                 PLATFORM_FIELD,
                 field(unnestedFieldAlias, String.class))
                 .from(table(tableName), unnest(fieldToUnnest).as("t", unnestedFieldAlias))
