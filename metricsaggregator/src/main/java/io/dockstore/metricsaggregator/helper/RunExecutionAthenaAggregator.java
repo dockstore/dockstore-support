@@ -8,6 +8,7 @@ import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.max;
 import static org.jooq.impl.DSL.min;
+import static org.jooq.impl.DSL.select;
 
 import io.dockstore.common.Partner;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
@@ -92,6 +93,7 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
 
         // This query creates a workflow execution from each array of tasks. This will be unioned with the actual workflow executions submitted
         List<Field<?>> taskExecutionFields = List.of(
+                PLATFORM_FIELD,
                 field("array_min(transform(taskexecutions, t -> t.dateexecuted))", String.class).as(DATE_EXECUTED_FIELD),
                 // If all tasks are successful, set the workflow execution status as successful. Otherwise, assume failed
                 field("case when all_match(transform(taskexecutions, t -> t.executionstatus), t -> t = 'SUCCESSFUL') then 'SUCCESSFUL' else 'FAILED' end", String.class).as(EXECUTION_STATUS_FIELD),
@@ -100,13 +102,15 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
                 field("array_max(transform(taskexecutions, t -> t.cpurequirements))", Integer.class).as(CPU_REQUIREMENTS_FIELD),
                 field("array_max(transform(taskexecutions, t -> t.cost))", String.class).as(COST_FIELD)
         );
-        final Select<Record> dedupedTaskExecutions = createUnnestQueryWithModifiedTime(partition, field("taskexecutions", String[].class), taskExecutionFields);
+        final Select<Record> dedupedTaskExecutions = createUnnestQueryWithModifiedTime(partition, field("taskexecutions", String[].class), List.of(field("taskexecutions")));
+        final Select<Record> runExecutionsFromTasks = select(taskExecutionFields)
+                .from(dedupedTaskExecutions);
 
         return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true))
                 // Main query that uses the results of the subquery
                 .select(this.selectFields)
                 .from(dedupedRunExecutions
-                        .unionAll(dedupedTaskExecutions)
+                        .unionAll(runExecutionsFromTasks)
                 )
                 .groupBy(cube(this.groupFields.toArray(Field[]::new))) // CUBE generates sub-totals for all combinations of the GROUP BY columns.
                 .getSQL();

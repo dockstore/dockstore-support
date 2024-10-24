@@ -191,15 +191,13 @@ public class MetricsAggregatorClient {
             return;
         }
 
-        if (aggregateMetricsCommand.isDryRun()) {
-            LOG.info("These S3 directories will be aggregated:");
-            s3DirectoriesToAggregate.forEach(s3Directory -> LOG.info("{}", s3Directory.versionS3KeyPrefix()));
-            return;
-        }
+        MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config);
 
-        MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config,
-                aggregateMetricsCommand.isDryRun());
-        metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi);
+        if (aggregateMetricsCommand.isDryRun()) {
+            metricsAggregatorAthenaClient.dryRun(s3DirectoriesToAggregate);
+        } else {
+            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi);
+        }
     }
 
     private void submitValidationData(MetricsAggregatorConfig config, ValidatorToolEnum validator, String validatorVersion, String dataFilePath, Partner platform, String executionId) throws IOException {

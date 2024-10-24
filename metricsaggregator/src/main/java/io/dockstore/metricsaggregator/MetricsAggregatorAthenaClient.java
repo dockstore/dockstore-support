@@ -51,7 +51,7 @@ public class MetricsAggregatorAthenaClient {
     private final AtomicInteger numberOfVersionsSubmitted = new AtomicInteger(0);
     private final AtomicInteger numberOfVersionsSkipped = new AtomicInteger(0);
 
-    public MetricsAggregatorAthenaClient(MetricsAggregatorConfig config, boolean isDryRun) {
+    public MetricsAggregatorAthenaClient(MetricsAggregatorConfig config) {
         this.metricsBucketName = config.getS3Config().bucket();
         this.athenaWorkgroup = config.getAthenaConfig().workgroup();
 
@@ -62,11 +62,6 @@ public class MetricsAggregatorAthenaClient {
         this.metadataApi = new MetadataApi(setupApiClient(config.getDockstoreConfig().serverUrl())); // Anonymous client
         this.executionStatusAggregator = new ExecutionStatusAthenaAggregator(this, tableName);
         this.validationStatusAggregator = new ValidationStatusAthenaAggregator(this, tableName);
-
-        if (!isDryRun) {
-            AthenaAggregator.createDatabase(databaseName, this);
-            AthenaAggregator.createTable(tableName, metricsBucketName, metadataApi, this);
-        }
     }
 
     /**
@@ -75,6 +70,9 @@ public class MetricsAggregatorAthenaClient {
      * @param extendedGa4GhApi
      */
     public void aggregateMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi) {
+        AthenaAggregator.createDatabase(databaseName, this);
+        AthenaAggregator.createTable(tableName, metricsBucketName, metadataApi, this);
+
         // Aggregate metrics for each directory
         s3DirectoriesToAggregate.stream().parallel().forEach(s3DirectoryInfo -> {
             Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(s3DirectoryInfo);
@@ -171,6 +169,15 @@ public class MetricsAggregatorAthenaClient {
             LOG.error("Could not aggregate metrics for tool ID {}, version {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), e);
         }
         return platformToMetrics;
+    }
+
+    public void dryRun(List<S3DirectoryInfo> s3DirectoriesToAggregate) {
+        LOG.info("These S3 directories will be aggregated:");
+        s3DirectoriesToAggregate.forEach(s3Directory -> {
+            LOG.info("{}", s3Directory.versionS3KeyPrefix());
+            executionStatusAggregator.printQuery(s3Directory.athenaTablePartition());
+            validationStatusAggregator.printQuery(s3Directory.athenaTablePartition());
+        });
     }
 
     /**
