@@ -151,7 +151,6 @@ public class MetricsAggregatorClient {
 
     private void aggregateMetrics(AggregateMetricsCommand aggregateMetricsCommand, MetricsAggregatorConfig config) throws URISyntaxException {
         final List<String> trsIdsToAggregate = aggregateMetricsCommand.getTrsIds();
-        final boolean skipPostingToDockstore = aggregateMetricsCommand.isSkipDockstore();
         ApiClient apiClient = setupApiClient(config.getDockstoreConfig().serverUrl(), config.getDockstoreConfig().token());
         ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
 
@@ -161,11 +160,17 @@ public class MetricsAggregatorClient {
         } else {
             metricsAggregatorS3Client = new MetricsAggregatorS3Client(config.getS3Config().bucket(), config.getS3Config().endpointOverride());
         }
-        LOG.info("Aggregating metrics with {}. Submitting metrics to Dockstore is {}", aggregateMetricsCommand.isWithAthena() ? "AWS Athena" : "Java", skipPostingToDockstore ? "skipped" : "enabled");
+
+        if (aggregateMetricsCommand.isDryRun()) {
+            LOG.info("Executing dry run");
+        }
 
         final Instant getDirectoriesStartTime = Instant.now();
         List<S3DirectoryInfo> s3DirectoriesToAggregate;
-        if (trsIdsToAggregate == null || trsIdsToAggregate.isEmpty()) {
+        if (aggregateMetricsCommand.isAllS3()) {
+            LOG.info("Aggregating metrics for all entries in S3");
+            s3DirectoriesToAggregate = metricsAggregatorS3Client.getDirectories();
+        } else if (trsIdsToAggregate == null || trsIdsToAggregate.isEmpty()) {
             LOG.info("Aggregating metrics for all entries that have new executions to aggregate");
             List<EntryLiteAndVersionName> entryVersionsToAggregate = extendedGa4GhApi.getEntryVersionsToAggregate();
             s3DirectoriesToAggregate = entryVersionsToAggregate.stream()
@@ -186,11 +191,12 @@ public class MetricsAggregatorClient {
             return;
         }
 
-        if (aggregateMetricsCommand.isWithAthena()) {
-            MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config);
-            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
+        MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config);
+
+        if (aggregateMetricsCommand.isDryRun()) {
+            metricsAggregatorAthenaClient.dryRun(s3DirectoriesToAggregate);
         } else {
-            metricsAggregatorS3Client.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, skipPostingToDockstore);
+            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi);
         }
     }
 

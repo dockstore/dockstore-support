@@ -54,11 +54,21 @@ Usage: <main class> [options] [command] [command options]
     aggregate-metrics      Aggregate metrics in S3
       Usage: aggregate-metrics [options]
         Options:
+          --allS3
+            Aggregate all executions in S3, even if they have been aggregated 
+            before 
+            Default: false
           -c, --config
             The config file path.
             Default: ./metrics-aggregator.config
+          --dryRun
+            Do a dry run by printing out the S3 directories that will be 
+            aggregated 
+            Default: false
           --help
             Prints help for metricsaggregator
+          --trsIds
+            Aggregate metrics for the tools specified by their TRS IDs
 
     submit-validation-data      Formats workflow validation data specified in 
             a file then submits it to Dockstore
