@@ -3,6 +3,7 @@ package io.dockstore.metricsaggregator;
 import static io.dockstore.metricsaggregator.helper.AthenaClientHelper.createAthenaClient;
 import static io.dockstore.utils.DockstoreApiClientUtils.setupApiClient;
 
+import io.dockstore.common.Partner;
 import io.dockstore.metricsaggregator.MetricsAggregatorS3Client.S3DirectoryInfo;
 import io.dockstore.metricsaggregator.helper.AthenaAggregator;
 import io.dockstore.metricsaggregator.helper.AthenaClientHelper;
@@ -153,7 +154,9 @@ public class MetricsAggregatorAthenaClient {
             Map<String, ValidationStatusMetric> validationStatusMetricByPlatform = validationStatusAggregator.createMetricByPlatform(
                     athenaTablePartition);
 
-            s3DirectoryInfo.platforms().forEach(platform -> {
+            List<String> metricsPlatforms = new ArrayList<>(s3DirectoryInfo.platforms());
+            metricsPlatforms.add(Partner.ALL.name());
+            metricsPlatforms.forEach(platform -> {
                 ExecutionStatusMetric executionStatusMetric = executionStatusMetricByPlatform.get(platform);
                 ValidationStatusMetric validationStatusMetric = validationStatusMetricByPlatform.get(platform);
 
