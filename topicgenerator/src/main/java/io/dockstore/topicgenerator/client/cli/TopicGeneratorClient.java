@@ -50,15 +50,15 @@ import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TopicGeneratorClient {
-    public static final String OUTPUT_FILE_PREFIX = "generated-topics";
     private static final Logger LOG = LoggerFactory.getLogger(TopicGeneratorClient.class);
-    private final List<StringFilter> stringFilters = Lists.newArrayList(new ChuckNorrisFilter("en"), new ChuckNorrisFilter("fr-CA-u-sd-caqc"));
+    private static final List<StringFilter> STRING_FILTERS = Lists.newArrayList(new ChuckNorrisFilter("en"), new ChuckNorrisFilter("fr-CA-u-sd-caqc"));
 
     TopicGeneratorClient() {
     }
@@ -146,12 +146,15 @@ public class TopicGeneratorClient {
         }
         LOG.info("Generating topics for AI topic candidates using AI model {}", aiModelType.getModelId());
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
-        final String generatedTopicsFileName = OUTPUT_FILE_PREFIX + outputFileNameSuffix;
+        final String unfilteredTopicsFileName = "generated-topics" + outputFileNameSuffix;
+        final String filteredTopicsFileName = "filtered-topics" + outputFileNameSuffix;
         final String errorsFileName = "errors" + outputFileNameSuffix;
         int numberOfTopicsGenerated = 0;
+        int numberOfCensoredTopics = 0;
         int numberOfFailures = 0;
-        try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(generatedTopicsFileName, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(OutputCsvHeaders.class).build());
-                CSVPrinter errorsCsvPrinter = new CSVPrinter(new FileWriter(errorsFileName, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(ErrorsCsvHeaders.class).build())) {
+        try (CSVPrinter unfilteredTopicsCsvPrinter = CSVHelper.createCsvPrinter(unfilteredTopicsFileName, OutputCsvHeaders.class);
+                CSVPrinter filteredTopicsCsvPrinter = CSVHelper.createCsvPrinter(filteredTopicsFileName, OutputCsvHeaders.class);
+                CSVPrinter errorsCsvPrinter = CSVHelper.createCsvPrinter(errorsFileName, ErrorsCsvHeaders.class)) {
             for (TrsIdAndVersionId aiTopicCandidate: aiTopicCandidates) {
                 final String trsId = aiTopicCandidate.trsId();
                 final String versionId = aiTopicCandidate.versionId();
@@ -193,9 +196,16 @@ public class TopicGeneratorClient {
                     String prompt = "Summarize the " + entryType
                             + " in one sentence that starts with a present tense verb in the <summary> tags. Use a maximum of 150 characters.\n<content>"
                             + descriptorFile.getContent() + "</content>";
-                    AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
-                    CSVHelper.writeRecord(csvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
-                    LOG.info("Generated topic for entry with TRS ID {} and version {}", trsId, versionId);
+                    AIResponseInfo aiResponseInfo = new AIResponseInfo("sex", false, 0, 0, 0, ""); //aiModel.get().submitPrompt(prompt);
+                    boolean isCensoredTopic = isSuspiciousTopic(aiResponseInfo.aiResponse());
+                    if (isCensoredTopic) {
+                        // Write censored topics to a different file
+                        CSVHelper.writeRecord(filteredTopicsCsvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
+                        numberOfCensoredTopics += 1;
+                    } else {
+                        CSVHelper.writeRecord(unfilteredTopicsCsvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
+                    }
+                    LOG.info("Generated topic for entry with TRS ID {} and version {}.{}", trsId, versionId, isCensoredTopic ? "The topic was filtered because it is potentially offensive" : "");
                     numberOfTopicsGenerated += 1;
                 } catch (Exception ex) {
                     LOG.error("Unable to generate topic for entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
@@ -204,8 +214,10 @@ public class TopicGeneratorClient {
                 }
             }
 
-            LOG.info("Generated {} AI topics. View generated AI topics in file {}", numberOfTopicsGenerated, generatedTopicsFileName);
-            LOG.info("Failed to generate topics for {} entries. View entries that failed AI topic generation in file {}", numberOfFailures, errorsFileName);
+            LOG.info("Generated {} AI topics. There are {} topics with filtered words. Failed to generate topics for {} entries", numberOfTopicsGenerated, numberOfCensoredTopics, numberOfFailures);
+            logFile(numberOfTopicsGenerated, unfilteredTopicsFileName, "View unfiltered generated AI topics in file " + unfilteredTopicsFileName);
+            logFile(numberOfCensoredTopics, filteredTopicsFileName, "View filtered generated AI topics in file " + filteredTopicsFileName + ". Manual review and upload is required");
+            logFile(numberOfFailures, errorsFileName, "View entries that failed AI topic generation in file " + errorsFileName);
         } catch (IOException e) {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
@@ -336,6 +348,20 @@ public class TopicGeneratorClient {
         }
     }
 
+    /**
+     * Logs the file name if the number of results is greater than 0. Otherwise deletes the file
+     * @param numberOfResults
+     * @param resultsFileName
+     * @param logMessage
+     */
+    private void logFile(int numberOfResults, String resultsFileName, String logMessage) {
+        if (numberOfResults == 0) {
+            FileUtils.deleteQuietly(FileUtils.getFile(resultsFileName));
+        } else {
+            LOG.info("{}", logMessage);
+        }
+    }
+
     private void uploadTopics(TopicGeneratorConfig topicGeneratorConfig, String inputCsvFilePath) {
         final ApiClient apiClient = setupApiClient(topicGeneratorConfig.dockstoreServerUrl(), topicGeneratorConfig.dockstoreToken());
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
@@ -346,11 +372,6 @@ public class TopicGeneratorClient {
             // This command's input CSV headers are the generate-topic command's output headers
             final String trsId = entryWithAITopic.get(OutputCsvHeaders.trsId);
             final String aiTopic = entryWithAITopic.get(OutputCsvHeaders.aiTopic);
-            boolean caughtByFilter = assessTopic(aiTopic);
-            if (caughtByFilter) {
-                LOG.info("Topic for {} was deemed offensive, please review above", trsId);
-                continue;
-            }
             final String version = entryWithAITopic.get(OutputCsvHeaders.version);
             try {
                 extendedGa4GhApi.updateAITopic(new UpdateAITopicRequest().aiTopic(aiTopic), version, trsId);
@@ -364,10 +385,9 @@ public class TopicGeneratorClient {
         LOG.info("Uploaded {} AI topics. Failed to upload {} AI topics", numberOfTopicsUploaded, numberOfTopicsFailedToUpload);
     }
 
-    private boolean assessTopic(String aiTopic) {
-        for (StringFilter filter : this.stringFilters) {
+    static boolean isSuspiciousTopic(String aiTopic) {
+        for (StringFilter filter : STRING_FILTERS) {
             if (filter.isSuspiciousTopic(aiTopic)) {
-                LOG.info(filter.getClass() + " blocked a topic sentence, please review: " + aiTopic);
                 return true;
             }
         }
