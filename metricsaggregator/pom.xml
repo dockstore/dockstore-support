@@ -161,14 +161,6 @@
             <artifactId>aws-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.javamoney.moneta</groupId>
-            <artifactId>moneta-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>javax.money</groupId>
-            <artifactId>money-api</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
         </dependency>
@@ -326,8 +318,6 @@
                                 <usedDependency>org.slf4j:slf4j-api</usedDependency>
                                 <usedDependency>software.amazon.awssdk:s3</usedDependency>
                                 <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
-                                <usedDependency>javax.money:money-api</usedDependency>
-                                <usedDependency>org.javamoney.moneta:moneta-core</usedDependency>
                                 <usedDependency>ch.qos.logback:logback-classic</usedDependency>
                                 <usedDependency>ch.qos.logback:logback-core</usedDependency>
                                 <usedDependency>com.google.guava:guava</usedDependency>

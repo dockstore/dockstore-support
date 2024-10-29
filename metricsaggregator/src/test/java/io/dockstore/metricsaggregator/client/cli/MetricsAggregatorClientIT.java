@@ -83,6 +83,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -136,6 +137,7 @@ class MetricsAggregatorClientIT {
         SUPPORT.after();
     }
 
+    @Disabled(value = "Disabled because localstack does not support Athena in the free version. See https://docs.localstack.cloud/user-guide/aws/athena/#introduction")
     @Test
     @SuppressWarnings("checkstyle:methodlength")
     void testAggregateMetrics() {
@@ -567,6 +569,7 @@ class MetricsAggregatorClientIT {
     /**
      * Test that the metrics aggregator takes the newest execution if there are executions with duplicate IDs.
      */
+    @Disabled(value = "Disabled because localstack does not support Athena in the free version. See https://docs.localstack.cloud/user-guide/aws/athena/#introduction")
     @Test
     void testAggregateExecutionsWithDuplicateIds() {
         final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
@@ -635,6 +638,7 @@ class MetricsAggregatorClientIT {
         assertNull(metrics.getValidationStatus()); // Verify that the metric from validation execution wasn't used
     }
 
+    @Disabled(value = "Disabled because localstack does not support Athena in the free version. See https://docs.localstack.cloud/user-guide/aws/athena/#introduction")
     @Test
     void testAggregateWithSkippedExecutions() {
         final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);

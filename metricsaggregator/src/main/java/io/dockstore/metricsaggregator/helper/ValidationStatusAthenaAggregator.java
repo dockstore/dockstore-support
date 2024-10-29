@@ -10,8 +10,6 @@ import static org.jooq.impl.DSL.min;
 import static org.jooq.impl.DSL.name;
 import static org.jooq.impl.DSL.rowNumber;
 import static org.jooq.impl.DSL.select;
-import static org.jooq.impl.DSL.table;
-import static org.jooq.impl.DSL.unnest;
 
 import io.dockstore.common.Partner;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
@@ -27,10 +25,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import org.jooq.CommonTableExpression;
 import org.jooq.Field;
-import org.jooq.Record4;
-import org.jooq.Record5;
-import org.jooq.Record7;
+import org.jooq.Record;
 import org.jooq.SQLDialect;
+import org.jooq.Select;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 
@@ -57,47 +54,36 @@ public class ValidationStatusAthenaAggregator extends AthenaAggregator<Validatio
     @Override
     protected String createQuery(AthenaTablePartition partition) {
         final double oneHundredPercent = 100.0;
-        // Names of the CTEs
-        // A query that flattens the validationexecutions array
-        final CommonTableExpression<Record7<String, String, String, String, Boolean, String, Integer>> executionsTable = name("executions")
-                .fields(PLATFORM_FIELD.getName(), DATE_EXECUTED_FIELD.getName(), VALIDATOR_TOOL_FIELD.getName(), VALIDATOR_TOOL_VERSION_FIELD.getName(),
-                        IS_VALID_FIELD.getName(), ERROR_MESSAGE_FIELD.getName(), MOST_RECENT_ROW_NUM_FIELD.getName())
-                .as(select(PLATFORM_FIELD,
-                            field("unnested." + DATE_EXECUTED_FIELD, String.class),
-                            field("unnested." + VALIDATOR_TOOL_FIELD, String.class),
-                            field("unnested." + VALIDATOR_TOOL_VERSION_FIELD, String.class),
-                            field("unnested." + IS_VALID_FIELD, Boolean.class),
-                            field("unnested." + ERROR_MESSAGE_FIELD, String.class),
-                            rowNumber().over().orderBy(field("unnested." + DATE_EXECUTED_FIELD).desc()).as(MOST_RECENT_ROW_NUM_FIELD))
-                            .from(table(tableName), unnest(field("validationexecutions", String[].class)).as("t", "unnested"))
-                            .where(ENTITY_FIELD.eq(inline(partition.entity()))
-                                    .and(REGISTRY_FIELD.eq(inline(partition.registry())))
-                                    .and(ORG_FIELD.eq(inline(partition.org())))
-                                    .and(NAME_FIELD.eq(inline(partition.name())))
-                                    .and(VERSION_FIELD.eq(inline(partition.version())))));
+
+        // A query that flattens the validationexecutions array and de-duplicates the executions based on the file modified time
+        List<Field<?>> validationExecutionFields = List.of(DATE_EXECUTED_FIELD, VALIDATOR_TOOL_FIELD, VALIDATOR_TOOL_VERSION_FIELD, IS_VALID_FIELD, ERROR_MESSAGE_FIELD);
+        final Select<Record> dedupedValidationExecutionsQuery = createUnnestQueryWithModifiedTime(partition, field("validationexecutions", String[].class), validationExecutionFields);
+        List<Field<?>> selectFields = new ArrayList<>();
+        selectFields.add(PLATFORM_FIELD);
+        selectFields.addAll(validationExecutionFields);
+        selectFields.add(rowNumber().over().orderBy(field(DATE_EXECUTED_FIELD).desc()).as(MOST_RECENT_ROW_NUM_FIELD));
+        final CommonTableExpression<Record> executionsTable = name("executions")
+                .as(select(selectFields)
+                        .from(dedupedValidationExecutionsQuery)
+                );
+
         // A query that calculates the number of runs and passing rate grouped by platform, validatortool, and validatortoolversion
-        final CommonTableExpression<Record5<String, String, String, Integer, Integer>> validatorMetricsTable = name("validatormetrics")
-                .fields(PLATFORM_FIELD.getName(),
-                        VALIDATOR_TOOL_FIELD.getName(),
-                        VALIDATOR_TOOL_VERSION_FIELD.getName(),
-                        NUMBER_OF_RUNS_FIELD.getName(),
-                        PASSING_RATE_FIELD.getName())
-                .as(select(coalesce(PLATFORM_FIELD, inline(Partner.ALL.name())), VALIDATOR_TOOL_FIELD,
-                        coalesce(VALIDATOR_TOOL_VERSION_FIELD, inline(Partner.ALL.name())),
-                        count(),
-                        count().filterWhere(IS_VALID_FIELD).multiply(inline(oneHundredPercent)).divide(count()))
+        final CommonTableExpression<Record> validatorMetricsTable = name("validatormetrics")
+                .as(select(List.of(
+                        coalesce(PLATFORM_FIELD, inline(Partner.ALL.name())).as(PLATFORM_FIELD),
+                        VALIDATOR_TOOL_FIELD,
+                        coalesce(VALIDATOR_TOOL_VERSION_FIELD, inline(Partner.ALL.name())).as(VALIDATOR_TOOL_VERSION_FIELD),
+                        count().as(NUMBER_OF_RUNS_FIELD),
+                        count().filterWhere(IS_VALID_FIELD).multiply(inline(oneHundredPercent)).divide(count()).as(PASSING_RATE_FIELD)))
                         .from(executionsTable)
                         .groupBy(cube(PLATFORM_FIELD, VALIDATOR_TOOL_VERSION_FIELD), VALIDATOR_TOOL_FIELD));
         // A query that identifies the mostrecentrownum grouped by platform, validatortool, and validatortoolversion
-        final CommonTableExpression<Record4<String, String, String, Integer>> mostRecentExecutionsTable = name("mostrecentexecutions")
-                .fields(PLATFORM_FIELD.getName(),
-                        VALIDATOR_TOOL_FIELD.getName(),
-                        VALIDATOR_TOOL_VERSION_FIELD.getName(),
-                        MOST_RECENT_ROW_NUM_FIELD.getName())
-                .as(select(coalesce(PLATFORM_FIELD, inline(Partner.ALL.name())),
+        final CommonTableExpression<Record> mostRecentExecutionsTable = name("mostrecentexecutions")
+                .as(select(List.of(
+                        coalesce(PLATFORM_FIELD, inline(Partner.ALL.name())).as(PLATFORM_FIELD),
                         VALIDATOR_TOOL_FIELD,
-                        coalesce(VALIDATOR_TOOL_VERSION_FIELD, inline(Partner.ALL.name())),
-                        min(MOST_RECENT_ROW_NUM_FIELD))
+                        coalesce(VALIDATOR_TOOL_VERSION_FIELD, inline(Partner.ALL.name())).as(VALIDATOR_TOOL_VERSION_FIELD),
+                        min(MOST_RECENT_ROW_NUM_FIELD).as(MOST_RECENT_ROW_NUM_FIELD)))
                         .from(executionsTable)
                         .groupBy(cube(PLATFORM_FIELD, VALIDATOR_TOOL_VERSION_FIELD), VALIDATOR_TOOL_FIELD));
         return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true))
