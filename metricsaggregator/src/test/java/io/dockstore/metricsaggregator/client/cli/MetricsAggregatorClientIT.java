@@ -137,7 +137,7 @@ class MetricsAggregatorClientIT {
         SUPPORT.after();
     }
 
-    @Disabled(value = "Disabled because localstack does not support Athena in the free version")
+    @Disabled(value = "Disabled because localstack does not support Athena in the free version. See https://docs.localstack.cloud/user-guide/aws/athena/#introduction")
     @Test
     @SuppressWarnings("checkstyle:methodlength")
     void testAggregateMetrics() {
@@ -569,7 +569,7 @@ class MetricsAggregatorClientIT {
     /**
      * Test that the metrics aggregator takes the newest execution if there are executions with duplicate IDs.
      */
-    @Disabled(value = "Disabled because localstack does not support Athena in the free version")
+    @Disabled(value = "Disabled because localstack does not support Athena in the free version. See https://docs.localstack.cloud/user-guide/aws/athena/#introduction")
     @Test
     void testAggregateExecutionsWithDuplicateIds() {
         final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
@@ -638,7 +638,7 @@ class MetricsAggregatorClientIT {
         assertNull(metrics.getValidationStatus()); // Verify that the metric from validation execution wasn't used
     }
 
-    @Disabled(value = "Disabled because localstack does not support Athena in the free version")
+    @Disabled(value = "Disabled because localstack does not support Athena in the free version. See https://docs.localstack.cloud/user-guide/aws/athena/#introduction")
     @Test
     void testAggregateWithSkippedExecutions() {
         final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
