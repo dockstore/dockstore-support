@@ -6,8 +6,10 @@ import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.topicgenerator.helper.BaseAIModel.AIResponseInfo;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
@@ -19,6 +21,10 @@ public final class CSVHelper {
 
     private CSVHelper() {
         // Intentionally empty
+    }
+
+    public static CSVPrinter createCsvPrinter(String fileName, Class<? extends Enum<?>> csvHeaders) throws IOException {
+        return new CSVPrinter(new FileWriter(fileName, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(csvHeaders).build());
     }
 
     public static Iterable<CSVRecord> readFile(String inputCsvFilePath, Class<? extends Enum<?>> csvHeaders) {

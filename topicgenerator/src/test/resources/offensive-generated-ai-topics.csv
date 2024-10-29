@@ -1,2 +1,0 @@
-trsId,version,descriptorUrl,descriptorChecksum,isTruncated,promptTokens,completionTokens,cost,finishReason,aiTopic
-"#workflow/github.com/dockstore-testing/testWorkflow",master,https://raw.githubusercontent.com/dockstore-testing/testWorkflow/master/Dockstore.cwl,07d68a2bce6118b31018c31a013325cda07030efc92750c036df4ab112849c02,true,16283,50,0,stop,"The workflow starts by inputting Illumina-sequenced ARTIC data and involves a voyeur."
