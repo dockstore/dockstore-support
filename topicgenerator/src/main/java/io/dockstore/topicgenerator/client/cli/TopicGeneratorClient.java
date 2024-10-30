@@ -46,6 +46,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Scanner;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -96,7 +97,7 @@ public class TopicGeneratorClient {
 
             switch (jCommander.getParsedCommand()) {
             case "generate-topics" -> topicGeneratorClient.generateTopics(topicGeneratorConfig, generateTopicsCommand);
-            case "upload-topics" -> topicGeneratorClient.uploadTopics(topicGeneratorConfig, uploadTopicsCommand.getAiTopicsCsvFilePath());
+            case "upload-topics" -> topicGeneratorClient.uploadTopics(topicGeneratorConfig, uploadTopicsCommand);
             default -> errorMessage("Unknown command", GENERIC_ERROR);
             }
         }
@@ -362,27 +363,51 @@ public class TopicGeneratorClient {
         }
     }
 
-    private void uploadTopics(TopicGeneratorConfig topicGeneratorConfig, String inputCsvFilePath) {
+    private void uploadTopics(TopicGeneratorConfig topicGeneratorConfig, UploadTopicsCommand uploadTopicsCommand) {
         final ApiClient apiClient = setupApiClient(topicGeneratorConfig.dockstoreServerUrl(), topicGeneratorConfig.dockstoreToken());
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
-        final Iterable<CSVRecord> entriesWithAITopics = CSVHelper.readFile(inputCsvFilePath, OutputCsvHeaders.class);
+        final Iterable<CSVRecord> entriesWithAITopics = CSVHelper.readFile(uploadTopicsCommand.getAiTopicsCsvFilePath(), OutputCsvHeaders.class);
         int numberOfTopicsUploaded = 0;
-        int numberOfTopicsFailedToUpload = 0;
+        int numberOfTopicsSkippedUpload = 0;
+        final Scanner scanner = new Scanner(System.in);
+
         for (CSVRecord entryWithAITopic: entriesWithAITopics) {
             // This command's input CSV headers are the generate-topic command's output headers
             final String trsId = entryWithAITopic.get(OutputCsvHeaders.trsId);
             final String aiTopic = entryWithAITopic.get(OutputCsvHeaders.aiTopic);
             final String version = entryWithAITopic.get(OutputCsvHeaders.version);
+
+            if (uploadTopicsCommand.isReview()) {
+                System.out.printf("%nReview the following topic for TRS ID %s and version %s%n", trsId, version);
+                System.out.printf("AI topic: %s%n", aiTopic);
+                String approved = null;
+
+                while (!"y".equals(approved) && !"n".equals(approved)) {
+                    if (approved != null) {
+                        System.out.print("Invalid response. ");
+                    }
+                    System.out.print("Do you approve the topic for upload to Dockstore? y/n [enter]: ");
+                    approved = scanner.nextLine().trim();
+                }
+
+                if ("n".equals(approved)) {
+                    LOG.info("Skipping topic upload for {}", trsId);
+                    numberOfTopicsSkippedUpload += 1;
+                    continue;
+                }
+            }
+
             try {
                 extendedGa4GhApi.updateAITopic(new UpdateAITopicRequest().aiTopic(aiTopic), version, trsId);
                 numberOfTopicsUploaded += 1;
                 LOG.info("Uploaded AI topic for {}", trsId);
             } catch (ApiException exception) {
-                numberOfTopicsFailedToUpload += 1;
+                numberOfTopicsSkippedUpload += 1;
                 LOG.error("Could not upload AI topic for {}", trsId, exception);
             }
+
         }
-        LOG.info("Uploaded {} AI topics. Failed to upload {} AI topics", numberOfTopicsUploaded, numberOfTopicsFailedToUpload);
+        LOG.info("Uploaded {} AI topics. Skipped upload for {} AI topics", numberOfTopicsUploaded, numberOfTopicsSkippedUpload);
     }
 
     static boolean isSuspiciousTopic(String aiTopic) {
