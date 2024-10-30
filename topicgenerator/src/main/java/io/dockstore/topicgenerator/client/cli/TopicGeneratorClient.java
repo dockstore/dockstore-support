@@ -197,7 +197,7 @@ public class TopicGeneratorClient {
                     String prompt = "Summarize the " + entryType
                             + " in one sentence that starts with a present tense verb in the <summary> tags. Use a maximum of 150 characters.\n<content>"
                             + descriptorFile.getContent() + "</content>";
-                    AIResponseInfo aiResponseInfo = new AIResponseInfo("sex", false, 0, 0, 0, ""); //aiModel.get().submitPrompt(prompt);
+                    AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
                     boolean isCensoredTopic = isSuspiciousTopic(aiResponseInfo.aiResponse());
                     if (isCensoredTopic) {
                         // Write censored topics to a different file
@@ -217,7 +217,7 @@ public class TopicGeneratorClient {
 
             LOG.info("Generated {} AI topics. There are {} topics with filtered words. Failed to generate topics for {} entries", numberOfTopicsGenerated, numberOfCensoredTopics, numberOfFailures);
             logFile(numberOfTopicsGenerated, unfilteredTopicsFileName, "View unfiltered generated AI topics in file " + unfilteredTopicsFileName);
-            final String filteredTopicAlertMessage = "Manual review is required"; // There is a CloudWatch alert that looks for this message in the topic updater log group. Be careful changing this message
+            final String filteredTopicAlertMessage = "Manual review of filtered topics is required"; // There is a CloudWatch alert that looks for this message in the topic updater log group. Be careful changing this message
             logFile(numberOfCensoredTopics, filteredTopicsFileName, "View filtered generated AI topics in file " + filteredTopicsFileName + ". " + filteredTopicAlertMessage);
             logFile(numberOfFailures, errorsFileName, "View entries that failed AI topic generation in file " + errorsFileName);
         } catch (IOException e) {
