@@ -84,7 +84,14 @@ public abstract class AthenaAggregator<M extends Metric> {
             LOG.error("Could not execute query for partition {}", partition, e);
             return Map.of();
         }
-        return createMetricByPlatform(queryResultRows);
+
+        Map<String, M> metricByPlatform = createMetricByPlatform(queryResultRows);
+        // Check that metrics exist for actual platforms. May end up with metrics for only 'ALL' if there are no executions of that type
+        // because null platform values are coalesced to 'ALL'.
+        if (metricByPlatform.size() == 1 && metricByPlatform.containsKey(Partner.ALL.name())) {
+            return Map.of();
+        }
+        return metricByPlatform;
     }
 
     public void printQuery(AthenaTablePartition partition) {
