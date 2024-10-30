@@ -217,7 +217,8 @@ public class TopicGeneratorClient {
 
             LOG.info("Generated {} AI topics. There are {} topics with filtered words. Failed to generate topics for {} entries", numberOfTopicsGenerated, numberOfCensoredTopics, numberOfFailures);
             logFile(numberOfTopicsGenerated, unfilteredTopicsFileName, "View unfiltered generated AI topics in file " + unfilteredTopicsFileName);
-            logFile(numberOfCensoredTopics, filteredTopicsFileName, "View filtered generated AI topics in file " + filteredTopicsFileName + ". Manual review and upload is required");
+            final String filteredTopicAlertMessage = "Manual review is required"; // There is a CloudWatch alert that looks for this message in the topic updater log group. Be careful changing this message
+            logFile(numberOfCensoredTopics, filteredTopicsFileName, "View filtered generated AI topics in file " + filteredTopicsFileName + ". " + filteredTopicAlertMessage);
             logFile(numberOfFailures, errorsFileName, "View entries that failed AI topic generation in file " + errorsFileName);
         } catch (IOException e) {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
