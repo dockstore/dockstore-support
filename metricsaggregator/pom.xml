@@ -74,8 +74,8 @@
 
     <licenses>
         <license>
-            <name>GNU General Public License (GPLv3)</name>
-            <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
+            <name>Apache Software License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
         </license>
     </licenses>
 
@@ -145,12 +145,20 @@
             <artifactId>s3</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.javamoney.moneta</groupId>
-            <artifactId>moneta-core</artifactId>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>athena</artifactId>
         </dependency>
         <dependency>
-            <groupId>javax.money</groupId>
-            <artifactId>money-api</artifactId>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>auth</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>sdk-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>aws-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -159,6 +167,24 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>7.0.5.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>jakarta.el</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq</artifactId>
+            <version>3.19.7</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -292,11 +318,15 @@
                                 <usedDependency>org.slf4j:slf4j-api</usedDependency>
                                 <usedDependency>software.amazon.awssdk:s3</usedDependency>
                                 <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
-                                <usedDependency>javax.money:money-api</usedDependency>
-                                <usedDependency>org.javamoney.moneta:moneta-core</usedDependency>
                                 <usedDependency>ch.qos.logback:logback-classic</usedDependency>
                                 <usedDependency>ch.qos.logback:logback-core</usedDependency>
                                 <usedDependency>com.google.guava:guava</usedDependency>
+                                <usedDependency>jakarta.validation:jakarta.validation-api</usedDependency>
+                                <usedDependency>org.hibernate.validator:hibernate-validator</usedDependency>
+                                <usedDependency>org.glassfish:jakarta.el</usedDependency>
+                                <usedDependency>software.amazon.awssdk:auth</usedDependency>
+                                <usedDependency>software.amazon.awssdk:aws-core</usedDependency>
+                                <usedDependency>software.amazon.awssdk:sdk-core</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>

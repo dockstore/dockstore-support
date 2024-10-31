@@ -82,7 +82,7 @@ public class TerraMetricsSubmitter {
     }
 
     public void submitTerraMetrics() {
-        ApiClient apiClient = setupApiClient(config.getDockstoreServerUrl(), config.getDockstoreToken());
+        ApiClient apiClient = setupApiClient(config.getDockstoreConfig().serverUrl(), config.getDockstoreConfig().token());
         ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
         WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
 
@@ -199,7 +199,6 @@ public class TerraMetricsSubmitter {
         try {
             extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(workflowExecutionsToSubmit), Partner.TERRA.toString(), sourceUrlTrsInfo.trsId(),
                     sourceUrlTrsInfo.version(), description);
-            numberOfExecutionsSubmitted.addAndGet(workflowMetricRecords.size());
         } catch (ApiException e) {
             if (e.getCode() == HttpStatus.SC_REQUEST_TOO_LONG) {
                 // One execution is too large, not much that can be done, so log and skip it
@@ -225,7 +224,10 @@ public class TerraMetricsSubmitter {
                         String.format("Could not submit execution metrics to Dockstore for workflow %s: %s", sourceUrlTrsInfo,
                                 e.getMessage()), skippedExecutionsCsvPrinter, false);
             }
+            return;
         }
+        // only count if there was no exception
+        numberOfExecutionsSubmitted.addAndGet(workflowExecutionsToSubmit.size());
     }
 
     /**
@@ -476,7 +478,7 @@ public class TerraMetricsSubmitter {
     private Optional<String> getPrimaryDescriptorAbsolutePath(WorkflowsApi workflowsApi, MinimalWorkflowInfo workflow, String version) {
         Optional<String> primaryDescriptorPath = Optional.empty();
         try {
-            primaryDescriptorPath = Optional.of(workflowsApi.primaryDescriptor1(workflow.id(), version, workflow.descriptorType().toString()).getAbsolutePath());
+            primaryDescriptorPath = Optional.of(workflowsApi.primaryDescriptor1(workflow.id(), workflow.descriptorType().toString(), version).getAbsolutePath());
         } catch (ApiException e) {
             LOG.debug("Could not get primary descriptor path", e);
         }

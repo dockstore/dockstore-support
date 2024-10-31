@@ -51,18 +51,18 @@ import com.google.gson.Gson;
 import io.dockstore.common.CommonTestUtilities;
 import io.dockstore.common.LocalStackTestUtilities;
 import io.dockstore.common.Partner;
+import io.dockstore.common.S3ClientHelper;
 import io.dockstore.common.TestingPostgres;
 import io.dockstore.common.metrics.MetricsData;
 import io.dockstore.common.metrics.MetricsDataS3Client;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
+import io.dockstore.openapi.client.api.UsersApi;
 import io.dockstore.openapi.client.api.WorkflowsApi;
-import io.dockstore.openapi.client.model.AggregatedExecution;
 import io.dockstore.openapi.client.model.Cost;
-import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.ExecutionsRequestBody;
-import io.dockstore.openapi.client.model.MemoryMetric;
+import io.dockstore.openapi.client.model.Metric;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.MetricsByStatus;
 import io.dockstore.openapi.client.model.RunExecution;
@@ -83,6 +83,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -136,6 +137,7 @@ class MetricsAggregatorClientIT {
         SUPPORT.after();
     }
 
+    @Disabled(value = "Disabled because localstack does not support Athena in the free version. See https://docs.localstack.cloud/user-guide/aws/athena/#introduction")
     @Test
     @SuppressWarnings("checkstyle:methodlength")
     void testAggregateMetrics() {
@@ -567,6 +569,7 @@ class MetricsAggregatorClientIT {
     /**
      * Test that the metrics aggregator takes the newest execution if there are executions with duplicate IDs.
      */
+    @Disabled(value = "Disabled because localstack does not support Athena in the free version. See https://docs.localstack.cloud/user-guide/aws/athena/#introduction")
     @Test
     void testAggregateExecutionsWithDuplicateIds() {
         final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
@@ -593,30 +596,18 @@ class MetricsAggregatorClientIT {
         // Check if metric is aggregated from validation execution by checking if it has a validation status metric
         ValidationExecution validationExecution = createValidationExecution(MINIWDL, "v1", true);
         validationExecution.setExecutionId(executionId);
-        // Check if metric is aggregated from aggregated execution by checking memory metric
-        AggregatedExecution aggregatedExecution = new AggregatedExecution().executionId(executionId);
-        aggregatedExecution.executionStatusCount(new ExecutionStatusMetric().putCountItem(SUCCESSFUL.name(),
-                new MetricsByStatus()
-                        .executionStatusCount(1)
-                        .memory(new MemoryMetric()
-                                .minimum(1.0)
-                                .maximum(1.0)
-                                .average(1.0)
-                                .numberOfDataPointsForAverage(1))));
 
         // Try to send all of them in one POST. Should fail because the webservice validates that one submission does not include duplicate IDs
         assertThrows(ApiException.class, () -> extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody()
                 .runExecutions(List.of(workflowExecution))
                 .taskExecutions(List.of(taskExecutions))
-                .validationExecutions(List.of(validationExecution))
-                .aggregatedExecutions(List.of(aggregatedExecution)),
+                .validationExecutions(List.of(validationExecution)),
                 platform, id, versionId, ""));
 
         // Send them one at a time. The last execution sent should be the one that the metrics aggregator aggregates
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().validationExecutions(List.of(validationExecution)), platform, id, versionId, "");
         extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(List.of(workflowExecution)), platform, id, versionId, "");
         extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().taskExecutions(List.of(taskExecutions)), platform, id, versionId, "");
-        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().validationExecutions(List.of(validationExecution)), platform, id, versionId, "");
-        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().aggregatedExecutions(List.of(aggregatedExecution)), platform, id, versionId, "");
 
         MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
         // Get workflow version to verify aggregated metrics
@@ -624,11 +615,10 @@ class MetricsAggregatorClientIT {
         version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
         Metrics metrics = version.getMetricsByPlatform().get(platform);
         assertNotNull(metrics);
-        // Should be aggregated from aggregatedExecution because it was submitted last
+        // Should be aggregated from taskExecutions because it was submitted last
         MetricsByStatus successfulMetrics = metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name());
-        assertNotNull(successfulMetrics.getMemory());
+        assertNotNull(successfulMetrics.getCpu()); // Verify that the metric from task executions was used
         assertNull(successfulMetrics.getExecutionTime()); // Verify that the metric from workflow execution wasn't used
-        assertNull(successfulMetrics.getCpu()); // Verify that the metric from task executions weren't used
         assertNull(metrics.getValidationStatus()); // Verify that the metric from validation execution wasn't used
 
         // Submit a workflow execution. The metric should be from the latest workflow execution.
@@ -640,13 +630,78 @@ class MetricsAggregatorClientIT {
         version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
         metrics = version.getMetricsByPlatform().get(platform);
         assertNotNull(metrics);
-        // Should be aggregated from aggregatedExecution because it was submitted last
+        // Should be aggregated from runExecution because it was submitted last
         successfulMetrics = metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name());
         assertNotNull(successfulMetrics.getExecutionTime());
         assertEquals(0, successfulMetrics.getExecutionTime().getMinimum()); // Verify that the execution time is from the second workflow execution
         assertNull(successfulMetrics.getCpu()); // Verify that the metric from task executions weren't used
         assertNull(metrics.getValidationStatus()); // Verify that the metric from validation execution wasn't used
-        assertNull(successfulMetrics.getMemory()); // Verify that the metric from aggregated execution wasn't used
+    }
+
+    @Disabled(value = "Disabled because localstack does not support Athena in the free version. See https://docs.localstack.cloud/user-guide/aws/athena/#introduction")
+    @Test
+    void testAggregateWithSkippedExecutions() {
+        final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
+        final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
+        final WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
+        final UsersApi usersApi = new UsersApi(apiClient);
+        final long userId = usersApi.getUser().getId();
+        final Partner platform = Partner.TERRA;
+        final String platformString = platform.name();
+
+        Workflow workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
+        WorkflowVersion version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
+        assertNotNull(version);
+        assertTrue(version.getMetricsByPlatform().isEmpty());
+
+        String id = "#workflow/" + workflow.getFullWorkflowPath();
+        String versionId = version.getName();
+
+        RunExecution validWorkflowExecution = createRunExecution(SUCCESSFUL, "PT30S", 1, 1.0, new Cost().value(1.00), "us-east-1");
+        RunExecution invalidWorkflowExecution = createRunExecution(SUCCESSFUL)
+                .executionTime("invalid")
+                .cpuRequirements(-1)
+                .memoryRequirementsGB(-1.0)
+                .cost(new Cost().value(-1.00));
+        RunExecution invalidTaskExecution = createRunExecution(SUCCESSFUL)
+                .executionTime("invalid")
+                .cpuRequirements(-1)
+                .memoryRequirementsGB(-1.0)
+                .cost(new Cost().value(-1.00));
+        // Submit valid workflow execution using endpoint
+        extendedGa4GhApi.executionMetricsPost(new ExecutionsRequestBody().runExecutions(List.of(validWorkflowExecution)), platformString, id, versionId, "");
+        // Submit invalid workflow execution using the S3 client to bypass webservice validation
+        ExecutionsRequestBody invalidExecutionsRequestBody = new ExecutionsRequestBody()
+                .runExecutions(List.of(invalidWorkflowExecution))
+                .taskExecutions(List.of(new TaskExecutions().taskExecutions(List.of(invalidTaskExecution))));
+        metricsDataS3Client.createS3Object(id, versionId, platformString, S3ClientHelper.createFileName(), userId, "", GSON.toJson(invalidExecutionsRequestBody));
+        assertEquals(2, metricsDataS3Client.getMetricsData(id, versionId, platform).size(), "There should be two objects in S3");
+        MetricsAggregatorClient.main(new String[] {"aggregate-metrics", "--config", CONFIG_FILE_PATH});
+
+        // Get workflow version to verify aggregated metrics
+        workflow = workflowsApi.getPublishedWorkflow(32L, "metrics");
+        version = workflow.getWorkflowVersions().stream().filter(v -> "master".equals(v.getName())).findFirst().orElse(null);
+        assertNotNull(version);
+        Metrics metrics = version.getMetricsByPlatform().get(platformString);
+        assertNotNull(metrics);
+
+        int numberOfSkippedExecutions = 2; // Two skipped executions, one from the invalid workflow execution, and one from the invalid TaskExecutions set
+        MetricsByStatus successfulMetrics = metrics.getExecutionStatusCount().getCount().get(SUCCESSFUL.name());
+        assertNumberOfSkippedExecutions(numberOfSkippedExecutions, successfulMetrics.getMemory());
+        assertNumberOfSkippedExecutions(numberOfSkippedExecutions, successfulMetrics.getExecutionTime());
+        assertNumberOfSkippedExecutions(numberOfSkippedExecutions, successfulMetrics.getCpu());
+        assertNumberOfSkippedExecutions(numberOfSkippedExecutions, successfulMetrics.getCost());
+
+        MetricsByStatus allStatusMetrics = metrics.getExecutionStatusCount().getCount().get(ALL.name());
+        assertNumberOfSkippedExecutions(numberOfSkippedExecutions, allStatusMetrics.getMemory());
+        assertNumberOfSkippedExecutions(numberOfSkippedExecutions, allStatusMetrics.getExecutionTime());
+        assertNumberOfSkippedExecutions(numberOfSkippedExecutions, allStatusMetrics.getCpu());
+        assertNumberOfSkippedExecutions(numberOfSkippedExecutions, allStatusMetrics.getCost());
+    }
+
+    private void assertNumberOfSkippedExecutions(int expectedNumberOfSkippedExecutions, Metric metric) {
+        assertNotNull(metric);
+        assertEquals(expectedNumberOfSkippedExecutions, metric.getNumberOfSkippedExecutions());
     }
 
     @Test

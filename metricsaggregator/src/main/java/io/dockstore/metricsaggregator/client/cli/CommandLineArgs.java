@@ -22,6 +22,7 @@ import com.beust.jcommander.Parameters;
 import io.dockstore.common.Partner;
 import io.dockstore.openapi.client.model.ValidationExecution.ValidatorToolEnum;
 import java.io.File;
+import java.util.List;
 
 public class CommandLineArgs {
     @Parameter(names = "--help", description = "Prints help for metricsaggregator", help = true)
@@ -36,8 +37,29 @@ public class CommandLineArgs {
         @Parameter(names = {"-c", "--config"}, description = "The config file path.")
         private File config = new File("./" + MetricsAggregatorClient.CONFIG_FILE_NAME);
 
+        @Parameter(names = {"--trsIds"}, description = "Aggregate metrics for the tools specified by their TRS IDs")
+        private List<String> trsIds;
+
+        @Parameter(names = {"--allS3"}, description = "Aggregate all executions in S3, even if they have been aggregated before")
+        private boolean allS3 = false;
+
+        @Parameter(names = { "--dryRun" }, description = "Do a dry run by printing out the S3 directories that will be aggregated")
+        private boolean dryRun = false;
+
         public File getConfig() {
             return config;
+        }
+
+        public List<String> getTrsIds() {
+            return trsIds;
+        }
+
+        public boolean isAllS3() {
+            return allS3;
+        }
+
+        public boolean isDryRun() {
+            return dryRun;
         }
     }
 

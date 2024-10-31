@@ -33,12 +33,12 @@
     -->
     <properties>
         <!-- the following properties set sane defaults when no revision properties are set from the command-line -->
-        <revision>1.15</revision>
+        <revision>1.16</revision>
         <changelist>.0-SNAPSHOT</changelist>
 
         <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dockstore-core.version>1.15.0-rc.2</dockstore-core.version>
+        <dockstore-core.version>1.16.0-beta.8</dockstore-core.version>
         <maven-surefire.version>3.0.0-M5</maven-surefire.version>
         <maven-failsafe.version>2.22.2</maven-failsafe.version>
         <skipTests>false</skipTests>
@@ -123,6 +123,7 @@
 
     <modules>
         <module>metricsaggregator</module>
+        <module>githubdelivery</module>
         <module>toolbackup</module>
         <module>tooltester</module>
         <module>dockstore-support-reports</module>
@@ -212,7 +213,7 @@
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.8</version>
+                    <version>0.8.12</version>
                 </plugin>
                 <plugin>
                     <groupId>com.googlecode.maven-download-plugin</groupId>
@@ -503,7 +504,7 @@
                                     <version>3.8.5</version>
                                 </requireMavenVersion>
                                 <requireJavaVersion>
-                                    <version>[11.0.11,18.0)</version>
+                                    <version>[17.0.0,22.0)</version>
                                 </requireJavaVersion>
                                 <banDuplicatePomDependencyVersions />
                                 <bannedDependencies>
@@ -676,9 +677,9 @@
             <plugin>
                 <groupId>net.revelc.code</groupId>
                 <artifactId>impsort-maven-plugin</artifactId>
-                <version>1.8.0</version>
+                <version>1.11.0</version>
                 <configuration>
-                    <compliance>17</compliance>
+                    <compliance>21</compliance>
                 </configuration>
                 <executions>
                     <execution>

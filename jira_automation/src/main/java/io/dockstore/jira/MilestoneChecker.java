@@ -64,7 +64,7 @@ public final class MilestoneChecker {
     }
 
     private static boolean milestoneAndFixVersionEqual(String jiraFixVersion, String milestone) {
-        return "Open-ended research tasks".equals(jiraFixVersion) && "Open ended research tasks".equals(milestone)
+        return Utils.JIRA_OPEN_ENDED_RESEARCH_TASKS.equals(jiraFixVersion) && Utils.GITHUB_OPEN_ENDED_RESEARCH_TASKS.equals(milestone)
             || Objects.equals(jiraFixVersion, milestone);
     }
 

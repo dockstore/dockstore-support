@@ -17,6 +17,9 @@ token: <Dockstore token>
 [s3]
 bucketName: <S3 metrics bucket name>
 endpointOverride: <Optional S3 endpoint override>
+
+[athena]
+workgroup: <Athena workgroup name>
 ```
 **Required:**
 - `server-url`: The Dockstore server URL that's used to send API requests to.
@@ -27,6 +30,7 @@ endpointOverride: <Optional S3 endpoint override>
 - `token`: The Dockstore token of a Dockstore user. This user must be an admin or curator in order to be able to post aggregated metrics to Dockstore.
 - `bucketName`: The S3 bucket name storing metrics data. This is the bucket that the metrics aggregator will go through in order
   to aggregate metrics.
+- `workgroup`: The Athena workgroup name that Athena queries are executed in.
 
 **Optional:**
 - `endpointOverride`: Endpoint override to use when creating the S3 clients. This is typically only used for local testing so that a LocalStack endpoint 
@@ -50,11 +54,21 @@ Usage: <main class> [options] [command] [command options]
     aggregate-metrics      Aggregate metrics in S3
       Usage: aggregate-metrics [options]
         Options:
+          --allS3
+            Aggregate all executions in S3, even if they have been aggregated 
+            before 
+            Default: false
           -c, --config
             The config file path.
             Default: ./metrics-aggregator.config
+          --dryRun
+            Do a dry run by printing out the S3 directories that will be 
+            aggregated 
+            Default: false
           --help
             Prints help for metricsaggregator
+          --trsIds
+            Aggregate metrics for the tools specified by their TRS IDs
 
     submit-validation-data      Formats workflow validation data specified in 
             a file then submits it to Dockstore
