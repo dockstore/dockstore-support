@@ -367,7 +367,14 @@ public class TopicGeneratorClient {
     private void uploadTopics(TopicGeneratorConfig topicGeneratorConfig, UploadTopicsCommand uploadTopicsCommand) {
         final ApiClient apiClient = setupApiClient(topicGeneratorConfig.dockstoreServerUrl(), topicGeneratorConfig.dockstoreToken());
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
-        final Iterable<CSVRecord> entriesWithAITopics = CSVHelper.readFile(uploadTopicsCommand.getAiTopicsCsvFilePath(), OutputCsvHeaders.class);
+        final Iterable<CSVRecord> entriesWithAITopics;
+
+        LOG.info("Reading file {}", uploadTopicsCommand.getAiTopicsCsvFilePath());
+        if (uploadTopicsCommand.getAiTopicsCsvFilePath().startsWith("s3://")) {
+            entriesWithAITopics = CSVHelper.readS3File(uploadTopicsCommand.getAiTopicsCsvFilePath(), OutputCsvHeaders.class);
+        } else {
+            entriesWithAITopics = CSVHelper.readFile(uploadTopicsCommand.getAiTopicsCsvFilePath(), OutputCsvHeaders.class);
+        }
         int numberOfTopicsUploaded = 0;
         int numberOfTopicsSkippedUpload = 0;
         final Scanner scanner = new Scanner(System.in);
@@ -379,8 +386,8 @@ public class TopicGeneratorClient {
             final String version = entryWithAITopic.get(OutputCsvHeaders.version);
 
             if (uploadTopicsCommand.isReview()) {
-                System.out.printf("%nReview the following topic for TRS ID %s and version %s%n", trsId, version);
-                System.out.printf("AI topic: %s%n", aiTopic);
+                System.out.printf("%nReview the following topic for TRS ID %s and version %s:%n", trsId, version);
+                System.out.printf("%s%n%n", aiTopic);
                 String approved = null;
 
                 while (!"y".equals(approved) && !"n".equals(approved)) {
