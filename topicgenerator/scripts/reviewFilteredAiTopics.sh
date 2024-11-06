@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x -u
+
 SUPPORT_VERSION=${1}
 CONFIG_PATH=${2}
 S3_URI=${3}
