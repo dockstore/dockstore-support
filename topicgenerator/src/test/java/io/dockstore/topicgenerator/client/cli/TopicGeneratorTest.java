@@ -12,5 +12,8 @@ class TopicGeneratorTest {
     void testSuspiciousTopic() {
         assertTrue(isSuspiciousTopic("The workflow starts by inputting Illumina-sequenced ARTIC data and involves a voyeur."));
         assertFalse(isSuspiciousTopic("The workflow starts by inputting Illumina-sequenced ARTIC data."));
+
+        // Should not be suspicious because it includes a word that is common in biology
+        assertFalse(isSuspiciousTopic("Performs a workflow that includes subsetting VCFs, merging and splitting VCFs, and calculating relatedness and sex using VCFTools and PLINK."));
     }
 }
