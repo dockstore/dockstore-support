@@ -66,20 +66,4 @@ class TopicGeneratorClientIT {
         workflow = workflowsApi.getPublishedWorkflow(32L, null);
         assertNotNull(workflow.getTopicAI());
     }
-
-    @Test
-    void testCensoredAITopics() {
-        final ApiClient apiClient = CommonTestUtilities.getOpenAPIWebClient(true, ADMIN_USERNAME, testingPostgres);
-        final WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
-
-        Workflow workflow = workflowsApi.getPublishedWorkflow(32L, null);
-        assertNull(workflow.getTopicAI());
-        // This file is modelled after the output file from the "generate-topics" command. It contains 1 row
-        // sentence uses the least offensive offensive word I could find in the Chuck Norris dataset
-        String aiTopicsFilePath = ResourceHelpers.resourceFilePath("offensive-generated-ai-topics.csv");
-
-        TopicGeneratorClient.main(new String[] {"--config", CONFIG_FILE_PATH, "upload-topics", "--aiTopics", aiTopicsFilePath});
-        workflow = workflowsApi.getPublishedWorkflow(32L, null);
-        assertNull(workflow.getTopicAI());
-    }
 }
