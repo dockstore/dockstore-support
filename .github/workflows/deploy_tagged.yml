@@ -8,12 +8,9 @@ on:
         required: true
         default: '.0-alpha.1'
 
-
 jobs:
   call-reusable-tagged-release:
-    uses: dockstore/workflow-actions/.github/workflows/deploy_tagged.yaml@main
+    uses: dockstore/workflow-actions/.github/workflows/deploy_tagged.yaml@seab-6771/reusable-image-deploy
     with:
       changelist: ${{ inputs.changelist }}
-      createDockerImage: true
-      dockerTagPrefix: 'quay.io/dockstore/dockstore-support'
     secrets: inherit
