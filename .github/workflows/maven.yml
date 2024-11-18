@@ -39,3 +39,8 @@ jobs:
     with:
       quayRepository: dockstore-bootstrap
     secrets: inherit  
+
+  deploy_tagged:
+    if: github.ref_type == 'tag'
+    uses: dockstore/workflow-actions/.github/workflows/deploy_tagged.yaml@seab-6771/reusable-image-deploy
+    secrets: inherit
