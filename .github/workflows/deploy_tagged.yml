@@ -11,5 +11,5 @@ jobs:
   deploy_image:
     uses: dockstore/workflow-actions/.github/workflows/deploy_image.yaml@seab-6771/reusable-image-deploy
     with:
-      quayRepository: dockstore-bootstrap
+      quayRepository: dockstore-support
     secrets: inherit
