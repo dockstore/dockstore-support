@@ -1,0 +1,21 @@
+name: Deploy snapshot
+
+on:
+  push:
+    # Run for all branches except the following
+    branches-ignore:
+      - 'master'
+      - 'release/**'
+      - 'hotfix/**'
+      - 'dependabot/**'
+  
+jobs:
+  deploy_snapshot:
+    uses: dockstore/workflow-actions/.github/workflows/deploy_snapshot.yaml@seab-6771/reusable-image-deploy
+    secrets: inherit
+
+  deploy_image:
+    uses: dockstore/workflow-actions/.github/workflows/deploy_image.yaml@seab-6771/reusable-image-deploy
+    with:
+      quayRepository: dockstore-support
+    secrets: inherit
