@@ -32,15 +32,3 @@ jobs:
         run: ./mvnw -B clean install
       - name: code coverage
         run: bash <(curl -s https://codecov.io/bash)
-
-  deploy_image:
-    uses: dockstore/workflow-actions/.github/workflows/deploy_image.yaml@seab-6771/reusable-image-deploy
-    if: ${{ github.ref == 'refs/heads/develop' || github.ref_type == 'tag' }}
-    with:
-      quayRepository: dockstore-support
-    secrets: inherit  
-
-  deploy_tagged:
-    if: github.ref_type == 'tag'
-    uses: dockstore/workflow-actions/.github/workflows/deploy_tagged.yaml@seab-6771/reusable-image-deploy
-    secrets: inherit

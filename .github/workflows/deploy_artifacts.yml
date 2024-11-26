@@ -1,0 +1,20 @@
+name: Deploy artifacts
+
+on:
+  push:
+    tags:
+      - '**'
+    # Run for all branches except the following
+    branches-ignore:
+      - 'master'
+      - 'release/**'
+      - 'hotfix/**'
+      - 'dependabot/**'
+  
+jobs:
+  deploy_artifacts:
+    uses: dockstore/workflow-actions/.github/workflows/deploy_artifacts.yaml@seab-6771/reusable-image-deploy
+    with:
+      createDockerImage: true
+      quayRepository: dockstore-support
+    secrets: inherit
