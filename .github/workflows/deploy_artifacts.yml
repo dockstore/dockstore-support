@@ -13,7 +13,7 @@ on:
   
 jobs:
   deploy_artifacts:
-    uses: dockstore/workflow-actions/.github/workflows/deploy_artifacts.yaml@seab-6771/reusable-image-deploy
+    uses: dockstore/workflow-actions/.github/workflows/deploy_artifacts.yaml@main
     with:
       createDockerImage: true
       quayRepository: dockstore-support
