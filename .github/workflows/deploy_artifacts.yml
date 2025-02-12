@@ -10,6 +10,9 @@ on:
       - 'release/**'
       - 'hotfix/**'
       - 'dependabot/**'
+  # Allow triggering this in the UI for the 1.16 hotfix releases. Use only for tags.
+  # TODO: remove in 1.18
+  workflow_dispatch:
   
 jobs:
   deploy_artifacts:
