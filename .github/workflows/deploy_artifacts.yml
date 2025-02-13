@@ -1,0 +1,22 @@
+name: Deploy artifacts
+
+on:
+  push:
+    tags:
+      - '**'
+    # Run for all branches except the following
+    branches-ignore:
+      - 'master'
+      - 'release/**'
+      - 'hotfix/**'
+      - 'dependabot/**'
+  # Allow calling this workflow in the GitHub Actions UI
+  workflow_dispatch:
+  
+jobs:
+  deploy_artifacts:
+    uses: dockstore/workflow-actions/.github/workflows/deploy_artifacts.yaml@main
+    with:
+      createDockerImage: true
+      quayRepository: dockstore-support
+    secrets: inherit
