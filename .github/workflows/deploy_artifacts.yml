@@ -10,6 +10,8 @@ on:
       - 'release/**'
       - 'hotfix/**'
       - 'dependabot/**'
+  # Allow calling this workflow in the GitHub Actions UI
+  workflow_dispatch:
   
 jobs:
   deploy_artifacts:
