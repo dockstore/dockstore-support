@@ -93,3 +93,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Generated and dependency-reduced-poms
+dockstore-support-reports/generated
+*/dependency-reduced-pom.xml
