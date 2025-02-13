@@ -116,7 +116,6 @@ public class ClientIT {
     @Test
     public void saveToLocalNewVersion() {
         DockerCommunicator dockerCommunicator = new DockerCommunicator();
-        dockerCommunicator.pullDockerImage(IMG);
         setUpMap(1, dockerCommunicator);
 
         System.setOut(new PrintStream(outputContent));
