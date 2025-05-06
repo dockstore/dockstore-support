@@ -19,16 +19,17 @@ import static java.lang.System.out;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.swagger.client.ApiClient;
-import io.swagger.client.ApiException;
-import io.swagger.client.Configuration;
-import io.swagger.client.api.ContainersApi;
-import io.swagger.client.api.Ga4GhApi;
-import io.swagger.client.api.UsersApi;
-import io.swagger.client.model.Tool;
-import io.swagger.client.model.ToolVersion;
+import io.dockstore.openapi.client.ApiClient;
+import io.dockstore.openapi.client.ApiException;
+import io.dockstore.openapi.client.Configuration;
+import io.dockstore.openapi.client.api.ContainersApi;
+import io.dockstore.openapi.client.api.Ga4Ghv20Api;
+import io.dockstore.openapi.client.api.UsersApi;
+import io.dockstore.openapi.client.api.WorkflowsApi;
+import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.ToolFile;
+import io.dockstore.openapi.client.model.ToolVersion;
 import java.io.File;
-import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -42,8 +43,6 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.slf4j.LoggerFactory;
 
 public class Client {
@@ -63,8 +62,9 @@ public class Client {
     private static final String STRING_TIME;
     private final OptionSet options;
     private ContainersApi containersApi;
+    private WorkflowsApi workflowsApi;
     private UsersApi usersApi;
-    private Ga4GhApi ga4ghApi;
+    private Ga4Ghv20Api ga4ghApi;
     private boolean isAdmin = false;
     private String endpoint;
 
@@ -86,8 +86,6 @@ public class Client {
         out.println(Arrays.toString(argv));
 
         OptionParser parser = new OptionParser();
-        final ArgumentAcceptingOptionSpec<String> bucketName = parser.accepts("bucket-name", "bucket to which files will be backed-up").withRequiredArg().defaultsTo("");
-        final ArgumentAcceptingOptionSpec<String> keyPrefix = parser.accepts("key-prefix", "key prefix of bucket (ex. client)").withRequiredArg().defaultsTo("");
         final ArgumentAcceptingOptionSpec<String> localDir = parser.accepts("local-dir", "local directory to which files will be backed-up").withRequiredArg().defaultsTo(".").ofType(String.class);
         final ArgumentAcceptingOptionSpec<Boolean> isTestMode = parser.accepts("test-mode-activate", "if true test mode is activated").withRequiredArg().ofType(Boolean.class);
 
@@ -99,7 +97,7 @@ public class Client {
         DirectoryGenerator.createDir(dirPath);
 
         try {
-            client.run(dirPath, options.valueOf(bucketName), options.valueOf(keyPrefix), options.valueOf(isTestMode));
+            client.run(dirPath, options.valueOf(isTestMode));
         } catch (UnknownHostException e) {
             ErrorExit.exceptionMessage(e, "No internet access", CONNECTION_ERROR);
         }
@@ -112,7 +110,7 @@ public class Client {
     private List<Tool> getTools() {
         List<Tool> tools = null;
         try {
-            tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null, null, null);
+            tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null, null, null, null, null);
         } catch (ApiException e) {
             ErrorExit.exceptionMessage(e, "Could not retrieve dockstore tools", API_ERROR);
         }
@@ -129,40 +127,7 @@ public class Client {
         return tools;
     }
 
-    private List<File> getModifiedFiles(String key, final Map<String, Long> keysToSizes, File file) {
-        List<File> modifiedFiles = new ArrayList<>();
-        for (Map.Entry<String, Long> entry : keysToSizes.entrySet()) {
-            if (Objects.equals(key, entry.getKey())) {
-                if (entry.getValue() != file.length()) {
-                    modifiedFiles.add(file);
-                }
-            }
-        }
-        return modifiedFiles;
-    }
-
-    private List<File> getFilesForUpload(String bucketName, String prefix, String baseDir, S3Communicator s3Communicator) {
-        List<File> uploadList = new ArrayList<>();
-        List<File> localFiles = (List<File>) FileUtils.listFiles(new File(baseDir), TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
-        Map<String, Long> keysToSizes = s3Communicator.getKeysToSizes(bucketName, prefix);
-
-        for (File file : localFiles) {
-            String key = prefix + file.getAbsolutePath().replace(baseDir, "");
-            if (!keysToSizes.containsKey(key)) {
-                out.println("Cloud does not yet have this file: " + file.getAbsolutePath());
-                uploadList.add(file);
-            } else {
-                if (keysToSizes.get(key) != file.length()) {
-                    out.println("Updated " + file.getAbsolutePath() + " has not yet been uploaded");
-                    getModifiedFiles(key, keysToSizes, file);
-                }
-            }
-        }
-
-        return uploadList;
-    }
-
-    private void run(String baseDir, String bucketName, String keyPrefix, boolean isTestMode) throws UnknownHostException {
+    private void run(String baseDir, boolean isTestMode) throws UnknownHostException {
         // use swagger-generated classes to talk to dockstore
         setupClientEnvironment();
         List<Tool> tools = null;
@@ -172,29 +137,7 @@ public class Client {
             tools = getTools();
         }
 
-        final S3Communicator s3Communicator = new S3Communicator("dockstore", endpoint);
         String reportDir = baseDir + File.separator + "report";
-
-        // save Docker images to local
-        saveToLocal(baseDir, reportDir, tools, new DockerCommunicator());
-        // just the Docker images
-        List<File> forUpload = getFilesForUpload(bucketName, keyPrefix, baseDir, s3Communicator);
-        long addedTotalInB = getFilesTotalSizeB(forUpload);
-
-        // report
-        long cloudTotalInB = s3Communicator.getCloudTotalInB(bucketName, keyPrefix);
-        report(reportDir, addedTotalInB, cloudTotalInB);
-
-        // upload to cloud
-        // NOTE: cannot invoke getFilesForUpload again as sometimes the report size may be exactly the same but the contents will be different
-        forUpload.addAll(FileUtils.listFiles(new File(reportDir), new String[]{"html", "JSON", "json"}, false));
-
-        // show all files to be uploaded to cloud
-        // out.println("Files to be uploaded: " + Arrays.toString(forUpload.toArray()));
-
-        s3Communicator.uploadDirectory(bucketName, keyPrefix, baseDir, forUpload, true);
-
-        s3Communicator.shutDown();
     }
 
 
@@ -207,35 +150,9 @@ public class Client {
         return totalSize;
     }
 
-    private void report(String baseDir, long addedTotalInB, long cloudTotalInB) {
-        try {
-            for (Map.Entry<String, List<VersionDetail>> entry : toolsToVersions.entrySet()) {
-                // each tool has its own page for its versions
-                final String toolReportPath = baseDir + File.separator + entry.getKey() + ".html";
-                FileUtils.write(new File(toolReportPath), ReportGenerator.generateToolReport(entry.getValue()), "UTF-8");
-                out.println("Finished creating " + toolReportPath);
-            }
-            // main menu
-            FileUtils.writeStringToFile(new File(baseDir + File.separator + "index.html"),
-                ReportGenerator.generateMainMenu(toolsToVersions.keySet(), addedTotalInB, cloudTotalInB), "UTF-8");
-            out.println("Finished creating index.html");
 
-            // json map
-            ReportGenerator.generateJSONMap(toolsToVersions, baseDir);
-        } catch (IOException e) {
-            ErrorExit.exceptionMessage(e, "Could not write report to local directory", IO_ERROR);
-        }
-    }
 
     //-----------------------Save to local-----------------------
-    public void saveDockerImage(String img, File file, DockerCommunicator dockerCommunicator) {
-        try {
-            FileUtils.copyInputStreamToFile(dockerCommunicator.saveDockerImage(img), file);
-            out.println("Created new file: " + file);
-        } catch (IOException e) {
-            ErrorExit.exceptionMessage(e, "Could save Docker image to the file " + file, IO_ERROR);
-        }
-    }
 
     private VersionDetail findLocalVD(List<VersionDetail> versionsDetails, String version) {
         for (VersionDetail row : versionsDetails) {
@@ -255,61 +172,14 @@ public class Client {
         return null;
     }
 
-    private void update(ToolVersion version, String dirPath, List<VersionDetail> versionsDetails, String img, DockerCommunicator dockerCommunicator) {
-        String versionId = version.getId();
-        String versionTag = versionId.substring(versionId.lastIndexOf(":") + 1);
-        String metaVersion = version.getMetaVersion();
-        VersionDetail before;
-
-        if (dockerCommunicator.pullDockerImage(img)) {
-            // docker img valid
-            long dockerSize = dockerCommunicator.getImageSize(img);
-            File imgFile = new File(dirPath + File.separator + versionTag + ".tar");
-
-            // check if the script had encountered this image before
-            before = findLocalVD(versionsDetails, versionTag);
-
-            // image had not changed from the last encounter
-            if (before != null && before.getDockerSize() == dockerCommunicator.getImageSize(img)) {
-                out.println(img + " did not change");
-                before.addTime(STRING_TIME);
-
-                long fileSize = imgFile.length();
-                // image not yet saved in local
-                if (!imgFile.isFile() || fileSize != before.getFileSize()) {
-                    out.println("However, a local file must be created for " + img);
-                    saveDockerImage(img, imgFile, dockerCommunicator);
-                }
-            } else {
-                // new version of image
-                saveDockerImage(img, imgFile, dockerCommunicator);
-
-                if (before != null) {
-                    out.println(img + " had changed");
-                    before.setPath("");
-                }
-
-                versionsDetails.add(new VersionDetail(versionTag, metaVersion, dockerSize, imgFile.length(), STRING_TIME, true, imgFile.getAbsolutePath()));
-            }
-
-            dockerCommunicator.removeDockerImage(img);
-
-        } else {
-            // non-existent image
-            before = findInvalidVD(versionsDetails, versionTag);
-            if (before != null) {
-                before.addTime(STRING_TIME);
-            } else {
-                versionsDetails.add(new VersionDetail(versionTag, metaVersion, 0, 0, STRING_TIME, false, ""));
-            }
-        }
+    private void update(ToolVersion version, String dirPath, List<VersionDetail> versionsDetails, String img) {
     }
 
-    public void saveToLocal(String baseDir, String reportDir, final List<Tool> tools, DockerCommunicator dockerCommunicator) {
+    public void saveToLocal(String baseDir, String reportDir, final List<Tool> tools) {
         toolsToVersions = ReportGenerator.loadJSONMap(reportDir);
 
         for (Tool tool : tools) {
-            String toolName = tool.getToolname();
+            String toolName = tool.getName();
             String dirPath = baseDir + File.separator + tool.getId();
             DirectoryGenerator.createDir(dirPath);
             if (toolName == null) {
@@ -325,15 +195,12 @@ public class Client {
 
             List<ToolVersion> versions = tool.getVersions();
             for (ToolVersion version : versions) {
-                String img = version.getImage();
-                if (img == null) {
-                    continue;
-                }
-                update(version, dirPath, versionsDetails, img, dockerCommunicator);
+                // TODO save files here
+                String id = version.getId();
+                List<ToolFile> zip = ga4ghApi.toolsIdVersionsVersionIdTypeFilesGet(tool.getId(), null, version.getId(), "zip");
             }
             toolsToVersions.put(toolName, versionsDetails);
         }
-        dockerCommunicator.closeDocker();
         out.println("Closed docker client");
     }
 
@@ -366,8 +233,9 @@ public class Client {
         defaultApiClient.setBasePath(serverUrl);
 
         this.containersApi = new ContainersApi(defaultApiClient);
+        this.workflowsApi = new WorkflowsApi(defaultApiClient);
+        this.ga4ghApi = new Ga4Ghv20Api(defaultApiClient);
         this.usersApi = new UsersApi(defaultApiClient);
-        this.ga4ghApi = new Ga4GhApi(defaultApiClient);
 
         try {
             if (this.usersApi.getApiClient() != null) {
