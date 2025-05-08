@@ -22,22 +22,31 @@ import ch.qos.logback.classic.Logger;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.Configuration;
+import io.dockstore.openapi.client.Pair;
 import io.dockstore.openapi.client.api.ContainersApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.api.UsersApi;
 import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.Tool;
-import io.dockstore.openapi.client.model.ToolFile;
 import io.dockstore.openapi.client.model.ToolVersion;
+import jakarta.ws.rs.core.GenericType;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -53,10 +62,13 @@ public class Client {
     public static final int API_ERROR = 6;              // API throws an exception
     public static final int CLIENT_ERROR = 4;           // Client does something wrong (ex. input validation)
     public static final int COMMAND_ERROR = 10;         // Command is not successful, but not due to errors
+
+    public static final int LIMIT = 100;
+
     private static final Logger ROOT_LOGGER = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
-    // retrieves only the bamstats tool as shown in https://dockstore.org/docs/getting-started-with-docker
-    private static final String BAMSTATS = "quay.io/briandoconnor/dockstore-tool-bamstats";
+    // retrieves only https://dockstore.org/workflows/github.com/gatk-workflows/gatk4-data-processing/processing-for-variant-discovery-gatk4:2.1.0?tab=info
+    private static final String TEST_WORKFLOW = "#workflow/github.com/gatk-workflows/gatk4-data-processing/processing-for-variant-discovery-gatk4";
 
     private static final LocalDateTime TIME_NOW = LocalDateTime.now();
     private static final String STRING_TIME;
@@ -86,8 +98,8 @@ public class Client {
         out.println(Arrays.toString(argv));
 
         OptionParser parser = new OptionParser();
-        final ArgumentAcceptingOptionSpec<String> localDir = parser.accepts("local-dir", "local directory to which files will be backed-up").withRequiredArg().defaultsTo(".").ofType(String.class);
-        final ArgumentAcceptingOptionSpec<Boolean> isTestMode = parser.accepts("test-mode-activate", "if true test mode is activated").withRequiredArg().ofType(Boolean.class);
+        final ArgumentAcceptingOptionSpec<String> localDir = parser.accepts("local-dir", "local directory to which files will be backed-up").withRequiredArg().defaultsTo("backup_storage").ofType(String.class);
+        final ArgumentAcceptingOptionSpec<Boolean> isTestMode = parser.accepts("test-mode-activate", "if true test mode is activated").withRequiredArg().ofType(Boolean.class).defaultsTo(true);
 
         final OptionSet options = parser.parse(argv);
         Client client = new Client(options);
@@ -108,9 +120,17 @@ public class Client {
 
     //-----------------------Main invocations-----------------------
     private List<Tool> getTools() {
-        List<Tool> tools = null;
+        List<Tool> tools = new ArrayList<>();
         try {
-            tools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null, null, null, null, null);
+            /// need to iterate until there are no more tools
+            List<Tool> evenMoreTools;
+            for (int i = 0; ; i = i + 1) {
+                evenMoreTools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null, null, null, String.valueOf(i), LIMIT);
+                if (evenMoreTools.isEmpty()) {
+                    break;
+                }
+                tools.addAll(evenMoreTools);
+            }
         } catch (ApiException e) {
             ErrorExit.exceptionMessage(e, "Could not retrieve dockstore tools", API_ERROR);
         }
@@ -132,12 +152,13 @@ public class Client {
         setupClientEnvironment();
         List<Tool> tools = null;
         if (isTestMode) {
-            tools = getTestTool(BAMSTATS);
+            tools = getTestTool(TEST_WORKFLOW);
         } else {
             tools = getTools();
         }
 
         String reportDir = baseDir + File.separator + "report";
+        this.saveToLocal(baseDir, reportDir, tools);
     }
 
 
@@ -148,31 +169,6 @@ public class Client {
             totalSize += file.length();
         }
         return totalSize;
-    }
-
-
-
-    //-----------------------Save to local-----------------------
-
-    private VersionDetail findLocalVD(List<VersionDetail> versionsDetails, String version) {
-        for (VersionDetail row : versionsDetails) {
-            if (row.getVersion().equals(version) && !Objects.equals(row.getPath(), "")) {
-                return row;
-            }
-        }
-        return null;
-    }
-
-    private VersionDetail findInvalidVD(List<VersionDetail> versionsDetails, String version) {
-        for (VersionDetail row : versionsDetails) {
-            if (row.getVersion().equals(version) && !row.isValid()) {
-                return row;
-            }
-        }
-        return null;
-    }
-
-    private void update(ToolVersion version, String dirPath, List<VersionDetail> versionsDetails, String img) {
     }
 
     public void saveToLocal(String baseDir, String reportDir, final List<Tool> tools) {
@@ -195,13 +191,51 @@ public class Client {
 
             List<ToolVersion> versions = tool.getVersions();
             for (ToolVersion version : versions) {
-                // TODO save files here
-                String id = version.getId();
-                List<ToolFile> zip = ga4ghApi.toolsIdVersionsVersionIdTypeFilesGet(tool.getId(), null, version.getId(), "zip");
+                // assume that each workflow only has one language type, which is probably ok for now
+
+                // next line works, but we want the actual bytes
+                // List<ToolFile> zip = ga4ghApi.toolsIdVersionsVersionIdTypeFilesGet(tool.getId(), version.getDescriptorType().get(0).toString(), version.getName(), null);
+                File zipFile = invokeApiForZipDownload("/ga4gh/trs/v2/tools/" + URLEncoder.encode(tool.getId(), StandardCharsets.UTF_8) + "/versions/" + URLEncoder.encode(version.getName(), StandardCharsets.UTF_8) + "/" + version.getDescriptorType().get(0).toString() + "/files",
+                    new GenericType<>() {
+                    }, workflowsApi.getApiClient());
+
+                if (zipFile == null) {
+                    continue;
+                }
+                System.out.println("Processing " + version.getId());
+                try {
+                    try (ZipFile zip = new ZipFile(zipFile)) {
+                        Enumeration<? extends ZipEntry> entries = zip.entries();
+                        while (entries.hasMoreElements()) {
+                            ZipEntry entry = entries.nextElement();
+                            File entryDestination = new File(dirPath,  entry.getName());
+                            if (entry.isDirectory()) {
+                                entryDestination.mkdirs();
+                            } else {
+                                entryDestination.getParentFile().mkdirs();
+                                try (OutputStream out = new FileOutputStream(entryDestination)) {
+                                    zip.getInputStream(entry).transferTo(out);
+                                }
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    System.out.println(e.getMessage());
+                }
             }
             toolsToVersions.put(toolName, versionsDetails);
         }
-        out.println("Closed docker client");
+    }
+
+    private static File invokeApiForZipDownload(String path, GenericType<File> type, ApiClient client) {
+        try {
+            return client
+                .invokeAPI(path, "GET", List.of(new Pair("format", "zip")), null, new HashMap<>(), new HashMap<>(), "application/zip", "application/zip",
+                    new String[]{"BEARER"}, type);
+        } catch (IllegalArgumentException | ApiException e) {
+            System.out.println("Issue with: " + path + " " + e.getMessage());
+            return null;
+        }
     }
 
     //-----------------------Set up to connect to GA4GH API-----------------------
