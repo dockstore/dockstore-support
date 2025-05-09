@@ -1,20 +1,18 @@
 package io.dockstore.toolbackup.client.cli;
 
-import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR;
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR_CHECK_SIZE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import io.dockstore.toolbackup.client.cli.common.AWSConfig;
 import io.dockstore.toolbackup.client.cli.common.DirCleaner;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -27,9 +25,7 @@ public class ClientIT {
 
     @BeforeClass
     public static void setUp() {
-        OptionParser parser = new OptionParser();
-        final OptionSet parsed = parser.parse("");
-        client = new Client(parsed);
+        client = new Client();
         AWSConfig.generateCredentials();
     }
 
@@ -61,14 +57,13 @@ public class ClientIT {
         DirCleaner.deleteDir(DIR_CHECK_SIZE);
     }
 
-    /**
-     * Test for saving pulled docker image
-     *
-     */
 
+    @Test
+    public void doesTestRun() {
+        // will download and unzip one test workflow, should not crash
+        Client.main(new String[]{"-test-mode-activate=true", "-local-dir=foo"});
+        Collection<File> foo = FileUtils.listFiles(new File("foo"), TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+        assertTrue(foo.size() >= 24);
 
-    @AfterClass
-    public static void closeDocker() {
-        DirCleaner.deleteDir(DIR);
     }
 }

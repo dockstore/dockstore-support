@@ -25,7 +25,6 @@ import io.dockstore.openapi.client.Configuration;
 import io.dockstore.openapi.client.Pair;
 import io.dockstore.openapi.client.api.ContainersApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
-import io.dockstore.openapi.client.api.UsersApi;
 import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.Tool;
 import io.dockstore.openapi.client.model.ToolVersion;
@@ -58,7 +57,6 @@ import org.slf4j.LoggerFactory;
 
 public class Client {
 
-    public static final int GENERIC_ERROR = 1;          // General error, not yet described by an error type
     public static final int CONNECTION_ERROR = 150;     // Connection exception
     public static final int IO_ERROR = 3;               // IO throws an exception
     public static final int API_ERROR = 6;              // API throws an exception
@@ -74,19 +72,13 @@ public class Client {
 
     private static final LocalDateTime TIME_NOW = LocalDateTime.now();
     private static final String STRING_TIME;
-    private final OptionSet options;
     private ContainersApi containersApi;
     private WorkflowsApi workflowsApi;
-    private UsersApi usersApi;
     private Ga4Ghv20Api ga4ghApi;
-    private boolean isAdmin = false;
-    private String endpoint;
 
-    private Map<String, List<VersionDetail>> toolsToVersions;
     private HierarchicalINIConfiguration config;
 
-    public Client(OptionSet options) {
-        this.options = options;
+    public Client() {
     }
 
     static {
@@ -104,7 +96,7 @@ public class Client {
         final ArgumentAcceptingOptionSpec<Boolean> isTestMode = parser.accepts("test-mode-activate", "if true test mode is activated").withRequiredArg().ofType(Boolean.class).defaultsTo(true);
 
         final OptionSet options = parser.parse(argv);
-        Client client = new Client(options);
+        Client client = new Client();
 
         String local = options.valueOf(localDir);
         String dirPath = Paths.get(local).toAbsolutePath().toString();
@@ -139,12 +131,12 @@ public class Client {
         return tools;
     }
 
-    private List<Tool> getTestTool(String id) {
+    private List<Tool> getTestTool() {
         List<Tool> tools = new ArrayList<>();
         try {
-            tools.add(ga4ghApi.toolsIdGet(id));
+            tools.add(ga4ghApi.toolsIdGet(Client.TEST_WORKFLOW));
         } catch (ApiException e) {
-            ErrorExit.exceptionMessage(e, "Could not retrieve dockstore tool: " + id, API_ERROR);
+            ErrorExit.exceptionMessage(e, "Could not retrieve dockstore tool: " + Client.TEST_WORKFLOW, API_ERROR);
         }
         return tools;
     }
@@ -154,7 +146,7 @@ public class Client {
         setupClientEnvironment();
         List<Tool> tools = null;
         if (isTestMode) {
-            tools = getTestTool(TEST_WORKFLOW);
+            tools = getTestTool();
         } else {
             tools = getTools();
         }
@@ -174,7 +166,7 @@ public class Client {
     }
 
     public void saveToLocal(String baseDir, String reportDir, final List<Tool> tools) {
-        toolsToVersions = ReportGenerator.loadJSONMap(reportDir);
+        Map<String, List<VersionDetail>> toolsToVersions = ReportGenerator.loadJSONMap(reportDir);
 
         for (Tool tool : tools) {
             String toolName = tool.getName();
@@ -193,6 +185,7 @@ public class Client {
 
             List<ToolVersion> versions = tool.getVersions();
             for (ToolVersion version : versions) {
+                String dirVersionPath = dirPath + File.separator + version.getName();
                 // assume that each workflow only has one language type, which is probably ok for now
 
                 // next line works, but we want the actual bytes
@@ -231,7 +224,7 @@ public class Client {
                         Enumeration<? extends ZipEntry> entries = zip.entries();
                         while (entries.hasMoreElements()) {
                             ZipEntry entry = entries.nextElement();
-                            File entryDestination = new File(dirPath,  entry.getName());
+                            File entryDestination = new File(dirVersionPath,  entry.getName());
                             if (entry.isDirectory()) {
                                 entryDestination.mkdirs();
                             } else {
@@ -283,12 +276,6 @@ public class Client {
         String token = config.getString("token", "");
         String serverUrl = config.getString("server-url", "https://www.dockstore.org:443/api");
 
-        try {
-            endpoint = config.getString("endpoint");
-        } catch (NullPointerException e) {
-            throw new RuntimeException("Expected " + configFilePath + " with an endpoint initialization");
-        }
-
         ApiClient defaultApiClient;
         defaultApiClient = Configuration.getDefaultApiClient();
         defaultApiClient.addDefaultHeader("Authorization", "Bearer " + token);
@@ -297,15 +284,7 @@ public class Client {
         this.containersApi = new ContainersApi(defaultApiClient);
         this.workflowsApi = new WorkflowsApi(defaultApiClient);
         this.ga4ghApi = new Ga4Ghv20Api(defaultApiClient);
-        this.usersApi = new UsersApi(defaultApiClient);
 
-        try {
-            if (this.usersApi.getApiClient() != null) {
-                this.isAdmin = this.usersApi.getUser().isIsAdmin();
-            }
-        } catch (ApiException e) {
-            this.isAdmin = false;
-        }
         defaultApiClient.setDebugging(ErrorExit.DEBUG.get());
     }
 
