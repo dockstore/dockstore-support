@@ -38,6 +38,7 @@ import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,6 +53,7 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.apache.http.HttpStatus;
 import org.slf4j.LoggerFactory;
 
 public class Client {
@@ -195,9 +197,30 @@ public class Client {
 
                 // next line works, but we want the actual bytes
                 // List<ToolFile> zip = ga4ghApi.toolsIdVersionsVersionIdTypeFilesGet(tool.getId(), version.getDescriptorType().get(0).toString(), version.getName(), null);
-                File zipFile = invokeApiForZipDownload("/ga4gh/trs/v2/tools/" + URLEncoder.encode(tool.getId(), StandardCharsets.UTF_8) + "/versions/" + URLEncoder.encode(version.getName(), StandardCharsets.UTF_8) + "/" + version.getDescriptorType().get(0).toString() + "/files",
-                    new GenericType<>() {
-                    }, workflowsApi.getApiClient());
+                File zipFile = null;
+                boolean returnSuccess = false;
+                do {
+                    try {
+                        zipFile = invokeApiForZipDownload(
+                            "/ga4gh/trs/v2/tools/" + URLEncoder.encode(tool.getId(), StandardCharsets.UTF_8) + "/versions/" + URLEncoder.encode(version.getName(), StandardCharsets.UTF_8) + "/"
+                                + version.getDescriptorType().get(0).toString() + "/files",
+                            new GenericType<>() {
+                            }, workflowsApi.getApiClient());
+                        returnSuccess = true;
+                    } catch (ApiException e) {
+                        // probably better way to do this through httpclient
+                        if (e.getCode() == HttpStatus.SC_FORBIDDEN) {
+                            // we've been rate-limited, back-off and try again, should use exponential back-off
+                            try {
+                                Thread.sleep(Duration.ofMinutes(1).toMillis());
+                                System.out.println("Retry " + version.getId());
+                            } catch (InterruptedException ex) {
+                                throw new RuntimeException(ex);
+                            }
+                        }
+
+                    }
+                } while (!returnSuccess);
 
                 if (zipFile == null) {
                     continue;
@@ -220,10 +243,15 @@ public class Client {
                         }
                     }
                 } catch (IOException e) {
-                    System.out.println(e.getMessage());
+                    System.out.println("Filesystem issue with " + version.getId() + " " + e.getMessage());
                 }
             }
             toolsToVersions.put(toolName, versionsDetails);
+            try {
+                Thread.sleep(Duration.ofMinutes(1).toMillis());
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
