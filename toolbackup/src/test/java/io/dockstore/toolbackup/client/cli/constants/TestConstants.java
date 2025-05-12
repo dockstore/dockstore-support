@@ -22,7 +22,8 @@ public final class TestConstants {
     // local
     public static final String BASEDIR;
     public static final String DIR;
-    public static final  String DIR_CHECK_SIZE;
+    public static final String DIR_CHECK_SIZE;
+    public static final String STORAGE_BACKUP_DIR;
     public static final String NON_EXISTING_DIR;
     // docker
     public static final String IMG;
@@ -53,6 +54,7 @@ public final class TestConstants {
 
         DIR = config.getString("dir", BASEDIR + File.separator + "dir");
         DIR_CHECK_SIZE = config.getString("checkSizeDir", BASEDIR + File.separator + "checkSize");
+        STORAGE_BACKUP_DIR = config.getString("storageBackupDir", BASEDIR + File.separator + "storageBackupDir");
 
         NON_EXISTING_BUCKET = config.getString("nonexistent.bucket", "dockstore-saver-gibberish");
         NON_EXISTING_DIR = config.getString("nonexistent.dir", "dockstore-saver-gibberish");
