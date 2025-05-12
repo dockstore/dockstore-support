@@ -179,7 +179,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>5.10.0</version>
+      <version>5.11.4</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -195,7 +195,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>5.10.0</version>
+      <version>5.11.4</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -215,7 +215,7 @@
     <dependency>
       <groupId>io.dropwizard</groupId>
       <artifactId>dropwizard-testing</artifactId>
-      <version>4.0.2</version>
+      <version>4.0.12</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -251,24 +251,8 @@
           <groupId>io.dropwizard</groupId>
         </exclusion>
         <exclusion>
-          <artifactId>dropwizard-servlets</artifactId>
-          <groupId>io.dropwizard</groupId>
-        </exclusion>
-        <exclusion>
           <artifactId>dropwizard-util</artifactId>
           <groupId>io.dropwizard</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>dropwizard-validation</artifactId>
-          <groupId>io.dropwizard</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>metrics-annotation</artifactId>
-          <groupId>io.dropwizard.metrics</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jackson-datatype-guava</artifactId>
-          <groupId>com.fasterxml.jackson.datatype</groupId>
         </exclusion>
         <exclusion>
           <artifactId>jackson-jakarta-rs-json-provider</artifactId>
@@ -281,10 +265,6 @@
         <exclusion>
           <artifactId>argparse4j</artifactId>
           <groupId>net.sourceforge.argparse4j</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>jetty-io</artifactId>
-          <groupId>org.eclipse.jetty</groupId>
         </exclusion>
         <exclusion>
           <artifactId>jetty-server</artifactId>
@@ -301,6 +281,10 @@
         <exclusion>
           <artifactId>httpclient5</artifactId>
           <groupId>org.apache.httpcomponents.client5</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>httpcore5</artifactId>
+          <groupId>org.apache.httpcomponents.core5</groupId>
         </exclusion>
         <exclusion>
           <artifactId>jersey-server</artifactId>
