@@ -240,11 +240,6 @@ public class Client {
                 }
             }
             toolsToVersions.put(toolName, versionsDetails);
-            try {
-                Thread.sleep(Duration.ofMinutes(1).toMillis());
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 
