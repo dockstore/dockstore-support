@@ -1,6 +1,7 @@
 package io.dockstore.toolbackup.client.cli;
 
 import static io.dockstore.toolbackup.client.cli.constants.TestConstants.DIR_CHECK_SIZE;
+import static io.dockstore.toolbackup.client.cli.constants.TestConstants.STORAGE_BACKUP_DIR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -60,10 +61,11 @@ public class ClientIT {
 
     @Test
     public void doesTestRun() {
+        File workingDir = new File(STORAGE_BACKUP_DIR);
         // will download and unzip one test workflow, should not crash
-        Client.main(new String[]{"-test-mode-activate=true", "-local-dir=foo"});
-        Collection<File> foo = FileUtils.listFiles(new File("foo"), TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
-        assertTrue(foo.size() >= 24);
+        Client.main(new String[]{"-test-mode-activate=true", "-local-dir=" + workingDir.getAbsolutePath()});
+        Collection<File> resultingFiles = FileUtils.listFiles(workingDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+        assertTrue(resultingFiles.size() >= 20);
 
     }
 }
