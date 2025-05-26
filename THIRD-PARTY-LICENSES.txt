@@ -1,5 +1,5 @@
 
-Lists of 420 third-party dependencies.
+Lists of 415 third-party dependencies.
      (The Apache Software License, Version 2.0) Adapter: RxJava 2 (com.squareup.retrofit2:adapter-rxjava2:2.9.0 - https://github.com/square/retrofit)
      (Apache License, Version 2.0) akka-actor (com.typesafe.akka:akka-actor_2.13:2.5.32 - https://akka.io/)
      (Apache License, Version 2.0) akka-protobuf (com.typesafe.akka:akka-protobuf_2.13:2.5.32 - https://akka.io/)
