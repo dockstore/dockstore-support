@@ -133,8 +133,6 @@ jobs:
             - dockstore-support-java-{{ checksum "THIRD-PARTY-LICENSES.txt" }}
             # Find the most recent cache used from any branch
             - dockstore-support-java-
-            # Find the most recent cache used from any branch of the main dockstore repo
-            - dockstore-m2-
       - run:
           name: build
           command: ./mvnw clean install -DskipTests
@@ -159,8 +157,6 @@ jobs:
             - dockstore-support-java-{{ checksum "pom.xml" }}
             # Find the most recent cache used from any branch
             - dockstore-support-java-
-            # Find the most recent cache used from any branch of the main dockstore repo
-            - dockstore-m2-
       - install-git-secrets
       - run:
           name: build-all
@@ -274,8 +270,6 @@ commands:
             - dockstore-support-java-{{ checksum "pom.xml" }}
             # Find the most recent cache used from any branch
             - dockstore-support-java-
-            # Find the most recent cache used from any branch of the main dockstore repo
-            - dockstore-m2-
 
   setup_for_tests:
     steps:
