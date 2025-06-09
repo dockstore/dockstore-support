@@ -15,3 +15,5 @@ RUN rm -fr /tmp/aws
 
 # Copy, for example, topicgenerator-1.16.0-SNAPSHOT.jar, but not topicgenerator-1.16.0-SNAPSHOT-sources.jar
 COPY topicgenerator/target/topicgenerator*[^s].jar /home/topic-generator.jar
+
+COPY metricsaggregator/target/metricsaggregator*[^s].jar /home/metrics-aggregator.jar
