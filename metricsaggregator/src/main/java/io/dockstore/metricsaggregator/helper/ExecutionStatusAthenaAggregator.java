@@ -26,6 +26,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
     private final CpuAthenaAggregator cpuAggregator = new CpuAthenaAggregator(metricsAggregatorAthenaClient, tableName);
     private final MemoryAthenaAggregator memoryAggregator = new MemoryAthenaAggregator(metricsAggregatorAthenaClient, tableName);
     private final CostAthenaAggregator costAggregator = new CostAthenaAggregator(metricsAggregatorAthenaClient, tableName);
+    private final DailyExecutionCountsAthenaAggregator dailyExecutionCountsAggregator = new DailyExecutionCountsAthenaAggregator(metricsAggregatorAthenaClient, tableName);
 
     public ExecutionStatusAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
         super(metricsAggregatorAthenaClient, tableName);
@@ -37,6 +38,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
         selectFields.addAll(cpuAggregator.getSelectFields());
         selectFields.addAll(memoryAggregator.getSelectFields());
         selectFields.addAll(costAggregator.getSelectFields());
+        selectFields.addAll(dailyExecutionCountsAggregator.getSelectFields());
         this.addSelectFields(selectFields);
         this.addGroupFields(Set.of(executionStatusField)); // Group by status
     }
@@ -59,6 +61,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
         memoryAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setMemory);
         costAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setCost);
         executionTimeAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setExecutionTime);
+        dailyExecutionCountsAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setDailyExecutionCounts);
         ExecutionStatusMetric executionStatusMetric = new ExecutionStatusMetric();
         executionStatusMetric.getCount().put(executionStatus.get(), metricsByStatus);
         return Optional.of(executionStatusMetric);
