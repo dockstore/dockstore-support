@@ -11,7 +11,7 @@ import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.MetricsByStatus;
-import java.util.Date;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,7 +27,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
     private final CpuAthenaAggregator cpuAggregator = new CpuAthenaAggregator(metricsAggregatorAthenaClient, tableName);
     private final MemoryAthenaAggregator memoryAggregator = new MemoryAthenaAggregator(metricsAggregatorAthenaClient, tableName);
     private final CostAthenaAggregator costAggregator = new CostAthenaAggregator(metricsAggregatorAthenaClient, tableName);
-    private final DailyExecutionCountsAthenaAggregator dailyExecutionCountsAggregator = new DailyExecutionCountsAthenaAggregator(metricsAggregatorAthenaClient, tableName, 50, new Date());
+    private final DailyExecutionCountsAthenaAggregator dailyExecutionCountsAggregator = new DailyExecutionCountsAthenaAggregator(metricsAggregatorAthenaClient, tableName, 50, Instant.now());
 
     public ExecutionStatusAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
         super(metricsAggregatorAthenaClient, tableName);
