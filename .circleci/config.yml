@@ -66,7 +66,9 @@ workflows:
             - topicgenerator-tests
             - tooltester-tests
             - toolbackup-tests
-          context: sonarcloud
+          context:
+            - sonarcloud
+            - oicr-artifacts
 
 jobs:
   metrics-aggregator-tests:
@@ -138,6 +140,9 @@ jobs:
             - dockstore-support-java-{{ checksum "THIRD-PARTY-LICENSES.txt" }}
             # Find the most recent cache used from any branch
             - dockstore-support-java-
+      - run:
+          name: Get access to OICR artifacts
+          command: cp .github/collab-mvn-settings.xml ~/.m2/settings.xml
       - run:
           name: build
           command: ./mvnw clean install -DskipTests
