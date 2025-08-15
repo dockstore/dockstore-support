@@ -38,22 +38,27 @@ workflows:
     jobs:
       - build-all:
           <<: *common_filters
+          context: oicr-artifacts
       - metrics-aggregator-tests:
           <<: *common_filters
           requires:
             - build-all
+          context: oicr-artifacts
       - topicgenerator-tests:
           <<: *common_filters
           requires:
             - build-all
+          context: oicr-artifacts
       - tooltester-tests:
           <<: *common_filters
           requires:
             - build-all
+          context: oicr-artifacts
       - toolbackup-tests:
           <<: *common_filters
           requires:
             - build-all
+          context: oicr-artifacts
       - sonar-cloud:
           <<: *common_filters
           requires:
@@ -270,6 +275,9 @@ commands:
             - dockstore-support-java-{{ checksum "pom.xml" }}
             # Find the most recent cache used from any branch
             - dockstore-support-java-
+      - run:
+          name: Get access to OICR artifacts
+          command: cp .github/collab-mvn-settings.xml ~/.m2/settings.xml              
 
   setup_for_tests:
     steps:
