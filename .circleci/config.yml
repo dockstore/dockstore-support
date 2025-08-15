@@ -164,6 +164,9 @@ jobs:
             - dockstore-support-java-
       - install-git-secrets
       - run:
+          name: Get access to OICR artifacts
+          command: cp .github/collab-mvn-settings.xml ~/.m2/settings.xml
+      - run:
           name: build-all
           command: ./mvnw -B clean install -DskipTests
       - run:
