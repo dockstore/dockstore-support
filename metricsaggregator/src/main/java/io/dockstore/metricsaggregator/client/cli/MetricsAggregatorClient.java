@@ -108,6 +108,7 @@ public class MetricsAggregatorClient {
                     metricsAggregatorClient.aggregateMetrics(aggregateMetricsCommand, metricsAggregatorConfig);
                 } catch (Exception e) {
                     exceptionMessage(e, "Could not aggregate metrics", GENERIC_ERROR);
+                    e.printStackTrace(System.out);
                 }
             }
         } else if ("submit-validation-data".equals(jCommander.getParsedCommand())) {

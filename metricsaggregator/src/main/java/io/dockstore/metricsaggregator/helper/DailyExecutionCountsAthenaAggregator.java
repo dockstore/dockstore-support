@@ -1,27 +1,22 @@
 package io.dockstore.metricsaggregator.helper;
 
 import static org.jooq.impl.DSL.and;
+import static org.jooq.impl.DSL.case_;
 import static org.jooq.impl.DSL.count;
-import static org.jooq.impl.DSL.localDateTime;
-import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.function;
 import static org.jooq.impl.DSL.instant;
-import static org.jooq.impl.DSL.case_;
-import static org.jooq.impl.DSL.condition;
-import static org.jooq.impl.DSL.toLocalDateTime;
-import static org.jooq.impl.DSL.when;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.TimeSeriesMetric;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -36,14 +31,15 @@ import org.jooq.SelectField;
  */
 public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggregator<TimeSeriesMetric> {
 
-    private static ZoneId zoneId = ZoneOffset.ofHours(-4); // Always aggregate with an Eastern DST time offset, so that bin boundaries don't shift depending upon where the aggregator is run and/or as Daylight Savings Time comes and goes.
-    private Instant end;
-    private int binCount;
+    private static final int ZONE_HOUR_OFFSET = -4;
+    private static final ZoneId ZONE_ID = ZoneOffset.ofHours(ZONE_HOUR_OFFSET); // Always aggregate with an Eastern DST time offset, so that bin boundaries align with Easterm DST midnight and don't shift depending on where the aggregator is run and/or as Daylight Savings Time comes and goes.
+    private final int binCount;
+    private final Instant now;
 
-    public DailyExecutionCountsAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName, int binCount, Instant end) {
+    public DailyExecutionCountsAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName, int binCount, Instant now) {
         super(metricsAggregatorAthenaClient, tableName);
         this.binCount = binCount;
-        this.end = end;
+        this.now = now;
     }
 
     @Override
@@ -61,7 +57,7 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
     }
 
     private OffsetDateTime getBinStart(int binOffset) {
-        return OffsetDateTime.ofInstant(end, zoneId).truncatedTo(ChronoUnit.DAYS).minusDays(binOffset);
+        return OffsetDateTime.ofInstant(now, ZONE_ID).truncatedTo(ChronoUnit.DAYS).minusDays(binOffset);
     }
 
     private OffsetDateTime getBinEnd(int binOffset) {
@@ -98,7 +94,8 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
         Collections.reverse(values);
 
         metric.setValues(values);
-        // TODO set other time series information
+        metric.setInterval(TimeSeriesMetric.IntervalEnum.DAY);
+        metric.setBegins(Date.from(getBinStart(binCount - 1).toInstant()));
 
         return Optional.of(metric);
     }
