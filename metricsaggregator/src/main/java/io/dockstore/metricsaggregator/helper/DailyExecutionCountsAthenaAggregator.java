@@ -5,6 +5,7 @@ import static org.jooq.impl.DSL.case_;
 import static org.jooq.impl.DSL.cast;
 import static org.jooq.impl.DSL.count;
 import static org.jooq.impl.DSL.function;
+import static org.jooq.impl.DSL.max;
 import static org.jooq.impl.DSL.timestamp;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
@@ -19,6 +20,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -46,7 +48,14 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
 
     @Override
     public Set<SelectField<?>> getSelectFields() {
-        return getBinOffsets().stream().map(this::getSelectField).collect(Collectors.toSet());
+        Set<SelectField<?>> good = getBinOffsets().stream().map(this::getSelectField).collect(Collectors.toSet());
+        Set<SelectField<?>> debug = Set.of(max(cast(function("from_iso8601_timestamp", Instant.class, DATE_EXECUTED_FIELD), Timestamp.class)));
+        Set<SelectField<?>> debug2 = Set.of(max(DATE_EXECUTED_FIELD));
+        Set<SelectField<?>> set = new HashSet<>();
+        set.addAll(good);
+        set.addAll(debug);
+        set.addAll(debug2);
+        return set;
     }
 
     private SelectField<?> getSelectField(int binOffset) {
@@ -92,7 +101,7 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
         for (int binOffset: getBinOffsets()) {
             Optional<String> count = queryResultRow.getColumnValue(getAggregateColumnName(binOffset));
             if (count.isPresent()) {
-                values.add(Double.parseDouble(count.get()));
+                values.add(count.map(Double::valueOf).get());
             } else {
                 return Optional.empty();
             }

@@ -125,6 +125,7 @@ public class MetricsAggregatorAthenaClient {
             List<Row> rows = result.resultSet().rows();
             if (rows.size() > 1) {
                 for (Row row : rows.subList(1, rows.size())) { // Ignore first row because it contains column headers
+                    System.err.println("ROW " + row.toString());
                     List<Datum> rowData = row.data();
                     List<String> columnValues = rowData.stream()
                             .map(Datum::varCharValue) // Note: the column value can be null if there's no value for it
