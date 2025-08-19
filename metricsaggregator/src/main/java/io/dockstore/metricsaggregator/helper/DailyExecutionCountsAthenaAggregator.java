@@ -5,6 +5,7 @@ import static org.jooq.impl.DSL.case_;
 import static org.jooq.impl.DSL.count;
 import static org.jooq.impl.DSL.function;
 import static org.jooq.impl.DSL.instant;
+import static org.jooq.impl.DSL.val;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
@@ -44,7 +45,7 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
 
     @Override
     public Set<SelectField<?>> getSelectFields() {
-        return getBinOffsets().stream().map(this::getSelectField).collect(Collectors.toSet());
+        return getBinOffsets().stream().map(this::getSelectField2).collect(Collectors.toSet());
     }
 
     private SelectField<?> getSelectField(int binOffset) {
@@ -54,6 +55,10 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
         Condition withinBin = and(whenExecuted.greaterOrEqual(start), whenExecuted.lessThan(end));
         String aggregateColumnName = getAggregateColumnName(binOffset);
         return count(case_().when(withinBin, 1)).as(aggregateColumnName);
+    }
+
+    private SelectField<?> getSelectField2(int binOffset) {
+        return count(val(1));
     }
 
     private OffsetDateTime getBinStart(int binOffset) {
