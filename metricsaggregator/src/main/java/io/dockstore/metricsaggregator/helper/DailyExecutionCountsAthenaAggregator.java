@@ -5,8 +5,8 @@ import static org.jooq.impl.DSL.case_;
 import static org.jooq.impl.DSL.count;
 import static org.jooq.impl.DSL.function;
 import static org.jooq.impl.DSL.instant;
-import static org.jooq.impl.DSL.val;
 
+// import static org.jooq.impl.DSL.val;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.TimeSeriesMetric;
