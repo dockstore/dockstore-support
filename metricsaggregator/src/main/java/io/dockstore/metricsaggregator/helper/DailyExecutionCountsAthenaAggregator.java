@@ -2,14 +2,15 @@ package io.dockstore.metricsaggregator.helper;
 
 import static org.jooq.impl.DSL.and;
 import static org.jooq.impl.DSL.case_;
+import static org.jooq.impl.DSL.cast;
 import static org.jooq.impl.DSL.count;
 import static org.jooq.impl.DSL.function;
-import static org.jooq.impl.DSL.instant;
+import static org.jooq.impl.DSL.timestamp;
 
-// import static org.jooq.impl.DSL.val;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.TimeSeriesMetric;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -45,20 +46,16 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
 
     @Override
     public Set<SelectField<?>> getSelectFields() {
-        return getBinOffsets().stream().map(this::getSelectField2).collect(Collectors.toSet());
+        return getBinOffsets().stream().map(this::getSelectField).collect(Collectors.toSet());
     }
 
     private SelectField<?> getSelectField(int binOffset) {
-        Field<Instant> start = instant(getBinStart(binOffset).toInstant());
-        Field<Instant> end = instant(getBinEnd(binOffset).toInstant());
-        Field<Instant> whenExecuted = function("from_iso8601_timestamp", Instant.class, DATE_EXECUTED_FIELD);
+        Field<Timestamp> start = timestamp(toDate(getBinStart(binOffset)));
+        Field<Timestamp> end = timestamp(toDate(getBinEnd(binOffset)));
+        Field<Timestamp> whenExecuted = cast(function("from_iso8601_timestamp", Instant.class, DATE_EXECUTED_FIELD), Timestamp.class);
         Condition withinBin = and(whenExecuted.greaterOrEqual(start), whenExecuted.lessThan(end));
         String aggregateColumnName = getAggregateColumnName(binOffset);
         return count(case_().when(withinBin, 1)).as(aggregateColumnName);
-    }
-
-    private SelectField<?> getSelectField2(int binOffset) {
-        return count(DATE_EXECUTED_FIELD);
     }
 
     private OffsetDateTime getBinStart(int binOffset) {
@@ -67,6 +64,10 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
 
     private OffsetDateTime getBinEnd(int binOffset) {
         return getBinStart(binOffset).plusDays(1);
+    }
+
+    private Date toDate(OffsetDateTime offsetDateTime) {
+        return new Date(offsetDateTime.toInstant().toEpochMilli());
     }
 
     private String getAggregateColumnName(int binOffset) {
