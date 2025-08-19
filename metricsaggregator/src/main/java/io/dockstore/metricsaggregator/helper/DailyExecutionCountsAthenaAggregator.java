@@ -58,7 +58,7 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
     }
 
     private SelectField<?> getSelectField2(int binOffset) {
-        return count(val(1));
+        return count(DATE_EXECUTED_FIELD);
     }
 
     private OffsetDateTime getBinStart(int binOffset) {
