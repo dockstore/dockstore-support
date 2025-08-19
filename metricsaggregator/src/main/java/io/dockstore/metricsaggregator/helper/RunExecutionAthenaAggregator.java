@@ -107,7 +107,7 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
         final Select<Record> runExecutionsFromTasks = select(taskExecutionFields)
                 .from(dedupedTaskExecutions);
 
-        return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true).withStatementType(StatementType.STATIC_STATEMENT))
+        String sql = DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true).withStatementType(StatementType.STATIC_STATEMENT))
                 // Main query that uses the results of the subquery
                 .select(this.selectFields)
                 .from(dedupedRunExecutions
@@ -115,6 +115,8 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
                 )
                 .groupBy(cube(this.groupFields.toArray(Field[]::new))) // CUBE generates sub-totals for all combinations of the GROUP BY columns.
                 .getSQL();
+        System.err.println("QUERY " + sql);
+        return sql;
     }
 
     /**
