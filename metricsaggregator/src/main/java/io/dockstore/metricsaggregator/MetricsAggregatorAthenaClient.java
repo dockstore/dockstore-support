@@ -20,6 +20,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jooq.Field;
 import org.slf4j.Logger;
@@ -70,31 +73,45 @@ public class MetricsAggregatorAthenaClient {
      * @param s3DirectoriesToAggregate
      * @param extendedGa4GhApi
      */
-    public void aggregateMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi) {
+    public void aggregateMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
         AthenaAggregator.createDatabase(databaseName, this);
         AthenaAggregator.createTable(tableName, metricsBucketName, metadataApi, this);
 
         // Aggregate metrics for each directory
-        s3DirectoriesToAggregate.stream().parallel().forEach(s3DirectoryInfo -> {
-            Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(s3DirectoryInfo);
-            if (platformToMetrics.isEmpty()) {
-                LOG.error("No metrics were aggregated for tool ID: {}, version {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
-                numberOfVersionsSkipped.incrementAndGet();
-            }
+        LOG.info("Aggregating using {} threads in parallel", threadCount);
+        ExecutorService es = Executors.newFixedThreadPool(threadCount);
+        for (S3DirectoryInfo s3DirectoryInfo: s3DirectoriesToAggregate) {
+            es.execute(() -> {
+                Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(s3DirectoryInfo);
+                if (platformToMetrics.isEmpty()) {
+                    LOG.error("No metrics were aggregated for tool ID: {}, version {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
+                    numberOfVersionsSkipped.incrementAndGet();
+                }
 
-            try {
-                extendedGa4GhApi.aggregatedMetricsPut(platformToMetrics, s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
-                LOG.info("Posted aggregated metrics to Dockstore for tool ID: {}, version {}, platform(s): {}",
-                        s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platformToMetrics.keySet());
-                numberOfVersionsSubmitted.incrementAndGet();
-            } catch (ApiException exception) {
-                // Log error and continue processing for other platforms
-                LOG.error("Could not post aggregated metrics to Dockstore for tool ID: {}, version {}, platform(s): {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platformToMetrics.keySet(), exception);
-                numberOfVersionsSkipped.incrementAndGet();
-            }
-            numberOfDirectoriesProcessed.incrementAndGet();
-            LOG.info("Processed {} directories", numberOfDirectoriesProcessed);
-        });
+                try {
+                    extendedGa4GhApi.aggregatedMetricsPut(platformToMetrics, s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId());
+                    LOG.info("Posted aggregated metrics to Dockstore for tool ID: {}, version {}, platform(s): {}",
+                            s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platformToMetrics.keySet());
+                    numberOfVersionsSubmitted.incrementAndGet();
+                } catch (ApiException exception) {
+                    // Log error and continue processing for other platforms
+                    LOG.error("Could not post aggregated metrics to Dockstore for tool ID: {}, version {}, platform(s): {}", s3DirectoryInfo.toolId(), s3DirectoryInfo.versionId(), platformToMetrics.keySet(), exception);
+                    numberOfVersionsSkipped.incrementAndGet();
+                }
+                numberOfDirectoriesProcessed.incrementAndGet();
+                LOG.info("Processed {} directories", numberOfDirectoriesProcessed);
+            });
+        }
+        // Wait until all of the tasks are done
+        es.shutdown();
+        try {
+            es.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+        } catch (InterruptedException e) {
+            LOG.info("InterruptedException while waiting for threads to complete");
+            es.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
         LOG.info("Completed aggregating metrics. Processed {} directories, submitted metrics for {} versions, and skipped metrics for {} versions", numberOfDirectoriesProcessed,
                 numberOfVersionsSubmitted, numberOfVersionsSkipped);
     }
