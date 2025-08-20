@@ -11,6 +11,7 @@ import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.TimeSeriesMetric;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -29,12 +30,13 @@ import org.jooq.Field;
 import org.jooq.SelectField;
 
 /**
- * TODO
+ * Aggregate a time series of execution counts.  This aggregator creates a SelectField for each time series "bin" (consisting of a SQL `count()` statement on a corresponding date range).  These SelectFields are submitted with the Athena query, and the resulting counts are assembled into a TimeSeriesMetric object.
  */
 public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggregator<TimeSeriesMetric> {
 
-    private static final int ZONE_HOUR_OFFSET = -4;
-    private static final ZoneId ZONE_ID = ZoneOffset.ofHours(ZONE_HOUR_OFFSET); // Always aggregate with an Eastern DST time offset, so that bin boundaries align with Easterm DST midnight and don't shift depending on where the aggregator is run and/or as Daylight Savings Time comes and goes.
+    private static final int ZONE_HOUR_OFFSET = -4;  // Always aggregate with an Eastern DST time offset, so that bin boundaries always align with Eastern DST midnight and don't shift depending upon where the aggregator is run and/or whether Daylight Savings Time is currently in effect (or not).
+    private static final ZoneId ZONE_ID = ZoneOffset.ofHours(ZONE_HOUR_OFFSET);
+    private static final int HOURS_PER_DAY = 24;
     private final int binCount;
     private final Instant now;
 
@@ -66,8 +68,14 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
         return getBinStart(binOffset).plusDays(1);
     }
 
+    private OffsetDateTime getBinMidpoint(int binOffset) {
+        OffsetDateTime start = getBinStart(binOffset);
+        OffsetDateTime end = getBinEnd(binOffset);
+        return start.plus(Duration.between(start, end).dividedBy(2));
+    }
+
     private Date toDate(OffsetDateTime offsetDateTime) {
-        return new Date(offsetDateTime.toInstant().toEpochMilli());
+        return Date.from(offsetDateTime.toInstant());
     }
 
     private String getAggregateColumnName(int binOffset) {
@@ -86,8 +94,7 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
     @Override
     Optional<TimeSeriesMetric> createMetricFromQueryResultRow(QueryResultRow queryResultRow) {
 
-        TimeSeriesMetric metric = new TimeSeriesMetric();
-
+        // Create the list of "values", consisting of the execution count for each time series "bin", ordered oldest to newest.
         List<Double> values = new ArrayList<>();
         for (int binOffset: getBinOffsets()) {
             Optional<String> count = queryResultRow.getColumnValue(getAggregateColumnName(binOffset));
@@ -99,10 +106,11 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
         }
         Collections.reverse(values);
 
+        // Construct, populate, and return the TimeSeriesMetric object.
+        TimeSeriesMetric metric = new TimeSeriesMetric();
         metric.setValues(values);
         metric.setInterval(TimeSeriesMetric.IntervalEnum.DAY);
-        metric.setBegins(Date.from(getBinStart(binCount - 1).toInstant()));
-
+        metric.setBegins(toDate(getBinMidpoint(binCount - 1)));
         return Optional.of(metric);
     }
 }
