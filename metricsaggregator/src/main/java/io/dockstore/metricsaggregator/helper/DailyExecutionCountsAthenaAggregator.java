@@ -12,7 +12,6 @@ import io.dockstore.openapi.client.model.TimeSeriesMetric;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -69,17 +68,17 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
         return count(case_().when(withinBin, 1)).as(aggregateColumnName);
     }
 
-    private OffsetDateTime getBinStart(int binAge) {
-        return OffsetDateTime.ofInstant(now, ZONE_ID).truncatedTo(ChronoUnit.DAYS).minusDays(binAge);
+    private ZonedDateTime getBinStart(int binAge) {
+        return ZonedDateTime.ofInstant(now, ZONE_ID).truncatedTo(ChronoUnit.DAYS).minusDays(binAge);
     }
 
-    private OffsetDateTime getBinEnd(int binAge) {
+    private ZonedDateTime getBinEnd(int binAge) {
         return getBinStart(binAge).plusDays(1);
     }
 
-    private OffsetDateTime getBinMidpoint(int binAge) {
-        OffsetDateTime start = getBinStart(binAge);
-        OffsetDateTime end = getBinEnd(binAge);
+    private ZonedDateTime getBinMidpoint(int binAge) {
+        ZonedDateTime start = getBinStart(binAge);
+        ZonedDateTime end = getBinEnd(binAge);
         return start.plus(Duration.between(start, end).dividedBy(2));
     }
 
@@ -92,18 +91,18 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
      * https://docs.aws.amazon.com/athena/latest/ug/data-types-timestamps.html#data-types-timestamps-writing-to-s3-objects
      * We don't use Jooq's timestamp() method, because it applies some weird local time zone logic, messing things up.
      */
-    private Field<Timestamp> utcTimestamp(OffsetDateTime offsetDateTime) {
+    private Field<Timestamp> utcTimestamp(ZonedDateTime zonedDateTime) {
         return new CustomField("utc_timestamp", SQLDataType.TIMESTAMP) {
             @Override
             public void accept(Context context) {
-                ZonedDateTime utcDateTime = offsetDateTime.atZoneSameInstant(ZoneOffset.ofHours(0));
+                ZonedDateTime utcDateTime = zonedDateTime.withZoneSameInstant(ZoneOffset.UTC);
                 context.sql("timestamp '%s'".formatted(utcDateTime.format(ATHENA_TIMESTAMP_FORMAT)));
             }
         };
     }
 
-    private Date toDate(OffsetDateTime offsetDateTime) {
-        return Date.from(offsetDateTime.toInstant());
+    private Date toDate(ZonedDateTime zonedDateTime) {
+        return Date.from(zonedDateTime.toInstant());
     }
 
     private String getAggregateColumnName(int binAge) {
