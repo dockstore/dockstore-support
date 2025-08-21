@@ -5,7 +5,6 @@ import static org.jooq.impl.DSL.case_;
 import static org.jooq.impl.DSL.cast;
 import static org.jooq.impl.DSL.count;
 import static org.jooq.impl.DSL.function;
-import static org.jooq.impl.DSL.timestamp;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
@@ -16,6 +15,8 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,8 +27,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.jooq.Condition;
+import org.jooq.Context;
 import org.jooq.Field;
 import org.jooq.SelectField;
+import org.jooq.impl.CustomField;
+import org.jooq.impl.SQLDataType;
 
 /**
  * Aggregate a time series of execution counts.  This aggregator creates a SelectField for each time series "bin" (consisting of a SQL `count()` statement on a corresponding date range).  These SelectFields are submitted with the Athena query, and the resulting counts are assembled into a TimeSeriesMetric object.
@@ -36,6 +40,7 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
 
     private static final int ZONE_HOUR_OFFSET = -4;  // Always aggregate with an Eastern DST time offset, so that all bin boundaries align with Eastern DST midnight and don't shift depending upon where the aggregator is run and/or whether Daylight Savings Time is currently in effect (or not).
     private static final ZoneId ZONE_ID = ZoneOffset.ofHours(ZONE_HOUR_OFFSET);
+    private static final DateTimeFormatter ATHENA_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     private final int binCount;
     private final Instant now;
 
@@ -56,8 +61,8 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
     }
 
     private SelectField<?> getSelectField(int binAge) {
-        Field<Timestamp> start = timestamp(toDate(getBinStart(binAge)));
-        Field<Timestamp> end = timestamp(toDate(getBinEnd(binAge)));
+        Field<Timestamp> start = utcTimestamp(getBinStart(binAge));
+        Field<Timestamp> end = utcTimestamp(getBinEnd(binAge));
         Field<Timestamp> whenExecuted = cast(function("from_iso8601_timestamp", Instant.class, DATE_EXECUTED_FIELD), Timestamp.class);
         Condition withinBin = and(whenExecuted.greaterOrEqual(start), whenExecuted.lessThan(end));
         String aggregateColumnName = getAggregateColumnName(binAge);
@@ -80,6 +85,21 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
 
     private List<Integer> getBinAges() {
         return IntStream.range(0, binCount).boxed().toList();
+    }
+
+    /**
+     * Convert the specified date/time to a UTC timestamp in the prescribed Athena-supported format.
+     * https://docs.aws.amazon.com/athena/latest/ug/data-types-timestamps.html#data-types-timestamps-writing-to-s3-objects
+     * We don't use Jooq's timestamp() method, because it applies some weird local time zone logic, messing things up.
+     */
+    private Field<Timestamp> utcTimestamp(OffsetDateTime offsetDateTime) {
+        return new CustomField("utc_timestamp", SQLDataType.TIMESTAMP) {
+            @Override
+            public void accept(Context context) {
+                ZonedDateTime utcDateTime = offsetDateTime.atZoneSameInstant(ZoneOffset.ofHours(0));
+                context.sql("timestamp '%s'".formatted(utcDateTime.format(ATHENA_TIMESTAMP_FORMAT)));
+            }
+        };
     }
 
     private Date toDate(OffsetDateTime offsetDateTime) {
