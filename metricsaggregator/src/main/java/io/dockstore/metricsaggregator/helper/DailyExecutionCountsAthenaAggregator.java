@@ -34,12 +34,16 @@ import org.jooq.SelectField;
  */
 public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggregator<TimeSeriesMetric> {
 
-    private static final int ZONE_HOUR_OFFSET = -4;  // Always aggregate with an Eastern DST time offset, so that bin boundaries always align with Eastern DST midnight and don't shift depending upon where the aggregator is run and/or whether Daylight Savings Time is currently in effect (or not).
+    private static final int ZONE_HOUR_OFFSET = -4;  // Always aggregate with an Eastern DST time offset, so that all bin boundaries align with Eastern DST midnight and don't shift depending upon where the aggregator is run and/or whether Daylight Savings Time is currently in effect (or not).
     private static final ZoneId ZONE_ID = ZoneOffset.ofHours(ZONE_HOUR_OFFSET);
-    private static final int HOURS_PER_DAY = 24;
     private final int binCount;
     private final Instant now;
 
+    /**
+     * Create an aggregator that computes a time series with the specified number of bins (days), with the youngest (last) bin overlapping the specified date.
+     * @param binCount the number of bins to aggregate
+     * @param now the instant which is included in the youngest bin
+     */
     public DailyExecutionCountsAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName, int binCount, Instant now) {
         super(metricsAggregatorAthenaClient, tableName);
         this.binCount = binCount;
@@ -48,38 +52,42 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
 
     @Override
     public Set<SelectField<?>> getSelectFields() {
-        return getBinOffsets().stream().map(this::getSelectField).collect(Collectors.toSet());
+        return getBinAges().stream().map(this::getSelectField).collect(Collectors.toSet());
     }
 
-    private SelectField<?> getSelectField(int binOffset) {
-        Field<Timestamp> start = timestamp(toDate(getBinStart(binOffset)));
-        Field<Timestamp> end = timestamp(toDate(getBinEnd(binOffset)));
+    private SelectField<?> getSelectField(int binAge) {
+        Field<Timestamp> start = timestamp(toDate(getBinStart(binAge)));
+        Field<Timestamp> end = timestamp(toDate(getBinEnd(binAge)));
         Field<Timestamp> whenExecuted = cast(function("from_iso8601_timestamp", Instant.class, DATE_EXECUTED_FIELD), Timestamp.class);
         Condition withinBin = and(whenExecuted.greaterOrEqual(start), whenExecuted.lessThan(end));
-        String aggregateColumnName = getAggregateColumnName(binOffset);
+        String aggregateColumnName = getAggregateColumnName(binAge);
         return count(case_().when(withinBin, 1)).as(aggregateColumnName);
     }
 
-    private OffsetDateTime getBinStart(int binOffset) {
-        return OffsetDateTime.ofInstant(now, ZONE_ID).truncatedTo(ChronoUnit.DAYS).minusDays(binOffset);
+    private OffsetDateTime getBinStart(int binAge) {
+        return OffsetDateTime.ofInstant(now, ZONE_ID).truncatedTo(ChronoUnit.DAYS).minusDays(binAge);
     }
 
-    private OffsetDateTime getBinEnd(int binOffset) {
-        return getBinStart(binOffset).plusDays(1);
+    private OffsetDateTime getBinEnd(int binAge) {
+        return getBinStart(binAge).plusDays(1);
     }
 
-    private OffsetDateTime getBinMidpoint(int binOffset) {
-        OffsetDateTime start = getBinStart(binOffset);
-        OffsetDateTime end = getBinEnd(binOffset);
+    private OffsetDateTime getBinMidpoint(int binAge) {
+        OffsetDateTime start = getBinStart(binAge);
+        OffsetDateTime end = getBinEnd(binAge);
         return start.plus(Duration.between(start, end).dividedBy(2));
+    }
+
+    private List<Integer> getBinAges() {
+        return IntStream.range(0, binCount).boxed().toList();
     }
 
     private Date toDate(OffsetDateTime offsetDateTime) {
         return Date.from(offsetDateTime.toInstant());
     }
 
-    private String getAggregateColumnName(int binOffset) {
-        return "count_" + binOffset + "_" + getMetricColumnName();
+    private String getAggregateColumnName(int binAge) {
+        return "count_" + binAge + "_" + getMetricColumnName();
     }
 
     @Override
@@ -87,17 +95,12 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
         return DATE_EXECUTED_FIELD.getName();
     }
 
-    private List<Integer> getBinOffsets() {
-        return IntStream.range(0, binCount).boxed().toList();
-    }
-
     @Override
     Optional<TimeSeriesMetric> createMetricFromQueryResultRow(QueryResultRow queryResultRow) {
-
         // Create the list of "values", consisting of the execution count for each time series "bin", ordered oldest to newest.
         List<Double> values = new ArrayList<>();
-        for (int binOffset: getBinOffsets()) {
-            Optional<String> count = queryResultRow.getColumnValue(getAggregateColumnName(binOffset));
+        for (int binAge: getBinAges()) {
+            Optional<String> count = queryResultRow.getColumnValue(getAggregateColumnName(binAge));
             if (count.isPresent()) {
                 values.add(count.map(Double::valueOf).get());
             } else {
