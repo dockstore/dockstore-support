@@ -40,8 +40,8 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
     private final Instant now;
 
     /**
-     * Create an aggregator that computes a time series with the specified number of bins (days), with the youngest (last) bin overlapping the specified date.
-     * @param binCount the number of bins to aggregate
+     * Create an aggregator that computes a time series with the specified number of bins (representing a consecutive series of days), with the youngest (last) bin overlapping the specified date.
+     * @param binCount the number of bins (days) to aggregate
      * @param now the instant which is included in the youngest bin
      */
     public DailyExecutionCountsAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName, int binCount, Instant now) {
