@@ -27,6 +27,7 @@ import org.jooq.SQLDialect;
 import org.jooq.Select;
 import org.jooq.SelectField;
 import org.jooq.conf.Settings;
+import org.jooq.conf.StatementType;
 import org.jooq.impl.DSL;
 
 public abstract class RunExecutionAthenaAggregator<M extends Metric> extends AthenaAggregator<M> {
@@ -106,7 +107,7 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
         final Select<Record> runExecutionsFromTasks = select(taskExecutionFields)
                 .from(dedupedTaskExecutions);
 
-        return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true))
+        return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true).withStatementType(StatementType.STATIC_STATEMENT))
                 // Main query that uses the results of the subquery
                 .select(this.selectFields)
                 .from(dedupedRunExecutions
