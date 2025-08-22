@@ -68,12 +68,31 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
         return count(case_().when(withinBin, 1)).as(aggregateColumnName);
     }
 
+    private TimeSeriesMetric.IntervalEnum getInterval() {
+        return TimeSeriesMetric.IntervalEnum.DAY;
+    }
+
+    private ZonedDateTime next(ZonedDateTime binStart, int binDelta) {
+        return binStart.plusDays(binDelta);
+    }
+
+    private ZonedDateTime previous(ZonedDateTime binStart, int binDelta) {
+        return binStart.minusDays(binDelta);
+    }
+
+    private ZonedDateTime getBinStart(ZonedDateTime zonedDateTime) {
+        return zonedDateTime.truncatedTo(ChronoUnit.DAYS);
+    }
+
     private ZonedDateTime getBinStart(int binAge) {
-        return ZonedDateTime.ofInstant(now, ZONE_ID).truncatedTo(ChronoUnit.DAYS).minusDays(binAge);
+        ZonedDateTime zonedNow = ZonedDateTime.ofInstant(now, ZONE_ID);
+        ZonedDateTime binZeroStart = getBinStart(zonedNow);
+        return previous(binZeroStart, binAge);
     }
 
     private ZonedDateTime getBinEnd(int binAge) {
-        return getBinStart(binAge).plusDays(1);
+        ZonedDateTime binStart = getBinStart(binAge);
+        return next(binStart, 1);
     }
 
     private ZonedDateTime getBinMidpoint(int binAge) {
@@ -106,7 +125,7 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
     }
 
     private String getAggregateColumnName(int binAge) {
-        return "count_" + binAge + "_" + getMetricColumnName();
+        return getInterval() + "_" + binAge + "_" + getMetricColumnName();
     }
 
     @Override
@@ -131,7 +150,7 @@ public class DailyExecutionCountsAthenaAggregator extends RunExecutionAthenaAggr
         // Construct, populate, and return the TimeSeriesMetric object.
         TimeSeriesMetric metric = new TimeSeriesMetric();
         metric.setValues(values);
-        metric.setInterval(TimeSeriesMetric.IntervalEnum.DAY);
+        metric.setInterval(getInterval());
         metric.setBegins(toDate(getBinMidpoint(binCount - 1)));
         return Optional.of(metric);
     }
