@@ -38,7 +38,7 @@
 
         <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dockstore-core.version>1.18.0-SNAPSHOT</dockstore-core.version>
+        <dockstore-core.version>1.18.0-alpha.4</dockstore-core.version>
         <maven-surefire.version>3.0.0-M5</maven-surefire.version>
         <maven-failsafe.version>2.22.2</maven-failsafe.version>
         <skipTests>false</skipTests>
