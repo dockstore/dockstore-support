@@ -10,8 +10,6 @@ import java.time.temporal.TemporalAdjusters;
 
 public class WeeklyExecutionCountsAthenaAggregator extends ExecutionCountsAthenaAggregator {
 
-    private static final int DAYS_PER_WEEK = 7;
-
     public WeeklyExecutionCountsAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName, int binCount, Instant now) {
         super(metricsAggregatorAthenaClient, tableName, binCount, now);
     }
@@ -21,11 +19,11 @@ public class WeeklyExecutionCountsAthenaAggregator extends ExecutionCountsAthena
     }
 
     protected ZonedDateTime pastBinStart(ZonedDateTime binStart, int delta) {
-        return binStart.minusDays(delta * DAYS_PER_WEEK);
+        return binStart.minusWeeks(delta);
     }
 
     protected ZonedDateTime futureBinStart(ZonedDateTime binStart, int delta) {
-        return binStart.plusDays(delta * DAYS_PER_WEEK);
+        return binStart.plusWeeks(delta);
     }
 
     protected ZonedDateTime overlappingBinStart(ZonedDateTime zonedDateTime) {
