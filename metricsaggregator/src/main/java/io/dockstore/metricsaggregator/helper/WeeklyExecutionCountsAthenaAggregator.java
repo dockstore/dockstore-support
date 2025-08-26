@@ -2,29 +2,33 @@ package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.openapi.client.model.TimeSeriesMetric;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 
-public class DailyExecutionCountsAthenaAggregator extends ExecutionCountsAthenaAggregator {
+public class WeeklyExecutionCountsAthenaAggregator extends ExecutionCountsAthenaAggregator {
 
-    public DailyExecutionCountsAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName, int binCount, Instant now) {
+    public WeeklyExecutionCountsAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName, int binCount, Instant now) {
         super(metricsAggregatorAthenaClient, tableName, binCount, now);
     }
 
     protected TimeSeriesMetric.IntervalEnum getInterval() {
-        return TimeSeriesMetric.IntervalEnum.DAY;
+        return TimeSeriesMetric.IntervalEnum.WEEK;
     }
 
     protected ZonedDateTime pastBinStart(ZonedDateTime binStart, int delta) {
-        return binStart.minusDays(delta);
+        return binStart.minusWeeks(delta);
     }
 
     protected ZonedDateTime futureBinStart(ZonedDateTime binStart, int delta) {
-        return binStart.plusDays(delta);
+        return binStart.plusWeeks(delta);
     }
 
     protected ZonedDateTime overlappingBinStart(ZonedDateTime zonedDateTime) {
-        return zonedDateTime.truncatedTo(ChronoUnit.DAYS);
+        return zonedDateTime.
+            with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY)).
+            truncatedTo(ChronoUnit.DAYS);
     }
 }
