@@ -150,3 +150,17 @@ java -jar target/metricsaggregator-*-SNAPSHOT.jar submit-terra-metrics --config 
 ```
 
 After running this command, you will want to run the `aggregate-metrics` command to aggregate the new Terra metrics submitted.
+
+## AWS Infrastructure Required
+See the [AthenaStack in dockstore-deploy](https://github.com/dockstore/dockstore-deploy/blob/develop/cdk-templates/athena/src/main/java/io/dockstore/athena/AthenaStack.java) 
+for the AWS resources required to run the metrics aggregator.
+
+This program requires:
+- An S3 bucket that contains the submitted metrics and an Athena workgroup
+- An S3 bucket to store results from running Athena queries (used as the S3 output location in the Athena workgroup below).
+- An Athena workgroup which isolates queries from other queries in the account. The S3 output location is specified in this workgroup.
+
+The program requires AWS credentials that have permissions to:
+- Read the S3 bucket containing the submitted metrics
+- Upload query results to the S3 bucket that stores the results (S3 output location), execute queries in Athena (`athena:`), and create databases and tables in AWS Glue (`glue:`).
+  - See [dockstore-deploy](https://github.com/dockstore/dockstore-deploy/blob/develop/cdk-templates/stack-utils/src/main/java/io/dockstore/stackutils/PolicyConstants.java#L61) for a detailed list of the permissions.
