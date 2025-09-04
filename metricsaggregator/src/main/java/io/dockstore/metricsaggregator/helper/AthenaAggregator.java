@@ -124,8 +124,9 @@ public abstract class AthenaAggregator<M extends Metric> {
     }
 
     /**
-     * Create a table with a JSON schema and projected partitions, which removes the need to manually manage partitions.
+     * Creates an Athena table with a JSON schema and projected partitions, which removes the need to manually manage partitions.
      * Drops the table first before creating it in case there are schema changes.
+     * https://docs.aws.amazon.com/athena/latest/ug/create-table.html#synopsis
      * @return
      */
     public static void createTable(String tableName, String metricsBucketName, MetadataApi metadataApi, MetricsAggregatorAthenaClient metricsAggregatorAthenaClient) {
@@ -137,6 +138,10 @@ public abstract class AthenaAggregator<M extends Metric> {
         }
 
         LOG.info("Creating table: {}", tableName);
+        // The table uses partition projection to speed up query processing of partitioned tables and automate partition management
+        // https://docs.aws.amazon.com/athena/latest/ug/partition-projection.html
+        // Below, we are specifying the ranges of values for partitions that have a predefined set of values,
+        // such as entity types (workflow, tool, etc.), registries (github.com, etc.), and platforms (terra, etc.)
         final String entityProjectionValues = String.join(",", metadataApi.getEntryTypeMetadataList()
                 .stream()
                 .map(EntryTypeMetadata::getTerm)
@@ -222,6 +227,7 @@ public abstract class AthenaAggregator<M extends Metric> {
 
     /**
      * Creates a query that unnests an executions array field and de-duplicates the executions if they have the same execution ID, taking the most recent execution.
+     * We have to do this because the webservice does not check for duplicate execution IDs.
      * @param partition
      * @param fieldToUnnest
      * @param fieldsToSelectInUnnestField

@@ -92,7 +92,8 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
         List<Field<?>> runExecutionFields = List.of(DATE_EXECUTED_FIELD, EXECUTION_STATUS_FIELD, EXECUTION_TIME_SECONDS_FIELD, MEMORY_REQUIREMENTS_GB_FIELD, CPU_REQUIREMENTS_FIELD, COST_FIELD);
         final Select<Record> dedupedRunExecutions = createUnnestQueryWithModifiedTime(partition, field("runexecutions", String[].class), runExecutionFields);
 
-        // This query creates a workflow execution from each array of tasks. This will be unioned with the actual workflow executions submitted
+        // This query creates a workflow execution from each array of tasks. This will be unioned with the actual workflow executions submitted.
+        // We turn each array of tasks into a workflow execution and union it with the workflow executions submitted because this is how we currently aggregate tasks.
         List<Field<?>> taskExecutionFields = List.of(
                 PLATFORM_FIELD,
                 field("array_min(transform(taskexecutions, t -> t.dateexecuted))", String.class).as(DATE_EXECUTED_FIELD),
