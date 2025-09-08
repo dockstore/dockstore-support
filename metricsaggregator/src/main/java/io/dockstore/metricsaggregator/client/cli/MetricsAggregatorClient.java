@@ -196,7 +196,7 @@ public class MetricsAggregatorClient {
         if (aggregateMetricsCommand.isDryRun()) {
             metricsAggregatorAthenaClient.dryRun(s3DirectoriesToAggregate);
         } else {
-            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi);
+            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, aggregateMetricsCommand.getThreadCount());
         }
     }
 

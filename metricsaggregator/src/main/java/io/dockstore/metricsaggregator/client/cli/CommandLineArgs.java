@@ -46,6 +46,9 @@ public class CommandLineArgs {
         @Parameter(names = { "--dryRun" }, description = "Do a dry run by printing out the S3 directories that will be aggregated")
         private boolean dryRun = false;
 
+        @Parameter(names = { "--threadCount" }, description = "Aggregate metrics using the specified number of threads in parallel")
+        private int threadCount = Math.max(Runtime.getRuntime().availableProcessors() - 1, 1);
+
         public File getConfig() {
             return config;
         }
@@ -60,6 +63,10 @@ public class CommandLineArgs {
 
         public boolean isDryRun() {
             return dryRun;
+        }
+
+        public int getThreadCount() {
+            return threadCount;
         }
     }
 

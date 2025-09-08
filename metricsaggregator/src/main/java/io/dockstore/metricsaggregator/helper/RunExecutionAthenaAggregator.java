@@ -27,6 +27,7 @@ import org.jooq.SQLDialect;
 import org.jooq.Select;
 import org.jooq.SelectField;
 import org.jooq.conf.Settings;
+import org.jooq.conf.StatementType;
 import org.jooq.impl.DSL;
 
 public abstract class RunExecutionAthenaAggregator<M extends Metric> extends AthenaAggregator<M> {
@@ -91,7 +92,8 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
         List<Field<?>> runExecutionFields = List.of(DATE_EXECUTED_FIELD, EXECUTION_STATUS_FIELD, EXECUTION_TIME_SECONDS_FIELD, MEMORY_REQUIREMENTS_GB_FIELD, CPU_REQUIREMENTS_FIELD, COST_FIELD);
         final Select<Record> dedupedRunExecutions = createUnnestQueryWithModifiedTime(partition, field("runexecutions", String[].class), runExecutionFields);
 
-        // This query creates a workflow execution from each array of tasks. This will be unioned with the actual workflow executions submitted
+        // This query creates a workflow execution from each array of tasks. This will be unioned with the actual workflow executions submitted.
+        // We turn each array of tasks into a workflow execution and union it with the workflow executions submitted because this is how we currently aggregate tasks.
         List<Field<?>> taskExecutionFields = List.of(
                 PLATFORM_FIELD,
                 field("array_min(transform(taskexecutions, t -> t.dateexecuted))", String.class).as(DATE_EXECUTED_FIELD),
@@ -106,7 +108,7 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
         final Select<Record> runExecutionsFromTasks = select(taskExecutionFields)
                 .from(dedupedTaskExecutions);
 
-        return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true))
+        return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true).withStatementType(StatementType.STATIC_STATEMENT))
                 // Main query that uses the results of the subquery
                 .select(this.selectFields)
                 .from(dedupedRunExecutions

@@ -29,6 +29,7 @@ import org.jooq.Record;
 import org.jooq.SQLDialect;
 import org.jooq.Select;
 import org.jooq.conf.Settings;
+import org.jooq.conf.StatementType;
 import org.jooq.impl.DSL;
 
 public class ValidationStatusAthenaAggregator extends AthenaAggregator<ValidationStatusMetric> {
@@ -86,7 +87,7 @@ public class ValidationStatusAthenaAggregator extends AthenaAggregator<Validatio
                         min(MOST_RECENT_ROW_NUM_FIELD).as(MOST_RECENT_ROW_NUM_FIELD)))
                         .from(executionsTable)
                         .groupBy(cube(PLATFORM_FIELD, VALIDATOR_TOOL_VERSION_FIELD), VALIDATOR_TOOL_FIELD));
-        return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true))
+        return DSL.using(SQLDialect.DEFAULT, new Settings().withRenderFormatted(true).withStatementType(StatementType.STATIC_STATEMENT))
                 .with(executionsTable)
                 .with(validatorMetricsTable)
                 .with(mostRecentExecutionsTable)
