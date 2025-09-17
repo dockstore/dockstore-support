@@ -49,6 +49,23 @@ public class MetricsAggregatorS3Client {
         this.s3Client = S3ClientHelper.createS3Client(s3EndpointOverride);
     }
 
+    public List<S3DirectoryInfo> getDirectoriesForTrsId(String trsId) {
+        final String s3KeyPrefix = S3ClientHelper.convertToolIdToPartialKey(trsId) + "/";
+        LOG.info("Getting directories for TRS ID {} with S3 key prefix {}", trsId, s3KeyPrefix);
+        return getDirectories(s3KeyPrefix);
+    }
+
+    public List<S3DirectoryInfo> getDirectoriesForTrsIdVersion(String trsId, String versionName) {
+        final String s3KeyPrefix = S3ClientHelper.convertToolIdToPartialKey(trsId) + "/" + versionName + "/";
+        LOG.info("Getting directories for TRS ID {} and version {} with S3 key prefix {}", trsId, versionName, s3KeyPrefix);
+        return getDirectories(s3KeyPrefix);
+    }
+
+    public List<S3DirectoryInfo> getDirectories() {
+        LOG.info("Getting all directories");
+        return getDirectories("");
+    }
+
     /**
      * Returns a unique list of directories containing metrics files.
      * For example, suppose the local-dockstore-metrics-data bucket looks like the following.
@@ -89,60 +106,45 @@ public class MetricsAggregatorS3Client {
      *
      * @return
      */
-    @SuppressWarnings("checkstyle:magicnumber")
     public List<S3DirectoryInfo> getDirectories(String s3KeyPrefix) {
-        ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder().bucket(bucketName).delimiter("/");
-        if (s3KeyPrefix != null) {
-            requestBuilder.prefix(s3KeyPrefix);
-        }
-        ListObjectsV2Request request = requestBuilder.build();
-        ListObjectsV2Response listObjectsV2Response = s3Client.listObjectsV2(request);
-        Queue<CommonPrefix> commonPrefixesToProcess = new ArrayDeque<>(listObjectsV2Response.commonPrefixes());
+        Queue<String> prefixesToProcess = new ArrayDeque<>(List.of(s3KeyPrefix));
         List<S3DirectoryInfo> s3DirectoryInfos = new ArrayList<>();
-
-        while (!commonPrefixesToProcess.isEmpty()) {
-            String prefix = commonPrefixesToProcess.remove().prefix();
-            request = ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).delimiter("/").build();
-            listObjectsV2Response = s3Client.listObjectsV2(request);
-
+        while (!prefixesToProcess.isEmpty()) {
+            String prefix = prefixesToProcess.remove();
+            List<String> subdirectories = retrieveSubdirectories(prefix);
             boolean isVersionDirectory = !S3ClientHelper.getVersionName(prefix).isEmpty();
             if (isVersionDirectory) {
-                String toolId = S3ClientHelper.getToolId(prefix);
-                String versionId = S3ClientHelper.getVersionName(prefix);
-                List<String> platforms = listObjectsV2Response.commonPrefixes().stream()
-                        .map(commonPrefix -> S3ClientHelper.getMetricsPlatform(commonPrefix.prefix()))
-                        .toList();
-                // Athena partition values. We don't want to decode these otherwise they won't match the partition values in S3
-                String entityPartition = S3ClientHelper.getElementFromKey(prefix, 0);
-                String registryPartition = S3ClientHelper.getElementFromKey(prefix, 1);
-                String orgPartition = S3ClientHelper.getElementFromKey(prefix, 2);
-                String namePartition = S3ClientHelper.getElementFromKey(prefix, 3);
-                String versionPartition = S3ClientHelper.getElementFromKey(prefix, 4);
-                AthenaTablePartition athenaTablePartition = new AthenaTablePartition(entityPartition, registryPartition, orgPartition, namePartition, versionPartition);
-                s3DirectoryInfos.add(new S3DirectoryInfo(toolId, versionId, platforms, prefix, athenaTablePartition));
+                S3DirectoryInfo info = createS3DirectoryInfo(prefix, subdirectories);
+                s3DirectoryInfos.add(info);
             } else {
-                commonPrefixesToProcess.addAll(listObjectsV2Response.commonPrefixes());
+                prefixesToProcess.addAll(subdirectories);
             }
         }
-
         return s3DirectoryInfos;
     }
 
-    public List<S3DirectoryInfo> getDirectories() {
-        LOG.info("Getting all directories");
-        return getDirectories(null);
+    private List<String> retrieveSubdirectories(String prefix) {
+        List<String> subdirectories = new ArrayList<>();
+        ListObjectsV2Request request = ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).delimiter("/").build();
+        for (ListObjectsV2Response listObjectsV2Response: s3Client.listObjectsV2Paginator(request)) {
+            subdirectories.addAll(listObjectsV2Response.commonPrefixes().stream().map(CommonPrefix::prefix).toList());
+        }
+        return subdirectories;
     }
 
-    public List<S3DirectoryInfo> getDirectoriesForTrsId(String trsId) {
-        final String s3KeyPrefix = S3ClientHelper.convertToolIdToPartialKey(trsId);
-        LOG.info("Getting directories for TRS ID {} with S3 key prefix {}", trsId, s3KeyPrefix);
-        return getDirectories(s3KeyPrefix);
-    }
-
-    public List<S3DirectoryInfo> getDirectoriesForTrsIdVersion(String trsId, String versionName) {
-        final String s3KeyPrefix = S3ClientHelper.convertToolIdToPartialKey(trsId) + "/" + versionName;
-        LOG.info("Getting directories for TRS ID {} and version {} with S3 key prefix {}", trsId, versionName, s3KeyPrefix);
-        return getDirectories(s3KeyPrefix);
+    @SuppressWarnings("checkstyle:magicnumber")
+    private S3DirectoryInfo createS3DirectoryInfo(String prefix, List<String> subdirectories) {
+        String toolId = S3ClientHelper.getToolId(prefix);
+        String versionId = S3ClientHelper.getVersionName(prefix);
+        List<String> platforms = subdirectories.stream().map(subdirectory -> S3ClientHelper.getMetricsPlatform(subdirectory)).toList();
+        // Athena partition values. We don't want to decode these otherwise they won't match the partition values in S3
+        String entityPartition = S3ClientHelper.getElementFromKey(prefix, 0);
+        String registryPartition = S3ClientHelper.getElementFromKey(prefix, 1);
+        String orgPartition = S3ClientHelper.getElementFromKey(prefix, 2);
+        String namePartition = S3ClientHelper.getElementFromKey(prefix, 3);
+        String versionPartition = S3ClientHelper.getElementFromKey(prefix, 4);
+        AthenaTablePartition athenaTablePartition = new AthenaTablePartition(entityPartition, registryPartition, orgPartition, namePartition, versionPartition);
+        return new S3DirectoryInfo(toolId, versionId, platforms, prefix, athenaTablePartition);
     }
 
     public record S3DirectoryInfo(String toolId, String versionId, List<String> platforms, String versionS3KeyPrefix, AthenaTablePartition athenaTablePartition) {
