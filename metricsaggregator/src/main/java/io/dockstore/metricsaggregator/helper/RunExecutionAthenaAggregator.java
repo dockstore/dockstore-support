@@ -1,5 +1,6 @@
 package io.dockstore.metricsaggregator.helper;
 
+import static org.jooq.impl.DSL.aggregate;
 import static org.jooq.impl.DSL.avg;
 import static org.jooq.impl.DSL.coalesce;
 import static org.jooq.impl.DSL.count;
@@ -8,7 +9,9 @@ import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.max;
 import static org.jooq.impl.DSL.min;
+import static org.jooq.impl.DSL.percentileCont;
 import static org.jooq.impl.DSL.select;
+import static org.jooq.impl.DSL.val;
 
 import io.dockstore.common.Partner;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
@@ -145,7 +148,12 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
         return Set.of(min(field(getMetricColumnName())).as(getMinColumnName()),
                 avg(field(getMetricColumnName(), Double.class)).as(getAvgColumnName()),
                 max(field(getMetricColumnName())).as(getMaxColumnName()),
-                count(field(getMetricColumnName())).as(getCountColumnName()));
+                count(field(getMetricColumnName())).as(getCountColumnName()),
+                // note these are custom since jooq isn't quite there, workaround from https://github.com/jOOQ/jOOQ/issues/18706 and also see https://trino.io/docs/current/functions/aggregate.html#approximate-aggregate-functions
+                aggregate("approx_percentile", Double.class, field(getMetricColumnName()), val(0.05)).as(getMedianColumnName()),
+                aggregate("approx_percentile", Double.class, field(getMetricColumnName()), val(0.50)).as(get5thPercentileColumnName()),
+                aggregate("approx_percentile", Double.class, field(getMetricColumnName()), val(0.95)).as(get95thPercentileColumnName())
+        );
     }
 
     protected String substitutePeriodsForUnderscores(String columnName) {
@@ -164,6 +172,18 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
         return "max_" + substitutePeriodsForUnderscores(getMetricColumnName());
     }
 
+    protected String get5thPercentileColumnName() {
+        return "5thPercentile_" + substitutePeriodsForUnderscores(getMetricColumnName());
+    }
+
+    protected String get95thPercentileColumnName() {
+        return "95thPercentile_" + substitutePeriodsForUnderscores(getMetricColumnName());
+    }
+
+    protected String getMedianColumnName() {
+        return "median_" + substitutePeriodsForUnderscores(getMetricColumnName());
+    }
+
     protected String getCountColumnName() {
         return "count_" + substitutePeriodsForUnderscores(getMetricColumnName());
     }
@@ -179,6 +199,18 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
     protected Optional<Double> getMaxColumnValue(QueryResultRow queryResultRow) {
         return queryResultRow.getColumnValue(getMaxColumnName()).map(Double::valueOf);
     }
+
+    protected Optional<Double> getMedianColumnValue(QueryResultRow queryResultRow) {
+        return queryResultRow.getColumnValue(getMedianColumnName()).map(Double::valueOf);
+    }
+
+    protected Optional<Double> get5thPercentileColumnValue(QueryResultRow queryResultRow) {
+        return queryResultRow.getColumnValue(get5thPercentileColumnName()).map(Double::valueOf);
+    }
+    protected Optional<Double> get95thPercentileColumnValue(QueryResultRow queryResultRow) {
+        return queryResultRow.getColumnValue(get95thPercentileColumnName()).map(Double::valueOf);
+    }
+
 
     protected Optional<Integer> getCountColumnValue(QueryResultRow queryResultRow) {
         Optional<Integer> countColumnValue = queryResultRow.getColumnValue(getCountColumnName()).map(Integer::valueOf);
