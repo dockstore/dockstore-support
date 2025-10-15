@@ -9,7 +9,6 @@ import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.max;
 import static org.jooq.impl.DSL.min;
-import static org.jooq.impl.DSL.percentileCont;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.val;
 
@@ -34,6 +33,10 @@ import org.jooq.conf.StatementType;
 import org.jooq.impl.DSL;
 
 public abstract class RunExecutionAthenaAggregator<M extends Metric> extends AthenaAggregator<M> {
+
+    public static final double PERCENTILE_95 = 0.95;
+    public static final double MEDIAN = 0.50;
+    public static final double PERCENTILE_05 = 0.05;
     protected static final Field<String> EXECUTION_STATUS_FIELD = field("executionstatus", String.class);
     protected static final Field<Integer> EXECUTION_TIME_SECONDS_FIELD = field("executiontimeseconds", Integer.class);
     protected static final Field<Double> MEMORY_REQUIREMENTS_GB_FIELD = field("memoryrequirementsgb", Double.class);
@@ -150,9 +153,9 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
                 max(field(getMetricColumnName())).as(getMaxColumnName()),
                 count(field(getMetricColumnName())).as(getCountColumnName()),
                 // note these are custom since jooq isn't quite there, workaround from https://github.com/jOOQ/jOOQ/issues/18706 and also see https://trino.io/docs/current/functions/aggregate.html#approximate-aggregate-functions
-                aggregate("approx_percentile", Double.class, field(getMetricColumnName()), val(0.05)).as(getMedianColumnName()),
-                aggregate("approx_percentile", Double.class, field(getMetricColumnName()), val(0.50)).as(get5thPercentileColumnName()),
-                aggregate("approx_percentile", Double.class, field(getMetricColumnName()), val(0.95)).as(get95thPercentileColumnName())
+                aggregate("approx_percentile", Double.class, field(getMetricColumnName()), val(PERCENTILE_05)).as(getMedianColumnName()),
+                aggregate("approx_percentile", Double.class, field(getMetricColumnName()), val(MEDIAN)).as(get5thPercentileColumnName()),
+                aggregate("approx_percentile", Double.class, field(getMetricColumnName()), val(PERCENTILE_95)).as(get95thPercentileColumnName())
         );
     }
 

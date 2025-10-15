@@ -31,12 +31,12 @@ public class ExecutionTimeAthenaAggregator extends RunExecutionAthenaAggregator<
         Optional<Double> avg = getAvgColumnValue(queryResultRow);
         Optional<Double> max = getMaxColumnValue(queryResultRow);
         Optional<Double> median = getMedianColumnValue(queryResultRow);
-        Optional<Double> perecentile5th = get5thPercentileColumnValue(queryResultRow);
+        Optional<Double> percentile05th = get5thPercentileColumnValue(queryResultRow);
         Optional<Double> percentile95th = get95thPercentileColumnValue(queryResultRow);
 
         LOG.debug(" ");
         LOG.debug("min: " + min.orElse(Double.NaN));
-        LOG.debug("5th: " + perecentile5th.orElse(Double.NaN));
+        LOG.debug("05th: " + percentile05th.orElse(Double.NaN));
         LOG.debug("avg: " + avg.orElse(Double.NaN));
         LOG.debug("median: " + median.orElse(Double.NaN));
         LOG.debug("95th: " + percentile95th.orElse(Double.NaN));
@@ -47,7 +47,10 @@ public class ExecutionTimeAthenaAggregator extends RunExecutionAthenaAggregator<
             return Optional.of(new ExecutionTimeMetric()
                     .minimum(min.get())
                     .average(avg.get())
-                    .maximum(max.get()) // .median(median.get()) need this in webservice along with the other ones
+                    .maximum(max.get())
+                    .median(median.get())
+                    .percentile05th(percentile05th.get())
+                    .percentile95th(percentile95th.get())
                 .numberOfDataPointsForAverage(numberOfDataPoints.get()));
         }
         return Optional.empty();
