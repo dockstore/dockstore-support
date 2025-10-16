@@ -35,7 +35,7 @@ import org.jooq.impl.DSL;
 public abstract class RunExecutionAthenaAggregator<M extends Metric> extends AthenaAggregator<M> {
 
     public static final double PERCENTILE_95 = 0.95;
-    public static final double MEDIAN = 0.50;
+    public static final double PERCENTILE_MEDIAN = 0.50;
     public static final double PERCENTILE_05 = 0.05;
     protected static final Field<String> EXECUTION_STATUS_FIELD = field("executionstatus", String.class);
     protected static final Field<Integer> EXECUTION_TIME_SECONDS_FIELD = field("executiontimeseconds", Integer.class);
@@ -148,14 +148,15 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
      * @return
      */
     protected Set<SelectField<?>> getStatisticSelectFields() {
+        String approxPercentileFunction = "approx_percentile";
         return Set.of(min(field(getMetricColumnName())).as(getMinColumnName()),
                 avg(field(getMetricColumnName(), Double.class)).as(getAvgColumnName()),
                 max(field(getMetricColumnName())).as(getMaxColumnName()),
                 count(field(getMetricColumnName())).as(getCountColumnName()),
                 // note these are custom since jooq isn't quite there, workaround from https://github.com/jOOQ/jOOQ/issues/18706 and also see https://trino.io/docs/current/functions/aggregate.html#approximate-aggregate-functions
-                aggregate("approx_percentile", Double.class, field(getMetricColumnName()), val(PERCENTILE_05)).as(getMedianColumnName()),
-                aggregate("approx_percentile", Double.class, field(getMetricColumnName()), val(MEDIAN)).as(get5thPercentileColumnName()),
-                aggregate("approx_percentile", Double.class, field(getMetricColumnName()), val(PERCENTILE_95)).as(get95thPercentileColumnName())
+                aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_05)).as(getMedianColumnName()),
+                aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_MEDIAN)).as(get5thPercentileColumnName()),
+                aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_95)).as(get95thPercentileColumnName())
         );
     }
 
@@ -176,11 +177,11 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
     }
 
     protected String get5thPercentileColumnName() {
-        return "5thPercentile_" + substitutePeriodsForUnderscores(getMetricColumnName());
+        return "percentile05th_" + substitutePeriodsForUnderscores(getMetricColumnName());
     }
 
     protected String get95thPercentileColumnName() {
-        return "95thPercentile_" + substitutePeriodsForUnderscores(getMetricColumnName());
+        return "percentile95th_" + substitutePeriodsForUnderscores(getMetricColumnName());
     }
 
     protected String getMedianColumnName() {
@@ -207,7 +208,7 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
         return queryResultRow.getColumnValue(getMedianColumnName()).map(Double::valueOf);
     }
 
-    protected Optional<Double> get5thPercentileColumnValue(QueryResultRow queryResultRow) {
+    protected Optional<Double> get05thPercentileColumnValue(QueryResultRow queryResultRow) {
         return queryResultRow.getColumnValue(get5thPercentileColumnName()).map(Double::valueOf);
     }
     protected Optional<Double> get95thPercentileColumnValue(QueryResultRow queryResultRow) {

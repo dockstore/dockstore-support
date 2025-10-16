@@ -31,26 +31,26 @@ public class ExecutionTimeAthenaAggregator extends RunExecutionAthenaAggregator<
         Optional<Double> avg = getAvgColumnValue(queryResultRow);
         Optional<Double> max = getMaxColumnValue(queryResultRow);
         Optional<Double> median = getMedianColumnValue(queryResultRow);
-        Optional<Double> percentile05th = get5thPercentileColumnValue(queryResultRow);
+        Optional<Double> percentile05th = get05thPercentileColumnValue(queryResultRow);
         Optional<Double> percentile95th = get95thPercentileColumnValue(queryResultRow);
 
         LOG.debug(" ");
-        LOG.debug("min: " + min.orElse(Double.NaN));
-        LOG.debug("05th: " + percentile05th.orElse(Double.NaN));
-        LOG.debug("avg: " + avg.orElse(Double.NaN));
-        LOG.debug("median: " + median.orElse(Double.NaN));
-        LOG.debug("95th: " + percentile95th.orElse(Double.NaN));
-        LOG.debug("max: " + max.orElse(Double.NaN));
+        LOG.debug("min: %s".formatted(min.orElse(Double.NaN)));
+        LOG.debug("05th: %s".formatted(percentile05th.orElse(Double.NaN)));
+        LOG.debug("avg: %s".formatted(avg.orElse(Double.NaN)));
+        LOG.debug("median: %s".formatted(median.orElse(Double.NaN)));
+        LOG.debug("95th: %s".formatted(percentile95th.orElse(Double.NaN)));
+        LOG.debug("max: %s".formatted(max.orElse(Double.NaN)));
 
         Optional<Integer> numberOfDataPoints = getCountColumnValue(queryResultRow);
-        if (min.isPresent() && avg.isPresent() && max.isPresent() && numberOfDataPoints.isPresent()) {
+        if (min.isPresent() && avg.isPresent() && max.isPresent() && median.isPresent() && percentile05th.isPresent() && percentile95th.isPresent() && numberOfDataPoints.isPresent()) {
             return Optional.of(new ExecutionTimeMetric()
-                    .minimum(min.get())
-                    .average(avg.get())
-                    .maximum(max.get())
-                    .median(median.get())
-                    .percentile05th(percentile05th.get())
-                    .percentile95th(percentile95th.get())
+                .minimum(min.get())
+                .average(avg.get())
+                .maximum(max.get())
+                .median(median.get())
+                .percentile05th(percentile05th.get())
+                .percentile95th(percentile95th.get())
                 .numberOfDataPointsForAverage(numberOfDataPoints.get()));
         }
         return Optional.empty();
