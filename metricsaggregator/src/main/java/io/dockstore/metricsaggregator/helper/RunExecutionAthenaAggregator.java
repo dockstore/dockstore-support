@@ -155,8 +155,8 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
                 count(field(getMetricColumnName())).as(getCountColumnName()),
                 // note these are custom since jooq isn't quite there, workaround from https://github.com/jOOQ/jOOQ/issues/18706 and also see https://trino.io/docs/current/functions/aggregate.html#approximate-aggregate-functions
                 aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_05)).as(getMedianColumnName()),
-                aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_MEDIAN)).as(get5thPercentileColumnName()),
-                aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_95)).as(get95thPercentileColumnName())
+                aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_MEDIAN)).as(getPercentile05thColumnName()),
+                aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_95)).as(getPercentile95thColumnName())
         );
     }
 
@@ -176,11 +176,11 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
         return "max_" + substitutePeriodsForUnderscores(getMetricColumnName());
     }
 
-    protected String get5thPercentileColumnName() {
+    protected String getPercentile05thColumnName() {
         return "percentile05th_" + substitutePeriodsForUnderscores(getMetricColumnName());
     }
 
-    protected String get95thPercentileColumnName() {
+    protected String getPercentile95thColumnName() {
         return "percentile95th_" + substitutePeriodsForUnderscores(getMetricColumnName());
     }
 
@@ -208,11 +208,11 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
         return queryResultRow.getColumnValue(getMedianColumnName()).map(Double::valueOf);
     }
 
-    protected Optional<Double> get05thPercentileColumnValue(QueryResultRow queryResultRow) {
-        return queryResultRow.getColumnValue(get5thPercentileColumnName()).map(Double::valueOf);
+    protected Optional<Double> getPercentile05thColumnValue(QueryResultRow queryResultRow) {
+        return queryResultRow.getColumnValue(getPercentile05thColumnName()).map(Double::valueOf);
     }
-    protected Optional<Double> get95thPercentileColumnValue(QueryResultRow queryResultRow) {
-        return queryResultRow.getColumnValue(get95thPercentileColumnName()).map(Double::valueOf);
+    protected Optional<Double> getPercentile95thColumnValue(QueryResultRow queryResultRow) {
+        return queryResultRow.getColumnValue(getPercentile95thColumnName()).map(Double::valueOf);
     }
 
 

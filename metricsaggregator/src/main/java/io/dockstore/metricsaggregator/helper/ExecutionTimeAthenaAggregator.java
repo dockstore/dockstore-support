@@ -31,8 +31,8 @@ public class ExecutionTimeAthenaAggregator extends RunExecutionAthenaAggregator<
         Optional<Double> avg = getAvgColumnValue(queryResultRow);
         Optional<Double> max = getMaxColumnValue(queryResultRow);
         Optional<Double> median = getMedianColumnValue(queryResultRow);
-        Optional<Double> percentile05th = get05thPercentileColumnValue(queryResultRow);
-        Optional<Double> percentile95th = get95thPercentileColumnValue(queryResultRow);
+        Optional<Double> percentile05th = getPercentile05thColumnValue(queryResultRow);
+        Optional<Double> percentile95th = getPercentile95thColumnValue(queryResultRow);
 
         LOG.debug(" ");
         LOG.debug("min: %s".formatted(min.orElse(Double.NaN)));
