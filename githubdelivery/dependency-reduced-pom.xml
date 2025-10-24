@@ -179,7 +179,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>5.13.3</version>
+      <version>5.13.4</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -195,7 +195,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>5.13.3</version>
+      <version>5.13.4</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -215,7 +215,7 @@
     <dependency>
       <groupId>io.dropwizard</groupId>
       <artifactId>dropwizard-testing</artifactId>
-      <version>4.0.15</version>
+      <version>5.0.0</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -281,10 +281,6 @@
         <exclusion>
           <artifactId>httpclient5</artifactId>
           <groupId>org.apache.httpcomponents.client5</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>httpcore5</artifactId>
-          <groupId>org.apache.httpcomponents.core5</groupId>
         </exclusion>
         <exclusion>
           <artifactId>jersey-server</artifactId>
