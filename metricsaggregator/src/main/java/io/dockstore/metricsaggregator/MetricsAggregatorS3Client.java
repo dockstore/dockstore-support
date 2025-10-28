@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,7 +119,7 @@ public class MetricsAggregatorS3Client {
                 String orgPartition = S3ClientHelper.getElementFromKey(prefix, 2);
                 String namePartition = S3ClientHelper.getElementFromKey(prefix, 3);
                 String versionPartition = S3ClientHelper.getElementFromKey(prefix, 4);
-                AthenaTablePartition athenaTablePartition = new AthenaTablePartition(entityPartition, registryPartition, orgPartition, namePartition, versionPartition);
+                AthenaTablePartition athenaTablePartition = new AthenaTablePartition(Optional.of(entityPartition), Optional.of(registryPartition), Optional.of(orgPartition), Optional.of(namePartition), Optional.of(versionPartition));
                 s3DirectoryInfos.add(new S3DirectoryInfo(toolId, versionId, platforms, prefix, athenaTablePartition));
             } else {
                 commonPrefixesToProcess.addAll(listObjectsV2Response.commonPrefixes());

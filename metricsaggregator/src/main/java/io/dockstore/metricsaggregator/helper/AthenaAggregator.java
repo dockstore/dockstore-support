@@ -266,11 +266,7 @@ public abstract class AthenaAggregator<M extends Metric> {
             .and(createFieldSelector(VERSION_FIELD, partition.version()));
     }
 
-    private Condition createFieldSelector(Field<String> field, String value) {
-        if (value != null) {
-            return field.eq(inline(value));
-        } else {
-            return DSL.trueCondition();
-        }
+    private Condition createFieldSelector(Field<String> field, Optional<String> value) {
+        return value.map(v -> field.eq(inline(v))).orElse(DSL.trueCondition());
     }
 }
