@@ -27,10 +27,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Select;
 import org.jooq.SelectConditionStep;
+import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
@@ -241,11 +243,7 @@ public abstract class AthenaAggregator<M extends Metric> {
                 PLATFORM_FIELD,
                 field(unnestedFieldAlias, String.class))
                 .from(table(tableName), unnest(fieldToUnnest).as("t", unnestedFieldAlias))
-                .where(ENTITY_FIELD.eq(inline(partition.entity()))
-                        .and(REGISTRY_FIELD.eq(inline(partition.registry())))
-                        .and(ORG_FIELD.eq(inline(partition.org())))
-                        .and(NAME_FIELD.eq(inline(partition.name())))
-                        .and(VERSION_FIELD.eq(inline(partition.version()))));
+                .where(createPartitionSelector(partition));
 
         List<? extends Field<?>> unnestedFields = fieldsToSelectInUnnestField.stream()
                 .map(field -> field(unnestedFieldAlias + "." + field.getName(), field.getType()))
@@ -258,5 +256,21 @@ public abstract class AthenaAggregator<M extends Metric> {
         return select(fieldsWithPlatform)
                 .from(unnestedExecutionsWithFileModifiedTime)
                 .where(FILE_MODIFIED_TIME_ROW_NUM_FIELD.eq(inline(1)));
+    }
+
+    private Condition createPartitionSelector(AthenaTablePartition partition) {
+        return createFieldSelector(ENTITY_FIELD, partition.entity())
+            .and(createFieldSelector(REGISTRY_FIELD, partition.registry()))
+            .and(createFieldSelector(ORG_FIELD, partition.org()))
+            .and(createFieldSelector(NAME_FIELD, partition.name()))
+            .and(createFieldSelector(VERSION_FIELD, partition.version()));
+    }
+
+    private Condition createFieldSelector(Field<String> field, String value) {
+        if (value != null) {
+            return field.eq(inline(value));
+        } else {
+            return DSL.trueCondition();
+        }
     }
 }
