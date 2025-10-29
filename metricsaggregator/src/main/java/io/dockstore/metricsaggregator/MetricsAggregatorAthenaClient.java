@@ -16,14 +16,17 @@ import io.dockstore.openapi.client.model.ExecutionStatusMetric;
 import io.dockstore.openapi.client.model.Metrics;
 import io.dockstore.openapi.client.model.ValidationStatusMetric;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.jooq.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +77,8 @@ public class MetricsAggregatorAthenaClient {
         AthenaAggregator.createTable(tableName, metricsBucketName, metadataApi, this);
 
         aggregateVersionLevelMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, threadCount);
-        // TODO call aggregateEntryLevelMetrics()
+        List<S3DirectoryInfo> entryDirectories = calculateEntryDirectories(s3DirectoriesToAggregate);
+        aggregateEntryLevelMetrics(entryDirectories, extendedGa4GhApi, threadCount);
     }
 
     private void aggregateVersionLevelMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
@@ -116,7 +120,18 @@ public class MetricsAggregatorAthenaClient {
                 numberOfVersionsSubmitted, numberOfVersionsSkipped);
     }
 
-    // TODO implement aggregateEntryLevelMetrics()
+    private void aggregateEntryLevelMetrics(List<S3DirectoryInfo> entryDirectories, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
+        // TODO
+    }
+
+    private List<S3DirectoryInfo> calculateEntryDirectories(List<S3DirectoryInfo> versionDirectories) {
+        return versionDirectories.stream()
+            .map(S3DirectoryInfo::toEntryDirectory)
+            .collect(Collectors.groupingBy(S3DirectoryInfo::versionS3KeyPrefix, Collectors.reducing(null, S3DirectoryInfo::combine)))
+            .values()
+            .stream()
+            .toList();
+    }
 
     private void runAndWaitUntilDone(List<Runnable> runnables, int threadCount) {
         // Create an executor with the specified number of threads

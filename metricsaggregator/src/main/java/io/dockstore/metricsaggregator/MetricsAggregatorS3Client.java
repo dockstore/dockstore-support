@@ -147,5 +147,11 @@ public class MetricsAggregatorS3Client {
     }
 
     public record S3DirectoryInfo(String toolId, String versionId, List<String> platforms, String versionS3KeyPrefix, AthenaTablePartition athenaTablePartition) {
+        S3DirectoryInfo toEntryDirectory() {
+            throw new UnsupportedOperationException();
+        }
+        S3DirectoryInfo combine(S3DirectoryInfo with) {
+            throw new UnsupportedOperationException();
+        }
     }
 }
