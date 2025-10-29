@@ -122,7 +122,8 @@ public class MetricsAggregatorAthenaClient {
     }
 
     private void aggregateEntryLevelMetrics(List<EntryS3DirectoryInfo> entryDirectories, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
-        // TODO
+        LOG.info("Aggregating entry-level metrics using {} threads in parallel", threadCount);
+        entryDirectories.forEach(directory -> LOG.info("Would aggregate entry {}, directory {}", directory.toolId(), directory.entryS3KeyPrefix()));
     }
 
     private List<EntryS3DirectoryInfo> calculateEntryDirectories(List<VersionS3DirectoryInfo> versionDirectories) {
