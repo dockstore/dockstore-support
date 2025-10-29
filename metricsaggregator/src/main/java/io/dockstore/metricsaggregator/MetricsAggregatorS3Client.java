@@ -22,9 +22,11 @@ import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.AthenaTableP
 import java.net.URISyntaxException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -91,7 +93,7 @@ public class MetricsAggregatorS3Client {
      * @return
      */
     @SuppressWarnings("checkstyle:magicnumber")
-    public List<S3DirectoryInfo> getDirectories(String s3KeyPrefix) {
+    public List<VersionS3DirectoryInfo> getVersionDirectories(String s3KeyPrefix) {
         ListObjectsV2Request.Builder requestBuilder = ListObjectsV2Request.builder().bucket(bucketName).delimiter("/");
         if (s3KeyPrefix != null) {
             requestBuilder.prefix(s3KeyPrefix);
@@ -99,7 +101,7 @@ public class MetricsAggregatorS3Client {
         ListObjectsV2Request request = requestBuilder.build();
         ListObjectsV2Response listObjectsV2Response = s3Client.listObjectsV2(request);
         Queue<CommonPrefix> commonPrefixesToProcess = new ArrayDeque<>(listObjectsV2Response.commonPrefixes());
-        List<S3DirectoryInfo> s3DirectoryInfos = new ArrayList<>();
+        List<VersionS3DirectoryInfo> s3DirectoryInfos = new ArrayList<>();
 
         while (!commonPrefixesToProcess.isEmpty()) {
             String prefix = commonPrefixesToProcess.remove().prefix();
@@ -120,7 +122,7 @@ public class MetricsAggregatorS3Client {
                 String namePartition = S3ClientHelper.getElementFromKey(prefix, 3);
                 String versionPartition = S3ClientHelper.getElementFromKey(prefix, 4);
                 AthenaTablePartition athenaTablePartition = new AthenaTablePartition(Optional.of(entityPartition), Optional.of(registryPartition), Optional.of(orgPartition), Optional.of(namePartition), Optional.of(versionPartition));
-                s3DirectoryInfos.add(new S3DirectoryInfo(toolId, versionId, platforms, prefix, athenaTablePartition));
+                s3DirectoryInfos.add(new VersionS3DirectoryInfo(toolId, versionId, platforms, prefix, athenaTablePartition));
             } else {
                 commonPrefixesToProcess.addAll(listObjectsV2Response.commonPrefixes());
             }
@@ -129,29 +131,36 @@ public class MetricsAggregatorS3Client {
         return s3DirectoryInfos;
     }
 
-    public List<S3DirectoryInfo> getDirectories() {
+    public List<VersionS3DirectoryInfo> getVersionDirectories() {
         LOG.info("Getting all directories");
-        return getDirectories(null);
+        return getVersionDirectories(null);
     }
 
-    public List<S3DirectoryInfo> getDirectoriesForTrsId(String trsId) {
+    public List<VersionS3DirectoryInfo> getVersionDirectoriesForTrsId(String trsId) {
         final String s3KeyPrefix = S3ClientHelper.convertToolIdToPartialKey(trsId);
         LOG.info("Getting directories for TRS ID {} with S3 key prefix {}", trsId, s3KeyPrefix);
-        return getDirectories(s3KeyPrefix);
+        return getVersionDirectories(s3KeyPrefix);
     }
 
-    public List<S3DirectoryInfo> getDirectoriesForTrsIdVersion(String trsId, String versionName) {
+    public List<VersionS3DirectoryInfo> getVersionDirectoriesForTrsIdVersion(String trsId, String versionName) {
         final String s3KeyPrefix = S3ClientHelper.convertToolIdToPartialKey(trsId) + "/" + versionName;
         LOG.info("Getting directories for TRS ID {} and version {} with S3 key prefix {}", trsId, versionName, s3KeyPrefix);
-        return getDirectories(s3KeyPrefix);
+        return getVersionDirectories(s3KeyPrefix);
     }
 
-    public record S3DirectoryInfo(String toolId, String versionId, List<String> platforms, String versionS3KeyPrefix, AthenaTablePartition athenaTablePartition) {
-        S3DirectoryInfo toEntryDirectory() {
-            throw new UnsupportedOperationException();
+    public record VersionS3DirectoryInfo(String toolId, String versionId, List<String> platforms, String versionS3KeyPrefix, AthenaTablePartition athenaTablePartition) {
+        EntryS3DirectoryInfo toEntryS3DirectoryInfo() {
+            return new EntryS3DirectoryInfo(toolId, platforms, versionS3KeyPrefix, athenaTablePartition);
         }
-        S3DirectoryInfo combine(S3DirectoryInfo with) {
-            throw new UnsupportedOperationException();
+    }
+
+    public record EntryS3DirectoryInfo(String toolId, List<String> platforms, String entryS3KeyPrefix, AthenaTablePartition athenaTablePartition) {
+        EntryS3DirectoryInfo combine(EntryS3DirectoryInfo with) {
+            // TODO add asserts to check that otherwise equal
+            Set<String> combinedPlatforms = new HashSet<>();
+            combinedPlatforms.addAll(platforms());
+            combinedPlatforms.addAll(with.platforms());
+            return new EntryS3DirectoryInfo(toolId, new ArrayList<>(combinedPlatforms), entryS3KeyPrefix, athenaTablePartition);
         }
     }
 }

@@ -127,9 +127,9 @@ class MetricsAggregatorS3ClientIT {
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform2, workflowId, workflowVersionId, "");
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, toolId, toolVersionId, "");
 
-        List<MetricsAggregatorS3Client.S3DirectoryInfo> s3DirectoryInfos = metricsAggregatorS3Client.getDirectories();
+        List<MetricsAggregatorS3Client.VersionS3DirectoryInfo> s3DirectoryInfos = metricsAggregatorS3Client.getVersionDirectories();
         assertEquals(2, s3DirectoryInfos.size());
-        MetricsAggregatorS3Client.S3DirectoryInfo s3DirectoryInfo = s3DirectoryInfos.stream()
+        MetricsAggregatorS3Client.VersionS3DirectoryInfo s3DirectoryInfo = s3DirectoryInfos.stream()
                 .filter(directoryInfo -> Objects.equals(directoryInfo.versionS3KeyPrefix(), String.join("/", S3ClientHelper.convertToolIdToPartialKey(workflowId), workflowVersionId + "/")))
                 .findFirst()
                 .orElse(null);

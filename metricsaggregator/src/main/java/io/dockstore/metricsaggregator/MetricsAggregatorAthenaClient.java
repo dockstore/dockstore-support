@@ -4,7 +4,8 @@ import static io.dockstore.metricsaggregator.helper.AthenaClientHelper.createAth
 import static io.dockstore.utils.DockstoreApiClientUtils.setupApiClient;
 
 import io.dockstore.common.Partner;
-import io.dockstore.metricsaggregator.MetricsAggregatorS3Client.S3DirectoryInfo;
+import io.dockstore.metricsaggregator.MetricsAggregatorS3Client.EntryS3DirectoryInfo;
+import io.dockstore.metricsaggregator.MetricsAggregatorS3Client.VersionS3DirectoryInfo;
 import io.dockstore.metricsaggregator.helper.AthenaAggregator;
 import io.dockstore.metricsaggregator.helper.AthenaClientHelper;
 import io.dockstore.metricsaggregator.helper.ExecutionStatusAthenaAggregator;
@@ -68,20 +69,20 @@ public class MetricsAggregatorAthenaClient {
     }
 
     /**
-     * Aggregate metrics using AWS Athena for the list of S3 directories and posts them to Dockstore.
+     * Aggregate metrics using AWS Athena for the list of version S3 directories and posts them to Dockstore.
      * @param s3DirectoriesToAggregate
      * @param extendedGa4GhApi
      */
-    public void aggregateMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
+    public void aggregateMetrics(List<VersionS3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
         AthenaAggregator.createDatabase(databaseName, this);
         AthenaAggregator.createTable(tableName, metricsBucketName, metadataApi, this);
 
         aggregateVersionLevelMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, threadCount);
-        List<S3DirectoryInfo> entryDirectories = calculateEntryDirectories(s3DirectoriesToAggregate);
+        List<EntryS3DirectoryInfo> entryDirectories = calculateEntryDirectories(s3DirectoriesToAggregate);
         aggregateEntryLevelMetrics(entryDirectories, extendedGa4GhApi, threadCount);
     }
 
-    private void aggregateVersionLevelMetrics(List<S3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
+    private void aggregateVersionLevelMetrics(List<VersionS3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
         // Aggregate metrics for each directory
         AtomicInteger numberOfDirectoriesProcessed = new AtomicInteger(0);
         AtomicInteger numberOfVersionsSubmitted = new AtomicInteger(0);
@@ -120,14 +121,14 @@ public class MetricsAggregatorAthenaClient {
                 numberOfVersionsSubmitted, numberOfVersionsSkipped);
     }
 
-    private void aggregateEntryLevelMetrics(List<S3DirectoryInfo> entryDirectories, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
+    private void aggregateEntryLevelMetrics(List<EntryS3DirectoryInfo> entryDirectories, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
         // TODO
     }
 
-    private List<S3DirectoryInfo> calculateEntryDirectories(List<S3DirectoryInfo> versionDirectories) {
+    private List<EntryS3DirectoryInfo> calculateEntryDirectories(List<VersionS3DirectoryInfo> versionDirectories) {
         return versionDirectories.stream()
-            .map(S3DirectoryInfo::toEntryDirectory)
-            .collect(Collectors.groupingBy(S3DirectoryInfo::versionS3KeyPrefix, Collectors.reducing(null, S3DirectoryInfo::combine)))
+            .map(VersionS3DirectoryInfo::toEntryS3DirectoryInfo)
+            .collect(Collectors.groupingBy(EntryS3DirectoryInfo::entryS3KeyPrefix, Collectors.reducing(null, EntryS3DirectoryInfo::combine)))
             .values()
             .stream()
             .toList();
@@ -221,7 +222,7 @@ public class MetricsAggregatorAthenaClient {
         return platformToMetrics;
     }
 
-    public void dryRun(List<S3DirectoryInfo> s3DirectoriesToAggregate) {
+    public void dryRun(List<VersionS3DirectoryInfo> s3DirectoriesToAggregate) {
         LOG.info("These S3 directories will be aggregated:");
         s3DirectoriesToAggregate.forEach(s3Directory -> LOG.info("{}", s3Directory.versionS3KeyPrefix()));
     }
@@ -248,5 +249,8 @@ public class MetricsAggregatorAthenaClient {
     }
 
     public record AthenaTablePartition(Optional<String> entity, Optional<String> registry, Optional<String> org, Optional<String> name, Optional<String> version) {
+        public AthenaTablePartition toEntryPartition() {
+            return new AthenaTablePartition(entity, registry, org, name, Optional.empty());
+        }
     }
 }
