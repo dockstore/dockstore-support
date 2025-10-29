@@ -109,7 +109,7 @@ public class MetricsAggregatorS3Client {
      *
      * @return
      */
-     public List<VersionS3DirectoryInfo> getVersionDirectories(String rootPrefix) {
+    public List<VersionS3DirectoryInfo> getVersionDirectories(String rootPrefix) {
         Queue<String> prefixesToProcess = new ArrayDeque<>(List.of(rootPrefix));
         List<VersionS3DirectoryInfo> s3DirectoryInfos = new ArrayList<>();
         while (!prefixesToProcess.isEmpty()) {
