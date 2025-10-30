@@ -21,11 +21,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.jooq.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,12 +71,11 @@ public class MetricsAggregatorAthenaClient {
      * @param s3DirectoriesToAggregate
      * @param extendedGa4GhApi
      */
-    public void aggregateMetrics(List<VersionS3DirectoryInfo> s3DirectoriesToAggregate, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
+    public void aggregateMetrics(List<VersionS3DirectoryInfo> versionDirectories, List<EntryS3DirectoryInfo> entryDirectories, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
         AthenaAggregator.createDatabase(databaseName, this);
         AthenaAggregator.createTable(tableName, metricsBucketName, metadataApi, this);
 
-        aggregateVersionLevelMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, threadCount);
-        List<EntryS3DirectoryInfo> entryDirectories = calculateEntryDirectories(s3DirectoriesToAggregate);
+        aggregateVersionLevelMetrics(versionDirectories, extendedGa4GhApi, threadCount);
         aggregateEntryLevelMetrics(entryDirectories, extendedGa4GhApi, threadCount);
     }
 
@@ -158,16 +157,6 @@ public class MetricsAggregatorAthenaClient {
 
         LOG.info("Completed aggregating entry-level metrics. Processed {} directories, submitted metrics for {} versions, and skipped metrics for {} versions", numberOfDirectoriesProcessed,
                 numberOfVersionsSubmitted, numberOfVersionsSkipped);
-    }
-
-    private List<EntryS3DirectoryInfo> calculateEntryDirectories(List<VersionS3DirectoryInfo> versionDirectories) {
-        return versionDirectories.stream()
-            .map(VersionS3DirectoryInfo::toEntryS3DirectoryInfo)
-            .collect(Collectors.groupingBy(EntryS3DirectoryInfo::entryS3KeyPrefix, Collectors.reducing(EntryS3DirectoryInfo::combine)))
-            .values()
-            .stream()
-            .map(Optional::get)
-            .toList();
     }
 
     private void runAndWaitUntilDone(List<Runnable> runnables, int threadCount) {
@@ -283,9 +272,6 @@ public class MetricsAggregatorAthenaClient {
         }
     }
 
-    public record AthenaTablePartition(Optional<String> entity, Optional<String> registry, Optional<String> org, Optional<String> name, Optional<String> version) {
-        public AthenaTablePartition toEntryPartition() {
-            return new AthenaTablePartition(entity, registry, org, name, Optional.empty());
-        }
+    public record AthenaTablePartition(Set<String> entity, Set<String> registry, Set<String> org, Set<String> name, Set<String> version) {
     }
 }

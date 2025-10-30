@@ -29,6 +29,7 @@ import io.dockstore.common.Partner;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
 import io.dockstore.metricsaggregator.MetricsAggregatorS3Client;
+import io.dockstore.metricsaggregator.MetricsAggregatorS3Client.EntryS3DirectoryInfo;
 import io.dockstore.metricsaggregator.MetricsAggregatorS3Client.VersionS3DirectoryInfo;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.AggregateMetricsCommand;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitTerraMetrics;
@@ -190,13 +191,14 @@ public class MetricsAggregatorClient {
             LOG.info("No directories found to aggregate metrics");
             return;
         }
+        List<EntryS3DirectoryInfo> entryDirectories = metricsAggregatorS3Client.getEntryDirectories(s3DirectoriesToAggregate);
 
         MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config);
 
         if (aggregateMetricsCommand.isDryRun()) {
             metricsAggregatorAthenaClient.dryRun(s3DirectoriesToAggregate);
         } else {
-            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, aggregateMetricsCommand.getThreadCount());
+            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, entryDirectories, extendedGa4GhApi, aggregateMetricsCommand.getThreadCount());
         }
     }
 

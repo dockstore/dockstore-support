@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jooq.Condition;
@@ -258,21 +259,18 @@ public abstract class AthenaAggregator<M extends Metric> {
     }
 
     private Condition createPartitionSelector(AthenaTablePartition partition) {
-        // Create a list containing an optional Condition corresponding to each field.
-        List<Optional<Condition>> conditions = List.of(
-            createFieldSelector(ENTITY_FIELD, partition.entity()),
-            createFieldSelector(REGISTRY_FIELD, partition.registry()),
-            createFieldSelector(ORG_FIELD, partition.org()),
-            createFieldSelector(NAME_FIELD, partition.name()),
-            createFieldSelector(VERSION_FIELD, partition.version()));
-        // Combine all of the present Conditions with a logical AND.
-        return conditions.stream()
-            .flatMap(Optional::stream)
-            .collect(Collectors.reducing(Condition::and))
-            .orElseThrow(() -> new RuntimeException("the partition must contain at least one field to be checked"));
+        return createFieldSelector(ENTITY_FIELD, partition.entity())
+            .and(createFieldSelector(REGISTRY_FIELD, partition.registry()))
+            .and(createFieldSelector(ORG_FIELD, partition.org()))
+            .and(createFieldSelector(NAME_FIELD, partition.name()))
+            .and(createFieldSelector(VERSION_FIELD, partition.version()));
     }
 
-    private Optional<Condition> createFieldSelector(Field<String> field, Optional<String> value) {
-        return value.map(v -> field.eq(inline(v)));
+    private Condition createFieldSelector(Field<String> field, Set<String> values) {
+        if (values.size() == 1) {
+            return field.eq(inline(values.iterator().next()));
+        } else {
+            return field.in(inline(values));
+        }
     }
 }
