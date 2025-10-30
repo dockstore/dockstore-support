@@ -33,6 +33,7 @@ import org.jooq.Field;
 import org.jooq.Record;
 import org.jooq.Select;
 import org.jooq.SelectConditionStep;
+import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
@@ -270,7 +271,7 @@ public abstract class AthenaAggregator<M extends Metric> {
         if (values.size() == 1) {
             return field.eq(inline(values.iterator().next()));
         } else {
-            return field.in(inline(values));
+            return field.in(values.stream().map(DSL::inline).toList());
         }
     }
 }

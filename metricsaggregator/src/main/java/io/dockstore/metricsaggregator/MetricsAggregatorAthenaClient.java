@@ -133,8 +133,6 @@ public class MetricsAggregatorAthenaClient {
                 List<String> platforms = s3DirectoryInfo.platforms();
                 String prefix = s3DirectoryInfo.entryS3KeyPrefix();
                 String name = "tool ID %s".formatted(s3DirectoryInfo.toolId());
-                LOG.info("VERSIONS {}", s3DirectoryInfo.versionIds());
-                LOG.info("PLATFORMS {}", platforms);
                 Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(partition, platforms, prefix, name);
                 if (platformToMetrics.isEmpty()) {
                     LOG.error("No metrics were aggregated for {}", name);
@@ -185,7 +183,7 @@ public class MetricsAggregatorAthenaClient {
     public List<QueryResultRow> executeQuery(String query) throws AwsServiceException, SdkClientException, InterruptedException {
         List<QueryResultRow> queryResultRows = new ArrayList<>();
 
-        LOG.info("Running SQL query:\n{}", query);
+        LOG.debug("Running SQL query:\n{}", query);
         GetQueryResultsIterable getQueryResultsIterable = AthenaClientHelper.executeQuery(athenaClient, databaseName, athenaWorkgroup, query);
         Map<String, Integer> columnNameToColumnIndex = new HashMap<>();
 
