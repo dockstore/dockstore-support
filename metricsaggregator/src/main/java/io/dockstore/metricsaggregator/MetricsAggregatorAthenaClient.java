@@ -134,7 +134,7 @@ public class MetricsAggregatorAthenaClient {
                 AthenaTablePartition partition = s3DirectoryInfo.athenaTablePartition();
                 List<String> platforms = s3DirectoryInfo.platforms();
                 String prefix = s3DirectoryInfo.entryS3KeyPrefix();
-                String name = "tool ID %s, version %s".formatted(s3DirectoryInfo.toolId());
+                String name = "tool ID %s".formatted(s3DirectoryInfo.toolId());
                 Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(partition, platforms, prefix, name);
                 if (platformToMetrics.isEmpty()) {
                     LOG.error("No metrics were aggregated for {}", name);
@@ -228,7 +228,6 @@ public class MetricsAggregatorAthenaClient {
 
     /**
      * Calculate aggregated metrics for all platforms in the S3 directory.
-     * TODO update
      * @return
      */
     public Map<String, Metrics> getAggregatedMetricsForPlatforms(AthenaTablePartition athenaTablePartition, List<String> platforms, String prefix, String name) {

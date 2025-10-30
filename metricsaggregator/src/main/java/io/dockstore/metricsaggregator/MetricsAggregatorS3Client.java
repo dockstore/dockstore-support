@@ -20,6 +20,7 @@ package io.dockstore.metricsaggregator;
 import io.dockstore.common.S3ClientHelper;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.AthenaTablePartition;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -153,7 +154,7 @@ public class MetricsAggregatorS3Client {
 
     public record VersionS3DirectoryInfo(String toolId, String versionId, List<String> platforms, String versionS3KeyPrefix, AthenaTablePartition athenaTablePartition) {
         EntryS3DirectoryInfo toEntryS3DirectoryInfo() {
-            return new EntryS3DirectoryInfo(toolId, platforms, versionS3KeyPrefix, athenaTablePartition);
+            return new EntryS3DirectoryInfo(toolId, platforms, Paths.get(versionS3KeyPrefix).getParent().toString(), athenaTablePartition.toEntryPartition());
         }
     }
 
