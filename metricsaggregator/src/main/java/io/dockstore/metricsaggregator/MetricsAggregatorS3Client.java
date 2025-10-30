@@ -158,12 +158,16 @@ public class MetricsAggregatorS3Client {
             .map(path -> Paths.get(path).getParent().toString() + "/")
             .distinct()
             .toList();
-        // For each entry, retrieve all of its version directory information and convert to entry directory information.
+        // For each entry prefix, retrieve all of the corresponding version directory information and convert to entry directory information.
         return entryPrefixes.stream()
             .map(prefix -> createEntryS3DirectoryInfo(prefix, getVersionDirectories(prefix)))
             .toList();
     }
 
+    /**
+     * Create an EntryS3DirectoryInfo from an entry's S3 prefix and a list of the entry's version directories.
+     * Extract the version IDs and platforms from the version directories, and all other information from the prefix.
+     */
     @SuppressWarnings("checkstyle:magicnumber")
     private EntryS3DirectoryInfo createEntryS3DirectoryInfo(String prefix, List<VersionS3DirectoryInfo> versionDirectories) {
         String toolId = S3ClientHelper.getToolId(prefix);

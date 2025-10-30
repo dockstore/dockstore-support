@@ -268,6 +268,9 @@ public abstract class AthenaAggregator<M extends Metric> {
     }
 
     private Condition createFieldSelector(Field<String> field, Set<String> values) {
+        // Use the "equals" syntax when there's one value to compare to, just in case
+        // there's a performance difference, behind the scenes during the Athena query,
+        // between "equals" and an "IN" clause with a single value.
         if (values.size() == 1) {
             return field.eq(inline(values.iterator().next()));
         } else {
