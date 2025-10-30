@@ -120,7 +120,6 @@ public class MetricsAggregatorAthenaClient {
     }
 
     private void aggregateEntryLevelMetrics(List<EntryS3DirectoryInfo> entryDirectories, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
-        LOG.info("Aggregating entry-level metrics using {} threads in parallel", threadCount);
         entryDirectories.forEach(directory -> LOG.info("Would aggregate entry {}, directory {}", directory.toolId(), directory.entryS3KeyPrefix()));
 
         // Aggregate metrics for each directory
@@ -128,7 +127,7 @@ public class MetricsAggregatorAthenaClient {
         AtomicInteger numberOfVersionsSubmitted = new AtomicInteger(0);
         AtomicInteger numberOfVersionsSkipped = new AtomicInteger(0);
 
-        LOG.info("Aggregating verson-level metrics using {} threads in parallel", threadCount);
+        LOG.info("Aggregating entry-level metrics using {} threads in parallel", threadCount);
         List<Runnable> runnables = entryDirectories.stream().<Runnable>map(s3DirectoryInfo ->
             () -> {
                 AthenaTablePartition partition = s3DirectoryInfo.athenaTablePartition();
