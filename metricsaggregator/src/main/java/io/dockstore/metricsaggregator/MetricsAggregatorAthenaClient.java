@@ -72,9 +72,13 @@ public class MetricsAggregatorAthenaClient {
     public void aggregateMetrics(List<VersionS3DirectoryInfo> versionDirectories, List<EntryS3DirectoryInfo> entryDirectories, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
         AthenaAggregator.createDatabase(databaseName, this);
         AthenaAggregator.createTable(tableName, metricsBucketName, metadataApi, this);
-
-        aggregateVersionMetrics(versionDirectories, extendedGa4GhApi, threadCount);
+        // The "last aggregated" time (that's stored in the db when aggregated
+        // version-level metrics are submitted) is used to trigger both
+        // entry and version-level aggregation.  To ensure that any
+        // necessary entry aggregation occurs prior to the "last aggregated"
+        // time being updated, aggregate entries first.
         aggregateEntryMetrics(entryDirectories, extendedGa4GhApi, threadCount);
+        aggregateVersionMetrics(versionDirectories, extendedGa4GhApi, threadCount);
     }
 
     private void aggregateVersionMetrics(List<VersionS3DirectoryInfo> versionDirectories, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
@@ -117,7 +121,6 @@ public class MetricsAggregatorAthenaClient {
     }
 
     private void aggregateEntryMetrics(List<EntryS3DirectoryInfo> entryDirectories, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
-        entryDirectories.forEach(directory -> LOG.info("Would aggregate entry {}, directory {}", directory.toolId(), directory.entryS3KeyPrefix()));
 
         // Aggregate metrics for each directory
         AtomicInteger numberProcessed = new AtomicInteger(0);
@@ -154,7 +157,7 @@ public class MetricsAggregatorAthenaClient {
 
         runAndWaitUntilDone(runnables, threadCount);
 
-        LOG.info("Completed aggregating entry-level metrics. Processed {} directories, submitted metrics for {} versions, and skipped metrics for {} versions", numberProcessed, numberSubmitted, numberSkipped);
+        LOG.info("Completed aggregating entry-level metrics. Processed {} directories, submitted metrics for {} entries, and skipped metrics for {} entries", numberProcessed, numberSubmitted, numberSkipped);
     }
 
     private void runAndWaitUntilDone(List<Runnable> runnables, int threadCount) {
