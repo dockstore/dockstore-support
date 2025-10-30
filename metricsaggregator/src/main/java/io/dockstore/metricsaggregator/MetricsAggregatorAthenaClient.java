@@ -122,14 +122,52 @@ public class MetricsAggregatorAthenaClient {
     private void aggregateEntryLevelMetrics(List<EntryS3DirectoryInfo> entryDirectories, ExtendedGa4GhApi extendedGa4GhApi, int threadCount) {
         LOG.info("Aggregating entry-level metrics using {} threads in parallel", threadCount);
         entryDirectories.forEach(directory -> LOG.info("Would aggregate entry {}, directory {}", directory.toolId(), directory.entryS3KeyPrefix()));
+
+        // Aggregate metrics for each directory
+        AtomicInteger numberOfDirectoriesProcessed = new AtomicInteger(0);
+        AtomicInteger numberOfVersionsSubmitted = new AtomicInteger(0);
+        AtomicInteger numberOfVersionsSkipped = new AtomicInteger(0);
+
+        LOG.info("Aggregating verson-level metrics using {} threads in parallel", threadCount);
+        List<Runnable> runnables = entryDirectories.stream().<Runnable>map(s3DirectoryInfo ->
+            () -> {
+                AthenaTablePartition partition = s3DirectoryInfo.athenaTablePartition();
+                List<String> platforms = s3DirectoryInfo.platforms();
+                String prefix = s3DirectoryInfo.entryS3KeyPrefix();
+                String name = "tool ID %s, version %s".formatted(s3DirectoryInfo.toolId());
+                Map<String, Metrics> platformToMetrics = getAggregatedMetricsForPlatforms(partition, platforms, prefix, name);
+                if (platformToMetrics.isEmpty()) {
+                    LOG.error("No metrics were aggregated for {}", name);
+                    numberOfVersionsSkipped.incrementAndGet();
+                }
+
+                try {
+                    extendedGa4GhApi.aggregatedMetricsPutEntry(platformToMetrics, s3DirectoryInfo.toolId());
+                    LOG.info("Posted aggregated metrics to Dockstore for {}, platform(s): {}", name, platformToMetrics.keySet());
+                    numberOfVersionsSubmitted.incrementAndGet();
+                } catch (ApiException exception) {
+                    // Log error and continue processing for other platforms
+                    LOG.error("Could not post aggregated metrics to Dockstore for {}, platform(s): {}", name, platformToMetrics.keySet(), exception);
+                    numberOfVersionsSkipped.incrementAndGet();
+                }
+                numberOfDirectoriesProcessed.incrementAndGet();
+                LOG.info("Processed {} directories", numberOfDirectoriesProcessed);
+            })
+            .toList();
+
+        runAndWaitUntilDone(runnables, threadCount);
+
+        LOG.info("Completed aggregating entry-level metrics. Processed {} directories, submitted metrics for {} versions, and skipped metrics for {} versions", numberOfDirectoriesProcessed,
+                numberOfVersionsSubmitted, numberOfVersionsSkipped);
     }
 
     private List<EntryS3DirectoryInfo> calculateEntryDirectories(List<VersionS3DirectoryInfo> versionDirectories) {
         return versionDirectories.stream()
             .map(VersionS3DirectoryInfo::toEntryS3DirectoryInfo)
-            .collect(Collectors.groupingBy(EntryS3DirectoryInfo::entryS3KeyPrefix, Collectors.reducing(null, EntryS3DirectoryInfo::combine)))
+            .collect(Collectors.groupingBy(EntryS3DirectoryInfo::entryS3KeyPrefix, Collectors.reducing(EntryS3DirectoryInfo::combine)))
             .values()
             .stream()
+            .map(Optional::get)
             .toList();
     }
 
