@@ -185,14 +185,16 @@ public class MetricsAggregatorClient {
                     .flatMap(Collection::stream)
                     .toList();
         }
+        LOG.info("Aggregating metrics for {} versions", s3DirectoriesToAggregate.size());
+
+        List<EntryS3DirectoryInfo> entryDirectories = metricsAggregatorS3Client.getEntryDirectories(s3DirectoriesToAggregate);
+        LOG.info("Aggregating metrics for {} entries", entryDirectories.size());
+
         LOG.info("Getting directories to aggregate took {}", Duration.between(getDirectoriesStartTime, Instant.now()));
-        LOG.info("Aggregating metrics for {} directories", s3DirectoriesToAggregate.size());
-        if (s3DirectoriesToAggregate.isEmpty()) {
+        if (s3DirectoriesToAggregate.isEmpty() && entryDirectories.isEmpty()) {
             LOG.info("No directories found to aggregate metrics");
             return;
         }
-        List<EntryS3DirectoryInfo> entryDirectories = metricsAggregatorS3Client.getEntryDirectories(s3DirectoriesToAggregate);
-        LOG.info("Aggregating metrics for {} entries", entryDirectories.size());
 
         MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config);
 
