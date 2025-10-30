@@ -192,11 +192,12 @@ public class MetricsAggregatorClient {
             return;
         }
         List<EntryS3DirectoryInfo> entryDirectories = metricsAggregatorS3Client.getEntryDirectories(s3DirectoriesToAggregate);
+        LOG.info("Aggregating metrics for {} entries", entryDirectories.size());
 
         MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config);
 
         if (aggregateMetricsCommand.isDryRun()) {
-            metricsAggregatorAthenaClient.dryRun(s3DirectoriesToAggregate);
+            metricsAggregatorAthenaClient.dryRun(s3DirectoriesToAggregate, entryDirectories);
         } else {
             metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, entryDirectories, extendedGa4GhApi, aggregateMetricsCommand.getThreadCount());
         }
