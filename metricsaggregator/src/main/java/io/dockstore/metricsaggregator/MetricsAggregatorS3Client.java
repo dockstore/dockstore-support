@@ -20,7 +20,6 @@ package io.dockstore.metricsaggregator;
 import io.dockstore.common.S3ClientHelper;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.AthenaTablePartition;
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -151,11 +150,10 @@ public class MetricsAggregatorS3Client {
         return new VersionS3DirectoryInfo(toolId, versionId, platforms, prefix, athenaTablePartition);
     }
 
-    public List<EntryS3DirectoryInfo> getEntryDirectories(List<VersionS3DirectoryInfo> s3DirectoriesToAggregate) {
+    public List<EntryS3DirectoryInfo> getEntryDirectories(List<VersionS3DirectoryInfo> versionDirectories) {
         // Determine the S3 prefixes of the entries that are referenced by the specified versions.
-        List<String> entryPrefixes = s3DirectoriesToAggregate.stream()
-            .map(VersionS3DirectoryInfo::versionS3KeyPrefix)
-            .map(path -> Paths.get(path).getParent().toString() + "/")
+        List<String> entryPrefixes = versionDirectories.stream()
+            .map(versionDirectory -> S3ClientHelper.convertToolIdToPartialKey(versionDirectory.toolId()) + "/")
             .distinct()
             .toList();
         // For each entry prefix, retrieve all of the corresponding version directory information and convert to entry directory information.

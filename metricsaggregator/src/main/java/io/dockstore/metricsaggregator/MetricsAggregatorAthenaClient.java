@@ -248,10 +248,10 @@ public class MetricsAggregatorAthenaClient {
     }
 
     public void dryRun(List<VersionS3DirectoryInfo> s3DirectoriesToAggregate, List<EntryS3DirectoryInfo> entryDirectories) {
-        LOG.info("These S3 version directories will be aggregated:");
-        s3DirectoriesToAggregate.forEach(s3Directory -> LOG.info("{}", s3Directory.versionS3KeyPrefix()));
         LOG.info("These S3 entry directories will be aggregated:");
         entryDirectories.forEach(s3Directory -> LOG.info("{}", s3Directory.entryS3KeyPrefix()));
+        LOG.info("These S3 version directories will be aggregated:");
+        s3DirectoriesToAggregate.forEach(s3Directory -> LOG.info("{}", s3Directory.versionS3KeyPrefix()));
     }
 
     /**
