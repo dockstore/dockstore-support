@@ -122,7 +122,6 @@ public class MetricsAggregatorS3Client {
                 prefixesToProcess.addAll(subdirectories);
             }
         }
-
         return s3DirectoryInfos;
     }
 
