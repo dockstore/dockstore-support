@@ -154,8 +154,8 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
                 max(field(getMetricColumnName())).as(getMaxColumnName()),
                 count(field(getMetricColumnName())).as(getCountColumnName()),
                 // note these are custom since jooq isn't quite there, workaround from https://github.com/jOOQ/jOOQ/issues/18706 and also see https://trino.io/docs/current/functions/aggregate.html#approximate-aggregate-functions
-                aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_05)).as(getMedianColumnName()),
-                aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_MEDIAN)).as(getPercentile05thColumnName()),
+                aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_05)).as(getPercentile05thColumnName()),
+                aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_MEDIAN)).as(getMedianColumnName()),
                 aggregate(approxPercentileFunction, Double.class, field(getMetricColumnName()), val(PERCENTILE_95)).as(getPercentile95thColumnName())
         );
     }

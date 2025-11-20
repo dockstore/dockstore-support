@@ -396,7 +396,7 @@ Lists of 414 third-party dependencies.
      (Apache Software License, Version 2.0) swagger-java-discourse-client (io.dockstore:swagger-java-discourse-client:2.0.1 - no url defined)
      (Apache Software License, Version 2.0) swagger-java-quay-client (io.dockstore:swagger-java-quay-client:2.0.2 - no url defined)
      (Apache Software License, Version 2.0) swagger-java-sam-client (io.dockstore:swagger-java-sam-client:2.0.2 - no url defined)
-     (Apache Software License, Version 2.0) swagger-java-zenodo-client (io.dockstore:swagger-java-zenodo-client:2.1.4 - no url defined)
+     (Apache Software License, Version 2.0) swagger-java-zenodo-client (io.dockstore:swagger-java-zenodo-client:2.1.7 - no url defined)
      (Apache License 2.0) swagger-jaxrs2-jakarta (io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.15 - https://github.com/swagger-api/swagger-core/modules/swagger-jaxrs2-jakarta)
      (Apache License 2.0) swagger-jaxrs2-servlet-initializer-jakarta (io.swagger.core.v3:swagger-jaxrs2-servlet-initializer-jakarta:2.2.15 - https://github.com/swagger-api/swagger-core/modules/swagger-jaxrs2-servlet-initializer-jakarta)
      (Apache License 2.0) swagger-models (io.swagger:swagger-models:1.6.8 - https://github.com/swagger-api/swagger-core/modules/swagger-models)
