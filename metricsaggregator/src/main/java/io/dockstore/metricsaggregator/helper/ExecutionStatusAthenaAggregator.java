@@ -68,7 +68,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
         executionTimeAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setExecutionTime);
         dailyExecutionCountsAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setDailyExecutionCounts);
         weeklyExecutionCountsAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setWeeklyExecutionCounts);
-        // monthlyExecutionCountsAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setMonthlyExecutionCounts);
+        monthlyExecutionCountsAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setMonthlyExecutionCounts);
         ExecutionStatusMetric executionStatusMetric = new ExecutionStatusMetric();
         executionStatusMetric.getCount().put(executionStatus.get(), metricsByStatus);
         return Optional.of(executionStatusMetric);
