@@ -30,6 +30,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
     private final DailyExecutionCountsAthenaAggregator dailyExecutionCountsAggregator = new DailyExecutionCountsAthenaAggregator(metricsAggregatorAthenaClient, tableName, 63, Instant.now()); // Aggregate 2 months + 1 day of daily execution counts
     private final WeeklyExecutionCountsAthenaAggregator weeklyExecutionCountsAggregator = new WeeklyExecutionCountsAthenaAggregator(metricsAggregatorAthenaClient, tableName, 53, Instant.now()); // Aggregate 1 year + 1 week of weekly execution counts
     private final MonthlyExecutionCountsAthenaAggregator monthlyExecutionCountsAggregator = new MonthlyExecutionCountsAthenaAggregator(metricsAggregatorAthenaClient, tableName, 25, Instant.now()); // Aggregate 2 years + 1 month of monthly execution counts
+    private final HistogramAthenaAggregator executionTimeHistogramAggregator = new HistogramAthenaAggregator(metricsAggregatorAthenaClient, tableName, EXECUTION_TIME_SECONDS_FIELD.cast(Double.class), new LogSequence().getFriendlyRunTimeLogSequence());
 
     public ExecutionStatusAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
         super(metricsAggregatorAthenaClient, tableName);
@@ -44,6 +45,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
         selectFields.addAll(dailyExecutionCountsAggregator.getSelectFields());
         selectFields.addAll(weeklyExecutionCountsAggregator.getSelectFields());
         selectFields.addAll(monthlyExecutionCountsAggregator.getSelectFields());
+        selectFields.addAll(executionTimeHistogramAggregator.getSelectFields());
         this.addSelectFields(selectFields);
         this.addGroupFields(Set.of(executionStatusField)); // Group by status
     }
@@ -69,6 +71,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
         dailyExecutionCountsAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setDailyExecutionCounts);
         weeklyExecutionCountsAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setWeeklyExecutionCounts);
         monthlyExecutionCountsAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setMonthlyExecutionCounts);
+        executionTimeHistogramAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setExecutionTimeHistogram);
         ExecutionStatusMetric executionStatusMetric = new ExecutionStatusMetric();
         executionStatusMetric.getCount().put(executionStatus.get(), metricsByStatus);
         return Optional.of(executionStatusMetric);

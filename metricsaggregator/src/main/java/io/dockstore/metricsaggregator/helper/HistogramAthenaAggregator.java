@@ -45,7 +45,7 @@ public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<Hist
 
     private SelectField<?> getSelectField(int binIndex) {
         Field<Double> start = inline(edges.get(binIndex));
-        Field<Double> end = inline(edges.get(binIndex));
+        Field<Double> end = inline(edges.get(binIndex + 1));
         Condition withinBin = and(field.greaterOrEqual(start), field.lessThan(end));
         String aggregateColumnName = getAggregateColumnName(binIndex);
         return count(case_().when(withinBin, 1)).as(aggregateColumnName);
