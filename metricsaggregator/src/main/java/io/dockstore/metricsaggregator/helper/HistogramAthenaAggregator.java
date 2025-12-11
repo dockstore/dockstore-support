@@ -12,11 +12,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.SelectField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Aggregate a specified database field into a histogram with the specified edge values.  To do so, create a SelectField for each histogram "bin", consisting of a SQL `count()` statement that calculates a frequency for each bin (the number of values between the edge values of the bin).  These SelectFields are submitted with the Athena query, and the resulting frequencies and specified edge values are assembled into a Histogram object.
@@ -24,8 +27,11 @@ import org.jooq.SelectField;
 // TODO Generalize this to any field
 public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<HistogramMetric> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(HistogramAthenaAggregator.class);
+    private static final AtomicInteger ID_COUNTER = new AtomicInteger();
     private final Field<Double> field;
     private final List<Double> edges;
+    private final int id;
 
     /**
      * Create an aggregator that computes a histogram of a specified database Field, using the specified list of edge values,
@@ -36,6 +42,7 @@ public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<Hist
         super(metricsAggregatorAthenaClient, tableName);
         this.field = field;
         this.edges = edges;
+        this.id = ID_COUNTER.getAndIncrement();
     }
 
     @Override
@@ -56,7 +63,7 @@ public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<Hist
     }
 
     private String getAggregateColumnName(int binIndex) {
-        return "%s_freq_%d_%d".formatted(getMetricColumnName(), binIndex, 0); // include unique serial number at end TODO
+        return "%s_freq_%d_%d".formatted(getMetricColumnName(), binIndex, id);
     }
 
     @Override
@@ -77,6 +84,10 @@ public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<Hist
             }
         }
 
+        //
+        LOG.error("HISTOGRAM");
+        LOG.error("EDGES {}", edges);
+        LOG.error("FREQUENCIES {}", frequencies);
         // Construct, populate, and return the TimeSeriesMetric object.
         HistogramMetric histogram = new HistogramMetric();
         histogram.setEdges(edges);

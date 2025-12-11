@@ -41,7 +41,7 @@ public class LogSequence {
     }
 
     private List<Double> round(List<Double> sequence) {
-        return sequence.stream().map(v -> (double)Math.round(v)).toList();
+        return sequence.stream().map(v -> v.isInfinite() ? v : (double)Math.round(v)).toList();
     }
 
     public List<Double> getRunTimeLogSequence() {
@@ -76,7 +76,17 @@ public class LogSequence {
         values.addAll(multiply(600, get10StepsTo6()));
         values.addAll(multiply(3600, get13StepsTo10())); // <= 10h
         values.addAll(multiply(3600, List.of(12., 14.5, 18., 24.))); // <= 1d
-        values.addAll(multiply(24 * 3600, List.of(2., 4., 10., 30., 100., Double.MAX_VALUE)));
+        values.addAll(multiply(24 * 3600, List.of(2., 4., 10., 30., 100.)));
+        values.add(Double.POSITIVE_INFINITY);
         return round(values);
+    }
+
+    public List<Double> getLinearSequence(double start, double end, double step) {
+        List<Double> values = new ArrayList<>();
+        for (double value = start; value <= end; value += step) {
+            values.add(value);
+        }
+        values.add(Double.POSITIVE_INFINITY);
+        return values;    
     }
 }

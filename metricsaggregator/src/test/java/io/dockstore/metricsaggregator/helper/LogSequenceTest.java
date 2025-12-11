@@ -10,6 +10,7 @@ class LogSequenceTest {
     void print() {
         print(new LogSequence().getRunTimeLogSequence());
         print(new LogSequence().getFriendlyRunTimeLogSequence());
+        print(new LogSequence().getLinearSequence(0, 500, 5));
     }
 
     void print(List<Double> sequence) {
