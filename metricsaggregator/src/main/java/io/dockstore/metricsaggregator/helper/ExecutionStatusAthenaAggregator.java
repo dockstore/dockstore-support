@@ -31,7 +31,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
     private final WeeklyExecutionCountsAthenaAggregator weeklyExecutionCountsAggregator = new WeeklyExecutionCountsAthenaAggregator(metricsAggregatorAthenaClient, tableName, 53, Instant.now()); // Aggregate 1 year + 1 week of weekly execution counts
     private final MonthlyExecutionCountsAthenaAggregator monthlyExecutionCountsAggregator = new MonthlyExecutionCountsAthenaAggregator(metricsAggregatorAthenaClient, tableName, 25, Instant.now()); // Aggregate 2 years + 1 month of monthly execution counts
     private final HistogramAthenaAggregator executionTimeHistogramAggregator = new HistogramAthenaAggregator(metricsAggregatorAthenaClient, tableName, EXECUTION_TIME_SECONDS_FIELD.cast(Double.class), new LogSequence().getFriendlyRunTimeLogSequence());
-    private final HistogramAthenaAggregator linearExecutionTimeHistogramAggregator = new HistogramAthenaAggregator(metricsAggregatorAthenaClient, tableName, EXECUTION_TIME_SECONDS_FIELD.cast(Double.class), new LogSequence().getLinearSequence(0, 500, 5));
+    private final HistogramAthenaAggregator linearExecutionTimeHistogramAggregator = new HistogramAthenaAggregator(metricsAggregatorAthenaClient, tableName, EXECUTION_TIME_SECONDS_FIELD.cast(Double.class), new LogSequence().getLinearSequence(0, 8 * 3600, 5 * 60));
 
     public ExecutionStatusAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
         super(metricsAggregatorAthenaClient, tableName);
