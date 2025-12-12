@@ -20,11 +20,8 @@ import java.util.Optional;
 import java.util.Set;
 import org.jooq.Field;
 import org.jooq.SelectField;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregator<ExecutionStatusMetric> {
-    private static final Logger LOG = LoggerFactory.getLogger(ExecutionStatusAthenaAggregator.class);
     // Aggregators used to calculate metrics by execution status
     private final ExecutionTimeAthenaAggregator executionTimeAggregator = new ExecutionTimeAthenaAggregator(metricsAggregatorAthenaClient, tableName);
     private final CpuAthenaAggregator cpuAggregator = new CpuAthenaAggregator(metricsAggregatorAthenaClient, tableName);
@@ -34,7 +31,6 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
     private final WeeklyExecutionCountsAthenaAggregator weeklyExecutionCountsAggregator = new WeeklyExecutionCountsAthenaAggregator(metricsAggregatorAthenaClient, tableName, 53, Instant.now()); // Aggregate 1 year + 1 week of weekly execution counts
     private final MonthlyExecutionCountsAthenaAggregator monthlyExecutionCountsAggregator = new MonthlyExecutionCountsAthenaAggregator(metricsAggregatorAthenaClient, tableName, 25, Instant.now()); // Aggregate 2 years + 1 month of monthly execution counts
     private final HistogramAthenaAggregator executionTimeHistogramAggregator = new HistogramAthenaAggregator(metricsAggregatorAthenaClient, tableName, EXECUTION_TIME_SECONDS_FIELD.cast(Double.class), new LogSequence().getFriendlyRunTimeLogSequence());
-    private final HistogramAthenaAggregator linearExecutionTimeHistogramAggregator = new HistogramAthenaAggregator(metricsAggregatorAthenaClient, tableName, EXECUTION_TIME_SECONDS_FIELD.cast(Double.class), new LogSequence().getLinearSequence(0, 8 * 3600, 5 * 60));
 
     public ExecutionStatusAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
         super(metricsAggregatorAthenaClient, tableName);
@@ -50,7 +46,6 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
         selectFields.addAll(weeklyExecutionCountsAggregator.getSelectFields());
         selectFields.addAll(monthlyExecutionCountsAggregator.getSelectFields());
         selectFields.addAll(executionTimeHistogramAggregator.getSelectFields());
-        selectFields.addAll(linearExecutionTimeHistogramAggregator.getSelectFields());
         this.addSelectFields(selectFields);
         this.addGroupFields(Set.of(executionStatusField)); // Group by status
     }
@@ -77,7 +72,6 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
         weeklyExecutionCountsAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setWeeklyExecutionCounts);
         monthlyExecutionCountsAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setMonthlyExecutionCounts);
         executionTimeHistogramAggregator.createMetricFromQueryResultRow(queryResultRow).ifPresent(metricsByStatus::setExecutionTimeHistogram);
-        linearExecutionTimeHistogramAggregator.createMetricFromQueryResultRow(queryResultRow);
         ExecutionStatusMetric executionStatusMetric = new ExecutionStatusMetric();
         executionStatusMetric.getCount().put(executionStatus.get(), metricsByStatus);
         return Optional.of(executionStatusMetric);
@@ -93,7 +87,6 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
 
         // For each platform, create a metric
         queryResultRowsByPlatform.forEach((platform, queryResultRowsForPlatform) -> {
-            LOG.error("PLATFORM {}", platform);
             Map<String, MetricsByStatus> executionStatusToMetricsByStatus = new HashMap<>();
 
             queryResultRowsForPlatform.forEach(queryResultRow -> {
@@ -101,7 +94,6 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
                 Optional<String> executionStatus = queryResultRow.getColumnValue(getMetricColumnName());
                 Optional<ExecutionStatusMetric> executionStatusMetric = createMetricFromQueryResultRow(queryResultRow);
                 if (executionStatus.isPresent() && executionStatusMetric.isPresent()) {
-                    LOG.error("STATUS {}", executionStatus.get());
                     // Get the MetricsByStatus for the row's execution status from the metric
                     executionStatusToMetricsByStatus.put(executionStatus.get(), executionStatusMetric.get().getCount().get(executionStatus.get()));
                 }
