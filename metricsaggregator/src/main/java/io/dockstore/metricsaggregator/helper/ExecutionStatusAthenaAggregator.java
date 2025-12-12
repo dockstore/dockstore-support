@@ -20,8 +20,11 @@ import java.util.Optional;
 import java.util.Set;
 import org.jooq.Field;
 import org.jooq.SelectField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregator<ExecutionStatusMetric> {
+    private static final Logger LOG = LoggerFactory.getLogger(ExecutionStatusAthenaAggregator.class);
     // Aggregators used to calculate metrics by execution status
     private final ExecutionTimeAthenaAggregator executionTimeAggregator = new ExecutionTimeAthenaAggregator(metricsAggregatorAthenaClient, tableName);
     private final CpuAthenaAggregator cpuAggregator = new CpuAthenaAggregator(metricsAggregatorAthenaClient, tableName);
@@ -90,6 +93,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
 
         // For each platform, create a metric
         queryResultRowsByPlatform.forEach((platform, queryResultRowsForPlatform) -> {
+            LOG.error("PLATFORM {}", platform);
             Map<String, MetricsByStatus> executionStatusToMetricsByStatus = new HashMap<>();
 
             queryResultRowsForPlatform.forEach(queryResultRow -> {
@@ -97,6 +101,7 @@ public class ExecutionStatusAthenaAggregator extends RunExecutionAthenaAggregato
                 Optional<String> executionStatus = queryResultRow.getColumnValue(getMetricColumnName());
                 Optional<ExecutionStatusMetric> executionStatusMetric = createMetricFromQueryResultRow(queryResultRow);
                 if (executionStatus.isPresent() && executionStatusMetric.isPresent()) {
+                    LOG.error("STATUS {}", executionStatus.get());
                     // Get the MetricsByStatus for the row's execution status from the metric
                     executionStatusToMetricsByStatus.put(executionStatus.get(), executionStatusMetric.get().getCount().get(executionStatus.get()));
                 }
