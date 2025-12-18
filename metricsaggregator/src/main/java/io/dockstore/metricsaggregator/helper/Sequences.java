@@ -1,11 +1,7 @@
-// TODO Add copyright
-
 package io.dockstore.metricsaggregator.helper;
 
 import java.util.ArrayList;
 import java.util.List;
-
-// TODO
 
 @SuppressWarnings({"checkstyle:magicnumber", "checkstyle:whitespacearound"})
 public class LogSequence {

@@ -59,9 +59,9 @@ public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<Hist
     }
 
     private String getAggregateColumnName(int binIndex) {
-        // Generate a column name that includes the field name, bin index, and unique ID.
-        // The unique ID must be included to avoid duplicate column names if we aggregate multiple histograms on the same field.
-        return "%s_freq_%d_%d".formatted(getMetricColumnName(), binIndex, id);
+        // Generate a column name that includes the bin index and unique ID.
+        // The unique ID must be included to avoid duplicate column names if we aggregate multiple histograms.
+        return "histogram_%d_%d".formatted(binIndex, id);
     }
 
     @Override
