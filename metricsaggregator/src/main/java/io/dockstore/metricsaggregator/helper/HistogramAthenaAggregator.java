@@ -18,16 +18,12 @@ import java.util.stream.IntStream;
 import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.SelectField;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Aggregate a specified database field into a histogram with the specified edge values.  To do so, create a SelectField for each histogram "bin", consisting of a SQL `count()` statement that calculates a frequency for each bin (the number of values between the edge values of the bin).  These SelectFields are submitted with the Athena query, and the resulting frequencies and specified edge values are assembled into a Histogram object.
+ * Aggregate a specified database field into a histogram with the specified edge values.  To do so, create a SelectField for each histogram "bin", consisting of a SQL `count()` statement that calculates each bin's frequency (the number of values between the edge values of the bin).  These SelectFields are submitted with the Athena query, and the resulting frequencies and specified edge values are assembled into a Histogram object.
  */
-// TODO Generalize this to any field
 public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<HistogramMetric> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HistogramAthenaAggregator.class);
     private static final AtomicInteger ID_COUNTER = new AtomicInteger();
     private final Field<Double> field;
     private final List<Double> edges;
@@ -42,7 +38,7 @@ public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<Hist
         super(metricsAggregatorAthenaClient, tableName);
         this.field = field;
         this.edges = edges;
-        this.id = ID_COUNTER.getAndIncrement();
+        this.id = ID_COUNTER.getAndIncrement(); // Retrieve an ID that's unique to this run.
     }
 
     @Override
@@ -51,9 +47,9 @@ public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<Hist
     }
 
     private SelectField<?> getSelectField(int binIndex) {
-        Field<Double> start = inline(edges.get(binIndex));
-        Field<Double> end = inline(edges.get(binIndex + 1));
-        Condition withinBin = and(field.greaterOrEqual(start), field.lessThan(end));
+        Field<Double> loValue = inline(edges.get(binIndex));
+        Field<Double> hiValue = inline(edges.get(binIndex + 1));
+        Condition withinBin = and(field.greaterOrEqual(loValue), field.lessThan(hiValue));
         String aggregateColumnName = getAggregateColumnName(binIndex);
         return count(case_().when(withinBin, 1)).as(aggregateColumnName);
     }
@@ -63,6 +59,8 @@ public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<Hist
     }
 
     private String getAggregateColumnName(int binIndex) {
+        // Generate a column name that includes the field name, bin index, and unique ID.
+        // The unique ID must be included to avoid duplicate column names if we aggregate multiple histograms on the same field.
         return "%s_freq_%d_%d".formatted(getMetricColumnName(), binIndex, id);
     }
 
@@ -84,10 +82,6 @@ public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<Hist
             }
         }
 
-        //
-        LOG.error("HISTOGRAM");
-        LOG.error("EDGES {}", edges);
-        LOG.error("FREQUENCIES {}", frequencies);
         // Construct, populate, and return the TimeSeriesMetric object.
         HistogramMetric histogram = new HistogramMetric();
         histogram.setEdges(edges);
