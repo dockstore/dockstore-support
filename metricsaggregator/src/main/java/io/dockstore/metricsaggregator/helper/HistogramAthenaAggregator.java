@@ -31,7 +31,7 @@ public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<Hist
 
     /**
      * Create an aggregator that computes a histogram of a specified database Field, using the specified list of edge values,
-     * where the frequency of bin i is the count of the field values that are between edges[i] inclusive and edges[i + 1] exclusive.
+     * where the frequency of bin[i] is the count of the field values that are between edges[i] inclusive and edges[i + 1] exclusive.
      * @param edges the edge values of the histogram, as specified above
      */
     public HistogramAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName, Field<Double> field, List<Double> edges) {
@@ -60,7 +60,7 @@ public class HistogramAthenaAggregator extends RunExecutionAthenaAggregator<Hist
 
     private String getAggregateColumnName(int binIndex) {
         // Generate a column name that includes the bin index and unique ID.
-        // The unique ID must be included to avoid duplicate column names if we aggregate multiple histograms.
+        // The unique ID must be included to avoid duplicate column names, should we aggregate multiple histograms.
         return "histogram_%d_%d".formatted(id, binIndex);
     }
 
