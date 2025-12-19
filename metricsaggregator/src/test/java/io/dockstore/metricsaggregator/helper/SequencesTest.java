@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 public class SequencesTest {
@@ -14,6 +13,10 @@ public class SequencesTest {
 
         List<Double> sequence = Sequences.getFriendlyLogRunTimeSequence();
         int size = sequence.size();
+
+        // Size should be between 50 to 70 values.
+        assertTrue(size >= 50);
+        assertTrue(size <= 70);
 
         // Range should be from 0 to infinity.
         assertEquals(0, sequence.get(0));
