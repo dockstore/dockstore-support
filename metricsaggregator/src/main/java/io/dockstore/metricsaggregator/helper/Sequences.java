@@ -31,7 +31,7 @@ public final class Sequences {
      * This sequence will be used to convert the run times of Dockstore workflows, in seconds, into a histogram.
      * The values at either end of the sequence may include wider "log ranges" and other deviations to accomodate
      * facts such as "the log of 0 is undefined (or negative infinity, depending on who you talk to)".  The values
-     * that represent 10s to 10h should be very close to their exact exponential counterparts, but may deviate by
+     * that represent 10s to 10h should be very close to their precisely-exponential counterparts, but may deviate by
      * small amounts to allow the values to map to as many "friendly" time amounts as possible (ex: 50s, 1m30s, etc).
      * Within the range of 1m to 10h, the multiplier between adjacent values ranges from 1.1764 to 1.2083.
      */
