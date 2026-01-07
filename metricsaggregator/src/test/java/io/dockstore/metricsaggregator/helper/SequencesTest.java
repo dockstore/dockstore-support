@@ -35,11 +35,11 @@ public class SequencesTest {
             assertTrue(a < b, () -> "%f %f".formatted(a, b));
         }
 
-        // In the range of 1m (60s) to 10h (36000s), each successive value should increase by a factor of between 1.17 and 1.21.
+        // In the range of 1m (60s) to 100h (360000s), each successive value should increase by a factor of between 1.17 and 1.21.
         for (int i = 0; i < size - 1; i++) {
             double a = sequence.get(i);
             double b = sequence.get(i + 1);
-            if (a >= 60 && a < 36000) {
+            if (a >= 60 && a < 360000) {
                 double factor = b / a;
                 assertTrue(factor > 1.17, () -> Double.toString(factor));
                 assertTrue(factor < 1.21, () -> Double.toString(factor));
