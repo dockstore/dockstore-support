@@ -24,6 +24,10 @@ import org.slf4j.LoggerFactory;
 
 public abstract class StatisticsAthenaAggregator<M extends Metric> extends RunExecutionAthenaAggregator<M> {
 
+    public static final double PERCENTILE_95 = 0.95;
+    public static final double PERCENTILE_MEDIAN = 0.50;
+    public static final double PERCENTILE_05 = 0.05;
+
     private static final Logger LOG = LoggerFactory.getLogger(ExecutionTimeAthenaAggregator.class);
 
     public StatisticsAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {

@@ -6,7 +6,7 @@ import io.dockstore.openapi.client.model.MemoryMetric;
 import java.util.Optional;
 
 /**
- * Aggregate memory metrics by calculating the min, average, max, and number of data points using AWS Athena.
+ * Aggregate memory metric statistics using AWS Athena.
  */
 public class MemoryAthenaAggregator extends StatisticsAthenaAggregator<MemoryMetric> {
     public MemoryAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {

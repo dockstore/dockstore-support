@@ -34,9 +34,6 @@ import org.jooq.impl.DSL;
 
 public abstract class RunExecutionAthenaAggregator<M extends Metric> extends AthenaAggregator<M> {
 
-    public static final double PERCENTILE_95 = 0.95;
-    public static final double PERCENTILE_MEDIAN = 0.50;
-    public static final double PERCENTILE_05 = 0.05;
     protected static final Field<String> EXECUTION_STATUS_FIELD = field("executionstatus", String.class);
     protected static final Field<Integer> EXECUTION_TIME_SECONDS_FIELD = field("executiontimeseconds", Integer.class);
     protected static final Field<Double> MEMORY_REQUIREMENTS_GB_FIELD = field("memoryrequirementsgb", Double.class);

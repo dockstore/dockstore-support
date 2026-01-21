@@ -5,7 +5,7 @@ import io.dockstore.openapi.client.model.CostMetric;
 import java.util.Optional;
 
 /**
- * Aggregate cost metrics by calculating the min, average, max, and number of data points using AWS Athena.
+ * Aggregate cost metric statistics using AWS Athena.
  */
 public class CostAthenaAggregator extends StatisticsAthenaAggregator<CostMetric> {
     public CostAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {

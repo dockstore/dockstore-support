@@ -5,7 +5,7 @@ import io.dockstore.openapi.client.model.CpuMetric;
 import java.util.Optional;
 
 /**
- * Aggregate CPU metrics by calculating the min, average, max, and number of data points using AWS Athena.
+ * Aggregate CPU metric statistics using AWS Athena.
  */
 public class CpuAthenaAggregator extends StatisticsAthenaAggregator<CpuMetric> {
     public CpuAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
