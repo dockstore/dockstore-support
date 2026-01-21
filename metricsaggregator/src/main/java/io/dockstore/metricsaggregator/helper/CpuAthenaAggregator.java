@@ -2,7 +2,6 @@ package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.openapi.client.model.CpuMetric;
-import java.util.Optional;
 
 /**
  * Aggregate CPU metric statistics using AWS Athena.

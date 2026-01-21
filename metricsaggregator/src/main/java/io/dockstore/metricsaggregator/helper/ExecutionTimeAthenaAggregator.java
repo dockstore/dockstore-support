@@ -1,11 +1,7 @@
 package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
-import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
-import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Aggregate execution time metrics statistics using AWS Athena.

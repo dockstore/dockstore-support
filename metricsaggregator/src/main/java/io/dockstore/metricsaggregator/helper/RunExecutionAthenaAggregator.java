@@ -1,16 +1,10 @@
 package io.dockstore.metricsaggregator.helper;
 
-import static org.jooq.impl.DSL.aggregate;
-import static org.jooq.impl.DSL.avg;
 import static org.jooq.impl.DSL.coalesce;
-import static org.jooq.impl.DSL.count;
 import static org.jooq.impl.DSL.cube;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.inline;
-import static org.jooq.impl.DSL.max;
-import static org.jooq.impl.DSL.min;
 import static org.jooq.impl.DSL.select;
-import static org.jooq.impl.DSL.val;
 
 import io.dockstore.common.Partner;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;

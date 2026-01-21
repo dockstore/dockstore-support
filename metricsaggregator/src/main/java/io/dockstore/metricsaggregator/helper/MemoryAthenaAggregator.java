@@ -1,9 +1,7 @@
 package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
-import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.MemoryMetric;
-import java.util.Optional;
 
 /**
  * Aggregate memory metric statistics using AWS Athena.

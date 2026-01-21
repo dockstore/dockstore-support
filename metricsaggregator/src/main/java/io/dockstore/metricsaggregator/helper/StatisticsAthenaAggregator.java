@@ -2,14 +2,10 @@ package io.dockstore.metricsaggregator.helper;
 
 import static org.jooq.impl.DSL.aggregate;
 import static org.jooq.impl.DSL.avg;
-import static org.jooq.impl.DSL.coalesce;
 import static org.jooq.impl.DSL.count;
-import static org.jooq.impl.DSL.cube;
 import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.inline;
 import static org.jooq.impl.DSL.max;
 import static org.jooq.impl.DSL.min;
-import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.val;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
@@ -17,7 +13,6 @@ import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultR
 import io.dockstore.openapi.client.model.Metric;
 import java.util.Optional;
 import java.util.Set;
-import org.jooq.Field;
 import org.jooq.SelectField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
