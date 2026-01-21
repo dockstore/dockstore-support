@@ -96,7 +96,7 @@ public abstract class StatisticsAthenaAggregator<M extends Metric> extends RunEx
     }
 
     abstract M createMetricFromStatistics(double min, double avg, double max, double median, double percentile05th, double percentile95th, int numberOfDataPoints);
- 
+
     @Override
     Optional<M> createMetricFromQueryResultRow(QueryResultRow queryResultRow) {
         Optional<Double> min = getMinColumnValue(queryResultRow);
