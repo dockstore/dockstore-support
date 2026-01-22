@@ -1,17 +1,14 @@
 package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
-import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.CostMetric;
-import java.util.Optional;
 
 /**
- * Aggregate cost metrics by calculating the min, average, max, and number of data points using AWS Athena.
+ * Aggregate cost metric statistics using AWS Athena.
  */
-public class CostAthenaAggregator extends RunExecutionAthenaAggregator<CostMetric> {
+public class CostAthenaAggregator extends StatisticsAthenaAggregator<CostMetric> {
     public CostAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
         super(metricsAggregatorAthenaClient, tableName);
-        this.addSelectFields(getStatisticSelectFields());
     }
 
     @Override
@@ -20,18 +17,14 @@ public class CostAthenaAggregator extends RunExecutionAthenaAggregator<CostMetri
     }
 
     @Override
-    Optional<CostMetric> createMetricFromQueryResultRow(QueryResultRow queryResultRow) {
-        Optional<Double> min = getMinColumnValue(queryResultRow);
-        Optional<Double> avg = getAvgColumnValue(queryResultRow);
-        Optional<Double> max = getMaxColumnValue(queryResultRow);
-        Optional<Integer> numberOfDataPoints = getCountColumnValue(queryResultRow);
-        if (min.isPresent() && avg.isPresent() && max.isPresent() && numberOfDataPoints.isPresent()) {
-            return Optional.of(new CostMetric()
-                    .minimum(min.get())
-                    .average(avg.get())
-                    .maximum(max.get())
-                    .numberOfDataPointsForAverage(numberOfDataPoints.get()));
-        }
-        return Optional.empty();
+    CostMetric createMetricFromStatistics(double min, double avg, double max, double median, double percentile05th, double percentile95th, int numberOfDataPoints) {
+        return new CostMetric()
+                .minimum(min)
+                .average(avg)
+                .maximum(max)
+                .median(median)
+                .percentile05th(percentile05th)
+                .percentile95th(percentile95th)
+                .numberOfDataPointsForAverage(numberOfDataPoints);
     }
 }
