@@ -23,9 +23,9 @@ public abstract class StatisticsAthenaAggregator<M extends Metric> extends RunEx
     public static final double PERCENTILE_MEDIAN = 0.50;
     public static final double PERCENTILE_05 = 0.05;
 
-    private static final Logger LOG = LoggerFactory.getLogger(ExecutionTimeAthenaAggregator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StatisticsAthenaAggregator.class);
 
-    public StatisticsAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
+    protected StatisticsAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
         super(metricsAggregatorAthenaClient, tableName);
         this.addSelectFields(getStatisticSelectFields());
     }
