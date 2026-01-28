@@ -10,7 +10,6 @@ import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.TimeSeriesMetric;
 import java.sql.Timestamp;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -36,7 +35,7 @@ import org.jooq.impl.SQLDataType;
  */
 public abstract class ExecutionCountsAthenaAggregator extends RunExecutionAthenaAggregator<TimeSeriesMetric> {
 
-    private static final int ZONE_HOUR_OFFSET = -4;  // Always aggregate with an Eastern DST time offset, so that all bin boundaries align with Eastern DST midnight and don't shift depending upon where the aggregator is run and/or whether Daylight Savings Time is currently in effect (or not).
+    private static final int ZONE_HOUR_OFFSET = -4;  // Always aggregate with an US Eastern DST time offset, so that all bin boundaries align with US Eastern DST midnight and don't shift depending upon where the aggregator is run and/or whether Daylight Savings Time is currently in effect (or not).
     private static final ZoneId ZONE_ID = ZoneOffset.ofHours(ZONE_HOUR_OFFSET);
     private static final DateTimeFormatter ATHENA_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     private final int binCount;
@@ -98,12 +97,6 @@ public abstract class ExecutionCountsAthenaAggregator extends RunExecutionAthena
         return futureBinStart(binStart, 1);
     }
 
-    private ZonedDateTime getBinMidpoint(int binAge) {
-        ZonedDateTime start = getBinStart(binAge);
-        ZonedDateTime end = getBinEnd(binAge);
-        return start.plus(Duration.between(start, end).dividedBy(2));
-    }
-
     private List<Integer> getBinAges() {
         return IntStream.range(0, binCount).boxed().toList();
     }
@@ -154,7 +147,8 @@ public abstract class ExecutionCountsAthenaAggregator extends RunExecutionAthena
         TimeSeriesMetric metric = new TimeSeriesMetric();
         metric.setValues(values);
         metric.setInterval(getInterval());
-        metric.setBegins(toDate(getBinMidpoint(binCount - 1)));
+        metric.setBegins(toDate(getBinStart(binCount - 1)));
+        metric.setEnds(toDate(getBinEnd(0)));
         return Optional.of(metric);
     }
 }

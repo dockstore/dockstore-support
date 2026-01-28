@@ -29,7 +29,8 @@ import io.dockstore.common.Partner;
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
 import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
 import io.dockstore.metricsaggregator.MetricsAggregatorS3Client;
-import io.dockstore.metricsaggregator.MetricsAggregatorS3Client.S3DirectoryInfo;
+import io.dockstore.metricsaggregator.MetricsAggregatorS3Client.EntryS3DirectoryInfo;
+import io.dockstore.metricsaggregator.MetricsAggregatorS3Client.VersionS3DirectoryInfo;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.AggregateMetricsCommand;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitTerraMetrics;
 import io.dockstore.metricsaggregator.client.cli.CommandLineArgs.SubmitValidationData;
@@ -166,27 +167,31 @@ public class MetricsAggregatorClient {
         }
 
         final Instant getDirectoriesStartTime = Instant.now();
-        List<S3DirectoryInfo> s3DirectoriesToAggregate;
+        List<VersionS3DirectoryInfo> s3DirectoriesToAggregate;
         if (aggregateMetricsCommand.isAllS3()) {
             LOG.info("Aggregating metrics for all entries in S3");
-            s3DirectoriesToAggregate = metricsAggregatorS3Client.getDirectories();
+            s3DirectoriesToAggregate = metricsAggregatorS3Client.getVersionDirectories();
         } else if (trsIdsToAggregate == null || trsIdsToAggregate.isEmpty()) {
             LOG.info("Aggregating metrics for all entries that have new executions to aggregate");
             List<EntryLiteAndVersionName> entryVersionsToAggregate = extendedGa4GhApi.getEntryVersionsToAggregate();
             s3DirectoriesToAggregate = entryVersionsToAggregate.stream()
-                    .map(entryVersion -> metricsAggregatorS3Client.getDirectoriesForTrsIdVersion(entryVersion.getEntryLite().getTrsId(), entryVersion.getVersionName()))
+                    .map(entryVersion -> metricsAggregatorS3Client.getVersionDirectoriesForTrsIdVersion(entryVersion.getEntryLite().getTrsId(), entryVersion.getVersionName()))
                     .flatMap(Collection::stream)
                     .toList();
         } else {
             LOG.info("Aggregating metrics for TRS IDs: {}", trsIdsToAggregate);
             s3DirectoriesToAggregate = trsIdsToAggregate.stream()
-                    .map(metricsAggregatorS3Client::getDirectoriesForTrsId)
+                    .map(metricsAggregatorS3Client::getVersionDirectoriesForTrsId)
                     .flatMap(Collection::stream)
                     .toList();
         }
+        LOG.info("Aggregating metrics for {} versions", s3DirectoriesToAggregate.size());
+
+        List<EntryS3DirectoryInfo> entryDirectories = metricsAggregatorS3Client.getEntryDirectories(s3DirectoriesToAggregate);
+        LOG.info("Aggregating metrics for {} entries", entryDirectories.size());
+
         LOG.info("Getting directories to aggregate took {}", Duration.between(getDirectoriesStartTime, Instant.now()));
-        LOG.info("Aggregating metrics for {} directories", s3DirectoriesToAggregate.size());
-        if (s3DirectoriesToAggregate.isEmpty()) {
+        if (s3DirectoriesToAggregate.isEmpty() && entryDirectories.isEmpty()) {
             LOG.info("No directories found to aggregate metrics");
             return;
         }
@@ -194,9 +199,9 @@ public class MetricsAggregatorClient {
         MetricsAggregatorAthenaClient metricsAggregatorAthenaClient = new MetricsAggregatorAthenaClient(config);
 
         if (aggregateMetricsCommand.isDryRun()) {
-            metricsAggregatorAthenaClient.dryRun(s3DirectoriesToAggregate);
+            metricsAggregatorAthenaClient.dryRun(s3DirectoriesToAggregate, entryDirectories);
         } else {
-            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, extendedGa4GhApi, aggregateMetricsCommand.getThreadCount());
+            metricsAggregatorAthenaClient.aggregateMetrics(s3DirectoriesToAggregate, entryDirectories, extendedGa4GhApi, aggregateMetricsCommand.getThreadCount());
         }
     }
 

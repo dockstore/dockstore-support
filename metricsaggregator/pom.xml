@@ -175,11 +175,6 @@
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <version>7.0.5.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>jakarta.el</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jooq</groupId>
@@ -323,7 +318,6 @@
                                 <usedDependency>com.google.guava:guava</usedDependency>
                                 <usedDependency>jakarta.validation:jakarta.validation-api</usedDependency>
                                 <usedDependency>org.hibernate.validator:hibernate-validator</usedDependency>
-                                <usedDependency>org.glassfish:jakarta.el</usedDependency>
                                 <usedDependency>software.amazon.awssdk:auth</usedDependency>
                                 <usedDependency>software.amazon.awssdk:aws-core</usedDependency>
                                 <usedDependency>software.amazon.awssdk:sdk-core</usedDependency>

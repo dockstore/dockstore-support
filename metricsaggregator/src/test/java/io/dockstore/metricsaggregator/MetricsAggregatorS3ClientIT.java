@@ -50,8 +50,10 @@ import io.dockstore.openapi.client.model.WorkflowVersion;
 import io.dockstore.webservice.DockstoreWebserviceApplication;
 import io.dockstore.webservice.DockstoreWebserviceConfiguration;
 import io.dropwizard.testing.DropwizardTestSupport;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -107,6 +109,7 @@ class MetricsAggregatorS3ClientIT {
         final ContainertagsApi containertagsApi = new ContainertagsApi(apiClient);
         String platform1 = Partner.TERRA.name();
         String platform2 = Partner.DNA_STACK.name();
+        String platform3 = Partner.TOIL.name();
 
         DockstoreTool tool = containersApi.getContainer(6L, "");
         Tag tag = containertagsApi.getTagsByPath(tool.getId()).stream().filter(t -> "fakeName".equals(t.getName())).findFirst().orElse(null);
@@ -127,9 +130,9 @@ class MetricsAggregatorS3ClientIT {
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform2, workflowId, workflowVersionId, "");
         extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform1, toolId, toolVersionId, "");
 
-        List<MetricsAggregatorS3Client.S3DirectoryInfo> s3DirectoryInfos = metricsAggregatorS3Client.getDirectories();
+        List<MetricsAggregatorS3Client.VersionS3DirectoryInfo> s3DirectoryInfos = metricsAggregatorS3Client.getVersionDirectories();
         assertEquals(2, s3DirectoryInfos.size());
-        MetricsAggregatorS3Client.S3DirectoryInfo s3DirectoryInfo = s3DirectoryInfos.stream()
+        MetricsAggregatorS3Client.VersionS3DirectoryInfo s3DirectoryInfo = s3DirectoryInfos.stream()
                 .filter(directoryInfo -> Objects.equals(directoryInfo.versionS3KeyPrefix(), String.join("/", S3ClientHelper.convertToolIdToPartialKey(workflowId), workflowVersionId + "/")))
                 .findFirst()
                 .orElse(null);
@@ -148,5 +151,30 @@ class MetricsAggregatorS3ClientIT {
         assertEquals(toolVersionId, s3DirectoryInfo.versionId());
         assertEquals(1, s3DirectoryInfo.platforms().size());
         assertTrue(s3DirectoryInfo.platforms().contains(platform1));
+
+        // Confirm that we're properly calculating entry directories from version directories.
+        // Before calculating the entry directories, add execution data for another platform, so that we can confirm that we're re-reading the version directories for each entry.
+        extendedGa4GhApi.executionMetricsPost(executionsRequestBody, platform3, workflowId, workflowVersionId, "");
+
+        List<MetricsAggregatorS3Client.EntryS3DirectoryInfo> entryDirectories = metricsAggregatorS3Client.getEntryDirectories(s3DirectoryInfos);
+        assertEquals(2, entryDirectories.size());
+
+        MetricsAggregatorS3Client.EntryS3DirectoryInfo entryDirectory = entryDirectories.stream()
+                .filter(directory -> Objects.equals(directory.entryS3KeyPrefix(), S3ClientHelper.convertToolIdToPartialKey(workflowId) + "/"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(entryDirectory);
+        assertEquals(workflowId, entryDirectory.toolId());
+        assertEquals(List.of(workflowVersionId), entryDirectory.versionIds());
+        assertEquals(new HashSet<>(entryDirectory.platforms()), Set.of(platform1, platform2, platform3));
+
+        entryDirectory = entryDirectories.stream()
+                .filter(directory -> Objects.equals(directory.entryS3KeyPrefix(), S3ClientHelper.convertToolIdToPartialKey(toolId) + "/"))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(entryDirectory);
+        assertEquals(toolId, entryDirectory.toolId());
+        assertEquals(List.of(toolVersionId), entryDirectory.versionIds());
+        assertEquals(new HashSet<>(entryDirectory.platforms()), Set.of(platform1));
     }
 }

@@ -1,18 +1,15 @@
 package io.dockstore.metricsaggregator.helper;
 
 import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient;
-import io.dockstore.metricsaggregator.MetricsAggregatorAthenaClient.QueryResultRow;
 import io.dockstore.openapi.client.model.ExecutionTimeMetric;
-import java.util.Optional;
 
 /**
- * Aggregate execution time metrics by calculating the min, average, max, and number of data points using AWS Athena.
+ * Aggregate execution time metrics statistics using AWS Athena.
  */
-public class ExecutionTimeAthenaAggregator extends RunExecutionAthenaAggregator<ExecutionTimeMetric> {
+public class ExecutionTimeAthenaAggregator extends StatisticsAthenaAggregator<ExecutionTimeMetric> {
 
     public ExecutionTimeAthenaAggregator(MetricsAggregatorAthenaClient metricsAggregatorAthenaClient, String tableName) {
         super(metricsAggregatorAthenaClient, tableName);
-        this.addSelectFields(getStatisticSelectFields());
     }
 
     @Override
@@ -21,18 +18,14 @@ public class ExecutionTimeAthenaAggregator extends RunExecutionAthenaAggregator<
     }
 
     @Override
-    Optional<ExecutionTimeMetric> createMetricFromQueryResultRow(QueryResultRow queryResultRow) {
-        Optional<Double> min = getMinColumnValue(queryResultRow);
-        Optional<Double> avg = getAvgColumnValue(queryResultRow);
-        Optional<Double> max = getMaxColumnValue(queryResultRow);
-        Optional<Integer> numberOfDataPoints = getCountColumnValue(queryResultRow);
-        if (min.isPresent() && avg.isPresent() && max.isPresent() && numberOfDataPoints.isPresent()) {
-            return Optional.of(new ExecutionTimeMetric()
-                    .minimum(min.get())
-                    .average(avg.get())
-                    .maximum(max.get())
-                    .numberOfDataPointsForAverage(numberOfDataPoints.get()));
-        }
-        return Optional.empty();
+    ExecutionTimeMetric createMetricFromStatistics(double min, double avg, double max, double median, double percentile05th, double percentile95th, int numberOfDataPoints) {
+        return new ExecutionTimeMetric()
+                .minimum(min)
+                .average(avg)
+                .maximum(max)
+                .median(median)
+                .percentile05th(percentile05th)
+                .percentile95th(percentile95th)
+                .numberOfDataPointsForAverage(numberOfDataPoints);
     }
 }

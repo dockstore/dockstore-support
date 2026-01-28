@@ -1,13 +1,9 @@
 package io.dockstore.metricsaggregator.helper;
 
-import static org.jooq.impl.DSL.avg;
 import static org.jooq.impl.DSL.coalesce;
-import static org.jooq.impl.DSL.count;
 import static org.jooq.impl.DSL.cube;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.inline;
-import static org.jooq.impl.DSL.max;
-import static org.jooq.impl.DSL.min;
 import static org.jooq.impl.DSL.select;
 
 import io.dockstore.common.Partner;
@@ -31,6 +27,7 @@ import org.jooq.conf.StatementType;
 import org.jooq.impl.DSL;
 
 public abstract class RunExecutionAthenaAggregator<M extends Metric> extends AthenaAggregator<M> {
+
     protected static final Field<String> EXECUTION_STATUS_FIELD = field("executionstatus", String.class);
     protected static final Field<Integer> EXECUTION_TIME_SECONDS_FIELD = field("executiontimeseconds", Integer.class);
     protected static final Field<Double> MEMORY_REQUIREMENTS_GB_FIELD = field("memoryrequirementsgb", Double.class);
@@ -63,6 +60,18 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
      * @return
      */
     abstract String getMetricColumnName();
+
+    protected String getCountColumnName() {
+        return "count_" + substitutePeriodsForUnderscores(getMetricColumnName());
+    }
+
+    protected Optional<Integer> getCountColumnValue(QueryResultRow queryResultRow) {
+        Optional<Integer> countColumnValue = queryResultRow.getColumnValue(getCountColumnName()).map(Integer::valueOf);
+        if (countColumnValue.isPresent() && countColumnValue.get() == 0) { // There were 0 non-null column values
+            return Optional.empty();
+        }
+        return countColumnValue;
+    }
 
     public Set<SelectField<?>> getSelectFields() {
         return this.selectFields;
@@ -136,55 +145,7 @@ public abstract class RunExecutionAthenaAggregator<M extends Metric> extends Ath
         return metricByPlatform;
     }
 
-    /**
-     * Returns a set of statistical SELECT fields: min, avg, max, count
-     *
-     * @return
-     */
-    protected Set<SelectField<?>> getStatisticSelectFields() {
-        return Set.of(min(field(getMetricColumnName())).as(getMinColumnName()),
-                avg(field(getMetricColumnName(), Double.class)).as(getAvgColumnName()),
-                max(field(getMetricColumnName())).as(getMaxColumnName()),
-                count(field(getMetricColumnName())).as(getCountColumnName()));
-    }
-
     protected String substitutePeriodsForUnderscores(String columnName) {
         return columnName.replace(".", "_");
-    }
-
-    protected String getMinColumnName() {
-        return "min_" + substitutePeriodsForUnderscores(getMetricColumnName());
-    }
-
-    protected String getAvgColumnName() {
-        return "avg_" + substitutePeriodsForUnderscores(getMetricColumnName());
-    }
-
-    protected String getMaxColumnName() {
-        return "max_" + substitutePeriodsForUnderscores(getMetricColumnName());
-    }
-
-    protected String getCountColumnName() {
-        return "count_" + substitutePeriodsForUnderscores(getMetricColumnName());
-    }
-
-    protected Optional<Double> getMinColumnValue(QueryResultRow queryResultRow) {
-        return queryResultRow.getColumnValue(getMinColumnName()).map(Double::valueOf);
-    }
-
-    protected Optional<Double> getAvgColumnValue(QueryResultRow queryResultRow) {
-        return queryResultRow.getColumnValue(getAvgColumnName()).map(Double::valueOf);
-    }
-
-    protected Optional<Double> getMaxColumnValue(QueryResultRow queryResultRow) {
-        return queryResultRow.getColumnValue(getMaxColumnName()).map(Double::valueOf);
-    }
-
-    protected Optional<Integer> getCountColumnValue(QueryResultRow queryResultRow) {
-        Optional<Integer> countColumnValue = queryResultRow.getColumnValue(getCountColumnName()).map(Integer::valueOf);
-        if (countColumnValue.isPresent() && countColumnValue.get() == 0) { // There were 0 non-null column values
-            return Optional.empty();
-        }
-        return countColumnValue;
     }
 }
