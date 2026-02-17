@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21.0.7_6-jdk-noble
+FROM eclipse-temurin:21.0.9_10-jdk-jammy
 
 # Update the APT cache
 # Prepare for Java download
