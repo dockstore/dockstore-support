@@ -2,7 +2,7 @@ version: 2.1
 parameters:
   java-tag:
     type: string
-    default: "21.0.2"
+    default: "21.0.9"
 orbs:
   build-tools: circleci/build-tools@2.7.0
 executors:
@@ -12,14 +12,14 @@ executors:
 
   machine_integration_test_exec:
     machine: # run the steps with Ubuntu VM
-      image: ubuntu-2204:2024.11.1
+      image: ubuntu-2204:2025.09.1
     environment:
       PGHOST: 127.0.0.1
     resource_class: medium
 
   toolbackup_machine_integration_test_exec:
     machine: # run the steps with Ubuntu VM
-      image: ubuntu-2204:2024.01.1 # Toolbackup tests fail with ubuntu versions higher than this
+      image: ubuntu-2204:2025.09.1
     environment:
       PGHOST: 127.0.0.1
     resource_class: medium
