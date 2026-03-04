@@ -142,6 +142,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>aws-core</artifactId>
+            <version>2.31.56</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -166,9 +171,6 @@
                             <usedDependencies>
                                 <usedDependency>commons-beanutils:commons-beanutils</usedDependency>
                                 <usedDependency>ch.qos.logback:logback-classic</usedDependency>
-                                <usedDependency>software.amazon.awssdk:auth</usedDependency>
-                                <usedDependency>software.amazon.awssdk:sdk-core</usedDependency>
-                                <usedDependency>com.theokanning.openai-gpt3-java:service</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>
