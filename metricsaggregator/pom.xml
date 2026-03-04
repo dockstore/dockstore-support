@@ -129,6 +129,10 @@
             <artifactId>commons-configuration2</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
@@ -180,6 +184,10 @@
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
             <version>3.19.7</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -321,6 +329,8 @@
                                 <usedDependency>software.amazon.awssdk:auth</usedDependency>
                                 <usedDependency>software.amazon.awssdk:aws-core</usedDependency>
                                 <usedDependency>software.amazon.awssdk:sdk-core</usedDependency>
+                                <usedDependency>org.apache.commons:commons-lang3</usedDependency>
+                                <usedDependency>com.google.code.gson:gson</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>
