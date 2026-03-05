@@ -29,14 +29,13 @@ import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.Gene
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.InputCsvHeaders;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.OutputCsvHeaders;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.UploadTopicsCommand;
-import io.dockstore.topicgenerator.helper.AIModelType;
-import io.dockstore.topicgenerator.helper.AnthropicClaudeModel;
-import io.dockstore.topicgenerator.helper.BaseAIModel;
-import io.dockstore.topicgenerator.helper.BaseAIModel.AIResponseInfo;
 import io.dockstore.topicgenerator.helper.CSVHelper;
-import io.dockstore.topicgenerator.helper.ChuckNorrisFilter;
-import io.dockstore.topicgenerator.helper.OpenAIModel;
-import io.dockstore.topicgenerator.helper.StringFilter;
+import io.dockstore.utils.ai.AIModelType;
+import io.dockstore.utils.ai.AnthropicClaudeModel;
+import io.dockstore.utils.ai.BaseAIModel;
+import io.dockstore.utils.ai.BaseAIModel.AIResponseInfo;
+import io.dockstore.utils.ai.ChuckNorrisFilter;
+import io.dockstore.utils.ai.StringFilter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -198,6 +197,8 @@ public class TopicGeneratorClient {
                             + " in one sentence that starts with a present tense verb in the <summary> tags. Use a maximum of 150 characters.\n<content>"
                             + descriptorFile.getContent() + "</content>";
                     AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
+                    String cleanedResponse = removeSummaryTagsFromTopic(aiResponseInfo.aiResponse());
+                    aiResponseInfo = new AIResponseInfo(cleanedResponse, aiResponseInfo.isTruncated(), aiResponseInfo.inputTokens(), aiResponseInfo.outputTokens(), aiResponseInfo.cost(), aiResponseInfo.stopReason());
                     boolean isCensoredTopic = isSuspiciousTopic(aiResponseInfo.aiResponse());
                     if (isCensoredTopic) {
                         // Write censored topics to a different file
@@ -285,11 +286,6 @@ public class TopicGeneratorClient {
     private Optional<BaseAIModel> getAiModel(AIModelType aiModelType, TopicGeneratorConfig topicGeneratorConfig) {
         if (aiModelType == AIModelType.CLAUDE_3_HAIKU || aiModelType == AIModelType.CLAUDE_3_5_SONNET) {
             return Optional.of(new AnthropicClaudeModel(aiModelType));
-        } else if (aiModelType == AIModelType.GPT_4O_MINI) {
-            if (StringUtils.isEmpty(topicGeneratorConfig.openaiApiKey())) {
-                errorMessage("OpenAI API key is required in the config file to use an OpenAI model", CLIENT_ERROR);
-            }
-            return Optional.of(new OpenAIModel(topicGeneratorConfig.openaiApiKey(), aiModelType));
         } else {
             return Optional.empty();
         }

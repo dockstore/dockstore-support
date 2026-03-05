@@ -20,7 +20,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <openai-java.version>0.18.2</openai-java.version>
     </properties>
 
     <organization>
@@ -110,11 +109,6 @@
             <artifactId>commons-configuration2</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.knuddels</groupId>
-            <artifactId>jtokkit</artifactId>
-            <version>1.1.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
@@ -125,24 +119,6 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-        </dependency>
-        <dependency>
-            <!-- https://github.com/TheoKanning/openai-java -->
-            <groupId>com.theokanning.openai-gpt3-java</groupId>
-            <artifactId>service</artifactId>
-            <version>${openai-java.version}</version>
-        </dependency>
-        <dependency>
-            <!-- https://github.com/TheoKanning/openai-java -->
-            <groupId>com.theokanning.openai-gpt3-java</groupId>
-            <artifactId>api</artifactId>
-            <version>${openai-java.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.knuddels</groupId>
-                    <artifactId>jtokkit</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -276,6 +252,10 @@
                             <usedDependencies>
                                 <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
                                 <usedDependency>ch.qos.logback:logback-classic</usedDependency>
+                                <usedDependency>software.amazon.awssdk:aws-core</usedDependency>
+                                <usedDependency>software.amazon.awssdk:auth</usedDependency>
+                                <usedDependency>software.amazon.awssdk:bedrockruntime</usedDependency>
+                                <usedDependency>com.google.code.gson:gson</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>
