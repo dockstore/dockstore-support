@@ -84,7 +84,11 @@ public final class TestUtilities {
     }
 
     public static MetricsAggregatorConfig getMetricsConfig() {
-        INIConfiguration iniConfig = ConfigFileUtils.getConfiguration(new File(CONFIG_FILE_PATH));
+        return getMetricsConfig(CONFIG_FILE_PATH);
+    }
+
+    public static MetricsAggregatorConfig getMetricsConfig(String configFilePath) {
+        INIConfiguration iniConfig = ConfigFileUtils.getConfiguration(new File(configFilePath));
         return new MetricsAggregatorConfig(iniConfig);
     }
 }
