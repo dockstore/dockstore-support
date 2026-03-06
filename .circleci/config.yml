@@ -77,6 +77,8 @@ jobs:
       - setup_for_postgres
       - wait_for_elastic_search
       - run_tests
+      - fix_non_compliant_xml_reports
+      - persist_coverage
       - save_test_results
       - send_coverage
   topicgenerator-tests:
@@ -92,6 +94,8 @@ jobs:
       - setup_for_postgres
       - wait_for_elastic_search
       - run_tests
+      - fix_non_compliant_xml_reports
+      - persist_coverage
       - save_test_results
       - send_coverage
   tooltester-tests:
@@ -105,6 +109,8 @@ jobs:
       - get_workspace_and_dependencies
       - setup_for_tests
       - run_tests
+      - fix_non_compliant_xml_reports
+      - persist_coverage
       - save_test_results
       - send_coverage
   toolbackup-tests:
@@ -118,6 +124,8 @@ jobs:
       - setup_machine
       - setup_for_tests
       - run_tests
+      - fix_non_compliant_xml_reports
+      - persist_coverage
       - save_test_results
       - send_coverage
   sonar-cloud:
@@ -201,7 +209,7 @@ commands:
           name: send coverage
           command: bash <(curl -s https://codecov.io/bash) -F ${DIRECTORY//-} || echo "Codecov did not collect coverage reports"
       - store_artifacts:
-          path: dockstore-cli-reports/target/site
+          path: dockstore-support-reports/target/site
 
 
   install_dockerize:
@@ -309,7 +317,7 @@ commands:
           name: Rename and move coverage reports
           command: |
             mkdir coverage
-            cp ./reports/target/site/jacoco-aggregate/jacoco.xml coverage/${CIRCLE_JOB}-${CIRCLE_NODE_INDEX}.xml
+            cp ./dockstore-support-reports/target/site/jacoco-aggregate/jacoco.xml coverage/${CIRCLE_JOB}-${CIRCLE_NODE_INDEX}.xml
       - persist_to_workspace:
           root: .
           paths:
