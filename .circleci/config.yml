@@ -180,9 +180,6 @@ jobs:
             - ~/.m2
           key: dockstore-support-java-{{ checksum "pom.xml" }}
 
-      - fix_non_compliant_xml_reports
-      - persist_coverage
-
         # Running scan must occur after build
       - run_git_secrets_scan
       - persist_to_workspace:
@@ -325,6 +322,7 @@ commands:
 
   fix_non_compliant_xml_reports:
     steps:
+      - setup_test_results
       - run:
           name: Fix formatting of test results
           # Sometimes xml reports will have a 'rerunFailure' tag along with the 'failure' tag which CircleCI can't parse
@@ -338,4 +336,13 @@ commands:
               xmlstarlet ed --inplace -d '//testsuite/testcase/rerunFailure' $file || true
               xmlstarlet ed --inplace -d '//testsuite/testcase/rerunError' $file || true
             done
+          when: always
+
+  setup_test_results:
+    steps:
+      - run:
+          name: Setup test results
+          command: |
+            mkdir -p ~/test-results/junit/
+            find . -type f -regex ".*/target/.*-reports/TEST-.*xml" -exec cp {} ~/test-results/junit/ \;
           when: always
