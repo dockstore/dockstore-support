@@ -172,6 +172,9 @@ jobs:
             - ~/.m2
           key: dockstore-support-java-{{ checksum "pom.xml" }}
 
+      - fix_non_compliant_xml_reports
+      - persist_coverage
+
         # Running scan must occur after build
       - run_git_secrets_scan
       - persist_to_workspace:
@@ -288,7 +291,7 @@ commands:
       - run:
           name: run tests
           command: |
-            ./mvnw -B clean install -Dskip-$DIRECTORY-ITs=false | grep  -v "^Running Changeset:"
+            ./mvnw -B org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate clean install -Dskip-$DIRECTORY-ITs=false | grep  -v "^Running Changeset:"
   save_test_results:
     steps:
       - run:
@@ -299,3 +302,32 @@ commands:
           when: always
       - store_test_results:
           path: ~/test-results
+
+  persist_coverage:
+    steps:
+      - run:
+          name: Rename and move coverage reports
+          command: |
+            mkdir coverage
+            cp ./reports/target/site/jacoco-aggregate/jacoco.xml coverage/${CIRCLE_JOB}-${CIRCLE_NODE_INDEX}.xml
+      - persist_to_workspace:
+          root: .
+          paths:
+            - coverage
+
+  fix_non_compliant_xml_reports:
+    steps:
+      - run:
+          name: Fix formatting of test results
+          # Sometimes xml reports will have a 'rerunFailure' tag along with the 'failure' tag which CircleCI can't parse
+          # The additional element is removed so results can be uploaded properly
+          # See https://support.circleci.com/hc/en-us/articles/16386815548571-Troubleshooting-invalid-testcase-element-error-when-uploading-test-results
+          command: |
+            sudo apt update
+            sudo apt install -y xmlstarlet
+            for file in ~/test-results/**/*
+            do
+              xmlstarlet ed --inplace -d '//testsuite/testcase/rerunFailure' $file || true
+              xmlstarlet ed --inplace -d '//testsuite/testcase/rerunError' $file || true
+            done
+          when: always
