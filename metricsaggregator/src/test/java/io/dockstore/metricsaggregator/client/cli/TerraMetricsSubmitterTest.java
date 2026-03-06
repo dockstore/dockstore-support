@@ -5,9 +5,11 @@ import static io.dockstore.metricsaggregator.client.cli.TerraMetricsSubmitter.ge
 import static io.dockstore.metricsaggregator.client.cli.TerraMetricsSubmitter.getSourceUrlComponents;
 import static io.dockstore.metricsaggregator.client.cli.TerraMetricsSubmitter.makePathAbsolute;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.dockstore.metricsaggregator.MetricsAggregatorConfig;
 import io.dockstore.metricsaggregator.common.TestUtilities;
 import io.dockstore.openapi.client.model.RunExecution.ExecutionStatusEnum;
 import io.dropwizard.testing.ResourceHelpers;
@@ -62,11 +64,13 @@ class TerraMetricsSubmitterTest {
     @Test
     void testDefaultConfig() {
         // check that this runs without error
-        TestUtilities.getMetricsConfig();
+        MetricsAggregatorConfig metricsConfig = TestUtilities.getMetricsConfig();
+        assertNotNull(metricsConfig);
     }
 
     @Test
     void testConfigWithMissingValues() {
-        assertThrows(NoSuchElementException.class, () -> TestUtilities.getMetricsConfig(ResourceHelpers.resourceFilePath("metrics-aggregator.missing.config")));
+        String configFilePath = ResourceHelpers.resourceFilePath("metrics-aggregator.missing.config");
+        assertThrows(NoSuchElementException.class, () -> TestUtilities.getMetricsConfig(configFilePath));
     }
 }
