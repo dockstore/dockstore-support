@@ -1,4 +1,4 @@
-package io.dockstore.topicgenerator.helper;
+package io.dockstore.utils.ai;
 
 public interface AIModel {
     String getModelName();

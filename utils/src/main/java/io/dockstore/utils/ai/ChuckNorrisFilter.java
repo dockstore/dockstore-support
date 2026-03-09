@@ -1,4 +1,4 @@
-package io.dockstore.topicgenerator.helper;
+package io.dockstore.utils.ai;
 
 import java.io.IOException;
 import java.net.URL;

@@ -2,7 +2,7 @@ package io.dockstore.topicgenerator.client.cli;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
-import io.dockstore.topicgenerator.helper.AIModelType;
+import io.dockstore.utils.ai.AIModelType;
 import java.io.File;
 
 public class TopicGeneratorCommandLineArgs {

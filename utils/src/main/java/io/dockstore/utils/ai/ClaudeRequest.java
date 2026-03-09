@@ -1,7 +1,7 @@
-package io.dockstore.topicgenerator.helper;
+package io.dockstore.utils.ai;
 
 import com.google.gson.annotations.SerializedName;
-import io.dockstore.topicgenerator.helper.ClaudeResponse.Content;
+import io.dockstore.utils.ai.ClaudeResponse.Content;
 import java.util.List;
 
 public record ClaudeRequest(@SerializedName(value = "anthropic_version") String anthropicVersion, @SerializedName(value = "max_tokens") int maxTokens, double temperature, List<Message> messages) {

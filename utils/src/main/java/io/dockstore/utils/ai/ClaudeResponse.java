@@ -1,4 +1,4 @@
-package io.dockstore.topicgenerator.helper;
+package io.dockstore.utils.ai;
 
 import com.google.gson.annotations.SerializedName;
 import java.util.List;

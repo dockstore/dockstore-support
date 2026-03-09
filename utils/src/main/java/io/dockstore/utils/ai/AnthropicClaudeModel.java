@@ -1,10 +1,8 @@
-package io.dockstore.topicgenerator.helper;
-
-import static io.dockstore.topicgenerator.client.cli.TopicGeneratorClient.removeSummaryTagsFromTopic;
+package io.dockstore.utils.ai;
 
 import com.google.gson.Gson;
-import io.dockstore.topicgenerator.helper.ClaudeRequest.Message;
-import io.dockstore.topicgenerator.helper.ClaudeResponse.Content;
+import io.dockstore.utils.ai.ClaudeRequest.Message;
+import io.dockstore.utils.ai.ClaudeResponse.Content;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +48,7 @@ public class AnthropicClaudeModel extends BaseAIModel {
         final long inputTokens = claudeResponse.usage().inputTokens();
         final long outputTokens = claudeResponse.usage().outputTokens();
 
-        return new AIResponseInfo(removeSummaryTagsFromTopic(aiResponse), false, inputTokens, outputTokens, this.calculatePrice(inputTokens, outputTokens), stopReason);
+        return new AIResponseInfo(aiResponse, false, inputTokens, outputTokens, this.calculatePrice(inputTokens, outputTokens), stopReason);
     }
 
     // Format the request payload using the model's native structure.
