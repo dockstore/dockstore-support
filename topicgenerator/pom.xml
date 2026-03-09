@@ -79,16 +79,6 @@
             <version>${revision}${changelist}</version>
         </dependency>
         <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>openapi-java-client</artifactId>
-            <version>${dockstore-core.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>dockstore-common</artifactId>
-            <version>${dockstore-core.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.glassfish.jersey.inject</groupId>
             <artifactId>jersey-hk2</artifactId>
         </dependency>
@@ -126,27 +116,21 @@
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
-            <artifactId>bedrockruntime</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>auth</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
             <artifactId>sdk-core</artifactId>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
         </dependency>
-	<dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>aws-core</artifactId>
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>openapi-java-client</artifactId>
+            <version>${dockstore-core.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
+            <groupId>io.dockstore</groupId>
+            <artifactId>dockstore-common</artifactId>
+            <version>${dockstore-core.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dockstore</groupId>
@@ -252,10 +236,6 @@
                             <usedDependencies>
                                 <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
                                 <usedDependency>ch.qos.logback:logback-classic</usedDependency>
-                                <usedDependency>software.amazon.awssdk:aws-core</usedDependency>
-                                <usedDependency>software.amazon.awssdk:auth</usedDependency>
-                                <usedDependency>software.amazon.awssdk:bedrockruntime</usedDependency>
-                                <usedDependency>com.google.code.gson:gson</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>
@@ -264,9 +244,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <release>17</release>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

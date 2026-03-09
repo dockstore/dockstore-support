@@ -94,29 +94,6 @@
             <version>${revision}${changelist}</version>
         </dependency>
         <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>openapi-java-client</artifactId>
-            <version>${dockstore-core.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>dockstore-common</artifactId>
-            <version>${dockstore-core.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>dockstore-webservice</artifactId>
-            <version>${dockstore-core.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>dockstore-integration-testing</artifactId>
-            <version>${dockstore-core.version}</version>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.glassfish.jersey.inject</groupId>
             <artifactId>jersey-hk2</artifactId>
         </dependency>
@@ -188,6 +165,7 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -213,6 +191,33 @@
         <dependency>
             <groupId>uk.org.webcompere</groupId>
             <artifactId>system-stubs-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>openapi-java-client</artifactId>
+            <version>${dockstore-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>dockstore-common</artifactId>
+            <version>${dockstore-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>dockstore-webservice</artifactId>
+            <version>${dockstore-core.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>dockstore-integration-testing</artifactId>
+            <version>${dockstore-core.version}</version>
+            <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -317,20 +322,11 @@
                             <outputXML>true</outputXML>
                             <ignoreNonCompile>true</ignoreNonCompile>
                             <usedDependencies>
-                                <usedDependency>org.apache.commons:commons-configuration2</usedDependency>
-                                <usedDependency>org.slf4j:slf4j-api</usedDependency>
-                                <usedDependency>software.amazon.awssdk:s3</usedDependency>
                                 <usedDependency>org.glassfish.jersey.inject:jersey-hk2</usedDependency>
                                 <usedDependency>ch.qos.logback:logback-classic</usedDependency>
                                 <usedDependency>ch.qos.logback:logback-core</usedDependency>
-                                <usedDependency>com.google.guava:guava</usedDependency>
                                 <usedDependency>jakarta.validation:jakarta.validation-api</usedDependency>
                                 <usedDependency>org.hibernate.validator:hibernate-validator</usedDependency>
-                                <usedDependency>software.amazon.awssdk:auth</usedDependency>
-                                <usedDependency>software.amazon.awssdk:aws-core</usedDependency>
-                                <usedDependency>software.amazon.awssdk:sdk-core</usedDependency>
-                                <usedDependency>org.apache.commons:commons-lang3</usedDependency>
-                                <usedDependency>com.google.code.gson:gson</usedDependency>
                             </usedDependencies>
                         </configuration>
                     </execution>
@@ -339,9 +335,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <release>17</release>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
