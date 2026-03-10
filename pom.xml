@@ -46,6 +46,7 @@
         <skip-tooltester-ITs>true</skip-tooltester-ITs>
         <skip-toolbackup-ITs>true</skip-toolbackup-ITs>
         <skip-topicgenerator-ITs>true</skip-topicgenerator-ITs>
+        <skip-categorizer-ITs>true</skip-categorizer-ITs>
 
         <!-- for sonarcloud -->
         <sonar.projectKey>dockstore_dockstore-support</sonar.projectKey>
@@ -119,6 +120,7 @@
         <module>dockstore-support-reports</module>
         <module>jira_automation</module>
         <module>topicgenerator</module>
+        <module>categorizer</module>
         <module>utils</module>
     </modules>
 
