@@ -77,6 +77,8 @@ jobs:
       - setup_for_postgres
       - wait_for_elastic_search
       - run_tests
+      - fix_non_compliant_xml_reports
+      - persist_coverage
       - save_test_results
       - send_coverage
   topicgenerator-tests:
@@ -92,6 +94,8 @@ jobs:
       - setup_for_postgres
       - wait_for_elastic_search
       - run_tests
+      - fix_non_compliant_xml_reports
+      - persist_coverage
       - save_test_results
       - send_coverage
   tooltester-tests:
@@ -105,6 +109,8 @@ jobs:
       - get_workspace_and_dependencies
       - setup_for_tests
       - run_tests
+      - fix_non_compliant_xml_reports
+      - persist_coverage
       - save_test_results
       - send_coverage
   toolbackup-tests:
@@ -118,6 +124,8 @@ jobs:
       - setup_machine
       - setup_for_tests
       - run_tests
+      - fix_non_compliant_xml_reports
+      - persist_coverage
       - save_test_results
       - send_coverage
   sonar-cloud:
@@ -149,7 +157,8 @@ jobs:
           # plugin, it has its own JVM. The two of these must add up to a bit less than 4GB.
           JAVA_TOOL_OPTIONS: -Xmx512m
     steps: # a collection of executable commands
-      - checkout # check out source code to working directory
+      - checkout:
+          method: full
       - restore_cache:
           keys:
             # Find a cache corresponding to this specific licenses file checksum
@@ -197,7 +206,7 @@ commands:
           name: send coverage
           command: bash <(curl -s https://codecov.io/bash) -F ${DIRECTORY//-} || echo "Codecov did not collect coverage reports"
       - store_artifacts:
-          path: dockstore-cli-reports/target/site
+          path: dockstore-support-reports/target/site
 
 
   install_dockerize:
@@ -287,14 +296,53 @@ commands:
       - run:
           name: run tests
           command: |
-            ./mvnw -B clean install -Dskip-$DIRECTORY-ITs=false | grep  -v "^Running Changeset:"
+            ./mvnw -B org.jacoco:jacoco-maven-plugin:report org.jacoco:jacoco-maven-plugin:report-aggregate clean install -Dskip-$DIRECTORY-ITs=false | grep  -v "^Running Changeset:"
   save_test_results:
     steps:
       - run:
           name: Save test results
           command: |
             mkdir -p ~/test-results/junit/
-            find . -type f -regex ".*/target/.*-reports/.*xml" -exec cp {} ~/test-results/junit/ \;
+            find . -type f -regex ".*/target/.*-reports/TEST-.*xml" -exec cp {} ~/test-results/junit/ \;
           when: always
       - store_test_results:
           path: ~/test-results
+
+  persist_coverage:
+    steps:
+      - run:
+          name: Rename and move coverage reports
+          command: |
+            mkdir -p coverage
+            cp ./dockstore-support-reports/target/site/jacoco-aggregate/jacoco.xml coverage/${CIRCLE_JOB}-${CIRCLE_NODE_INDEX}.xml
+      - persist_to_workspace:
+          root: .
+          paths:
+            - coverage
+
+  fix_non_compliant_xml_reports:
+    steps:
+      - setup_test_results
+      - run:
+          name: Fix formatting of test results
+          # Sometimes xml reports will have a 'rerunFailure' tag along with the 'failure' tag which CircleCI can't parse
+          # The additional element is removed so results can be uploaded properly
+          # See https://support.circleci.com/hc/en-us/articles/16386815548571-Troubleshooting-invalid-testcase-element-error-when-uploading-test-results
+          command: |
+            sudo apt update
+            sudo apt install -y xmlstarlet
+            for file in ~/test-results/**/*
+            do
+              xmlstarlet ed --inplace -d '//testsuite/testcase/rerunFailure' $file || true
+              xmlstarlet ed --inplace -d '//testsuite/testcase/rerunError' $file || true
+            done
+          when: always
+
+  setup_test_results:
+    steps:
+      - run:
+          name: Setup test results
+          command: |
+            mkdir -p ~/test-results/junit/
+            find . -type f -regex ".*/target/.*-reports/TEST-.*xml" -exec cp {} ~/test-results/junit/ \;
+          when: always
