@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -276,7 +277,12 @@ public class CategorizerClient {
         prompt += "Pick a category from the following list that describes the operation that the " + entryType + " performs.  Respond with the number of the category and do not include any additional information.\n";
         for (int i = 0; i < children.size(); i++) {
             Ontology.Node child = children.get(i);
-            prompt += (i + 1) + ". " + child.title() + ": " + child.description() + "\n";
+            prompt += (i + 1) + ". " + child.title() + ": " + child.description();
+            List<Ontology.Node> grands = ontology.getChildren(child.id());
+            if (!grands.isEmpty()) {
+                prompt += "(includes " + grands.stream().map(Ontology.Node::title).collect(Collectors.joining(", ")) + ")";
+            }
+            prompt += "\n";
         }
         prompt += (children.size() + 1) + ". " + "None of the above.\n";
         return prompt;
