@@ -173,6 +173,7 @@ public class CategorizerClient {
                 // Get required information to create a prompt
                 final String entryType;
                 final FileWrapper descriptorFile;
+                final String description;
                 try {
                     final Tool tool = ga4Ghv20Api.toolsIdGet(trsId);
                     entryType = tool.getToolclass().getName().toLowerCase();
@@ -187,6 +188,7 @@ public class CategorizerClient {
 
                     final ToolVersion version = filteredVersion.get(0);
                     descriptorFile = getDescriptorFile(ga4Ghv20Api, trsId, versionId, version.getDescriptorType());
+                    description = tool.getDescription();
                 } catch (ApiException ex) {
                     LOG.error("Failed to get information for categorization candidate with TRS ID {} and version {} from Dockstore, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage().replace("\n", " "));
@@ -223,7 +225,7 @@ public class CategorizerClient {
                             LOG.info("current node {}", nodeId);
                             break;
                         }
-                        String prompt = createPrompt(node, children, entryType, trsId, descriptorFile.getContent());
+                        String prompt = createPrompt(node, children, entryType, trsId, description, descriptorFile.getContent());
                         LOG.info("PROMPT {}", prompt);
                         AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
                         LOG.info("RESPONSE {}", aiResponseInfo.aiResponse());
@@ -264,23 +266,32 @@ public class CategorizerClient {
         }
     }
 
-    private String createPrompt(Ontology.Node node, List<Ontology.Node> children, String entryType, String trsId, String descriptorFile) {
+    private String createPrompt(Ontology.Node node, List<Ontology.Node> children, String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
-        prompt += "Based on the following information about a " + entryType + ", determine the operation that the " + entryType + " supports.\n";
+        prompt += "Based on the following information about a " + entryType + ", determine the operation that the " + entryType + " performs.\n";
         prompt += "\n<trsId>\n";
         prompt += trsId;
         prompt += "\n</trsId>\n";
+        prompt += "\n<description>\n";
+        prompt += description;
+        prompt += "\n</description>\n";
         prompt += "\n<code>\n";
         prompt += descriptorFile;
         prompt += "\n</code>\n";
         prompt += "\n";
-        prompt += "Pick a category from the following list that describes the operation that the " + entryType + " performs.  Respond with the number of the category and do not include any additional information.\n";
+        prompt += "Pick the category from the following list that describes the operation that the " + entryType + " performs.  Respond with the number of the category and do not include any additional information.\n";
         for (int i = 0; i < children.size(); i++) {
             Ontology.Node child = children.get(i);
+            /*
+            if (node.id().equals("operation-operation") && i == 1) {
+                prompt += (i + 1) + ". do not select\n";
+                continue;
+            }
+            */
             prompt += (i + 1) + ". " + child.title() + ": " + child.description();
             List<Ontology.Node> grands = ontology.getChildren(child.id());
             if (!grands.isEmpty()) {
-                prompt += "(includes " + grands.stream().map(Ontology.Node::title).collect(Collectors.joining(", ")) + ")";
+                prompt += " (includes " + grands.stream().map(x -> "'" + x.title() + "'").collect(Collectors.joining(", ")) + ")";
             }
             prompt += "\n";
         }
