@@ -12,6 +12,11 @@ import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import io.dockstore.categorizer.Ontology;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.ErrorsCsvHeaders;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.InputCsvHeaders;
@@ -58,7 +63,10 @@ import org.slf4j.LoggerFactory;
 public class CategorizerClient {
     private static final Logger LOG = LoggerFactory.getLogger(CategorizerClient.class);
 
+    private Ontology ontology;
+    
     CategorizerClient() {
+        ontology = readOntology("ontology.js");
     }
 
     public static void main(String[] args) {
@@ -186,14 +194,14 @@ public class CategorizerClient {
                 }
 
                 // Generate categories using AI model
+                String nodeId = "operation-operation";
                 try {
                     /*
                     String prompt = "Based on the content of the following " + entryType
                             + ", suggest relevant EDAM ontology categories that best describe the operations, topics, and data types involved."
                             + " Return the categories as a JSON array of objects with 'uri' and 'label' fields in <categories> tags.\n<content>"
                             + descriptorFile.getContent() + "</content>";
-                    */
-                    String prompt = "Based on the following information about a " + entryType + ", determine the output format that the " + entryType + " supports.\n";
+                    String prompt = "Based on the following information about a " + entryType + ", determine the output format that the " + entryType + " performs.\n";
                     prompt += "<name>Optimus</name>\n";
                     prompt += "<description>\nIt is an alignment and transcriptome quantification pipeline that corrects cell barcodes (CBs), aligns reads to the genome, corrects Unique Molecular Identifiers (UMIs), generates a count matrix in a UMI-aware manner, calculates summary metrics for genes and cells, detects empty droplets, returns read outputs in BAM format, and returns cell gene counts in numpy matrix and h5ad file formats.\n</description>\n";
                     prompt += "\n";
@@ -204,14 +212,42 @@ public class CategorizerClient {
                     prompt += "4. txt\n";
                     prompt += "5. fastq\n";
                     prompt += "6. none of the above\n";
-                    LOG.info("PROMPT {}", prompt);
-                    AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
-                    LOG.info("RESPONSE {}", aiResponseInfo.aiResponse());
-                    String cleanedResponse = removeCategoryTagsFromResponse(aiResponseInfo.aiResponse());
-                    aiResponseInfo = new AIResponseInfo(cleanedResponse, aiResponseInfo.isTruncated(), aiResponseInfo.inputTokens(), aiResponseInfo.outputTokens(), aiResponseInfo.cost(), aiResponseInfo.stopReason());
+                    */
+                    while (true) {
+                        LOG.info("AT NODE {}", nodeId);
+                        Ontology.Node node = ontology.getNodeById(nodeId);
+                        List<Ontology.Node> children = ontology.getChildren(node.id());
+                        if (children.isEmpty()) {
+                            LOG.info("no children, aborting");
+                            LOG.info("current node {}", nodeId);
+                            break;
+                        }
+                        String prompt = createPrompt(node, children, entryType, trsId, descriptorFile.getContent());
+                        LOG.info("PROMPT {}", prompt);
+                        AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
+                        LOG.info("RESPONSE {}", aiResponseInfo.aiResponse());
+                        // String cleanedResponse = removeCategoryTagsFromResponse(aiResponseInfo.aiResponse());
+                        try {
+                            int index = Integer.parseInt(aiResponseInfo.aiResponse()) - 1;
+                            if (index < 0 || index >= children.size()) {
+                                LOG.info("could not pick a child");
+                                LOG.info("current node {}", nodeId);
+                                break;
+                            }
+                            nodeId = children.get(index).id();
+                            LOG.info("selected index {}, node {}", index, ontology.getNodeById(nodeId));
+                        } catch (RuntimeException e) {
+                            LOG.info("defective response");
+                            LOG.info("current node {}", nodeId);
+                            break;
+                        }
+                    }
+                    /*
+                    aiResponseInfo = new AIResponseInfo(nodeId, false, 0, 0, 0, found);
                     writeCategoryRecord(categoriesCsvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
                     LOG.info("Generated categories for entry with TRS ID {} and version {}", trsId, versionId);
                     numberOfCategoriesGenerated += 1;
+                    */
                 } catch (Exception ex) {
                     LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage());
@@ -225,6 +261,25 @@ public class CategorizerClient {
         } catch (IOException e) {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
+    }
+
+    private String createPrompt(Ontology.Node node, List<Ontology.Node> children, String entryType, String trsId, String descriptorFile) {
+        String prompt = "";
+        prompt += "Based on the following information about a " + entryType + ", determine the operation that the " + entryType + " supports.\n";
+        prompt += "\n<trsId>\n";
+        prompt += trsId;
+        prompt += "\n</trsId>\n";
+        prompt += "\n<code>\n";
+        prompt += descriptorFile;
+        prompt += "\n</code>\n";
+        prompt += "\n";
+        prompt += "Pick a category from the following list that describes the operation that the " + entryType + " performs.  Respond with the number of the category and do not include any additional information.\n";
+        for (int i = 0; i < children.size(); i++) {
+            Ontology.Node child = children.get(i);
+            prompt += (i + 1) + ". " + child.title() + ": " + child.description() + "\n";
+        }
+        prompt += (children.size() + 1) + ". " + "None of the above.\n";
+        return prompt;
     }
 
     private List<TrsIdAndVersionId> getCategorizationCandidatesFromFile(String inputFileName) {
@@ -406,7 +461,26 @@ public class CategorizerClient {
         return StringUtils.removeEnd(cleaned, "</categories>");
     }
 
-    private static Ontology readOntology(String fileName) throws IOException {
+    private static Ontology readOntology(String fileName) {
+        try (Reader reader = new FileReader(fileName, StandardCharsets.UTF_8)) {
+            JsonArray jsonArray = JsonParser.parseReader(reader).getAsJsonArray();
+            List<Ontology.Node> nodes = new ArrayList<>();
+            for (JsonElement element : jsonArray) {
+                JsonObject obj = element.getAsJsonObject();
+                String id = obj.get("id").getAsString();
+                String title = obj.get("title").getAsString();
+                String description = obj.get("description").getAsString();
+                List<String> parentIds = new ArrayList<>();
+                for (JsonElement parent : obj.get("parents").getAsJsonArray()) {
+                    parentIds.add(parent.getAsString());
+                }
+                nodes.add(new Ontology.Node(id, title, description, parentIds));
+            }
+            return new Ontology(nodes);
+        } catch (IOException e) {
+            exceptionMessage(e, "Unable to read ontology file", IO_ERROR);
+            throw new RuntimeException("aborting");
+        }
     }
 
     private static CSVPrinter createCsvPrinter(String fileName, Class<? extends Enum<?>> csvHeaders) throws IOException {
