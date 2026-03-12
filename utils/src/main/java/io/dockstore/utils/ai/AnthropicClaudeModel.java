@@ -54,7 +54,7 @@ public class AnthropicClaudeModel extends BaseAIModel {
     // Format the request payload using the model's native structure.
     private String createNativeClaudeRequest(String prompt) {
         // The amount of randomness injected into the response. Ranges from 0 to 1. Pick 0.5 as the middle ground between predictability and creativity.
-        final double temperature = 0.5;
+        final double temperature = 0.0;
         // See https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-request-response for examples
         ClaudeRequest claudeRequest = new ClaudeRequest(ANTHROPIC_API_VERSION, MAX_RESPONSE_TOKENS, temperature, List.of(new Message("user", List.of(new Content("text", prompt)))));
         return GSON.toJson(claudeRequest);

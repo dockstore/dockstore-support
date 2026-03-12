@@ -187,11 +187,28 @@ public class CategorizerClient {
 
                 // Generate categories using AI model
                 try {
+                    /*
                     String prompt = "Based on the content of the following " + entryType
                             + ", suggest relevant EDAM ontology categories that best describe the operations, topics, and data types involved."
                             + " Return the categories as a JSON array of objects with 'uri' and 'label' fields in <categories> tags.\n<content>"
                             + descriptorFile.getContent() + "</content>";
+                    */
+                    String prompt = "Based on the following description of a " + entryType + ", determine the operation that the " + entryType + " performs.\n";
+                    prompt += "<name>Optimus</name>\n";
+                    prompt += "<description>\nIt is an alignment and transcriptome quantification pipeline that corrects cell barcodes (CBs), aligns reads to the genome, corrects Unique Molecular Identifiers (UMIs), generates a count matrix in a UMI-aware manner, calculates summary metrics for genes and cells, detects empty droplets, returns read outputs in BAM format, and returns cell gene counts in numpy matrix and h5ad file formats.\n</description>\n";
+                    prompt += "\n";
+                    prompt += "Pick an item from the subsequent list that describes the main operation that the " + entryType + " performs.  Respond with the number of the list item and do not include any additional information.\n";
+                    prompt += "1. immolation\n";
+                    prompt += "2. destruction\n";
+                    prompt += "3. deprecation\n";
+                    prompt += "4. excitement\n";
+                    prompt += "5. inculcation\n";
+                    prompt += "6. confusion\n";
+                    prompt += "7. data handling: Basic (non-analytical) operations of some data, either a file or equivalent entity in memory, such that the same basic type of data is consumed as input and generated as output.\n";
+                    prompt += "8. none of the above\n";
+                    LOG.info("PROMPT {}", prompt);
                     AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
+                    LOG.info("RESPONSE {}", aiResponseInfo.aiResponse());
                     String cleanedResponse = removeCategoryTagsFromResponse(aiResponseInfo.aiResponse());
                     aiResponseInfo = new AIResponseInfo(cleanedResponse, aiResponseInfo.isTruncated(), aiResponseInfo.inputTokens(), aiResponseInfo.outputTokens(), aiResponseInfo.cost(), aiResponseInfo.stopReason());
                     writeCategoryRecord(categoriesCsvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
@@ -270,7 +287,7 @@ public class CategorizerClient {
     }
 
     private Optional<BaseAIModel> getAiModel(AIModelType aiModelType) {
-        if (aiModelType == AIModelType.CLAUDE_3_HAIKU || aiModelType == AIModelType.CLAUDE_3_5_SONNET) {
+        if (aiModelType == AIModelType.CLAUDE_3_HAIKU || aiModelType == AIModelType.CLAUDE_3_5_SONNET || aiModelType == AIModelType.CLAUDE_4_5_HAIKU) {
             return Optional.of(new AnthropicClaudeModel(aiModelType));
         } else {
             return Optional.empty();
