@@ -5,7 +5,7 @@ package io.dockstore.utils.ai;
  */
 public abstract class BaseAIModel implements AIModel {
     // The sum of the number of tokens in the request and response cannot exceed the model's maximum context length.
-    public static final int MAX_RESPONSE_TOKENS = 300; // One token is roughly 4 characters. Using 100 tokens because setting it too low might truncate the response
+    public static final int MAX_RESPONSE_TOKENS = 600; // One token is roughly 4 characters. Using 100 tokens because setting it too low might truncate the response
     private final AIModelType aiModelType;
 
     protected BaseAIModel(AIModelType modelType) {
