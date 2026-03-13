@@ -216,6 +216,7 @@ public class CategorizerClient {
                     prompt += "5. fastq\n";
                     prompt += "6. none of the above\n";
                     */
+                    String summary = createSummary(aiModel.get(), entryType, trsId, description, descriptorFile.getContent());
                     while (true) {
                         LOG.info("AT NODE {}", nodeId);
                         Ontology.Node node = ontology.getNodeById(nodeId);
@@ -225,7 +226,7 @@ public class CategorizerClient {
                             LOG.info("current node {}", nodeId);
                             break;
                         }
-                        String prompt = createPrompt(node, children, entryType, trsId, description, descriptorFile.getContent());
+                        String prompt = createPrompt(node, children, summary);
                         LOG.info("PROMPT {}", prompt);
                         AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
                         LOG.info("RESPONSE {}", aiResponseInfo.aiResponse());
@@ -266,9 +267,9 @@ public class CategorizerClient {
         }
     }
 
-    private String createPrompt(Ontology.Node node, List<Ontology.Node> children, String entryType, String trsId, String description, String descriptorFile) {
+    private String createSummary(BaseAIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
-        prompt += "Based on the following information about a " + entryType + ", determine the operation that the " + entryType + " performs.\n";
+        prompt += "You are a genomics and bioinformatics expert.  Please write a paragraph that summarizes the most important operation performed by the following workflow.";
         prompt += "\n<trsId>\n";
         prompt += trsId;
         prompt += "\n</trsId>\n";
@@ -278,16 +279,17 @@ public class CategorizerClient {
         prompt += "\n<code>\n";
         prompt += descriptorFile;
         prompt += "\n</code>\n";
-        prompt += "\n";
-        prompt += "Pick the category from the following list that describes the operation that the " + entryType + " performs.  Respond with the number of the category and do not include any additional information.\n";
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt);
+        return "<description>\n" + aiResponseInfo.aiResponse() + "\n</description>";
+        // return prompt;
+    }
+
+    private String createPrompt(Ontology.Node node, List<Ontology.Node> children, String summary) {
+        String prompt = "";
+        prompt += "You are a genomics and bioinformatics expert.\n";
+        prompt += "Select at most two list items that best describe the most important operations performed by the following workflow.  Respond with each item number and do not include any additional information.\n";
         for (int i = 0; i < children.size(); i++) {
             Ontology.Node child = children.get(i);
-            /*
-            if (node.id().equals("operation-operation") && i == 1) {
-                prompt += (i + 1) + ". do not select\n";
-                continue;
-            }
-            */
             prompt += (i + 1) + ". " + child.title() + ": " + child.description();
             List<Ontology.Node> grands = ontology.getChildren(child.id());
             if (!grands.isEmpty()) {
@@ -296,6 +298,9 @@ public class CategorizerClient {
             prompt += "\n";
         }
         prompt += (children.size() + 1) + ". " + "None of the above.\n";
+        prompt += "\n\n";
+        prompt += summary;
+        prompt += "\n\n";
         return prompt;
     }
 
