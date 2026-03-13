@@ -269,7 +269,7 @@ public class CategorizerClient {
 
     private String createSummary(BaseAIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
-        prompt += "You are a genomics and bioinformatics expert.  Please write a paragraph that summarizes the most important operation performed by the following workflow.";
+        // prompt += "You are a genomics and bioinformatics expert.  Please write a paragraph that summarizes the most important operation performed by the following workflow.";
         prompt += "\n<trsId>\n";
         prompt += trsId;
         prompt += "\n</trsId>\n";
@@ -279,11 +279,12 @@ public class CategorizerClient {
         prompt += "\n<code>\n";
         prompt += descriptorFile;
         prompt += "\n</code>\n";
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt);
-        return "<description>\n" + aiResponseInfo.aiResponse() + "\n</description>";
-        // return prompt;
+        // AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt);
+        // return "<description>\n" + aiResponseInfo.aiResponse() + "\n</description>";
+        return prompt;
     }
 
+    /*
     private String createPrompt(Ontology.Node node, List<Ontology.Node> children, String summary) {
         String prompt = "";
         prompt += "You are a genomics and bioinformatics expert.\n";
@@ -301,6 +302,19 @@ public class CategorizerClient {
         prompt += "\n\n";
         prompt += summary;
         prompt += "\n\n";
+        return prompt;
+    }
+    */
+    private String createPrompt(Ontology.Node node, List<Ontology.Node> children, String summary) {
+        String prompt = "";
+        prompt += "You are a genomics and bioinformatics expert.\n";
+        prompt += "Your goal is to categorize a workflow into the following categories to best describe the important operations it performs.  The categories are represented as a CSV:\n";
+        prompt += "\n";
+        prompt += createOntologyCsv(ontology);
+        prompt += "\n";
+        prompt += "\n";
+        prompt += "Please list all categories which best describe the core operations performed by the following workflow.  Include one category ID per line, most important categories first, and include no other text.\n";
+        prompt +=  summary;
         return prompt;
     }
 
@@ -478,6 +492,26 @@ public class CategorizerClient {
         }
     }
 
+    public static String createOntologyCsv(Ontology ontology) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("id,title,description\n");
+        for (Ontology.Node node : ontology.getNodes()) {
+            if (node.categorical()) {
+                sb.append(escapeCsvField(node.id())).append(",")
+                        .append(escapeCsvField(node.title())).append(",")
+                        .append(escapeCsvField(node.description())).append("\n");
+            }
+        }
+        return sb.toString();
+    }
+
+    private static String escapeCsvField(String value) {
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
+    }
+
     public static String removeCategoryTagsFromResponse(String aiResponse) {
         String cleaned = StringUtils.removeStart(aiResponse, "<categories>");
         return StringUtils.removeEnd(cleaned, "</categories>");
@@ -492,11 +526,13 @@ public class CategorizerClient {
                 String id = obj.get("id").getAsString();
                 String title = obj.get("title").getAsString();
                 String description = obj.get("description").getAsString();
+                String source = obj.get("source").getAsString();
+                boolean categorical = obj.get("categorical").getAsBoolean();
                 List<String> parentIds = new ArrayList<>();
                 for (JsonElement parent : obj.get("parents").getAsJsonArray()) {
                     parentIds.add(parent.getAsString());
                 }
-                nodes.add(new Ontology.Node(id, title, description, parentIds));
+                nodes.add(new Ontology.Node(id, title, description, parentIds, source, categorical));
             }
             return new Ontology(nodes);
         } catch (IOException e) {
