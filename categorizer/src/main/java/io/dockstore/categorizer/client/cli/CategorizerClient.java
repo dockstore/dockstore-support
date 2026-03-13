@@ -269,7 +269,7 @@ public class CategorizerClient {
 
     private String createSummary(BaseAIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
-        prompt += "You are a genomics and bioinformatics expert.  Please summarize the key operations performed by the following workflow in 200 words or less.  Do not include the name of the workflow.";
+        prompt += "You are a scientist and genomics and bioinformatics expert.  Summarize the purpose and function of the following workflow in 100 words or less.  Be terse and use technical terminology.  Omit the name of the workflow.";
         prompt += "\n<trsId>\n";
         prompt += trsId;
         prompt += "\n</trsId>\n";
@@ -321,13 +321,13 @@ public class CategorizerClient {
     */
     private String createPrompt(Ontology.Node node, List<Ontology.Node> children, String summary) {
         String prompt = "";
-        prompt += "You are a genomics and bioinformatics expert.\n";
-        prompt += "Use the following categories to describe a workflow:\n";
+        prompt += "You are a scientist and genomics and bioinformatics expert.\n";
+        prompt += "Use the following categories to accurately describe a workflow:\n";
         prompt += "<category-csv>\n";
         prompt += createOntologyCsv(ontology);
         prompt += "</category-csv>\n";
         prompt += "\n";
-        prompt += "Select the above categories that accurately describe the following workflow.  On each line, output the corresponding category ID, exactly as it appears above, and include no other text.\n";
+        prompt += "Select the above categories that describe the primary purpose of the following workflow.  On each line, output the corresponding category ID, and include no other text.  Do not make up new categories.\n";
         prompt += "Workflow information:\n";
         prompt +=  summary;
         return prompt;
