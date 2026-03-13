@@ -269,7 +269,7 @@ public class CategorizerClient {
 
     private String createSummary(BaseAIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
-        prompt += "You are a genomics and bioinformatics expert.  Please summarize the operations performed by the following workflow in 300 words or less.";
+        prompt += "You are a genomics and bioinformatics expert.  Please summarize the key operations performed by the following workflow in 200 words or less.  Do not include the name of the workflow.";
         prompt += "\n<trsId>\n";
         prompt += trsId;
         prompt += "\n</trsId>\n";
@@ -279,9 +279,23 @@ public class CategorizerClient {
         prompt += "\n<code>\n";
         prompt += descriptorFile;
         prompt += "\n</code>\n";
+        LOG.info("SUMMARY PROMPT {}", prompt);
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt);
         return "<description>\n" + aiResponseInfo.aiResponse() + "\n</description>";
         // return prompt;
+        /*
+        String prompt = "";
+        prompt += "\n<trsId>\n";
+        prompt += trsId;
+        prompt += "\n</trsId>\n";
+        prompt += "\n<description>\n";
+        prompt += description;
+        prompt += "\n</description>\n";
+        prompt += "\n<code>\n";
+        prompt += descriptorFile;
+        prompt += "\n</code>\n";
+        return prompt;
+        */
     }
 
     /*
@@ -313,7 +327,7 @@ public class CategorizerClient {
         prompt += createOntologyCsv(ontology);
         prompt += "</category-csv>\n";
         prompt += "\n";
-        prompt += "List the categories which accurately describe the following workflow. Output one category ID per line, list best matches first, and include no other text.\n";
+        prompt += "Select the above categories that accurately describe the following workflow.  On each line, output the corresponding category ID, exactly as it appears above, and include no other text.\n";
         prompt += "Workflow information:\n";
         prompt +=  summary;
         return prompt;
