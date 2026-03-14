@@ -322,14 +322,15 @@ public class CategorizerClient {
     private String createPrompt(Ontology.Node node, List<Ontology.Node> children, String summary) {
         String prompt = "";
         prompt += "You are a scientist and genomics and bioinformatics expert.\n";
-        prompt += "Use the following categories to describe a workflow:\n";
+        prompt += "Your goal is to categorize the function of the following workflow:\n";
+        prompt += "\n";
+        prompt +=  summary;
+        prompt += "\n\n";
+        prompt += "From the following list, select the categories which best describe why most researchers would use the above workflow.\n";
+        prompt += "Output one category ID per line, and include no other text.\n";
         prompt += "<category-csv>\n";
         prompt += createOntologyCsv(ontology);
         prompt += "</category-csv>\n";
-        prompt += "\n";
-        prompt += "Select the above categories that describe the primary purpose of the following workflow.  On each line, output the corresponding category ID, and include no other text.  Do not make up new categories.\n";
-        prompt += "Workflow information:\n";
-        prompt +=  summary;
         return prompt;
     }
 
