@@ -49,7 +49,7 @@ public class CommandLineArgs {
         private boolean dryRun = false;
 
         @Parameter(names = { "--threadCount" }, description = "Aggregate metrics using the specified number of threads in parallel")
-        private int threadCount = Math.max(Runtime.getRuntime().availableProcessors() - 1, TESTED_DEFAULT_THREADS);
+        private int threadCount = TESTED_DEFAULT_THREADS;
 
         public File getConfig() {
             return config;
