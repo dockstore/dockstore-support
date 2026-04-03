@@ -210,6 +210,7 @@ public class CategorizerClient {
                     for (String operation: operations) {
                         LOG.info("OPERATION {}", operation);
                     }
+                    output(trsId, versionId, operations);
                 } catch (Exception ex) {
                     LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage());
@@ -250,6 +251,21 @@ public class CategorizerClient {
         boolean validated = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
         LOG.info("VALIDATED {} {}", id, validated);
         return validated;
+    }
+
+    private void output(String trsId, String versionId, List<String> operations) {
+        String dockstoreUrl = "https://qa.dockstore.org/workflows/%s:%s".formatted(trsId.substring(trsId.indexOf("github.com")), versionId);
+        System.out.println(" <dl>");
+        System.out.println(" <dt>Workflow: <a href=\"%s\">%s</a></dt>".formatted(dockstoreUrl, dockstoreUrl));
+        System.out.println(" <dd> EDAM Operations:");
+        System.out.println(" <ul>");
+        System.out.println(operations.stream().map(id -> {
+                Ontology.Node node = ontology.getNodeById(id);
+                return " <li><a href=\"%s\">%s</a></li>".formatted(node.source(), node.title());
+            }).collect(Collectors.joining("\n")));
+        System.out.println(" </ul>");
+        System.out.println(" </dd>".formatted(operations.stream().collect(Collectors.joining(", "))));
+        System.out.println(" </dl>");
     }
 
     private String createSummary(BaseAIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
