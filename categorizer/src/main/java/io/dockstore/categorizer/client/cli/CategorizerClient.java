@@ -237,11 +237,13 @@ public class CategorizerClient {
             return false;
         }
         String prompt = "You are a scientist and genomics and bioinformatics expert.\n";
-        boolean isDataHandling = ontology.getAncestors(node.id()).stream().anyMatch(ancestor -> ancestor.id().equals("operation-data-handling"));
+        boolean isGeneric = ontology.getAncestors(node.id()).stream().anyMatch(ancestor -> ancestor.id().equals("operation-data-handling"))
+            || node.id().equals("operation-read-mapping")
+            || node.id().equals("operation-read-pre-processing");
         prompt += "Given the following workflow description:\n";
         prompt += summary;
         prompt += "\n\n";
-        prompt += isDataHandling ?
+        prompt += isGeneric ?
             "Is the following operation the sole purpose of the workflow?\n" :
             "Does the workflow perform the following operation, and is it the purpose or an important capability of the workflow?\n";
         prompt += "Answer \"yes\" or \"no\" with no other text.\n";
