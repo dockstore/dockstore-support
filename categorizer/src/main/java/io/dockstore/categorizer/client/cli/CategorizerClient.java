@@ -240,10 +240,10 @@ public class CategorizerClient {
         prompt += "Given the following workflow description:\n";
         prompt += summary;
         prompt += "\n\n";
-        prompt += "Does the workflow perform the following operation?\n";
+        prompt += "Does the workflow perform the following operation, and is it the purpose or an important capability of the workflow?\n";
+        prompt += "Answer \"yes\" or \"no\" with no other text.\n";
         prompt += "\"" + node.title() + "\": " + node.description();
         prompt += "\n";
-        prompt += "Answer 'yes' or 'no' with no other text.\n";
         LOG.info("VPROMPT {}", prompt);
         AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
         String response = aiResponseInfo.aiResponse();
@@ -270,7 +270,7 @@ public class CategorizerClient {
 
     private String createSummary(BaseAIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
-        prompt += "You are a scientist and genomics and bioinformatics expert.  Summarize the purpose and function of the following workflow in 200 words or less.  Describe the core operations performed.  Omit the workflow's name.  Be terse and use technical terminology.";
+        prompt += "You are a scientist and genomics and bioinformatics expert.  Summarize the purpose and functionality of the following workflow in 200 words or less.  Omit the workflow's name.  Be terse and use scientific terminology.";
         prompt += "\n<trsId>\n";
         prompt += trsId;
         prompt += "\n</trsId>\n";
@@ -302,17 +302,18 @@ public class CategorizerClient {
     private String createPrompt(String summary) {
         String prompt = "";
         prompt += "You are a scientist and genomics and bioinformatics expert.\n";
-        prompt += "Your goal is to categorize the operations performed by the following workflow:\n";
+        prompt += "Your goal is to determine the operations performed by the following workflow:\n";
         prompt += "\n";
         prompt +=  summary;
         prompt += "\n\n";
-        prompt += "From the following list, select the categories which describe the core operations that the workflow performs.\n";
-        prompt += "Prefer categories that relate to the main purpose of the workflow.\n";
-        prompt += "Prefer categories that differentiate the workflow from other workflows.\n";
-        prompt += "Output one category ID per line, and include no other text.\n";
-        prompt += "<category-csv>\n";
+        prompt += "From the following list, select the operations that the workflow performs.\n";
+        prompt += "Prefer operations that summarize the purpose or functionality of the workflow as a whole.\n";
+        prompt += "Prefer operations that differentiate the workflow from other workflows.\n";
+        prompt += "Prefer operations that are very specific.\n";
+        prompt += "Output one operation ID per line and no other text.\n";
+        prompt += "<operation-csv>\n";
         prompt += createOntologyCsv(ontology);
-        prompt += "</category-csv>\n";
+        prompt += "</operation-csv>\n";
         return prompt;
     }
 
@@ -492,7 +493,7 @@ public class CategorizerClient {
 
     public static String createOntologyCsv(Ontology ontology) {
         StringBuilder sb = new StringBuilder();
-        sb.append("id,title,description\n");
+        sb.append("id,name,description\n");
         for (Ontology.Node node : ontology.getNodes()) {
             if (node.categorical()) {
                 sb.append(escapeCsvField(node.id())).append(",")
