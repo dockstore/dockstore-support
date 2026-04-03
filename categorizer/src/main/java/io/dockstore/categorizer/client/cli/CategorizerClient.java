@@ -47,6 +47,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
@@ -199,59 +200,16 @@ public class CategorizerClient {
                 // Generate categories using AI model
                 String nodeId = "operation-operation";
                 try {
-                    /*
-                    String prompt = "Based on the content of the following " + entryType
-                            + ", suggest relevant EDAM ontology categories that best describe the operations, topics, and data types involved."
-                            + " Return the categories as a JSON array of objects with 'uri' and 'label' fields in <categories> tags.\n<content>"
-                            + descriptorFile.getContent() + "</content>";
-                    String prompt = "Based on the following information about a " + entryType + ", determine the output format that the " + entryType + " performs.\n";
-                    prompt += "<name>Optimus</name>\n";
-                    prompt += "<description>\nIt is an alignment and transcriptome quantification pipeline that corrects cell barcodes (CBs), aligns reads to the genome, corrects Unique Molecular Identifiers (UMIs), generates a count matrix in a UMI-aware manner, calculates summary metrics for genes and cells, detects empty droplets, returns read outputs in BAM format, and returns cell gene counts in numpy matrix and h5ad file formats.\n</description>\n";
-                    prompt += "\n";
-                    prompt += "Pick a category from the subsequent list that describes the output format that the " + entryType + " supports.  Respond with the number of the category and do not include any additional information.\n";
-                    prompt += "1. xml\n";
-                    prompt += "2. json\n";
-                    prompt += "3. bam\n";
-                    prompt += "4. txt\n";
-                    prompt += "5. fastq\n";
-                    prompt += "6. none of the above\n";
-                    */
                     String summary = createSummary(aiModel.get(), entryType, trsId, description, descriptorFile.getContent());
-                    while (true) {
-                        LOG.info("AT NODE {}", nodeId);
-                        Ontology.Node node = ontology.getNodeById(nodeId);
-                        List<Ontology.Node> children = ontology.getChildren(node.id());
-                        if (children.isEmpty()) {
-                            LOG.info("no children, aborting");
-                            LOG.info("current node {}", nodeId);
-                            break;
-                        }
-                        String prompt = createPrompt(node, children, summary);
-                        LOG.info("PROMPT {}", prompt);
-                        AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
-                        LOG.info("RESPONSE {}", aiResponseInfo.aiResponse());
-                        // String cleanedResponse = removeCategoryTagsFromResponse(aiResponseInfo.aiResponse());
-                        try {
-                            int index = Integer.parseInt(aiResponseInfo.aiResponse()) - 1;
-                            if (index < 0 || index >= children.size()) {
-                                LOG.info("could not pick a child");
-                                LOG.info("current node {}", nodeId);
-                                break;
-                            }
-                            nodeId = children.get(index).id();
-                            LOG.info("selected index {}, node {}", index, ontology.getNodeById(nodeId));
-                        } catch (RuntimeException e) {
-                            LOG.info("defective response");
-                            LOG.info("current node {}", nodeId);
-                            break;
-                        }
+                    String prompt = createPrompt(summary);
+                    LOG.info("PROMPT {}", prompt);
+                    AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
+                    String response = aiResponseInfo.aiResponse();
+                    LOG.info("RESPONSE {}", response);
+                    List<String> operations = Arrays.asList(response.split("\n")).stream().filter(id -> validateOperation(id, summary, aiModel)).toList();
+                    for (String operation: operations) {
+                        LOG.info("OPERATION {}", operation);
                     }
-                    /*
-                    aiResponseInfo = new AIResponseInfo(nodeId, false, 0, 0, 0, found);
-                    writeCategoryRecord(categoriesCsvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
-                    LOG.info("Generated categories for entry with TRS ID {} and version {}", trsId, versionId);
-                    numberOfCategoriesGenerated += 1;
-                    */
                 } catch (Exception ex) {
                     LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage());
@@ -267,9 +225,36 @@ public class CategorizerClient {
         }
     }
 
+    private boolean validateOperation(String id, String summary, Optional<BaseAIModel> aiModel) {
+        Ontology.Node node = ontology.getNodeById(id);
+        if (node == null) {
+            LOG.info("HALLUCINATED {}", id);
+            return false;
+        }
+        if (!node.categorical()) {
+            LOG.info("NON-CATEGORICAL {}", id);
+            return false;
+        }
+        String prompt = "You are a scientist and genomics and bioinformatics expert.\n";
+        prompt += "Given the following workflow description:\n";
+        prompt += summary;
+        prompt += "\n\n";
+        prompt += "Does the workflow perform the following operation?\n";
+        prompt += "\"" + node.title() + "\": " + node.description();
+        prompt += "\n";
+        prompt += "Answer 'yes' or 'no' with no other text.\n";
+        LOG.info("VPROMPT {}", prompt);
+        AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
+        String response = aiResponseInfo.aiResponse();
+        LOG.info("VRESPONSE {}", response);
+        boolean validated = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
+        LOG.info("VALIDATED {} {}", id, validated);
+        return validated;
+    }
+
     private String createSummary(BaseAIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
-        prompt += "You are a scientist and genomics and bioinformatics expert.  Summarize the purpose and function of the following workflow in 100 words or less.  Be terse and use technical terminology.  Omit the workflow's name.";
+        prompt += "You are a scientist and genomics and bioinformatics expert.  Summarize the purpose and function of the following workflow in 200 words or less.  Describe the core operations performed.  Omit the workflow's name.  Be terse and use technical terminology.";
         prompt += "\n<trsId>\n";
         prompt += trsId;
         prompt += "\n</trsId>\n";
@@ -298,36 +283,17 @@ public class CategorizerClient {
         */
     }
 
-    /*
-    private String createPrompt(Ontology.Node node, List<Ontology.Node> children, String summary) {
-        String prompt = "";
-        prompt += "You are a genomics and bioinformatics expert.\n";
-        prompt += "Select at most two list items that best describe the most important operations performed by the following workflow.  Respond with each item number and do not include any additional information.\n";
-        for (int i = 0; i < children.size(); i++) {
-            Ontology.Node child = children.get(i);
-            prompt += (i + 1) + ". " + child.title() + ": " + child.description();
-            List<Ontology.Node> grands = ontology.getChildren(child.id());
-            if (!grands.isEmpty()) {
-                prompt += " (includes " + grands.stream().map(x -> "'" + x.title() + "'").collect(Collectors.joining(", ")) + ")";
-            }
-            prompt += "\n";
-        }
-        prompt += (children.size() + 1) + ". " + "None of the above.\n";
-        prompt += "\n\n";
-        prompt += summary;
-        prompt += "\n\n";
-        return prompt;
-    }
-    */
-    private String createPrompt(Ontology.Node node, List<Ontology.Node> children, String summary) {
+    private String createPrompt(String summary) {
         String prompt = "";
         prompt += "You are a scientist and genomics and bioinformatics expert.\n";
         prompt += "Your goal is to categorize the operations performed by the following workflow:\n";
         prompt += "\n";
         prompt +=  summary;
         prompt += "\n\n";
-        prompt += "From the following list, select the categories which best describe why most researchers would use the workflow.\n";
-        prompt += "Output one category ID per line, and include no other text.";
+        prompt += "From the following list, select the categories which describe the core operations that the workflow performs.\n";
+        prompt += "Prefer categories that relate to the main purpose of the workflow.\n";
+        prompt += "Prefer categories that differentiate the workflow from other workflows.\n";
+        prompt += "Output one category ID per line, and include no other text.\n";
         prompt += "<category-csv>\n";
         prompt += createOntologyCsv(ontology);
         prompt += "</category-csv>\n";
