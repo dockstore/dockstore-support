@@ -32,7 +32,7 @@ public class MetricsAggregatorConfig {
         SubnodeConfiguration athenaSection = config.getSection("athena");
 
         this.dockstoreConfig = new DockstoreConfig(dockstoreSection.getString("server-url", "http://localhost:8080"), dockstoreSection.getString("token"));
-        this.s3Config = new S3Config(s3Section.getString("bucketName", "local-dockstore-metrics-data"), s3Section.getString("endpointOverride"));
+        this.s3Config = new S3Config(s3Section.getString("bucketName", "local-dockstore-metrics-data"), s3Section.getString("endpointOverride", null));
         this.athenaConfig = new AthenaConfig(athenaSection.getString("workgroup"));
     }
 
