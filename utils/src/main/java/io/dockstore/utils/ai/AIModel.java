@@ -5,7 +5,7 @@ public interface AIModel {
     double getPricePer1kInputTokens();
     double getPricePer1kOutputTokens();
     int getMaxContextLength();
-    AIResponseInfo submitPrompt(String prompt);
+    AIResponseInfo submitPrompt(String prompt, double temperature, int maxResponseTokens);
 
     public record AIResponseInfo(String aiResponse, boolean isTruncated, long inputTokens, long outputTokens, double cost, String stopReason) {
     }

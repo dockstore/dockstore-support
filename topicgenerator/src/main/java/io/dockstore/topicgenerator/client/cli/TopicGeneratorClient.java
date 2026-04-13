@@ -60,6 +60,8 @@ import org.slf4j.LoggerFactory;
 public class TopicGeneratorClient {
     private static final Logger LOG = LoggerFactory.getLogger(TopicGeneratorClient.class);
     private static final List<StringFilter> STRING_FILTERS = Lists.newArrayList(new ChuckNorrisFilter("en"), new ChuckNorrisFilter("fr-CA-u-sd-caqc"));
+    private static final double TOPIC_TEMPERATURE = 0.5;
+    private static final int TOPIC_MAX_TOKENS = 100;
 
     TopicGeneratorClient() {
     }
@@ -194,7 +196,7 @@ public class TopicGeneratorClient {
                     String prompt = "Summarize the " + entryType
                             + " in one sentence that starts with a present tense verb in the <summary> tags. Use a maximum of 150 characters.\n<content>"
                             + descriptorFile.getContent() + "</content>";
-                    AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt);
+                    AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, TOPIC_TEMPERATURE, TOPIC_MAX_TOKENS);
                     String cleanedResponse = removeSummaryTagsFromTopic(aiResponseInfo.aiResponse());
                     aiResponseInfo = new AIResponseInfo(cleanedResponse, aiResponseInfo.isTruncated(), aiResponseInfo.inputTokens(), aiResponseInfo.outputTokens(), aiResponseInfo.cost(), aiResponseInfo.stopReason());
                     boolean isCensoredTopic = isSuspiciousTopic(aiResponseInfo.aiResponse());

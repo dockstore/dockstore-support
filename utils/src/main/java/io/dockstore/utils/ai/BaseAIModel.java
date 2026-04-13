@@ -4,8 +4,6 @@ package io.dockstore.utils.ai;
  * An AI model that generates topics.
  */
 public abstract class BaseAIModel implements AIModel {
-    // The sum of the number of tokens in the request and response cannot exceed the model's maximum context length.
-    public static final int MAX_RESPONSE_TOKENS = 100; // One token is roughly 4 characters. Using 100 tokens because setting it too low might truncate the response
     private final AIModelType aiModelType;
 
     protected BaseAIModel(AIModelType modelType) {
@@ -18,7 +16,7 @@ public abstract class BaseAIModel implements AIModel {
      * @return
      */
     @Override
-    public abstract AIResponseInfo submitPrompt(String prompt);
+    public abstract AIResponseInfo submitPrompt(String prompt, double temperature, int maxResponseTokens);
 
     @Override
     public String getModelName() {
