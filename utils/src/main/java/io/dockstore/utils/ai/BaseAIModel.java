@@ -17,6 +17,7 @@ public abstract class BaseAIModel implements AIModel {
      *
      * @return
      */
+    @Override
     public abstract AIResponseInfo submitPrompt(String prompt);
 
     @Override
@@ -49,8 +50,5 @@ public abstract class BaseAIModel implements AIModel {
         // https://docs.aws.amazon.com/bedrock/latest/userguide/model-customization-prepare.html
         final int estimatedCharactersPerToken = 6;
         return prompt.length() / estimatedCharactersPerToken;
-    }
-
-    public record AIResponseInfo(String aiResponse, boolean isTruncated, long inputTokens, long outputTokens, double cost, String stopReason) {
     }
 }

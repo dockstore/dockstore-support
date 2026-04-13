@@ -30,10 +30,11 @@ import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.Gene
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.OutputCsvHeaders;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.UploadTopicsCommand;
 import io.dockstore.topicgenerator.helper.CSVHelper;
+import io.dockstore.utils.ai.AIModel;
+import io.dockstore.utils.ai.AIModel.AIResponseInfo;
+import io.dockstore.utils.ai.AIModelFactory;
 import io.dockstore.utils.ai.AIModelType;
 import io.dockstore.utils.ai.AnthropicClaudeModel;
-import io.dockstore.utils.ai.BaseAIModel;
-import io.dockstore.utils.ai.BaseAIModel.AIResponseInfo;
 import io.dockstore.utils.ai.ChuckNorrisFilter;
 import io.dockstore.utils.ai.StringFilter;
 import java.io.FileWriter;
@@ -140,10 +141,7 @@ public class TopicGeneratorClient {
             return;
         }
 
-        Optional<BaseAIModel> aiModel = getAiModel(aiModelType, topicGeneratorConfig);
-        if (aiModel.isEmpty()) {
-            errorMessage("Invalid AI model type", CLIENT_ERROR);
-        }
+        AIModel aiModel = AIModelFactory.createModel(aiModelType);
         LOG.info("Generating topics for AI topic candidates using AI model {}", aiModelType.getModelId());
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
         final String unfilteredTopicsFileName = "generated-topics" + outputFileNameSuffix;
@@ -196,7 +194,7 @@ public class TopicGeneratorClient {
                     String prompt = "Summarize the " + entryType
                             + " in one sentence that starts with a present tense verb in the <summary> tags. Use a maximum of 150 characters.\n<content>"
                             + descriptorFile.getContent() + "</content>";
-                    AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
+                    AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt);
                     String cleanedResponse = removeSummaryTagsFromTopic(aiResponseInfo.aiResponse());
                     aiResponseInfo = new AIResponseInfo(cleanedResponse, aiResponseInfo.isTruncated(), aiResponseInfo.inputTokens(), aiResponseInfo.outputTokens(), aiResponseInfo.cost(), aiResponseInfo.stopReason());
                     boolean isCensoredTopic = isSuspiciousTopic(aiResponseInfo.aiResponse());
@@ -281,14 +279,6 @@ public class TopicGeneratorClient {
 
         LOG.info("Retrieved {} out of {} AI topic candidates from {}", aiTopicCandidates.size(), totalAiTopicCandidatesCount, dockstoreServerUrl);
         return aiTopicCandidates;
-    }
-
-    private Optional<BaseAIModel> getAiModel(AIModelType aiModelType, TopicGeneratorConfig topicGeneratorConfig) {
-        if (aiModelType == AIModelType.CLAUDE_3_HAIKU || aiModelType == AIModelType.CLAUDE_3_5_SONNET) {
-            return Optional.of(new AnthropicClaudeModel(aiModelType));
-        } else {
-            return Optional.empty();
-        }
     }
 
     private void writeAITopicCandidates(List<TrsIdAndVersionId> aiTopicCandidates) {
