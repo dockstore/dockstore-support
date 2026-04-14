@@ -2,6 +2,8 @@ package io.dockstore.utils.ai;
 
 public interface AIModel {
 
+    AIResponseInfo submitPrompt(String prompt, double temperature, int maxResponseTokens);
+
     String getModelName();
 
     double getPricePer1kInputTokens();
@@ -10,11 +12,9 @@ public interface AIModel {
 
     int getMaxContextLength();
 
-    AIResponseInfo submitPrompt(String prompt, double temperature, int maxResponseTokens);
-
     @SuppressWarnings("checkstyle:magicnumber")
     default double calculatePrice(long inputTokens, long outputTokens) {
-        return (((double)inputTokens / 1000) * getPricePer1kInputTokens()) + (((double)outputTokens / 1000) * getPricePer1kOutputTokens());
+        return (inputTokens / 1000. * getPricePer1kInputTokens()) + (outputTokens / 1000. * getPricePer1kOutputTokens());
     }
 
     default int estimateTokens(String prompt) {
@@ -24,6 +24,6 @@ public interface AIModel {
         return prompt.length() / estimatedCharactersPerToken;
     }
 
-    public record AIResponseInfo(String aiResponse, boolean isTruncated, long inputTokens, long outputTokens, double cost, String stopReason) {
+    record AIResponseInfo(String aiResponse, boolean isTruncated, long inputTokens, long outputTokens, double cost, String stopReason) {
     }
 }

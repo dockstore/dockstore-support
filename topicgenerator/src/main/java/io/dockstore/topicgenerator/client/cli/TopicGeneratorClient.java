@@ -34,7 +34,6 @@ import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModel.AIResponseInfo;
 import io.dockstore.utils.ai.AIModelFactory;
 import io.dockstore.utils.ai.AIModelType;
-import io.dockstore.utils.ai.AnthropicClaudeModel;
 import io.dockstore.utils.ai.ChuckNorrisFilter;
 import io.dockstore.utils.ai.StringFilter;
 import java.io.FileWriter;
