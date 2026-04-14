@@ -73,4 +73,11 @@ class TerraMetricsSubmitterTest {
         String configFilePath = ResourceHelpers.resourceFilePath("metrics-aggregator.missing.config");
         assertThrows(NoSuchElementException.class, () -> TestUtilities.getMetricsConfig(configFilePath));
     }
+
+    @Test
+    void testConfigWithMissingButOptionalValues() {
+        String configFilePath = ResourceHelpers.resourceFilePath("metrics-aggregator.missing.but.optional.config");
+        MetricsAggregatorConfig metricsConfig = TestUtilities.getMetricsConfig(configFilePath);
+        assertNotNull(metricsConfig);
+    }
 }
