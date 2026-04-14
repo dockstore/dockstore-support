@@ -6,15 +6,14 @@ public interface AIModel {
 
     String getModelName();
 
-    double getPricePer1kInputTokens();
+    double getPricePerInputToken();
 
-    double getPricePer1kOutputTokens();
+    double getPricePerOutputToken();
 
     int getMaxContextLength();
 
-    @SuppressWarnings("checkstyle:magicnumber")
     default double calculatePrice(long inputTokens, long outputTokens) {
-        return (inputTokens / 1000. * getPricePer1kInputTokens()) + (outputTokens / 1000. * getPricePer1kOutputTokens());
+        return (inputTokens * getPricePerInputToken()) + (outputTokens * getPricePerOutputToken());
     }
 
     default int estimateTokens(String prompt) {

@@ -16,13 +16,13 @@ public abstract class BaseAIModel implements AIModel {
     }
 
     @Override
-    public double getPricePer1kInputTokens() {
-        return aiModelType.getPricePer1kInputTokens();
+    public double getPricePerInputToken() {
+        return aiModelType.getPricePerInputToken();
     }
 
     @Override
-    public double getPricePer1kOutputTokens() {
-        return aiModelType.getPricePer1kOutputTokens();
+    public double getPricePerOutputToken() {
+        return aiModelType.getPricePerOutputToken();
     }
 
     @Override
