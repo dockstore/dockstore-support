@@ -6,7 +6,7 @@ import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 
 import io.dockstore.common.S3ClientHelper;
 import io.dockstore.openapi.client.model.FileWrapper;
-import io.dockstore.utils.ai.BaseAIModel.AIResponseInfo;
+import io.dockstore.utils.ai.AIModel.AIResponseInfo;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;

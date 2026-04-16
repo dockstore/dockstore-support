@@ -28,12 +28,12 @@ public class AnthropicClaudeModel extends BaseAIModel {
     }
 
     @Override
-    public AIResponseInfo submitPrompt(String prompt) {
+    public AIResponseInfo submitPrompt(String prompt, double temperature, int maxResponseTokens) {
         if (estimateTokens(prompt) > getMaxContextLength()) {
             prompt = prompt.substring(0, getMaxContextLength());
         }
 
-        final String nativeRequest = createNativeClaudeRequest(prompt);
+        final String nativeRequest = createNativeClaudeRequest(prompt, temperature, maxResponseTokens);
 
         // Encode and send the request to the Bedrock Runtime.
         InvokeModelResponse response = bedrockRuntimeClient.invokeModel(request -> request
@@ -52,11 +52,9 @@ public class AnthropicClaudeModel extends BaseAIModel {
     }
 
     // Format the request payload using the model's native structure.
-    private String createNativeClaudeRequest(String prompt) {
-        // The amount of randomness injected into the response. Ranges from 0 to 1. Pick 0.5 as the middle ground between predictability and creativity.
-        final double temperature = 0.5;
+    private String createNativeClaudeRequest(String prompt, double temperature, int maxResponseTokens) {
         // See https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-request-response for examples
-        ClaudeRequest claudeRequest = new ClaudeRequest(ANTHROPIC_API_VERSION, MAX_RESPONSE_TOKENS, temperature, List.of(new Message("user", List.of(new Content("text", prompt)))));
+        ClaudeRequest claudeRequest = new ClaudeRequest(ANTHROPIC_API_VERSION, maxResponseTokens, temperature, List.of(new Message("user", List.of(new Content("text", prompt)))));
         return GSON.toJson(claudeRequest);
     }
 }
