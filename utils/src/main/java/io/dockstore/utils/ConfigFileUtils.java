@@ -29,6 +29,7 @@ public final class ConfigFileUtils {
         INIConfiguration config = null;
         try {
             config = configs.ini(iniFile);
+            config.setThrowExceptionOnMissing(true);
         } catch (ConfigurationException e) {
             exceptionMessage(e, CONFIG_FILE_ERROR, IO_ERROR);
         }

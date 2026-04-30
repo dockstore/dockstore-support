@@ -1,19 +1,19 @@
 package io.dockstore.utils.ai;
 
 public enum AIModelType {
-    CLAUDE_3_5_SONNET("us.anthropic.claude-3-5-sonnet-20240620-v1:0", 0.003, 0.015, 200000),
-    CLAUDE_3_HAIKU("us.anthropic.claude-3-haiku-20240307-v1:0", 0.00025, 0.00125, 200000),
-    CLAUDE_4_5_HAIKU("us.anthropic.claude-haiku-4-5-20251001-v1:0", 0.001, 0.005, 200000);
+    CLAUDE_3_5_SONNET("us.anthropic.claude-3-5-sonnet-20240620-v1:0", 3.0 / 1_000_000, 15.0 / 1_000_000, 200000),
+    CLAUDE_3_HAIKU("us.anthropic.claude-3-haiku-20240307-v1:0", 0.25 / 1_000_000, 1.25 / 1_000_000, 200000),
+    CLAUDE_4_5_HAIKU("us.anthropic.claude-haiku-4-5-20251001-v1:0", 1.0 / 1_000_000, 5.0 / 1_000_000, 200000);
 
     private final String modelId;
-    private final double pricePer1kInputTokens;
-    private final double pricePer1kOutputTokens;
+    private final double pricePerInputToken;
+    private final double pricePerOutputToken;
     private final int maxContextLength;
 
-    AIModelType(String modelId, double pricePer1kInputTokens, double pricePer1kOutputTokens, int maxInputTokens) {
+    AIModelType(String modelId, double pricePerInputToken, double pricePerOutputToken, int maxInputTokens) {
         this.modelId = modelId;
-        this.pricePer1kInputTokens = pricePer1kInputTokens;
-        this.pricePer1kOutputTokens = pricePer1kOutputTokens;
+        this.pricePerInputToken = pricePerInputToken;
+        this.pricePerOutputToken = pricePerOutputToken;
         this.maxContextLength = maxInputTokens;
     }
 
@@ -21,12 +21,12 @@ public enum AIModelType {
         return modelId;
     }
 
-    public double getPricePer1kInputTokens() {
-        return pricePer1kInputTokens;
+    public double getPricePerInputToken() {
+        return pricePerInputToken;
     }
 
-    public double getPricePer1kOutputTokens() {
-        return pricePer1kOutputTokens;
+    public double getPricePerOutputToken() {
+        return pricePerOutputToken;
     }
 
     public int getMaxContextLength() {
