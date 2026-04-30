@@ -8,12 +8,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ThreeStageLogic implements Logic {
-    private static final Logger LOG = LoggerFactory.getLogger(ThreeStageLogic.class);
+public class ThreeStageOntologyHandler implements OntologyHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(ThreeStageOntologyHandler.class);
 
     private final Ontology ontology;
 
-    ThreeStageLogic(Ontology ontology) {
+    ThreeStageOntologyHandler(Ontology ontology) {
         this.ontology = ontology;
     }
 

@@ -66,11 +66,11 @@ public class CategorizerClient {
     private static final Logger LOG = LoggerFactory.getLogger(CategorizerClient.class);
 
     private Ontology ontology;
-    private Logic logic;
+    private OntologyHandler ontologyHandler;
 
     CategorizerClient() {
         ontology = readOntology("operation.json");
-        logic = new ThreeStageLogic(ontology);
+        ontologyHandler = new ThreeStageOntologyHandler(ontology);
     }
 
     public static void main(String[] args) {
@@ -198,7 +198,7 @@ public class CategorizerClient {
 
                 // Classify into the ontology using AI model
                 try {
-                    List<String> operations = logic.categorize(aiModel, entryType, trsId, description, descriptorFile.getContent());
+                    List<String> operations = ontologyHandler.categorize(aiModel, entryType, trsId, description, descriptorFile.getContent());
                     for (String operation: operations) {
                         LOG.info("OPERATION {}", operation);
                     }
