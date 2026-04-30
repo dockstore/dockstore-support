@@ -33,10 +33,10 @@ import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.Tool;
 import io.dockstore.openapi.client.model.ToolVersion;
 import io.dockstore.openapi.client.model.ToolVersion.DescriptorTypeEnum;
+import io.dockstore.utils.ai.AIModel;
+import io.dockstore.utils.ai.AIModel.AIResponseInfo;
+import io.dockstore.utils.ai.AIModelFactory;
 import io.dockstore.utils.ai.AIModelType;
-import io.dockstore.utils.ai.AnthropicClaudeModel;
-import io.dockstore.utils.ai.BaseAIModel;
-import io.dockstore.utils.ai.BaseAIModel.AIResponseInfo;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -149,10 +149,7 @@ public class CategorizerClient {
             return;
         }
 
-        Optional<BaseAIModel> aiModel = getAiModel(aiModelType);
-        if (aiModel.isEmpty()) {
-            errorMessage("Invalid AI model type", CLIENT_ERROR);
-        }
+        AIModel aiModel = AIModelFactory.createModel(aiModelType);
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
         final String categoriesFileName = "generated-categories" + outputFileNameSuffix;
@@ -200,10 +197,10 @@ public class CategorizerClient {
                 // Generate categories using AI model
                 String nodeId = "operation-operation";
                 try {
-                    String summary = createSummary(aiModel.get(), entryType, trsId, description, descriptorFile.getContent());
+                    String summary = createSummary(aiModel, entryType, trsId, description, descriptorFile.getContent());
                     String prompt = createPrompt(summary);
                     LOG.info("PROMPT {}", prompt);
-                    AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
+                    AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 300);
                     String response = aiResponseInfo.aiResponse();
                     LOG.info("RESPONSE {}", response);
                     List<String> operations = Arrays.asList(response.split("\n")).stream().filter(id -> validateOperation(id, summary, aiModel)).toList();
@@ -226,7 +223,7 @@ public class CategorizerClient {
         }
     }
 
-    private boolean validateOperation(String id, String summary, Optional<BaseAIModel> aiModel) {
+    private boolean validateOperation(String id, String summary, AIModel aiModel) {
         Ontology.Node node = ontology.getNodeById(id);
         if (node == null) {
             LOG.info("HALLUCINATED {}", id);
@@ -250,7 +247,7 @@ public class CategorizerClient {
         prompt += "\"" + node.title() + "\": " + node.description();
         prompt += "\n";
         LOG.info("VPROMPT {}", prompt);
-        AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 5);
         String response = aiResponseInfo.aiResponse();
         LOG.info("VRESPONSE {}", response);
         boolean validated = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
@@ -267,7 +264,7 @@ public class CategorizerClient {
             }).collect(Collectors.joining("\n")));
     }
 
-    private String createSummary(BaseAIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
+    private String createSummary(AIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
         prompt += "You are a scientist and genomics and bioinformatics expert.  Summarize the purpose and functionality of the following workflow in 200 words or less.  Omit the workflow's name.  Be terse and use scientific terminology.";
         prompt += "\n<trsId>\n";
@@ -280,7 +277,7 @@ public class CategorizerClient {
         prompt += descriptorFile;
         prompt += "\n</code>\n";
         LOG.info("SUMMARY PROMPT {}", prompt);
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt);
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 400);
         return "<description>\n" + aiResponseInfo.aiResponse() + "\n</description>";
         // return prompt;
         /*
@@ -371,14 +368,6 @@ public class CategorizerClient {
 
         LOG.info("Retrieved {} out of {} categorization candidates from {}", candidates.size(), totalCandidatesCount, dockstoreServerUrl);
         return candidates;
-    }
-
-    private Optional<BaseAIModel> getAiModel(AIModelType aiModelType) {
-        if (aiModelType == AIModelType.CLAUDE_3_HAIKU || aiModelType == AIModelType.CLAUDE_3_5_SONNET || aiModelType == AIModelType.CLAUDE_4_5_HAIKU) {
-            return Optional.of(new AnthropicClaudeModel(aiModelType));
-        } else {
-            return Optional.empty();
-        }
     }
 
     private void writeCategorizationCandidates(List<TrsIdAndVersionId> candidates) {
