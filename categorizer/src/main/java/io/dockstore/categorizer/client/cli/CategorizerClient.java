@@ -195,7 +195,6 @@ public class CategorizerClient {
                 }
 
                 // Generate categories using AI model
-                String nodeId = "operation-operation";
                 try {
                     String summary = createSummary(aiModel, entryType, trsId, description, descriptorFile.getContent());
                     String prompt = createPrompt(summary);
