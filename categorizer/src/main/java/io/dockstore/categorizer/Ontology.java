@@ -47,33 +47,7 @@ public class Ontology {
         return nodes;
     }
 
-    public static class Node {
-        private final String id;
-        private final String label;
-        private final String definition;
-        private final List<String> parentIds;
-        private final String source;
-        private final boolean recommendedForAnnotation;
-        private final Ontology ontology;
-
-        Node(String id, String label, String definition, List<String> parentIds, String source, boolean recommendedForAnnotation, Ontology ontology) {
-            this.id = id;
-            this.label = label;
-            this.definition = definition;
-            this.parentIds = parentIds;
-            this.source = source;
-            this.recommendedForAnnotation = recommendedForAnnotation;
-            this.ontology = ontology;
-        }
-
-        public String id() { return id; }
-        public String label() { return label; }
-        public String definition() { return definition; }
-        public List<String> parentIds() { return parentIds; }
-        public String source() { return source; }
-        public boolean recommendedForAnnotation() { return recommendedForAnnotation; }
-        public Ontology ontology() { return ontology; }
-
+    public record Node(String id, String label, String definition, List<String> parentIds, String source, boolean recommendedForAnnotation, Ontology ontology) {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -85,5 +59,6 @@ public class Ontology {
         public int hashCode() {
             return Objects.hash(id);
         }
+
     }
 }
