@@ -198,11 +198,12 @@ public class CategorizerClient {
 
                 // Classify into the ontology using AI model
                 try {
-                    List<String> operations = ontologyHandler.categorize(aiModel, entryType, trsId, description, descriptorFile.getContent());
-                    for (String operation: operations) {
-                        LOG.info("OPERATION {}", operation);
+                    List<Ontology.Node> handledNodes = ontologyHandler.handlesNodes(ontology);
+                    List<Ontology.Node> operationNodes = ontologyHandler.categorizeIntoNodes(handledNodes, aiModel, entryType, trsId, description, descriptorFile.getContent());
+                    for (Ontology.Node node : operationNodes) {
+                        LOG.info("OPERATION {}", node.id());
                     }
-                    output(trsId, versionId, operations);
+                    output(trsId, versionId, operationNodes);
                 } catch (Exception ex) {
                     LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage());
@@ -218,13 +219,12 @@ public class CategorizerClient {
         }
     }
 
-    private void output(String trsId, String versionId, List<String> operations) {
+    private void output(String trsId, String versionId, List<Ontology.Node> nodes) {
         String dockstoreUrl = "https://dockstore.org/workflows/%s:%s".formatted(trsId.substring(trsId.indexOf("github.com")), versionId);
         System.out.println("* [%s](%s)".formatted(dockstoreUrl, dockstoreUrl));
-        System.out.println(operations.stream().map(id -> {
-                Ontology.Node node = ontology.getNodeById(id);
-                return "    * [%s](%s)".formatted(node.label(), node.source());
-            }).collect(Collectors.joining("\n")));
+        System.out.println(nodes.stream().map(node ->
+                "    * [%s](%s)".formatted(node.label(), node.source())
+            ).collect(Collectors.joining("\n")));
     }
 
     private List<TrsIdAndVersionId> getCategorizationCandidatesFromFile(String inputFileName) {
