@@ -20,7 +20,7 @@ public class ThreeStageLogic implements Logic {
     @Override
     public List<String> categorize(AIModel aiModel, String entryType, String trsId, String description, String descriptorFileContent) {
         String summary = summarize(aiModel, entryType, trsId, description, descriptorFileContent);
-        return classify(aiModel, summary).stream().filter(id -> validate(id, summary, aiModel)).toList();
+        return classify(aiModel, summary).stream().filter(this::gate).filter(id -> validate(id, summary, aiModel)).toList();
     }
 
     private String summarize(AIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
@@ -38,20 +38,6 @@ public class ThreeStageLogic implements Logic {
         LOG.info("SUMMARY PROMPT {}", prompt);
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 400);
         return "<description>\n" + aiResponseInfo.aiResponse() + "\n</description>";
-        // return prompt;
-        /*
-        String prompt = "";
-        prompt += "\n<trsId>\n";
-        prompt += trsId;
-        prompt += "\n</trsId>\n";
-        prompt += "\n<description>\n";
-        prompt += description;
-        prompt += "\n</description>\n";
-        prompt += "\n<code>\n";
-        prompt += descriptorFile;
-        prompt += "\n</code>\n";
-        return prompt;
-        */
     }
 
     private List<String> classify(AIModel aiModel, String summary) {
@@ -63,7 +49,7 @@ public class ThreeStageLogic implements Logic {
         return Arrays.asList(response.split("\n"));
     }
 
-    private boolean validate(String id, String summary, AIModel aiModel) {
+    private boolean gate(String id) {
         Ontology.Node node = ontology.getNodeById(id);
         if (node == null) {
             LOG.info("HALLUCINATED {}", id);
@@ -73,6 +59,11 @@ public class ThreeStageLogic implements Logic {
             LOG.info("NON-CATEGORICAL {}", id);
             return false;
         }
+        return true;
+    }
+
+    private boolean validate(String id, String summary, AIModel aiModel) {
+        Ontology.Node node = ontology.getNodeById(id);
         String prompt = "You are a scientist and genomics and bioinformatics expert.\n";
         boolean isGeneric = ontology.getAncestors(node.id()).stream().anyMatch(ancestor -> ancestor.id().equals("operation-data-handling"))
             || node.id().equals("operation-read-mapping")
