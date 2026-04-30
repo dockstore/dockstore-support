@@ -37,6 +37,7 @@ import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModel.AIResponseInfo;
 import io.dockstore.utils.ai.AIModelFactory;
 import io.dockstore.utils.ai.AIModelType;
+import io.dockstore.utils.ai.LoggingAIModel;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -150,7 +151,7 @@ public class CategorizerClient {
             return;
         }
 
-        AIModel aiModel = AIModelFactory.createModel(aiModelType);
+        AIModel aiModel = new LoggingAIModel(AIModelFactory.createModel(aiModelType));
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
         final String categoriesFileName = "generated-categories" + outputFileNameSuffix;

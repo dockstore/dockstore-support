@@ -35,17 +35,14 @@ public class ThreeStageLogic implements Logic {
         prompt += "\n<code>\n";
         prompt += descriptorFile;
         prompt += "\n</code>\n";
-        LOG.info("SUMMARY PROMPT {}", prompt);
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 400);
         return "<description>\n" + aiResponseInfo.aiResponse() + "\n</description>";
     }
 
     private List<String> classify(AIModel aiModel, String summary) {
         String prompt = createPrompt(summary);
-        LOG.info("PROMPT {}", prompt);
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 300);
         String response = aiResponseInfo.aiResponse();
-        LOG.info("RESPONSE {}", response);
         return Arrays.asList(response.split("\n"));
     }
 
@@ -73,10 +70,8 @@ public class ThreeStageLogic implements Logic {
         prompt += "Answer \"yes\" or \"no\" with no other text.\n";
         prompt += "\"" + node.label() + "\": " + node.definition();
         prompt += "\n";
-        LOG.info("VPROMPT {}", prompt);
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 5);
         String response = aiResponseInfo.aiResponse();
-        LOG.info("VRESPONSE {}", response);
         boolean validated = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
         LOG.info("VALIDATED {} {}", id, validated);
         return validated;
