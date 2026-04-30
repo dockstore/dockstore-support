@@ -393,26 +393,6 @@ public class CategorizerClient {
         }
     }
 
-    public static String createOntologyCsv(Ontology ontology) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("id,name,description\n");
-        for (Ontology.Node node : ontology.getNodes()) {
-            if (node.recommendedForAnnotation()) {
-                sb.append(escapeCsvField(node.id())).append(",")
-                        .append(escapeCsvField(node.label())).append(",")
-                        .append(escapeCsvField(node.definition())).append("\n");
-            }
-        }
-        return sb.toString();
-    }
-
-    private static String escapeCsvField(String value) {
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        }
-        return value;
-    }
-
     public static String removeCategoryTagsFromResponse(String aiResponse) {
         String cleaned = StringUtils.removeStart(aiResponse, "<categories>");
         return StringUtils.removeEnd(cleaned, "</categories>");
