@@ -65,15 +65,11 @@ public class ThreeStageLogic implements Logic {
     private boolean validate(String id, String summary, AIModel aiModel) {
         Ontology.Node node = ontology.getNodeById(id);
         String prompt = "You are a scientist and genomics and bioinformatics expert.\n";
-        boolean isGeneric = ontology.getAncestors(node.id()).stream().anyMatch(ancestor -> ancestor.id().equals("operation-data-handling"))
-            || node.id().equals("operation-read-mapping")
-            || node.id().equals("operation-read-pre-processing");
+        boolean isGeneric = isGenericOperation(node.id());
         prompt += "Given the following workflow description:\n";
         prompt += summary;
         prompt += "\n\n";
-        prompt += isGeneric ?
-            "Is the following operation the sole purpose of the workflow?\n" :
-            "Does the workflow perform the following operation, and is it the purpose or an important capability of the workflow?\n";
+        prompt += createValidationQuestion(isGeneric);
         prompt += "Answer \"yes\" or \"no\" with no other text.\n";
         prompt += "\"" + node.label() + "\": " + node.definition();
         prompt += "\n";
@@ -86,21 +82,43 @@ public class ThreeStageLogic implements Logic {
         return validated;
     }
 
+    private boolean isGenericOperation(String id) {
+        return ontology.getAncestors(id).stream().anyMatch(ancestor -> ancestor.id().equals("operation-data-handling"))
+            || id.equals("operation-read-mapping")
+            || id.equals("operation-read-pre-processing");
+    }
+
+    private String createValidationQuestion(boolean isGeneric) {
+        return isGeneric
+            ? "Is the following operation the sole purpose of the workflow?\n"
+            : "Does the workflow perform the following operation, and is it the purpose or an important capability of the workflow?\n";
+    }
+
     private String createPrompt(String summary) {
         String prompt = "";
         prompt += "You are a scientist and genomics and bioinformatics expert.\n";
-        prompt += "Your goal is to determine the operations performed by the following workflow:\n";
+        prompt += createClassifyGoal();
         prompt += "\n";
-        prompt +=  summary;
+        prompt += summary;
         prompt += "\n\n";
-        prompt += "From the following list, select the operations that the workflow performs.\n";
-        prompt += "Prefer operations that summarize the purpose or functionality of the workflow as a whole.\n";
-        prompt += "Prefer operations that differentiate the workflow from other workflows.\n";
-        prompt += "Prefer operations that are very specific.\n";
-        prompt += "Output one operation ID per line and no other text.\n";
-        prompt += "<operation-csv>\n";
-        prompt += CategorizerClient.createOntologyCsv(ontology);
-        prompt += "</operation-csv>\n";
+        prompt += createClassifySelectionCriteria();
+        prompt += createOntologyListXml();
         return prompt;
+    }
+
+    private String createClassifyGoal() {
+        return "Your goal is to determine the operations performed by the following workflow:\n";
+    }
+
+    private String createClassifySelectionCriteria() {
+        return "From the following list, select the operations that the workflow performs.\n"
+            + "Prefer operations that summarize the purpose or functionality of the workflow as a whole.\n"
+            + "Prefer operations that differentiate the workflow from other workflows.\n"
+            + "Prefer operations that are very specific.\n"
+            + "Output one operation ID per line and no other text.\n";
+    }
+
+    private String createOntologyListXml() {
+        return "<operation-csv>\n" + CategorizerClient.createOntologyCsv(ontology) + "</operation-csv>\n";
     }
 }
