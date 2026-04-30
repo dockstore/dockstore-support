@@ -194,15 +194,10 @@ public class CategorizerClient {
                     continue;
                 }
 
-                // Generate categories using AI model
+                // Classify into the ontology using AI model
                 try {
-                    String summary = createSummary(aiModel, entryType, trsId, description, descriptorFile.getContent());
-                    String prompt = createPrompt(summary);
-                    LOG.info("PROMPT {}", prompt);
-                    AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 300);
-                    String response = aiResponseInfo.aiResponse();
-                    LOG.info("RESPONSE {}", response);
-                    List<String> operations = Arrays.asList(response.split("\n")).stream().filter(id -> validateOperation(id, summary, aiModel)).toList();
+                    String summary = summarize(aiModel, entryType, trsId, description, descriptorFile.getContent());
+                    List<String> operations = classify(aiModel, summary).stream().filter(id -> validate(id, summary, aiModel)).toList();
                     for (String operation: operations) {
                         LOG.info("OPERATION {}", operation);
                     }
@@ -222,7 +217,7 @@ public class CategorizerClient {
         }
     }
 
-    private boolean validateOperation(String id, String summary, AIModel aiModel) {
+    private boolean validate(String id, String summary, AIModel aiModel) {
         Ontology.Node node = ontology.getNodeById(id);
         if (node == null) {
             LOG.info("HALLUCINATED {}", id);
@@ -263,7 +258,7 @@ public class CategorizerClient {
             }).collect(Collectors.joining("\n")));
     }
 
-    private String createSummary(AIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
+    private String summarize(AIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
         prompt += "You are a scientist and genomics and bioinformatics expert.  Summarize the purpose and functionality of the following workflow in 200 words or less.  Omit the workflow's name.  Be terse and use scientific terminology.";
         prompt += "\n<trsId>\n";
@@ -292,6 +287,15 @@ public class CategorizerClient {
         prompt += "\n</code>\n";
         return prompt;
         */
+    }
+
+    private List<String> classify(AIModel aiModel, String summary) {
+        String prompt = createPrompt(summary);
+        LOG.info("PROMPT {}", prompt);
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 300);
+        String response = aiResponseInfo.aiResponse();
+        LOG.info("RESPONSE {}", response);
+        return Arrays.asList(response.split("\n"));
     }
 
     private String createPrompt(String summary) {
