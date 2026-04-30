@@ -1,0 +1,115 @@
+package io.dockstore.categorizer.client.cli;
+
+import io.dockstore.categorizer.Ontology;
+import io.dockstore.utils.ai.AIModel;
+import io.dockstore.utils.ai.AIModel.AIResponseInfo;
+import java.util.Arrays;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class ThreeStageLogic implements Logic {
+    private static final Logger LOG = LoggerFactory.getLogger(ThreeStageLogic.class);
+
+    private final Ontology ontology;
+
+    ThreeStageLogic(Ontology ontology) {
+        this.ontology = ontology;
+    }
+
+    @Override
+    public List<String> categorize(AIModel aiModel, String entryType, String trsId, String description, String descriptorFileContent) {
+        String summary = summarize(aiModel, entryType, trsId, description, descriptorFileContent);
+        return classify(aiModel, summary).stream().filter(id -> validate(id, summary, aiModel)).toList();
+    }
+
+    private String summarize(AIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
+        String prompt = "";
+        prompt += "You are a scientist and genomics and bioinformatics expert.  Summarize the purpose and functionality of the following workflow in 200 words or less.  Omit the workflow's name.  Be terse and use scientific terminology.";
+        prompt += "\n<trsId>\n";
+        prompt += trsId;
+        prompt += "\n</trsId>\n";
+        prompt += "\n<description>\n";
+        prompt += description;
+        prompt += "\n</description>\n";
+        prompt += "\n<code>\n";
+        prompt += descriptorFile;
+        prompt += "\n</code>\n";
+        LOG.info("SUMMARY PROMPT {}", prompt);
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 400);
+        return "<description>\n" + aiResponseInfo.aiResponse() + "\n</description>";
+        // return prompt;
+        /*
+        String prompt = "";
+        prompt += "\n<trsId>\n";
+        prompt += trsId;
+        prompt += "\n</trsId>\n";
+        prompt += "\n<description>\n";
+        prompt += description;
+        prompt += "\n</description>\n";
+        prompt += "\n<code>\n";
+        prompt += descriptorFile;
+        prompt += "\n</code>\n";
+        return prompt;
+        */
+    }
+
+    private List<String> classify(AIModel aiModel, String summary) {
+        String prompt = createPrompt(summary);
+        LOG.info("PROMPT {}", prompt);
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 300);
+        String response = aiResponseInfo.aiResponse();
+        LOG.info("RESPONSE {}", response);
+        return Arrays.asList(response.split("\n"));
+    }
+
+    private boolean validate(String id, String summary, AIModel aiModel) {
+        Ontology.Node node = ontology.getNodeById(id);
+        if (node == null) {
+            LOG.info("HALLUCINATED {}", id);
+            return false;
+        }
+        if (!node.categorical()) {
+            LOG.info("NON-CATEGORICAL {}", id);
+            return false;
+        }
+        String prompt = "You are a scientist and genomics and bioinformatics expert.\n";
+        boolean isGeneric = ontology.getAncestors(node.id()).stream().anyMatch(ancestor -> ancestor.id().equals("operation-data-handling"))
+            || node.id().equals("operation-read-mapping")
+            || node.id().equals("operation-read-pre-processing");
+        prompt += "Given the following workflow description:\n";
+        prompt += summary;
+        prompt += "\n\n";
+        prompt += isGeneric ?
+            "Is the following operation the sole purpose of the workflow?\n" :
+            "Does the workflow perform the following operation, and is it the purpose or an important capability of the workflow?\n";
+        prompt += "Answer \"yes\" or \"no\" with no other text.\n";
+        prompt += "\"" + node.title() + "\": " + node.description();
+        prompt += "\n";
+        LOG.info("VPROMPT {}", prompt);
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 5);
+        String response = aiResponseInfo.aiResponse();
+        LOG.info("VRESPONSE {}", response);
+        boolean validated = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
+        LOG.info("VALIDATED {} {}", id, validated);
+        return validated;
+    }
+
+    private String createPrompt(String summary) {
+        String prompt = "";
+        prompt += "You are a scientist and genomics and bioinformatics expert.\n";
+        prompt += "Your goal is to determine the operations performed by the following workflow:\n";
+        prompt += "\n";
+        prompt +=  summary;
+        prompt += "\n\n";
+        prompt += "From the following list, select the operations that the workflow performs.\n";
+        prompt += "Prefer operations that summarize the purpose or functionality of the workflow as a whole.\n";
+        prompt += "Prefer operations that differentiate the workflow from other workflows.\n";
+        prompt += "Prefer operations that are very specific.\n";
+        prompt += "Output one operation ID per line and no other text.\n";
+        prompt += "<operation-csv>\n";
+        prompt += CategorizerClient.createOntologyCsv(ontology);
+        prompt += "</operation-csv>\n";
+        return prompt;
+    }
+}

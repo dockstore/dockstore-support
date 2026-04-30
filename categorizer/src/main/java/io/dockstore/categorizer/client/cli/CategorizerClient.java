@@ -47,7 +47,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
@@ -66,9 +65,11 @@ public class CategorizerClient {
     private static final Logger LOG = LoggerFactory.getLogger(CategorizerClient.class);
 
     private Ontology ontology;
-    
+    private Logic logic;
+
     CategorizerClient() {
         ontology = readOntology("ontology.js");
+        logic = new ThreeStageLogic(ontology);
     }
 
     public static void main(String[] args) {
@@ -196,8 +197,7 @@ public class CategorizerClient {
 
                 // Classify into the ontology using AI model
                 try {
-                    String summary = summarize(aiModel, entryType, trsId, description, descriptorFile.getContent());
-                    List<String> operations = classify(aiModel, summary).stream().filter(id -> validate(id, summary, aiModel)).toList();
+                    List<String> operations = logic.categorize(aiModel, entryType, trsId, description, descriptorFile.getContent());
                     for (String operation: operations) {
                         LOG.info("OPERATION {}", operation);
                     }
@@ -217,38 +217,6 @@ public class CategorizerClient {
         }
     }
 
-    private boolean validate(String id, String summary, AIModel aiModel) {
-        Ontology.Node node = ontology.getNodeById(id);
-        if (node == null) {
-            LOG.info("HALLUCINATED {}", id);
-            return false;
-        }
-        if (!node.categorical()) {
-            LOG.info("NON-CATEGORICAL {}", id);
-            return false;
-        }
-        String prompt = "You are a scientist and genomics and bioinformatics expert.\n";
-        boolean isGeneric = ontology.getAncestors(node.id()).stream().anyMatch(ancestor -> ancestor.id().equals("operation-data-handling"))
-            || node.id().equals("operation-read-mapping")
-            || node.id().equals("operation-read-pre-processing");
-        prompt += "Given the following workflow description:\n";
-        prompt += summary;
-        prompt += "\n\n";
-        prompt += isGeneric ?
-            "Is the following operation the sole purpose of the workflow?\n" :
-            "Does the workflow perform the following operation, and is it the purpose or an important capability of the workflow?\n";
-        prompt += "Answer \"yes\" or \"no\" with no other text.\n";
-        prompt += "\"" + node.title() + "\": " + node.description();
-        prompt += "\n";
-        LOG.info("VPROMPT {}", prompt);
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 5);
-        String response = aiResponseInfo.aiResponse();
-        LOG.info("VRESPONSE {}", response);
-        boolean validated = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
-        LOG.info("VALIDATED {} {}", id, validated);
-        return validated;
-    }
-
     private void output(String trsId, String versionId, List<String> operations) {
         String dockstoreUrl = "https://dockstore.org/workflows/%s:%s".formatted(trsId.substring(trsId.indexOf("github.com")), versionId);
         System.out.println("* [%s](%s)".formatted(dockstoreUrl, dockstoreUrl));
@@ -256,64 +224,6 @@ public class CategorizerClient {
                 Ontology.Node node = ontology.getNodeById(id);
                 return "    * [%s](%s)".formatted(node.title(), node.source());
             }).collect(Collectors.joining("\n")));
-    }
-
-    private String summarize(AIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
-        String prompt = "";
-        prompt += "You are a scientist and genomics and bioinformatics expert.  Summarize the purpose and functionality of the following workflow in 200 words or less.  Omit the workflow's name.  Be terse and use scientific terminology.";
-        prompt += "\n<trsId>\n";
-        prompt += trsId;
-        prompt += "\n</trsId>\n";
-        prompt += "\n<description>\n";
-        prompt += description;
-        prompt += "\n</description>\n";
-        prompt += "\n<code>\n";
-        prompt += descriptorFile;
-        prompt += "\n</code>\n";
-        LOG.info("SUMMARY PROMPT {}", prompt);
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 400);
-        return "<description>\n" + aiResponseInfo.aiResponse() + "\n</description>";
-        // return prompt;
-        /*
-        String prompt = "";
-        prompt += "\n<trsId>\n";
-        prompt += trsId;
-        prompt += "\n</trsId>\n";
-        prompt += "\n<description>\n";
-        prompt += description;
-        prompt += "\n</description>\n";
-        prompt += "\n<code>\n";
-        prompt += descriptorFile;
-        prompt += "\n</code>\n";
-        return prompt;
-        */
-    }
-
-    private List<String> classify(AIModel aiModel, String summary) {
-        String prompt = createPrompt(summary);
-        LOG.info("PROMPT {}", prompt);
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 300);
-        String response = aiResponseInfo.aiResponse();
-        LOG.info("RESPONSE {}", response);
-        return Arrays.asList(response.split("\n"));
-    }
-
-    private String createPrompt(String summary) {
-        String prompt = "";
-        prompt += "You are a scientist and genomics and bioinformatics expert.\n";
-        prompt += "Your goal is to determine the operations performed by the following workflow:\n";
-        prompt += "\n";
-        prompt +=  summary;
-        prompt += "\n\n";
-        prompt += "From the following list, select the operations that the workflow performs.\n";
-        prompt += "Prefer operations that summarize the purpose or functionality of the workflow as a whole.\n";
-        prompt += "Prefer operations that differentiate the workflow from other workflows.\n";
-        prompt += "Prefer operations that are very specific.\n";
-        prompt += "Output one operation ID per line and no other text.\n";
-        prompt += "<operation-csv>\n";
-        prompt += createOntologyCsv(ontology);
-        prompt += "</operation-csv>\n";
-        return prompt;
     }
 
     private List<TrsIdAndVersionId> getCategorizationCandidatesFromFile(String inputFileName) {
