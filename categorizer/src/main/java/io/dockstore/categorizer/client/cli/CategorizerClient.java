@@ -421,7 +421,7 @@ public class CategorizerClient {
     private static Ontology readOntology(String fileName) {
         try (Reader reader = new FileReader(fileName, StandardCharsets.UTF_8)) {
             JsonArray jsonArray = JsonParser.parseReader(reader).getAsJsonArray();
-            List<Ontology.Node> nodes = new ArrayList<>();
+            Ontology ontology = new Ontology();
             for (JsonElement element : jsonArray) {
                 JsonObject obj = element.getAsJsonObject();
                 String id = obj.get("id").getAsString();
@@ -433,9 +433,9 @@ public class CategorizerClient {
                 for (JsonElement parent : obj.get("parent_ids").getAsJsonArray()) {
                     parentIds.add(parent.getAsString());
                 }
-                nodes.add(new Ontology.Node(id, label, definition, parentIds, source, recommendedForAnnotation));
+                ontology.addNode(id, label, definition, parentIds, source, recommendedForAnnotation);
             }
-            return new Ontology(nodes);
+            return ontology;
         } catch (IOException e) {
             exceptionMessage(e, "Unable to read ontology file", IO_ERROR);
             throw new RuntimeException("aborting");
