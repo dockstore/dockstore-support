@@ -69,7 +69,7 @@ public class ThreeStageLogic implements Logic {
             LOG.info("HALLUCINATED {}", id);
             return false;
         }
-        if (!node.categorical()) {
+        if (!node.recommendedForAnnotation()) {
             LOG.info("NON-CATEGORICAL {}", id);
             return false;
         }
@@ -84,7 +84,7 @@ public class ThreeStageLogic implements Logic {
             "Is the following operation the sole purpose of the workflow?\n" :
             "Does the workflow perform the following operation, and is it the purpose or an important capability of the workflow?\n";
         prompt += "Answer \"yes\" or \"no\" with no other text.\n";
-        prompt += "\"" + node.title() + "\": " + node.description();
+        prompt += "\"" + node.label() + "\": " + node.definition();
         prompt += "\n";
         LOG.info("VPROMPT {}", prompt);
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 5);

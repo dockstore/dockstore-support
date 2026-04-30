@@ -68,7 +68,7 @@ public class CategorizerClient {
     private Logic logic;
 
     CategorizerClient() {
-        ontology = readOntology("ontology.js");
+        ontology = readOntology("operation.json");
         logic = new ThreeStageLogic(ontology);
     }
 
@@ -222,7 +222,7 @@ public class CategorizerClient {
         System.out.println("* [%s](%s)".formatted(dockstoreUrl, dockstoreUrl));
         System.out.println(operations.stream().map(id -> {
                 Ontology.Node node = ontology.getNodeById(id);
-                return "    * [%s](%s)".formatted(node.title(), node.source());
+                return "    * [%s](%s)".formatted(node.label(), node.source());
             }).collect(Collectors.joining("\n")));
     }
 
@@ -396,10 +396,10 @@ public class CategorizerClient {
         StringBuilder sb = new StringBuilder();
         sb.append("id,name,description\n");
         for (Ontology.Node node : ontology.getNodes()) {
-            if (node.categorical()) {
+            if (node.recommendedForAnnotation()) {
                 sb.append(escapeCsvField(node.id())).append(",")
-                        .append(escapeCsvField(node.title())).append(",")
-                        .append(escapeCsvField(node.description())).append("\n");
+                        .append(escapeCsvField(node.label())).append(",")
+                        .append(escapeCsvField(node.definition())).append("\n");
             }
         }
         return sb.toString();
@@ -424,15 +424,15 @@ public class CategorizerClient {
             for (JsonElement element : jsonArray) {
                 JsonObject obj = element.getAsJsonObject();
                 String id = obj.get("id").getAsString();
-                String title = obj.get("title").getAsString();
-                String description = obj.get("description").getAsString();
+                String label = obj.get("label").getAsString();
+                String definition = obj.get("definition").getAsString();
                 String source = obj.get("source").getAsString();
-                boolean categorical = obj.get("categorical").getAsBoolean();
+                boolean recommendedForAnnotation = obj.get("recommended_for_annotation").getAsBoolean();
                 List<String> parentIds = new ArrayList<>();
-                for (JsonElement parent : obj.get("parents").getAsJsonArray()) {
+                for (JsonElement parent : obj.get("parent_ids").getAsJsonArray()) {
                     parentIds.add(parent.getAsString());
                 }
-                nodes.add(new Ontology.Node(id, title, description, parentIds, source, categorical));
+                nodes.add(new Ontology.Node(id, label, definition, parentIds, source, recommendedForAnnotation));
             }
             return new Ontology(nodes);
         } catch (IOException e) {
