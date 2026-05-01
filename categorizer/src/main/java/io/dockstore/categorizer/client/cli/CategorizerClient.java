@@ -65,12 +65,7 @@ import org.slf4j.LoggerFactory;
 public class CategorizerClient {
     private static final Logger LOG = LoggerFactory.getLogger(CategorizerClient.class);
 
-    private Ontology ontology;
-    private OntologyHandler ontologyHandler;
-
     CategorizerClient() {
-        ontology = readOntology("operation.json");
-        ontologyHandler = new ThreeStageOntologyHandler(ontology);
     }
 
     public static void main(String[] args) {
@@ -127,6 +122,9 @@ public class CategorizerClient {
         final ApiClient apiClient = setupApiClient(dockstoreServerUrl, categorizerConfig.dockstoreToken());
         final Ga4Ghv20Api ga4Ghv20Api = new Ga4Ghv20Api(apiClient);
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
+        final String ontologyPath = ObjectUtils.firstNonNull(categorizeEntriesCommand.getOntologyJsonPath(), "operation.json");
+        final Ontology ontology = readOntology(ontologyPath);
+        final OntologyHandler ontologyHandler = new ThreeStageOntologyHandler(ontology);
         final AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
         final String inputFileName = categorizeEntriesCommand.getEntriesCsvFilePath();
 

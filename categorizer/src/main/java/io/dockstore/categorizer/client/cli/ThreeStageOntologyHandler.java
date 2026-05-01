@@ -37,7 +37,9 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
 
     private String summarize(AIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
-        prompt += "You are a scientist and genomics and bioinformatics expert.  Summarize the purpose and functionality of the following workflow in 200 words or less.  Omit the workflow's name.  Be terse and use scientific terminology.";
+        prompt += "You are a scientist and genomics and bioinformatics expert.  ";
+        prompt += createSummarizePrompt() + "  ";
+        prompt += "Omit the workflow's name.  Be terse and use scientific terminology.";
         prompt += "\n<trsId>\n";
         prompt += trsId;
         prompt += "\n</trsId>\n";
@@ -106,6 +108,10 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
         prompt += createClassifySelectionCriteria();
         prompt += createOntologyListXml(nodes);
         return prompt;
+    }
+
+    private String createSummarizePrompt() {
+        return "Summarize the purpose and functionality of the following workflow in 200 words or less.";
     }
 
     private String createClassifyGoal() {

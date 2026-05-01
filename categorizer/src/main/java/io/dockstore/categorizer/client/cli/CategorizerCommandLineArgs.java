@@ -28,6 +28,9 @@ public class CategorizerCommandLineArgs {
         @Parameter(names = {"-e", "--entries"}, description = "Optional file path to the CSV file containing the TRS ID and version name of the entries to categorize. The first line of the file should contain the CSV fields: trsId,version")
         private String entriesCsvFilePath;
 
+        @Parameter(names = {"-o", "--ontology"}, description = "Path to the ontology JSON file")
+        private String ontologyJsonPath;
+
         @Parameter(names = {"-a", "--ai"}, description = "The AI model to use")
         private AIModelType aiModel = AIModelType.CLAUDE_4_5_HAIKU;
 
@@ -39,6 +42,10 @@ public class CategorizerCommandLineArgs {
 
         public String getEntriesCsvFilePath() {
             return entriesCsvFilePath;
+        }
+
+        public String getOntologyJsonPath() {
+            return ontologyJsonPath;
         }
 
         public AIModelType getAiModel() {
