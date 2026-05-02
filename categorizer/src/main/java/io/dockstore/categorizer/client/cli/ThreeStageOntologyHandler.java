@@ -40,20 +40,17 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     private String summarize(String entryType, String trsId, String description, String descriptorFile) {
-        String prompt = "";
-        prompt += createIdentityStatement() + "\n";
-        prompt += createSummarizeInstruction();
-        prompt += "\n<trsId>\n";
-        prompt += trsId;
-        prompt += "\n</trsId>\n";
-        prompt += "\n<description>\n";
-        prompt += description;
-        prompt += "\n</description>\n";
-        prompt += "\n<code>\n";
-        prompt += descriptorFile;
-        prompt += "\n</code>\n";
+        String prompt = joinLines(
+            createIdentityStatement(),
+            createSummarizeInstruction(),
+            tagged("trsId", trsId),
+            tagged("description", description),
+            tagged("code", descriptorFile)
+        );
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 400);
-        return "<description>\n" + aiResponseInfo.aiResponse() + "\n</description>";
+        String summarySlug = createSummarySlug();
+        String summary = aiResponseInfo.aiResponse();
+        return tagged(summarySlug, summary);
     }
 
     private List<String> classify(List<Ontology.Node> nodes, String summary) {
@@ -73,15 +70,16 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
 
     private boolean validate(String id, String summary, AIModel aiModel) {
         Ontology.Node node = ontology.getNodeById(id);
-        String prompt = createIdentityStatement() + "\n";
         boolean isGeneric = isGenericNode(node);
-        prompt += "Given the following workflow description:\n";
-        prompt += summary;
-        prompt += "\n\n";
-        prompt += createValidationQuestion(isGeneric);
-        prompt += "Answer \"yes\" or \"no\" with no other text.\n";
-        prompt += "\"" + node.label() + "\": " + node.definition();
-        prompt += "\n";
+        String prompt = joinLines(
+            createIdentityStatement(),
+            "Given the following workflow description:",
+            summary,
+            "",
+            createValidationQuestion(isGeneric),
+            "Answer \"yes\" or \"no\" with no other text.\n",
+            "\"" + node.label() + "\": " + node.definition()
+        );
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 5);
         String response = aiResponseInfo.aiResponse();
         boolean validated = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
@@ -104,21 +102,25 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
 
     private String createClassificationPrompt(List<Ontology.Node> nodes, String summary) {
         String slug = createOntologyTypeSlug();
-        String prompt = "";
-        prompt += createIdentityStatement() + "\n";
-        prompt += createClassifyGoal();
-        prompt += "\n";
-        prompt += summary;
-        prompt += "\n\n";
-        prompt += createClassifySelectionCriteria();
-        prompt += "<%s-csv>\n".formatted(slug);
-        prompt += createOntologyCsv(nodes);
-        prompt += "</%s-csv>\n".formatted(slug);
+        String prompt = joinLines(
+            createIdentityStatement(),
+            createClassifyGoal(),
+            summary,
+            "",
+            createClassifySelectionCriteria(),
+            "<%s-csv>".formatted(slug),
+            createOntologyCsv(nodes),
+            "</%s-csv>".formatted(slug)
+        );
         return prompt;
     }
 
     private String createOntologyTypeSlug() {
         return "operation";
+    }
+
+    private String createSummarySlug() {
+        return "description";
     }
 
     private String createSummarizeInstruction() {
@@ -158,5 +160,13 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;
+    }
+
+    private static String tagged(String tagName, String content) {
+        return joinLines("<" + tagName + ">", content, "</ " + tagName + ">");
+    }
+
+    private static String joinLines(String... values) {
+        return String.join("\n", values);
     }
 }
