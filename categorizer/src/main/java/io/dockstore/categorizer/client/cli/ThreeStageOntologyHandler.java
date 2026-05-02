@@ -38,8 +38,7 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
     private String summarize(AIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
         prompt += "You are a scientist and genomics and bioinformatics expert.  ";
-        prompt += createSummarizePrompt() + "  ";
-        prompt += "Omit the workflow's name.  Be terse and use scientific terminology.";
+        prompt += createSummarizeInstruction() + "  ";
         prompt += "\n<trsId>\n";
         prompt += trsId;
         prompt += "\n</trsId>\n";
@@ -54,7 +53,7 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     private List<String> classify(AIModel aiModel, List<Ontology.Node> nodes, String summary) {
-        String prompt = createPrompt(nodes, summary);
+        String prompt = createClassificationPrompt(nodes, summary);
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 300);
         String response = aiResponseInfo.aiResponse();
         return Arrays.asList(response.split("\n"));
@@ -98,7 +97,8 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
             : "Does the workflow perform the following operation, and is it the purpose or an important capability of the workflow?\n";
     }
 
-    private String createPrompt(List<Ontology.Node> nodes, String summary) {
+    private String createClassificationPrompt(List<Ontology.Node> nodes, String summary) {
+        String slug = createOntologyTypeSlug();
         String prompt = "";
         prompt += "You are a scientist and genomics and bioinformatics expert.\n";
         prompt += createClassifyGoal();
@@ -106,12 +106,19 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
         prompt += summary;
         prompt += "\n\n";
         prompt += createClassifySelectionCriteria();
-        prompt += createOntologyListXml(nodes);
+        prompt += "<%s-csv>\n".formatted(slug);
+        prompt += createOntologyCsv(nodes);
+        prompt += "</%s-csv>\n".formatted(slug);
         return prompt;
     }
 
-    private String createSummarizePrompt() {
-        return "Summarize the purpose and functionality of the following workflow in 200 words or less.";
+    private String createOntologyTypeSlug() {
+        return "operation";
+    }
+
+    private String createSummarizeInstruction() {
+        return "Summarize the purpose and functionality of the following workflow in 200 words or less."
+            + "  Omit the workflow's name.  Be terse and use scientific terminology.";
     }
 
     private String createClassifyGoal() {
@@ -124,10 +131,6 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
             + "Prefer operations that differentiate the workflow from other workflows.\n"
             + "Prefer operations that are very specific.\n"
             + "Output one operation ID per line and no other text.\n";
-    }
-
-    private String createOntologyListXml(List<Ontology.Node> nodes) {
-        return "<operation-csv>\n" + createOntologyCsv(nodes) + "</operation-csv>\n";
     }
 
     private static String createOntologyCsv(List<Ontology.Node> nodes) {
