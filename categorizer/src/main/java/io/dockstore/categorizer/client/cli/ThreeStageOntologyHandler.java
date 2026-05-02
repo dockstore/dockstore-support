@@ -5,6 +5,7 @@ import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModel.AIResponseInfo;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -31,45 +32,46 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
     @Override
     public List<Ontology.Node> categorizeIntoNodes(List<Ontology.Node> nodes, String entryType, String trsId, String description, String descriptorFileContent) {
         String summary = summarize(entryType, trsId, description, descriptorFileContent);
-        Set<String> nodeIds = nodes.stream().map(Ontology.Node::id).collect(Collectors.toSet());
-        return classify(nodes, summary).stream()
-            .filter(id -> gate(id, nodeIds))
-            .filter(id -> validate(id, summary, aiModel))
-            .map(id -> ontology.getNodeById(id))
-            .toList();
+        List<Ontology.Node> matches = classify(nodes, summary);
+        return validate(matches, summary);
     }
 
     private String summarize(String entryType, String trsId, String description, String descriptorFile) {
         String prompt = joinLines(
             createIdentityStatement(),
             createSummarizeInstruction(),
-            tagged("trsId", trsId),
-            tagged("description", description),
-            tagged("code", descriptorFile)
+            tag("trsId", trsId),
+            tag("description", description),
+            tag("code", descriptorFile)
         );
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 400);
         String summarySlug = createSummarySlug();
         String summary = aiResponseInfo.aiResponse();
-        return tagged(summarySlug, summary);
+        return tag(summarySlug, summary);
     }
 
-    private List<String> classify(List<Ontology.Node> nodes, String summary) {
+    private List<Ontology.Node> classify(List<Ontology.Node> nodes, String summary) {
         String prompt = createClassificationPrompt(nodes, summary);
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 300);
         String response = aiResponseInfo.aiResponse();
-        return Arrays.asList(response.split("\n"));
+        List<String> ids = Arrays.asList(response.split("\n"));
+        // TODO fix this code to only include a subset of "nodes"
+        return ids.stream().map(this::map).filter(Objects::nonNull).toList();
     }
 
-    private boolean gate(String id, Set<String> nodeIds) {
-        if (!nodeIds.contains(id)) {
-            LOG.info("HALLUCINATED {}", id);
-            return false;
-        }
-        return true;
-    }
-
-    private boolean validate(String id, String summary, AIModel aiModel) {
+    private Ontology.Node map(String id) {
         Ontology.Node node = ontology.getNodeById(id);
+        if (node == null) {
+            LOG.info("HALLUCINATED {}", id);
+        }
+        return node;
+    }
+
+    private List<Ontology.Node> validate(List<Ontology.Node> nodes, String summary) {
+        return nodes.stream().filter(node -> validate(node, summary)).toList();
+    }
+
+    private boolean validate(Ontology.Node node, String summary) {
         boolean isGeneric = isGenericNode(node);
         String prompt = joinLines(
             createIdentityStatement(),
@@ -83,7 +85,7 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 5);
         String response = aiResponseInfo.aiResponse();
         boolean validated = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
-        LOG.info("VALIDATED {} {}", id, validated);
+        LOG.info("VALIDATED {} {}", node.id(), validated);
         return validated;
     }
 
@@ -162,8 +164,8 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
         return value;
     }
 
-    private static String tagged(String tagName, String content) {
-        return joinLines("<" + tagName + ">", content, "</ " + tagName + ">");
+    private static String tag(String tagName, String content) {
+        return joinLines("<%s>".formatted(tagName), content, "</%s>".formatted(tagName));
     }
 
     private static String joinLines(String... values) {
