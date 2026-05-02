@@ -13,8 +13,8 @@ import org.slf4j.LoggerFactory;
 public class ThreeStageOntologyHandler implements OntologyHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ThreeStageOntologyHandler.class);
 
-    private final String prefix;
     private final Ontology ontology;
+    private final String prefix;
     private final AIModel aiModel;
 
     ThreeStageOntologyHandler(Ontology ontology, String prefix, AIModel aiModel) {
@@ -41,8 +41,8 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
 
     private String summarize(String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
-        prompt += "You are a scientist and genomics and bioinformatics expert.  ";
-        prompt += createSummarizeInstruction() + "  ";
+        prompt += createIdentityStatement() + "\n";
+        prompt += createSummarizeInstruction();
         prompt += "\n<trsId>\n";
         prompt += trsId;
         prompt += "\n</trsId>\n";
@@ -73,7 +73,7 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
 
     private boolean validate(String id, String summary, AIModel aiModel) {
         Ontology.Node node = ontology.getNodeById(id);
-        String prompt = "You are a scientist and genomics and bioinformatics expert.\n";
+        String prompt = createIdentityStatement() + "\n";
         boolean isGeneric = isGenericNode(node);
         prompt += "Given the following workflow description:\n";
         prompt += summary;
@@ -105,7 +105,7 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
     private String createClassificationPrompt(List<Ontology.Node> nodes, String summary) {
         String slug = createOntologyTypeSlug();
         String prompt = "";
-        prompt += "You are a scientist and genomics and bioinformatics expert.\n";
+        prompt += createIdentityStatement() + "\n";
         prompt += createClassifyGoal();
         prompt += "\n";
         prompt += summary;
@@ -136,6 +136,10 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
             + "Prefer operations that differentiate the workflow from other workflows.\n"
             + "Prefer operations that are very specific.\n"
             + "Output one operation ID per line and no other text.\n";
+    }
+
+    private String createIdentityStatement() {
+        return "You are a scientist and genomics and bioinformatics expert.\n";
     }
 
     private static String createOntologyCsv(List<Ontology.Node> nodes) {
