@@ -124,7 +124,6 @@ public class CategorizerClient {
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
         final String ontologyPath = ObjectUtils.firstNonNull(categorizeEntriesCommand.getOntologyJsonPath(), "operation.json");
         final Ontology ontology = readOntology(ontologyPath);
-        final OntologyHandler ontologyHandler = new ThreeStageOntologyHandler(ontology);
         final AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
         final String inputFileName = categorizeEntriesCommand.getEntriesCsvFilePath();
 
@@ -152,6 +151,9 @@ public class CategorizerClient {
         AIModel aiModel = new LoggingAIModel(AIModelFactory.createModel(aiModelType));
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
+
+        final OntologyHandler ontologyHandler = new ThreeStageOntologyHandler(ontology, "operation-", aiModel);
+
         final String categoriesFileName = "generated-categories" + outputFileNameSuffix;
         final String errorsFileName = "errors" + outputFileNameSuffix;
         int numberOfCategoriesGenerated = 0;
@@ -196,8 +198,8 @@ public class CategorizerClient {
 
                 // Classify into the ontology using AI model
                 try {
-                    List<Ontology.Node> handledNodes = ontologyHandler.handlesNodes(ontology);
-                    List<Ontology.Node> operationNodes = ontologyHandler.categorizeIntoNodes(handledNodes, aiModel, entryType, trsId, description, descriptorFile.getContent());
+                    List<Ontology.Node> handledNodes = ontologyHandler.handlesNodes();
+                    List<Ontology.Node> operationNodes = ontologyHandler.categorizeIntoNodes(handledNodes, entryType, trsId, description, descriptorFile.getContent());
                     for (Ontology.Node node : operationNodes) {
                         LOG.info("OPERATION {}", node.id());
                     }

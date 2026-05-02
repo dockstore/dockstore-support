@@ -13,29 +13,33 @@ import org.slf4j.LoggerFactory;
 public class ThreeStageOntologyHandler implements OntologyHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ThreeStageOntologyHandler.class);
 
+    private final String prefix;
     private final Ontology ontology;
+    private final AIModel aiModel;
 
-    ThreeStageOntologyHandler(Ontology ontology) {
+    ThreeStageOntologyHandler(Ontology ontology, String prefix, AIModel aiModel) {
         this.ontology = ontology;
+        this.prefix = prefix;
+        this.aiModel = aiModel;
     }
 
     @Override
-    public List<Ontology.Node> handlesNodes(Ontology ontology) {
-        return ontology.getNodes().stream().filter(Ontology.Node::recommendedForAnnotation).toList();
+    public List<Ontology.Node> handlesNodes() {
+        return ontology.getNodes().stream().filter(node -> node.id().startsWith(prefix)).toList();
     }
 
     @Override
-    public List<Ontology.Node> categorizeIntoNodes(List<Ontology.Node> nodes, AIModel aiModel, String entryType, String trsId, String description, String descriptorFileContent) {
-        String summary = summarize(aiModel, entryType, trsId, description, descriptorFileContent);
+    public List<Ontology.Node> categorizeIntoNodes(List<Ontology.Node> nodes, String entryType, String trsId, String description, String descriptorFileContent) {
+        String summary = summarize(entryType, trsId, description, descriptorFileContent);
         Set<String> nodeIds = nodes.stream().map(Ontology.Node::id).collect(Collectors.toSet());
-        return classify(aiModel, nodes, summary).stream()
+        return classify(nodes, summary).stream()
             .filter(id -> gate(id, nodeIds))
             .filter(id -> validate(id, summary, aiModel))
             .map(id -> ontology.getNodeById(id))
             .toList();
     }
 
-    private String summarize(AIModel aiModel, String entryType, String trsId, String description, String descriptorFile) {
+    private String summarize(String entryType, String trsId, String description, String descriptorFile) {
         String prompt = "";
         prompt += "You are a scientist and genomics and bioinformatics expert.  ";
         prompt += createSummarizeInstruction() + "  ";
@@ -52,7 +56,7 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
         return "<description>\n" + aiResponseInfo.aiResponse() + "\n</description>";
     }
 
-    private List<String> classify(AIModel aiModel, List<Ontology.Node> nodes, String summary) {
+    private List<String> classify(List<Ontology.Node> nodes, String summary) {
         String prompt = createClassificationPrompt(nodes, summary);
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 300);
         String response = aiResponseInfo.aiResponse();
@@ -70,7 +74,7 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
     private boolean validate(String id, String summary, AIModel aiModel) {
         Ontology.Node node = ontology.getNodeById(id);
         String prompt = "You are a scientist and genomics and bioinformatics expert.\n";
-        boolean isGeneric = isGenericOperation(node.id());
+        boolean isGeneric = isGenericNode(node);
         prompt += "Given the following workflow description:\n";
         prompt += summary;
         prompt += "\n\n";
@@ -85,7 +89,8 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
         return validated;
     }
 
-    private boolean isGenericOperation(String id) {
+    private boolean isGenericNode(Ontology.Node node) {
+        String id = node.id();
         return ontology.getAncestors(id).stream().anyMatch(ancestor -> ancestor.id().equals("operation-data-handling"))
             || id.equals("operation-read-mapping")
             || id.equals("operation-read-pre-processing");
