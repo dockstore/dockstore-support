@@ -89,9 +89,20 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     private boolean validate(Ontology.Node node, String summary) {
-        boolean isGeneric = isGenericNode(node);
         String prompt = joinLines(
             createIdentityStatement(),
+            createValidateInstruction(node, summary)
+        );
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 5);
+        String response = aiResponseInfo.aiResponse();
+        boolean validated = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
+        LOG.info("VALIDATED {} {}", node.id(), validated);
+        return validated;
+    }
+
+    private String createValidateInstruction(Ontology.Node node, String summary) {
+        boolean isGeneric = isGenericNode(node);
+        return joinLines(
             "Given the following workflow description:",
             summary,
             "",
@@ -99,11 +110,6 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
             "Answer \"yes\" or \"no\" with no other text.\n",
             "\"" + node.label() + "\": " + node.definition()
         );
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 5);
-        String response = aiResponseInfo.aiResponse();
-        boolean validated = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
-        LOG.info("VALIDATED {} {}", node.id(), validated);
-        return validated;
     }
 
     private boolean isGenericNode(Ontology.Node node) {
