@@ -54,6 +54,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -416,8 +417,8 @@ public class TopicGeneratorClient {
     }
 
     public static String removeSummaryTagsFromTopic(String aiTopic) {
-        String cleanedTopic = StringUtils.removeStart(aiTopic, "<summary>");
-        return StringUtils.removeEnd(cleanedTopic, "</summary>").trim();
+        String cleanedTopic = Strings.CI.removeStart(aiTopic, "<summary>");
+        return Strings.CI.removeEnd(cleanedTopic, "</summary>").trim();
     }
 
     public record TrsIdAndVersionId(String trsId, String versionId) {
