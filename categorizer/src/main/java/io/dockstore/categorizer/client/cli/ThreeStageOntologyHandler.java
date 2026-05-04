@@ -43,11 +43,13 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     protected abstract String createSummarizeInstruction(EntryData entryData);
 
-    protected String formatEntryInformation(EntryData entryData) {
+    protected String formatEntryData(EntryData entryData) {
+        // TODO: Limit some of these?
         return joinLines(
+            tag("type", entryData.entryType()),
             tag("trsId", entryData.trsId()),
-            tag("description", entryData.description()),
-            tag("code", entryData.descriptorFileContent())
+            tag("code", entryData.descriptorFileContent()),
+            tag("description", entryData.description())
         );
     }
 
@@ -92,10 +94,16 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return "You are a scientist and genomics and bioinformatics expert.\n";
     }
 
-    protected static String createOntologyCsv(List<Ontology.Node> nodes) {
+    protected static String createTaggedOntologyCsv(List<Ontology.Node> nodes, String prefix) {
+        String tagName = prefix + "csv";
+        return tag(tagName, createOntologyCsv(nodes, prefix));
+    }
+
+    // TODO: investigate 3rd party library
+    protected static String createOntologyCsv(List<Ontology.Node> nodes, String prefix) {
         StringBuilder sb = new StringBuilder();
-        sb.append("id,name,description\n");
-        for (Ontology.Node node : nodes) {
+        sb.append("%sid,%sname,%sdescription\n".formatted(prefix, prefix, prefix));
+        for (Ontology.Node node: nodes) {
             sb.append(escapeCsvField(node.id())).append(",")
                 .append(escapeCsvField(node.label())).append(",")
                 .append(escapeCsvField(node.definition())).append("\n");
@@ -103,7 +111,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return sb.toString();
     }
 
-    protected static String escapeCsvField(String value) {
+    private static String escapeCsvField(String value) {
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }

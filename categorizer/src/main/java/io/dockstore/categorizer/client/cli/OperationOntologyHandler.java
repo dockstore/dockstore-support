@@ -15,7 +15,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         return joinLines(
             "Summarize the purpose and functionality of the following %s in 200 words or less.".formatted(entryType),
             "Omit the %s's name.  Be terse and use scientific terminology.".formatted(entryType),
-            formatEntryInformation(entryData)
+            formatEntryData(entryData)
         );
     }
 
@@ -30,7 +30,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
             "Prefer operations that differentiate the %s from other %ss.".formatted(entryType, entryType),
             "Prefer operations that are very specific.",
             "Output one operation ID per line and no other text.",
-            tag("operation-csv", createOntologyCsv(nodes))
+            createTaggedOntologyCsv(nodes, "operation-")
         );
     }
 
