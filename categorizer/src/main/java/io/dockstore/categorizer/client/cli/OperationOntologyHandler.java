@@ -1,13 +1,12 @@
 package io.dockstore.categorizer.client.cli;
 
 import io.dockstore.categorizer.Ontology;
-import io.dockstore.utils.ai.AIModel;
 import java.util.List;
 
 public class OperationOntologyHandler extends ThreeStageOntologyHandler {
 
-    OperationOntologyHandler(Ontology ontology, AIModel aiModel) {
-        super(ontology, "operation-", aiModel);
+    OperationOntologyHandler() {
+        super("operation-");
     }
 
     @Override

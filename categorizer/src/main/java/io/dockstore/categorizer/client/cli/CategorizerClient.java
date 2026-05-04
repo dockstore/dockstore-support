@@ -152,7 +152,7 @@ public class CategorizerClient {
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
 
-        final OntologyHandler ontologyHandler = new OperationOntologyHandler(ontology, aiModel);
+        final OntologyHandler ontologyHandler = new OperationOntologyHandler();
 
         final String categoriesFileName = "generated-categories" + outputFileNameSuffix;
         final String errorsFileName = "errors" + outputFileNameSuffix;
@@ -198,9 +198,9 @@ public class CategorizerClient {
 
                 // Classify into the ontology using AI model
                 try {
-                    List<Ontology.Node> handledNodes = ontologyHandler.handlesNodes();
+                    List<Ontology.Node> handledNodes = ontologyHandler.handlesNodes(ontology);
                     EntryData entryData = new EntryData(entryType, trsId, description, descriptorFile.getContent());
-                    List<Ontology.Node> operationNodes = ontologyHandler.categorizeIntoNodes(handledNodes, entryData);
+                    List<Ontology.Node> operationNodes = ontologyHandler.categorizeIntoNodes(handledNodes, entryData, aiModel);
                     for (Ontology.Node node : operationNodes) {
                         LOG.info("OPERATION {}", node.id());
                     }

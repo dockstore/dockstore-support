@@ -5,41 +5,39 @@ import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModel.AIResponseInfo;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ThreeStageOntologyHandler.class);
 
-    private final Ontology ontology;
     private final String prefix;
-    private final AIModel aiModel;
 
-    ThreeStageOntologyHandler(Ontology ontology, String prefix, AIModel aiModel) {
-        this.ontology = ontology;
+    ThreeStageOntologyHandler(String prefix) {
         this.prefix = prefix;
-        this.aiModel = aiModel;
     }
 
     @Override
-    public List<Ontology.Node> handlesNodes() {
+    public List<Ontology.Node> handlesNodes(Ontology ontology) {
         return ontology.getNodes().stream().filter(node -> node.id().startsWith(prefix)).toList();
     }
 
     @Override
-    public List<Ontology.Node> categorizeIntoNodes(List<Ontology.Node> nodes, EntryData entryData) {
-        String summary = summarize(entryData);
-        List<Ontology.Node> matches = classify(nodes, summary, entryData);
-        return validate(matches, summary, entryData);
+    public List<Ontology.Node> categorizeIntoNodes(List<Ontology.Node> nodes, EntryData entryData, AIModel aiModel) {
+        String summary = summarize(entryData, aiModel);
+        List<Ontology.Node> matches = classify(nodes, summary, entryData, aiModel);
+        return validate(matches, summary, entryData, aiModel);
     }
 
-    private String summarize(EntryData entryData) {
+    private String summarize(EntryData entryData, AIModel aiModel) {
         String prompt = joinLines(
             createIdentityStatement(),
             createSummarizeInstruction(entryData)
         );
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 400);
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 500);
         return aiResponseInfo.aiResponse();
     }
 
@@ -53,32 +51,28 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         );
     }
 
-    private List<Ontology.Node> classify(List<Ontology.Node> nodes, String summary, EntryData entryData) {
+    private List<Ontology.Node> classify(List<Ontology.Node> nodes, String summary, EntryData entryData, AIModel aiModel) {
         String prompt = joinLines(
             createIdentityStatement(),
             createClassifyInstruction(nodes, summary, entryData)
         );
 
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 300);
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 200);
         String response = aiResponseInfo.aiResponse();
-        List<String> ids = Arrays.asList(response.split("\n"));
-        // TODO fix this code to only include a subset of the originally-specified "nodes"
-        return ids.stream().map(this::map).filter(Objects::nonNull).toList();
+        List<String> ids = Arrays.stream(response.split("\n")).map(String::trim).toList();
+        return filterHallucinations(ids, nodes);
     }
 
-    private Ontology.Node map(String id) {
-        Ontology.Node node = ontology.getNodeById(id);
-        if (node == null) {
-            LOG.info("HALLUCINATED {}", id);
-        }
-        return node;
+    private List<Ontology.Node> filterHallucinations(List<String> ids, List<Ontology.Node> nodes) {
+        Map<String, Ontology.Node> candidateIdToNode = nodes.stream().collect(Collectors.toMap(Ontology.Node::id, node -> node));
+        return ids.stream().filter(candidateIdToNode::containsKey).map(candidateIdToNode::get).toList();
     }
 
-    private List<Ontology.Node> validate(List<Ontology.Node> nodes, String summary, EntryData entryData) {
-        return nodes.stream().filter(node -> validate(node, summary, entryData)).toList();
+    private List<Ontology.Node> validate(List<Ontology.Node> nodes, String summary, EntryData entryData, AIModel aiModel) {
+        return nodes.stream().filter(node -> validate(node, summary, entryData, aiModel)).toList();
     }
 
-    private boolean validate(Ontology.Node node, String summary, EntryData entryData) {
+    private boolean validate(Ontology.Node node, String summary, EntryData entryData, AIModel aiModel) {
         String prompt = joinLines(
             createIdentityStatement(),
             createValidateInstruction(node, summary, entryData)
