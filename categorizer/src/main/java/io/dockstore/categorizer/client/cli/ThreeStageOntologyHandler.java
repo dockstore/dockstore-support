@@ -94,13 +94,6 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     protected abstract String createValidateInstruction(Ontology.Node node, String summary);
 
-    protected boolean isGenericNode(Ontology.Node node) {
-        String id = node.id();
-        return ontology.getAncestors(id).stream().anyMatch(ancestor -> ancestor.id().equals("operation-data-handling"))
-            || id.equals("operation-read-mapping")
-            || id.equals("operation-read-pre-processing");
-    }
-
     protected String createValidationQuestion(boolean isGeneric) {
         return isGeneric
             ? "Is the following operation the sole purpose of the workflow?\n"

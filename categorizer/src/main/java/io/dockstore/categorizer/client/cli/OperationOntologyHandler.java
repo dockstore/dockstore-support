@@ -33,6 +33,13 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         );
     }
 
+    private boolean isGenericNode(Ontology.Node node) {
+        String id = node.id();
+        return node.ontology().getAncestors(id).stream().anyMatch(ancestor -> ancestor.id().equals("operation-data-handling"))
+            || id.equals("operation-read-mapping")
+            || id.equals("operation-read-pre-processing");
+    }
+
     @Override
     protected String createValidateInstruction(Ontology.Node node, String summary) {
         boolean isGeneric = isGenericNode(node);
