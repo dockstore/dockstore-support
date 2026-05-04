@@ -13,8 +13,8 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     @Override
     protected String createSummarizeInstruction(EntryData entryData) {
         return joinLines(
-            "Summarize the purpose and functionality of the following workflow in 200 words or less.",
-            "Omit the workflow's name.  Be terse and use scientific terminology.",
+            "Summarize the purpose and functionality of the following %s in 200 words or less.".formatted(entryData.entryType()),
+            "Omit the %s's name.  Be terse and use scientific terminology.".formatted(entryData.entryType()),
             formatEntryInformation(entryData)
         );
     }
@@ -22,11 +22,11 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     @Override
     protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         return joinLines(
-            "Your goal is to determine the operations performed by the following workflow:",
+            "Your goal is to determine the operations performed by the following %s:".formatted(entryData.entryType()),
             summary,
-            "From the following list, select the operations that the workflow performs.",
-            "Prefer operations that summarize the purpose or functionality of the workflow as a whole.",
-            "Prefer operations that differentiate the workflow from other workflows.",
+            "From the following list, select the operations that the %s performs.".formatted(entryData.entryType()),
+            "Prefer operations that summarize the purpose or functionality of the %s as a whole.".formatted(entryData.entryType()),
+            "Prefer operations that differentiate the %s from other %ss.".formatted(entryData.entryType(), entryData.entryType()),
             "Prefer operations that are very specific.",
             "Output one operation ID per line and no other text.",
             createTaggedOntologyCsv(nodes)
@@ -44,7 +44,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     protected String createValidateInstruction(Ontology.Node node, String summary, EntryData entryData) {
         boolean isGeneric = isGenericNode(node);
         return joinLines(
-            "Given the following workflow description:",
+            "Given the following %s description:".formatted(entryData.entryType()),
             summary,
             "",
             createValidationQuestion(isGeneric),
