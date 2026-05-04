@@ -20,7 +20,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary) {
+    protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         return joinLines(
             "Your goal is to determine the operations performed by the following workflow:",
             summary,
@@ -41,7 +41,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String createValidateInstruction(Ontology.Node node, String summary) {
+    protected String createValidateInstruction(Ontology.Node node, String summary, EntryData entryData) {
         boolean isGeneric = isGenericNode(node);
         return joinLines(
             "Given the following workflow description:",

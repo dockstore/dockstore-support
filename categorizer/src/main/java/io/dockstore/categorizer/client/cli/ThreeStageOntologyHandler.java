@@ -30,8 +30,8 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     @Override
     public List<Ontology.Node> categorizeIntoNodes(List<Ontology.Node> nodes, EntryData entryData) {
         String summary = summarize(entryData);
-        List<Ontology.Node> matches = classify(nodes, summary);
-        return validate(matches, summary);
+        List<Ontology.Node> matches = classify(nodes, summary, entryData);
+        return validate(matches, summary, entryData);
     }
 
     private String summarize(EntryData entryData) {
@@ -55,10 +55,10 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         );
     }
 
-    private List<Ontology.Node> classify(List<Ontology.Node> nodes, String summary) {
+    private List<Ontology.Node> classify(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String prompt = joinLines(
             createIdentityStatement(),
-            createClassifyInstruction(nodes, summary)
+            createClassifyInstruction(nodes, summary, entryData)
         );
 
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 300);
@@ -76,14 +76,14 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return node;
     }
 
-    private List<Ontology.Node> validate(List<Ontology.Node> nodes, String summary) {
-        return nodes.stream().filter(node -> validate(node, summary)).toList();
+    private List<Ontology.Node> validate(List<Ontology.Node> nodes, String summary, EntryData entryData) {
+        return nodes.stream().filter(node -> validate(node, summary, entryData)).toList();
     }
 
-    private boolean validate(Ontology.Node node, String summary) {
+    private boolean validate(Ontology.Node node, String summary, EntryData entryData) {
         String prompt = joinLines(
             createIdentityStatement(),
-            createValidateInstruction(node, summary)
+            createValidateInstruction(node, summary, entryData)
         );
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 5);
         String response = aiResponseInfo.aiResponse();
@@ -92,7 +92,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return validated;
     }
 
-    protected abstract String createValidateInstruction(Ontology.Node node, String summary);
+    protected abstract String createValidateInstruction(Ontology.Node node, String summary, EntryData entryData);
 
     protected String createValidationQuestion(boolean isGeneric) {
         return isGeneric
@@ -115,7 +115,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return tag(tagName, csv);
     }
 
-    protected abstract String createClassifyInstruction(List<Ontology.Node> nodes, String summary);
+    protected abstract String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData);
 
     private String createIdentityStatement() {
         return "You are a scientist and genomics and bioinformatics expert.\n";
