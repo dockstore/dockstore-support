@@ -94,12 +94,6 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     protected abstract String createValidateInstruction(Ontology.Node node, String summary, EntryData entryData);
 
-    protected String createValidationQuestion(boolean isGeneric) {
-        return isGeneric
-            ? "Is the following operation the sole purpose of the workflow?\n"
-            : "Does the workflow perform the following operation, and is it the purpose or an important capability of the workflow?\n";
-    }
-
     protected String createOntologyTypeSlug() {
         return "operation";
     }
