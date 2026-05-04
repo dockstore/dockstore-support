@@ -25,13 +25,13 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return joinLines(
             "Your goal is to determine the operations performed by the following %s:".formatted(entryType),
-            summary,
+            tag("description", summary),
             "From the following list, select the operations that the %s performs.".formatted(entryType),
             "Prefer operations that summarize the purpose or functionality of the %s as a whole.".formatted(entryType),
             "Prefer operations that differentiate the %s from other %ss.".formatted(entryType, entryType),
             "Prefer operations that are very specific.",
             "Output one operation ID per line and no other text.",
-            createTaggedOntologyCsv(nodes)
+            tag("operation-csv", createOntologyCsv(nodes))
         );
     }
 
@@ -44,7 +44,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
 
         return joinLines(
             "Given the following %s description:".formatted(entryType),
-            summary,
+            tag("description", summary),
             "",
             question,
             "Answer \"yes\" or \"no\" with no other text.\n",

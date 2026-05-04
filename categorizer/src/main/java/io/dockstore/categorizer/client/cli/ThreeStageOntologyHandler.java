@@ -40,9 +40,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             createSummarizeInstruction(entryData)
         );
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 400);
-        String summarySlug = createSummarySlug();
-        String summary = aiResponseInfo.aiResponse();
-        return tag(summarySlug, summary);
+        return aiResponseInfo.aiResponse();
     }
 
     protected abstract String createSummarizeInstruction(EntryData entryData);
@@ -93,21 +91,6 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     protected abstract String createValidateInstruction(Ontology.Node node, String summary, EntryData entryData);
-
-    protected String createOntologyTypeSlug() {
-        return "operation";
-    }
-
-    private String createSummarySlug() {
-        return "description";
-    }
-
-    protected String createTaggedOntologyCsv(List<Ontology.Node> nodes) {
-        String slug = createOntologyTypeSlug();
-        String tagName = "%s-csv".formatted(slug);
-        String csv = createOntologyCsv(nodes);
-        return tag(tagName, csv);
-    }
 
     protected abstract String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData);
 
