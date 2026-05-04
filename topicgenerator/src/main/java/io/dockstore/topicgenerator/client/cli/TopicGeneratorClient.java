@@ -44,6 +44,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import org.apache.commons.configuration2.INIConfiguration;
@@ -137,7 +138,6 @@ public class TopicGeneratorClient {
             } else {
                 LOG.info("View the AI topic candidates in input file {}", inputFileName);
             }
-            return;
         }
 
         AIModel aiModel = AIModelFactory.createModel(aiModelType);
@@ -265,8 +265,9 @@ public class TopicGeneratorClient {
 
             if (totalAiTopicCandidatesCount == null) {
                 try {
-                    totalAiTopicCandidatesCount = Integer.parseInt(
-                            extendedGa4GhApi.getApiClient().getResponseHeaders().get("X-total-count").get(0));
+                    Map<String, List<String>> responseHeaders = extendedGa4GhApi.getApiClient().getResponseHeaders();
+                    List<String> strings = ObjectUtils.firstNonNull(responseHeaders.get("X-total-count"), responseHeaders.get("x-total-count"));
+                    totalAiTopicCandidatesCount = Integer.parseInt(strings.get(0));
                 } catch (Exception exception) {
                     exceptionMessage(exception, "Could not get X-total-count header value for AI topic candidates", API_ERROR);
                 }
@@ -416,7 +417,7 @@ public class TopicGeneratorClient {
 
     public static String removeSummaryTagsFromTopic(String aiTopic) {
         String cleanedTopic = StringUtils.removeStart(aiTopic, "<summary>");
-        return StringUtils.removeEnd(cleanedTopic, "</summary>");
+        return StringUtils.removeEnd(cleanedTopic, "</summary>").trim();
     }
 
     public record TrsIdAndVersionId(String trsId, String versionId) {
