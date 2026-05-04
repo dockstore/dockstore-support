@@ -39,10 +39,7 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
     private String summarize(String entryType, String trsId, String description, String descriptorFile) {
         String prompt = joinLines(
             createIdentityStatement(),
-            createSummarizeInstruction(),
-            tag("trsId", trsId),
-            tag("description", description),
-            tag("code", descriptorFile)
+            createSummarizeInstruction(entryType, trsId, description, descriptorFile)
         );
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 400);
         String summarySlug = createSummarySlug();
@@ -50,12 +47,32 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
         return tag(summarySlug, summary);
     }
 
+    private String createSummarizeInstruction(String entryType, String trsId, String description, String descriptorFile) {
+        return joinLines(
+            "Summarize the purpose and functionality of the following workflow in 200 words or less.",
+            "Omit the workflow's name.  Be terse and use scientific terminology.",
+            formatEntryInformation(entryType, trsId, description, descriptorFile)
+        );
+    }
+
+    protected String formatEntryInformation(String entryType, String trsId, String description, String descriptorFile) {
+        return joinLines(
+            tag("trsId", trsId),
+            tag("description", description),
+            tag("code", descriptorFile)
+        );
+    }
+
     private List<Ontology.Node> classify(List<Ontology.Node> nodes, String summary) {
-        String prompt = createClassificationPrompt(nodes, summary);
+        String prompt = joinLines(
+            createIdentityStatement(),
+            createClassifyInstruction(nodes, summary)
+        );
+
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 300);
         String response = aiResponseInfo.aiResponse();
         List<String> ids = Arrays.asList(response.split("\n"));
-        // TODO fix this code to only include a subset of "nodes"
+        // TODO fix this code to only include a subset of the originally-specified "nodes"
         return ids.stream().map(this::map).filter(Objects::nonNull).toList();
     }
 
@@ -102,21 +119,6 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
             : "Does the workflow perform the following operation, and is it the purpose or an important capability of the workflow?\n";
     }
 
-    private String createClassificationPrompt(List<Ontology.Node> nodes, String summary) {
-        String slug = createOntologyTypeSlug();
-        String prompt = joinLines(
-            createIdentityStatement(),
-            createClassifyGoal(),
-            summary,
-            "",
-            createClassifySelectionCriteria(),
-            "<%s-csv>".formatted(slug),
-            createOntologyCsv(nodes),
-            "</%s-csv>".formatted(slug)
-        );
-        return prompt;
-    }
-
     private String createOntologyTypeSlug() {
         return "operation";
     }
@@ -125,21 +127,24 @@ public class ThreeStageOntologyHandler implements OntologyHandler {
         return "description";
     }
 
-    private String createSummarizeInstruction() {
-        return "Summarize the purpose and functionality of the following workflow in 200 words or less."
-            + "  Omit the workflow's name.  Be terse and use scientific terminology.";
+    private String createTaggedOntologyCsv(List<Ontology.Node> nodes) {
+        String slug = createOntologyTypeSlug();
+        String tagName = "%s-csv".formatted(slug);
+        String csv = createOntologyCsv(nodes);
+        return tag(tagName, csv);
     }
 
-    private String createClassifyGoal() {
-        return "Your goal is to determine the operations performed by the following workflow:\n";
-    }
-
-    private String createClassifySelectionCriteria() {
-        return "From the following list, select the operations that the workflow performs.\n"
-            + "Prefer operations that summarize the purpose or functionality of the workflow as a whole.\n"
-            + "Prefer operations that differentiate the workflow from other workflows.\n"
-            + "Prefer operations that are very specific.\n"
-            + "Output one operation ID per line and no other text.\n";
+    private String createClassifyInstruction(List<Ontology.Node> nodes, String summary) {
+        return joinLines(
+            "Your goal is to determine the operations performed by the following workflow:",
+            summary,
+            "From the following list, select the operations that the workflow performs.",
+            "Prefer operations that summarize the purpose or functionality of the workflow as a whole.",
+            "Prefer operations that differentiate the workflow from other workflows.",
+            "Prefer operations that are very specific.",
+            "Output one operation ID per line and no other text.",
+            createTaggedOntologyCsv(nodes)
+        );
     }
 
     private String createIdentityStatement() {
