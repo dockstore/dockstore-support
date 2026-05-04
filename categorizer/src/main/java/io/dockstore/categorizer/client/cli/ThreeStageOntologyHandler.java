@@ -28,16 +28,16 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     @Override
-    public List<Ontology.Node> categorizeIntoNodes(List<Ontology.Node> nodes, String entryType, String trsId, String description, String descriptorFileContent) {
-        String summary = summarize(entryType, trsId, description, descriptorFileContent);
+    public List<Ontology.Node> categorizeIntoNodes(List<Ontology.Node> nodes, EntryData entryData) {
+        String summary = summarize(entryData);
         List<Ontology.Node> matches = classify(nodes, summary);
         return validate(matches, summary);
     }
 
-    private String summarize(String entryType, String trsId, String description, String descriptorFile) {
+    private String summarize(EntryData entryData) {
         String prompt = joinLines(
             createIdentityStatement(),
-            createSummarizeInstruction(entryType, trsId, description, descriptorFile)
+            createSummarizeInstruction(entryData)
         );
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 400);
         String summarySlug = createSummarySlug();
@@ -45,13 +45,13 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return tag(summarySlug, summary);
     }
 
-    protected abstract String createSummarizeInstruction(String entryType, String trsId, String description, String descriptorFile);
+    protected abstract String createSummarizeInstruction(EntryData entryData);
 
-    protected String formatEntryInformation(String entryType, String trsId, String description, String descriptorFile) {
+    protected String formatEntryInformation(EntryData entryData) {
         return joinLines(
-            tag("trsId", trsId),
-            tag("description", description),
-            tag("code", descriptorFile)
+            tag("trsId", entryData.trsId()),
+            tag("description", entryData.description()),
+            tag("code", entryData.descriptorFileContent())
         );
     }
 

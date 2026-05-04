@@ -11,11 +11,11 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String createSummarizeInstruction(String entryType, String trsId, String description, String descriptorFile) {
+    protected String createSummarizeInstruction(EntryData entryData) {
         return joinLines(
             "Summarize the purpose and functionality of the following workflow in 200 words or less.",
             "Omit the workflow's name.  Be terse and use scientific terminology.",
-            formatEntryInformation(entryType, trsId, description, descriptorFile)
+            formatEntryInformation(entryData)
         );
     }
 

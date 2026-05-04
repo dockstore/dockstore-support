@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface OntologyHandler {
     List<Ontology.Node> handlesNodes();
-    List<Ontology.Node> categorizeIntoNodes(List<Ontology.Node> nodes, String entryType, String trsId, String description, String descriptorFileContent);
+    List<Ontology.Node> categorizeIntoNodes(List<Ontology.Node> nodes, EntryData entryData);
 }

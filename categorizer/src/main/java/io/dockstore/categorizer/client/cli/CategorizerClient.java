@@ -199,7 +199,8 @@ public class CategorizerClient {
                 // Classify into the ontology using AI model
                 try {
                     List<Ontology.Node> handledNodes = ontologyHandler.handlesNodes();
-                    List<Ontology.Node> operationNodes = ontologyHandler.categorizeIntoNodes(handledNodes, entryType, trsId, description, descriptorFile.getContent());
+                    EntryData entryData = new EntryData(entryType, trsId, description, descriptorFile.getContent());
+                    List<Ontology.Node> operationNodes = ontologyHandler.categorizeIntoNodes(handledNodes, entryData);
                     for (Ontology.Node node : operationNodes) {
                         LOG.info("OPERATION {}", node.id());
                     }
