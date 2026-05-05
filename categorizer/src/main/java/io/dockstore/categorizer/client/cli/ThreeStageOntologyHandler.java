@@ -61,7 +61,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
         AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 200);
         String response = aiResponseInfo.aiResponse();
-        List<String> ids = Arrays.stream(response.split("\n")).map(String::trim).toList();
+        List<String> ids = Arrays.stream(response.split("\n")).map(String::trim).distinct().toList();
         return filterHallucinations(ids, nodes);
     }
 

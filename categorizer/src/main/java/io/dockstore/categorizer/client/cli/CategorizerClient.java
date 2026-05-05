@@ -122,7 +122,7 @@ public class CategorizerClient {
         final ApiClient apiClient = setupApiClient(dockstoreServerUrl, categorizerConfig.dockstoreToken());
         final Ga4Ghv20Api ga4Ghv20Api = new Ga4Ghv20Api(apiClient);
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
-        final String ontologyPath = ObjectUtils.firstNonNull(categorizeEntriesCommand.getOntologyJsonPath(), "operation.json");
+        final String ontologyPath = categorizeEntriesCommand.getOntologyJsonPath();
         final Ontology ontology = readOntology(ontologyPath);
         final AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
         final String inputFileName = categorizeEntriesCommand.getEntriesCsvFilePath();
@@ -152,7 +152,7 @@ public class CategorizerClient {
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
 
-        final OntologyHandler ontologyHandler = new OperationOntologyHandler();
+        final OntologyHandler ontologyHandler = new InputFormatOntologyHandler();
 
         final String categoriesFileName = "generated-categories" + outputFileNameSuffix;
         final String errorsFileName = "errors" + outputFileNameSuffix;
