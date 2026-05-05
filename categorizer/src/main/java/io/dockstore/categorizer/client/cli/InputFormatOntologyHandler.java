@@ -25,11 +25,14 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
     protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
-            "Given the following description of a %s's inputs:".formatted(entryType),
+            "Classify the input formats of a %s into the following list of categories:".formatted(entryType),
+            createTaggedOntologyCsv(nodes, "input-format-"),
+            "",
+            "The %s supports the following inputs:".formatted(entryType),
             tag("input-format-description", summary),
-            "From the following list, select the file format of each user-specified input.".formatted(entryType),
-            "Output one input format ID per line and no other text.",
-            createTaggedOntologyCsv(nodes, "input-format-")
+            "",
+            "List the file format of each user-specified input.".formatted(entryType),
+            "Output one input format ID per line and no other text."
         );
     }
 
@@ -37,7 +40,7 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
     protected String createValidateInstruction(Ontology.Node node, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
-            "Given the following description of a %s's inputs:".formatted(entryType),
+            "Use the following description to determine the input formats supported by the %s:".formatted(entryType),
             tag("input-format-description", summary),
             "",
             "Does the %s support user-specified input in the following file format?".formatted(entryType),
