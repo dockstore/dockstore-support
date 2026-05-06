@@ -26,7 +26,7 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
     protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
-            "Classify the output formats of a %s into the following list of categories:".formatted(entryType),
+            "Classify the %s's output formats into the following list of categories:".formatted(entryType),
             createTaggedOntologyCsv(nodes, "output-format-"),
             "",
             "The %s produces the following outputs:".formatted(entryType),

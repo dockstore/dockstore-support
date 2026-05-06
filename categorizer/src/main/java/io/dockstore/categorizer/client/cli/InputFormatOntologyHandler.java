@@ -15,9 +15,11 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
         return joinLines(
             "Summarize the following %s:".formatted(entryType),
             formatEntryData(entryData),
-            "List the file format of each user-specified input.",
-            "Describe each format in a sentence or less.",
-            "Omit formats that are only used internally or for outputs."
+            "",
+            "List the input file formats.",
+            "Files within archived or compressed input files are also inputs.",
+            "Omit output formats and exclusively internal formats.",
+            "Be terse and use scientific terminology."
         );
     }
 
@@ -25,13 +27,14 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
     protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
-            "Classify the input formats of a %s into the following list of categories:".formatted(entryType),
+            "Classify the %s's input formats into the following list of categories:".formatted(entryType),
             createTaggedOntologyCsv(nodes, "input-format-"),
             "",
             "The %s supports the following inputs:".formatted(entryType),
-            tag("input-format-description", summary),
+            tag("input-description", summary),
             "",
-            "List the file format of each user-specified input.".formatted(entryType),
+            "List the input formats.",
+            "Files within archived or compressed input files are also inputs.",
             "Output one input format ID per line and no other text."
         );
     }
@@ -41,11 +44,13 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return joinLines(
             "Use the following description to determine the input formats supported by the %s:".formatted(entryType),
-            tag("input-format-description", summary),
+            tag("input-description", summary),
             "",
-            "Does the %s support user-specified input in the following file format?".formatted(entryType),
-            "\"" + node.label() + "\": " + node.definition(),
-            "Answer \"yes\" or \"no\" with no other text."
+            "Does the %s accept an input in the following file format?".formatted(entryType),
+            "Files within archived or compressed input files are also inputs.",
+            "Answer \"yes\" or \"no\" with no other text.",
+            tag("format-name", node.label()),
+            tag("format-description", node.definition())
         );
     }
 }
