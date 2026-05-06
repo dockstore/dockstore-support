@@ -15,7 +15,7 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
         return joinLines(
             "Summarize the following %s:".formatted(entryType),
             formatEntryData(entryData),
-            "List the file format of each output.",
+            "List the format of each output.",
             "Files within archived or compressed output files are also outputs.",
             "Omit formats that are only used internally or for inputs.",
             "Be terse and use scientific terminology."
@@ -30,7 +30,7 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
             createTaggedOntologyCsv(nodes, "output-format-"),
             "",
             "The %s produces the following outputs:".formatted(entryType),
-            tag("output-format-description", summary),
+            tag("output-description", summary),
             "",
             "List the output formats.".formatted(entryType),
             "Files within archived or compressed output files are also outputs.",
@@ -43,12 +43,13 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return joinLines(
             "Use the following description to determine the output formats produced by the %s:".formatted(entryType),
-            tag("output-format-description", summary),
+            tag("output-description", summary),
             "",
             "Does the %s produce an output in the following format?".formatted(entryType),
-            "\"" + node.label() + "\": " + node.definition(),
             "Files within archived or compressed output files are also outputs.",
-            "Answer \"yes\" or \"no\" with no other text."
+            "Answer \"yes\" or \"no\" with no other text.",
+            tag("format-name", node.label()),
+            tag("format-description", node.definition())
         );
     }
 }
