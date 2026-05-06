@@ -29,7 +29,7 @@ public class TopicGeneratorCommandLineArgs {
         private String entriesCsvFilePath;
 
         @Parameter(names = {"-a", "--ai"}, description = "The AI model to use")
-        private AIModelType aiModel = AIModelType.CLAUDE_3_HAIKU;
+        private AIModelType aiModel = AIModelType.CLAUDE_4_5_HAIKU;
 
         @Parameter(names = {"-d", "--dryRun"}, description = "Write the public Dockstore entries that are AI topic candidates to a file")
         private boolean isDryRun = false;
