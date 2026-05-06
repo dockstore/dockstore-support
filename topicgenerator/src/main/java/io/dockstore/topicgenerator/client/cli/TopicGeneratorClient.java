@@ -139,6 +139,7 @@ public class TopicGeneratorClient {
             } else {
                 LOG.info("View the AI topic candidates in input file {}", inputFileName);
             }
+            return;
         }
 
         AIModel aiModel = AIModelFactory.createModel(aiModelType);
