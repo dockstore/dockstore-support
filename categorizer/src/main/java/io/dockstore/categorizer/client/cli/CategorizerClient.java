@@ -152,7 +152,7 @@ public class CategorizerClient {
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
 
-        final OntologyHandler ontologyHandler = new InputDataOntologyHandler();
+        final OntologyHandler ontologyHandler = new TopicOntologyHandler();
 
         final String categoriesFileName = "generated-categories" + outputFileNameSuffix;
         final String errorsFileName = "errors" + outputFileNameSuffix;
@@ -199,12 +199,13 @@ public class CategorizerClient {
                 // Classify into the ontology using AI model
                 try {
                     List<Ontology.Node> handledNodes = ontologyHandler.handlesNodes(ontology);
+                    List<Ontology.Node> candidateNodes = handledNodes.stream().filter(Ontology.Node::recommendedForAnnotation).toList();
                     EntryData entryData = new EntryData(entryType, trsId, description, descriptorFile.getContent());
-                    List<Ontology.Node> operationNodes = ontologyHandler.categorizeIntoNodes(handledNodes, entryData, aiModel);
-                    for (Ontology.Node node : operationNodes) {
-                        LOG.info("OPERATION {}", node.id());
+                    List<Ontology.Node> matchingNodes = ontologyHandler.categorizeIntoNodes(candidateNodes, entryData, aiModel);
+                    for (Ontology.Node node : matchingNodes) {
+                        LOG.info("MATCH {}", node.id());
                     }
-                    output(trsId, versionId, operationNodes);
+                    output(trsId, versionId, matchingNodes);
                 } catch (Exception ex) {
                     LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage());
