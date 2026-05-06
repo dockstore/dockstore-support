@@ -152,7 +152,7 @@ public class CategorizerClient {
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
 
-        final OntologyHandler ontologyHandler = new TopicOntologyHandler();
+        final OntologyHandler ontologyHandler = new OutputFormatOntologyHandler();
 
         final String categoriesFileName = "generated-categories" + outputFileNameSuffix;
         final String errorsFileName = "errors" + outputFileNameSuffix;
