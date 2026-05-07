@@ -15,10 +15,11 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
         return joinLines(
             "Summarize the following %s:".formatted(entryType),
             formatEntryData(entryData),
-            "List the format of each output.",
-            "Files within archived or compressed output files are also outputs.",
-            "Omit formats that are only used internally or for inputs.",
-            "Be terse and use scientific terminology."
+            "",
+            "List the output file formats.",
+            "Detail the format variants and format versions.",
+            "Omit input formats.",
+            "Be terse."
         );
     }
 
@@ -26,14 +27,13 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
     protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
-            "Classify the %s's output formats into the following list of categories:".formatted(entryType),
-            createTaggedOntologyCsv(nodes, "output-format-"),
+            "Classify the %s's output formats into the following categories:".formatted(entryType),
+            createOntologyMarkdownTable(nodes, "Output Format ID", "Output Format Name", "Output Format Description"),
             "",
             "The %s produces the following outputs:".formatted(entryType),
             tag("output-description", summary),
             "",
             "List the output formats.".formatted(entryType),
-            "Files within archived or compressed output files are also outputs.",
             "Output one output format ID per line and no other text."
         );
     }
@@ -45,8 +45,7 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
             "Use the following description to determine the output formats produced by the %s:".formatted(entryType),
             tag("output-description", summary),
             "",
-            "Does the %s produce an output in the following format?".formatted(entryType),
-            "Files within archived or compressed output files are also outputs.",
+            "Does the %s produce the following output format?".formatted(entryType),
             "Answer \"yes\" or \"no\" with no other text.",
             tag("format-name", node.label()),
             tag("format-description", node.definition())

@@ -27,7 +27,7 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
     protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
-            "Classify the %s's input formats into the following list of categories:".formatted(entryType),
+            "Classify the %s's input formats into the following categories:".formatted(entryType),
             createOntologyMarkdownTable(nodes, "Input Format ID", "Input Format Name", "Input Format Description"),
             "",
             "The %s accepts the following inputs:".formatted(entryType),
