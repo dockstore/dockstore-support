@@ -48,7 +48,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.stream.Collectors;
@@ -152,7 +154,14 @@ public class CategorizerClient {
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
 
-        final OntologyHandler ontologyHandler = new OutputFormatOntologyHandler();
+        final List<OntologyHandler> ontologyHandlers = List.of(
+                new InputDataOntologyHandler(),
+                new InputFormatOntologyHandler(),
+                new OperationOntologyHandler(),
+                new OutputFormatOntologyHandler(),
+                new TopicOntologyHandler());
+
+        checkOverlappingHandlers(ontologyHandlers, ontology);
 
         final String categoriesFileName = "generated-categories" + outputFileNameSuffix;
         final String errorsFileName = "errors" + outputFileNameSuffix;
@@ -198,14 +207,18 @@ public class CategorizerClient {
 
                 // Classify into the ontology using AI model
                 try {
-                    List<Ontology.Node> handledNodes = ontologyHandler.handlesNodes(ontology);
-                    List<Ontology.Node> candidateNodes = handledNodes.stream().filter(Ontology.Node::recommendedForAnnotation).toList();
                     EntryData entryData = new EntryData(entryType, trsId, description, descriptorFile.getContent());
-                    List<Ontology.Node> matchingNodes = ontologyHandler.categorizeIntoNodes(candidateNodes, entryData, aiModel);
-                    for (Ontology.Node node : matchingNodes) {
-                        LOG.info("MATCH {}", node.id());
+                    List<Ontology.Node> allMatchingNodes = new ArrayList<>();
+                    for (OntologyHandler handler : ontologyHandlers) {
+                        List<Ontology.Node> candidateNodes = handler.handlesNodes(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).toList();
+                        if (candidateNodes.isEmpty()) {
+                            continue;
+                        }
+                        LOG.info("{} handles {} nodes", handler, candidateNodes.size());
+                        List<Ontology.Node> matchingNodes = handler.categorizeIntoNodes(candidateNodes, entryData, aiModel);
+                        allMatchingNodes.addAll(matchingNodes);
                     }
-                    output(trsId, versionId, matchingNodes);
+                    output(trsId, versionId, allMatchingNodes);
                 } catch (Exception ex) {
                     LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage());
@@ -218,6 +231,13 @@ public class CategorizerClient {
             logFile(numberOfFailures, errorsFileName, "View entries that failed categorization in file " + errorsFileName);
         } catch (IOException e) {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
+        }
+    }
+
+    private void checkOverlappingHandlers(List<OntologyHandler> handlers, Ontology ontology) {
+        List<String> ids = handlers.stream().flatMap(h -> h.handlesNodes(ontology).stream().map(Ontology.Node::id)).toList();
+        if (ids.size() != new HashSet<>(ids).size()) {
+            errorMessage("Some ontology nodes are handled by multiple handlers.", GENERIC_ERROR);
         }
     }
 
