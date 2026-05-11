@@ -124,8 +124,8 @@ public class CategorizerClient {
         final ApiClient apiClient = setupApiClient(dockstoreServerUrl, categorizerConfig.dockstoreToken());
         final Ga4Ghv20Api ga4Ghv20Api = new Ga4Ghv20Api(apiClient);
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
-        final String ontologyPath = categorizeEntriesCommand.getOntologyJsonPath();
-        final Ontology ontology = readOntology(ontologyPath);
+        final List<String> ontologyPaths = categorizeEntriesCommand.getOntologyJsonPaths();
+        final Ontology ontology = combineOntologies(ontologyPaths.stream().map(CategorizerClient::readOntology).toList());
         final AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
         final String inputFileName = categorizeEntriesCommand.getEntriesCsvFilePath();
 
@@ -418,6 +418,16 @@ public class CategorizerClient {
     public static String removeCategoryTagsFromResponse(String aiResponse) {
         String cleaned = StringUtils.removeStart(aiResponse, "<categories>");
         return StringUtils.removeEnd(cleaned, "</categories>");
+    }
+
+    private static Ontology combineOntologies(List<Ontology> ontologies) {
+        Ontology combined = new Ontology();
+        for (Ontology ontology : ontologies) {
+            for (Ontology.Node node : ontology.getNodes()) {
+                combined.addNode(node.id(), node.label(), node.definition(), node.parentIds(), node.source(), node.recommendedForAnnotation());
+            }
+        }
+        return combined;
     }
 
     private static Ontology readOntology(String fileName) {

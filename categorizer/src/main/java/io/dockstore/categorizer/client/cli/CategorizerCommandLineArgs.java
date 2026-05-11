@@ -4,6 +4,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import io.dockstore.utils.ai.AIModelType;
 import java.io.File;
+import java.util.List;
 
 public class CategorizerCommandLineArgs {
     public static final String DEFAULT_CONFIG_FILE_NAME = "categorizer.config";
@@ -28,8 +29,8 @@ public class CategorizerCommandLineArgs {
         @Parameter(names = {"-e", "--entries"}, description = "Optional file path to the CSV file containing the TRS ID and version name of the entries to categorize. The first line of the file should contain the CSV fields: trsId,version")
         private String entriesCsvFilePath;
 
-        @Parameter(names = {"-o", "--ontology"}, description = "Path to the ontology JSON file")
-        private String ontologyJsonPath;
+        @Parameter(names = {"-o", "--ontology"}, required = true, description = "Comma-separated list of paths to ontology JSON files")
+        private List<String> ontologyJsonPaths;
 
         @Parameter(names = {"-a", "--ai"}, description = "The AI model to use")
         private AIModelType aiModel = AIModelType.CLAUDE_4_5_HAIKU;
@@ -44,8 +45,8 @@ public class CategorizerCommandLineArgs {
             return entriesCsvFilePath;
         }
 
-        public String getOntologyJsonPath() {
-            return ontologyJsonPath;
+        public List<String> getOntologyJsonPaths() {
+            return ontologyJsonPaths;
         }
 
         public AIModelType getAiModel() {
