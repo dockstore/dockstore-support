@@ -21,7 +21,7 @@ import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.Categorize
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.ErrorsCsvHeaders;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.InputCsvHeaders;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.OutputCsvHeaders;
-import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.UploadCategoriesCommand;
+import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.PopulateCategoriesCommand;
 import io.dockstore.common.NextflowUtilities;
 import io.dockstore.common.NextflowUtilities.NextflowParsingException;
 import io.dockstore.common.S3ClientHelper;
@@ -75,9 +75,9 @@ public class CategorizerClient {
         final CategorizerCommandLineArgs commandLineArgs = new CategorizerCommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
         final CategorizeEntriesCommand categorizeEntriesCommand = new CategorizeEntriesCommand();
-        final UploadCategoriesCommand uploadCategoriesCommand = new UploadCategoriesCommand();
+        final PopulateCategoriesCommand populateCategoriesCommand = new PopulateCategoriesCommand();
         jCommander.addCommand(categorizeEntriesCommand);
-        jCommander.addCommand(uploadCategoriesCommand);
+        jCommander.addCommand(populateCategoriesCommand);
 
         try {
             jCommander.parse(args);
@@ -103,7 +103,7 @@ public class CategorizerClient {
 
             switch (jCommander.getParsedCommand()) {
             case "categorize-entries" -> categorizerClient.categorizeEntries(categorizerConfig, categorizeEntriesCommand);
-            case "upload-categories" -> categorizerClient.uploadCategories(categorizerConfig, uploadCategoriesCommand);
+            case "populate-categories" -> categorizerClient.populateCategories(categorizerConfig, populateCategoriesCommand);
             default -> errorMessage("Unknown command", GENERIC_ERROR);
             }
         }
@@ -358,15 +358,15 @@ public class CategorizerClient {
         }
     }
 
-    private void uploadCategories(CategorizerConfig categorizerConfig, UploadCategoriesCommand uploadCategoriesCommand) {
+    private void populateCategories(CategorizerConfig categorizerConfig, PopulateCategoriesCommand populateCategoriesCommand) {
         // TODO: set up extendedGa4GhApi and call the Dockstore API to upload categories once the endpoint is available
         final Iterable<CSVRecord> entriesWithCategories;
 
-        LOG.info("Reading file {}", uploadCategoriesCommand.getCategoriesCsvFilePath());
-        if (uploadCategoriesCommand.getCategoriesCsvFilePath().startsWith("s3://")) {
-            entriesWithCategories = readS3CsvFile(uploadCategoriesCommand.getCategoriesCsvFilePath());
+        LOG.info("Reading file {}", populateCategoriesCommand.getCategoriesCsvFilePath());
+        if (populateCategoriesCommand.getCategoriesCsvFilePath().startsWith("s3://")) {
+            entriesWithCategories = readS3CsvFile(populateCategoriesCommand.getCategoriesCsvFilePath());
         } else {
-            entriesWithCategories = readCsvFile(uploadCategoriesCommand.getCategoriesCsvFilePath(), OutputCsvHeaders.class);
+            entriesWithCategories = readCsvFile(populateCategoriesCommand.getCategoriesCsvFilePath(), OutputCsvHeaders.class);
         }
         int numberOfCategoriesUploaded = 0;
         int numberOfCategoriesSkippedUpload = 0;
@@ -377,7 +377,7 @@ public class CategorizerClient {
             final String categories = entryWithCategories.get(OutputCsvHeaders.categories);
             final String version = entryWithCategories.get(OutputCsvHeaders.version);
 
-            if (uploadCategoriesCommand.isReview()) {
+            if (populateCategoriesCommand.isReview()) {
                 System.out.printf("%nReview the following categories for TRS ID %s and version %s:%n", trsId, version);
                 System.out.printf("%s%n%n", categories);
                 String approved = null;
