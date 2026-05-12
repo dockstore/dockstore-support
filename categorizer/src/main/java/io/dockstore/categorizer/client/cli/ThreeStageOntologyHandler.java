@@ -14,7 +14,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ThreeStageOntologyHandler.class);
     private static final int MAX_SUMMARIZE_TOKENS = 500;
     private static final int MAX_CLASSIFY_TOKENS = 200;
-    private static final int MAX_VALIDATE_TOKENS = 5;
+    private static final int MAX_VERIFY_TOKENS = 5;
 
     private final String prefix;
 
@@ -31,7 +31,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     public List<Ontology.Node> categorizeIntoNodes(List<Ontology.Node> nodes, EntryData entryData, AIModel aiModel) {
         String summary = summarize(entryData, aiModel);
         List<Ontology.Node> matches = classify(nodes, summary, entryData, aiModel);
-        return validate(matches, summary, entryData, aiModel);
+        return verify(matches, summary, entryData, aiModel);
     }
 
     private String summarize(EntryData entryData, AIModel aiModel) {
@@ -72,23 +72,23 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return ids.stream().filter(candidateIdToNode::containsKey).map(candidateIdToNode::get).toList();
     }
 
-    private List<Ontology.Node> validate(List<Ontology.Node> nodes, String summary, EntryData entryData, AIModel aiModel) {
-        return nodes.stream().filter(node -> validate(node, summary, entryData, aiModel)).toList();
+    private List<Ontology.Node> verify(List<Ontology.Node> nodes, String summary, EntryData entryData, AIModel aiModel) {
+        return nodes.stream().filter(node -> verify(node, summary, entryData, aiModel)).toList();
     }
 
-    private boolean validate(Ontology.Node node, String summary, EntryData entryData, AIModel aiModel) {
+    private boolean verify(Ontology.Node node, String summary, EntryData entryData, AIModel aiModel) {
         String prompt = joinLines(
             createIdentityStatement(),
-            createValidateInstruction(node, summary, entryData)
+            createVerifyInstruction(node, summary, entryData)
         );
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, MAX_VALIDATE_TOKENS);
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, MAX_VERIFY_TOKENS);
         String response = aiResponseInfo.aiResponse();
-        boolean validated = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
-        LOG.info("VALIDATED {} {}", node.id(), validated);
-        return validated;
+        boolean verified = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
+        LOG.info("VERIFIED {} {}", node.id(), verified);
+        return verified;
     }
 
-    protected abstract String createValidateInstruction(Ontology.Node node, String summary, EntryData entryData);
+    protected abstract String createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData);
 
     protected abstract String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData);
 

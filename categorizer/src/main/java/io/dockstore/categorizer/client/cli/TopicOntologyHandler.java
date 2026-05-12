@@ -40,7 +40,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String createValidateInstruction(Ontology.Node node, String summary, EntryData entryData) {
+    protected String createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
             "Use the following %s description:".formatted(entryType),

@@ -39,7 +39,7 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String createValidateInstruction(Ontology.Node node, String summary, EntryData entryData) {
+    protected String createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
             "Use the following description to determine the outputs data accepted by the %s:".formatted(entryType),

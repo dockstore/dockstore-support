@@ -35,7 +35,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String createValidateInstruction(Ontology.Node node, String summary, EntryData entryData) {
+    protected String createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         String question = isGenericNode(node)
             ? "Is the following operation the sole purpose of the %s?".formatted(entryType)
