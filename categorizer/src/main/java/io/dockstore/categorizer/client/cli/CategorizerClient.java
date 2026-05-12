@@ -151,12 +151,13 @@ public class CategorizerClient {
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
 
         final List<OntologyHandler> ontologyHandlers = List.of(
-                new InputDataOntologyHandler(),
-                new InputFormatOntologyHandler(),
-                new OutputDataOntologyHandler(),
-                new OutputFormatOntologyHandler(),
-                new OperationOntologyHandler(),
-                new TopicOntologyHandler());
+            new OperationOntologyHandler(),
+            new TopicOntologyHandler(),
+            new InputFormatOntologyHandler(),
+            new OutputFormatOntologyHandler(),
+            new InputDataOntologyHandler(),
+            new OutputDataOntologyHandler()
+        );
 
         checkOverlappingHandlers(ontologyHandlers, ontology);
 
