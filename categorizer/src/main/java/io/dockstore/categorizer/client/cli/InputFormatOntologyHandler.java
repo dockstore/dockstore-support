@@ -6,7 +6,7 @@ import java.util.List;
 public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
 
     InputFormatOntologyHandler() {
-        super("input-format-");
+        super("input-format");
     }
 
     @Override

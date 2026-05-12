@@ -52,7 +52,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.stream.Collectors;
@@ -162,8 +161,9 @@ public class CategorizerClient {
         final List<OntologyHandler> ontologyHandlers = List.of(
                 new InputDataOntologyHandler(),
                 new InputFormatOntologyHandler(),
-                new OperationOntologyHandler(),
+                new OutputDataOntologyHandler(),
                 new OutputFormatOntologyHandler(),
+                new OperationOntologyHandler(),
                 new TopicOntologyHandler());
 
         checkOverlappingHandlers(ontologyHandlers, ontology);

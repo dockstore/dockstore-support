@@ -6,13 +6,15 @@ import io.dockstore.utils.ai.AIModel.AIResponseInfo;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ThreeStageOntologyHandler.class);
+    private static final int MAX_SUMMARIZE_TOKENS = 500;
+    private static final int MAX_CLASSIFY_TOKENS = 200;
+    private static final int MAX_VALIDATE_TOKENS = 5;
 
     private final String prefix;
 
@@ -22,7 +24,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     @Override
     public List<Ontology.Node> handlesNodes(Ontology ontology) {
-        return ontology.getNodes().stream().filter(node -> node.id().startsWith(prefix)).toList();
+        return ontology.getNodes().stream().filter(node -> prefix.equals(node.id()) || node.id().startsWith(prefix + "-")).toList();
     }
 
     @Override
@@ -37,7 +39,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             createIdentityStatement(),
             createSummarizeInstruction(entryData)
         );
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 500);
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, MAX_SUMMARIZE_TOKENS);
         return aiResponseInfo.aiResponse();
     }
 
@@ -59,7 +61,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             createClassifyInstruction(nodes, summary, entryData)
         );
 
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 200);
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, MAX_CLASSIFY_TOKENS);
         String response = aiResponseInfo.aiResponse();
         List<String> ids = Arrays.stream(response.split("\n")).map(String::trim).distinct().toList();
         return filterHallucinations(ids, nodes);
@@ -79,7 +81,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             createIdentityStatement(),
             createValidateInstruction(node, summary, entryData)
         );
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, 5);
+        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, MAX_VALIDATE_TOKENS);
         String response = aiResponseInfo.aiResponse();
         boolean validated = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
         LOG.info("VALIDATED {} {}", node.id(), validated);

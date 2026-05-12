@@ -6,7 +6,7 @@ import java.util.List;
 public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
 
     OutputFormatOntologyHandler() {
-        super("output-format-");
+        super("output-format");
     }
 
     @Override

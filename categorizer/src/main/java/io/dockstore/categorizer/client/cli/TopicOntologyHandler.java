@@ -6,7 +6,7 @@ import java.util.List;
 public class TopicOntologyHandler extends ThreeStageOntologyHandler {
 
     TopicOntologyHandler() {
-        super("topic-");
+        super("topic");
     }
 
     @Override
@@ -18,11 +18,6 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
             "Describe the field of study, area of application, scientific context, and similar.",
             "Omit information about the operations performed by the %s.".formatted(entryType),
             "Be terse and use scientific terminology."
-            /*
-            "List the abstract data type of each user-specified input.",
-            "Describe each abstract data type in a sentence or less.",
-            "Explain the data's meaning or purpose, rather than the concrete representation.",
-            */
         );
     }
 

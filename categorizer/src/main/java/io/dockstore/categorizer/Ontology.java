@@ -50,8 +50,12 @@ public class Ontology {
     public record Node(String id, String label, String definition, List<String> parentIds, String source, boolean recommendedForAnnotation, Ontology ontology) {
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Node other)) return false;
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof Node other)) {
+                return false;
+            }
             return Objects.equals(id, other.id);
         }
 

@@ -3,10 +3,10 @@ package io.dockstore.categorizer.client.cli;
 import io.dockstore.categorizer.Ontology;
 import java.util.List;
 
-public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
+public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
 
-    InputDataOntologyHandler() {
-        super("input-data");
+    OutputDataOntologyHandler() {
+        super("output-data");
     }
 
     @Override
@@ -16,9 +16,9 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
             "Summarize the following %s:".formatted(entryType),
             formatEntryData(entryData),
             "",
-            "Describe the information content of the inputs.",
-            "Explain each inputs's meaning or purpose, rather than its concrete representation.",
-            "Omit output information.",
+            "Describe the information content of the outputs.",
+            "Explain each output's meaning or purpose, rather than its concrete representation.",
+            "Omit input information.",
             "Be terse."
         );
     }
@@ -27,14 +27,14 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
     protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
-            "Classify the %s's inputs into the following categories:".formatted(entryType),
-            createOntologyMarkdownTable(nodes, "Input Data ID", "Input Data Name", "Input Data Description"),
+            "Classify the %s's outputs into the following categories:".formatted(entryType),
+            createOntologyMarkdownTable(nodes, "Output Data ID", "Output Data Name", "Output Data Description"),
             "",
-            "The %s supports the following inputs:".formatted(entryType),
-            tag("input-description", summary),
+            "The %s supports the following outputs:".formatted(entryType),
+            tag("output-description", summary),
             "",
-            "List the data inputs.".formatted(entryType),
-            "Output one input data ID per line and no other text."
+            "List the data outputs.".formatted(entryType),
+            "Output one outputs data ID per line and no other text."
         );
     }
 
@@ -42,10 +42,10 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
     protected String createValidateInstruction(Ontology.Node node, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
-            "Use the following description to determine the input data accepted by the %s:".formatted(entryType),
-            tag("input-description", summary),
+            "Use the following description to determine the outputs data accepted by the %s:".formatted(entryType),
+            tag("outputs-description", summary),
             "",
-            "Does the %s support the following input data?".formatted(entryType),
+            "Does the %s support the following outputs data?".formatted(entryType),
             tag("data-name", node.label()),
             tag("data-description", node.definition()),
             "Answer \"yes\" or \"no\" with no other text."
