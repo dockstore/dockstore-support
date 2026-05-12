@@ -29,7 +29,7 @@ public class CategorizerCommandLineArgs {
         @Parameter(names = {"-e", "--entries"}, description = "Optional file path to the CSV file containing the TRS ID and version name of the entries to categorize. The first line of the file should contain the CSV fields: trsId,version")
         private String entriesCsvFilePath;
 
-        @Parameter(names = {"-o", "--ontology"}, required = true, description = "Comma-separated list of paths to ontology JSON files")
+        @Parameter(names = {"-o", "--ontology"}, required = true, description = "List of paths to ontology JSON files")
         private List<String> ontologyJsonPaths;
 
         @Parameter(names = {"-a", "--ai"}, description = "The AI model to use")
