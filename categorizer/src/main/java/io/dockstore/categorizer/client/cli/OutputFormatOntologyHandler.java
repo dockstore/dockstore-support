@@ -28,12 +28,13 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return joinLines(
             "Classify the %s's output formats into the following categories:".formatted(entryType),
-            createOntologyMarkdownTable(nodes, "Output Format ID", "Output Format Name", "Output Format Description"),
+            // createOntologyMarkdownTable(nodes, "Output Format ID", "Output Format Name", "Output Format Description"),
+            createTaggedOntologyCsv(nodes, "output-format-"),
             "",
             "The %s produces the following outputs:".formatted(entryType),
             tag("output-description", summary),
             "",
-            "List the output formats.".formatted(entryType),
+            "List the output formats that the %s produces.".formatted(entryType),
             "Output one output format ID per line and no other text."
         );
     }

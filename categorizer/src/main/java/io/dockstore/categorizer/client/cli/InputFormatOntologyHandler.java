@@ -28,12 +28,13 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return joinLines(
             "Classify the %s's input formats into the following categories:".formatted(entryType),
-            createOntologyMarkdownTable(nodes, "Input Format ID", "Input Format Name", "Input Format Description"),
+            // createOntologyMarkdownTable(nodes, "Input Format ID", "Input Format Name", "Input Format Description"),
+            createTaggedOntologyCsv(nodes, "input-format-"),
             "",
             "The %s accepts the following inputs:".formatted(entryType),
             tag("input-description", summary),
             "",
-            "List the input formats.",
+            "List the input formats that the %s accepts.".formatted(entryType),
             "Output one input format ID per line and no other text."
         );
     }

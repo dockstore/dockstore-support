@@ -23,14 +23,18 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
-            "Your goal is to determine the operations performed by the following %s:".formatted(entryType),
-            tag("description", summary),
-            "From the following list, select the operations that the %s performs.".formatted(entryType),
+            "Classify the operations performed by the %s into the following categories:".formatted(entryType),
+            // createOntologyMarkdownTable(nodes, "Operation ID", "Operation Name", "Operation Description"),
+            createTaggedOntologyCsv(nodes, "operation-"),
+            "",
+            "The %s performs the following operations:".formatted(entryType),
+            tag("operations-description", summary),
+            "",
+            "List the operations that the %s performs.".formatted(entryType),
             "Prefer operations that summarize the purpose or functionality of the %s as a whole.".formatted(entryType),
             "Prefer operations that differentiate the %s from other %ss.".formatted(entryType, entryType),
             "Prefer operations that are very specific.",
-            "Output one operation ID per line and no other text.",
-            createTaggedOntologyCsv(nodes, "operation-")
+            "Output one operation ID per line and no other text."
         );
     }
 
@@ -46,7 +50,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
             tag("description", summary),
             "",
             question,
-            "Answer \"yes\" or \"no\" with no other text.\n",
+            "Answer \"yes\" or \"no\" with no other text.",
             "\"" + node.label() + "\": " + node.definition()
         );
     }
