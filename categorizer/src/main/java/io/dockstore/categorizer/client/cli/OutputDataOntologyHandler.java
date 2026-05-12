@@ -16,7 +16,7 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
             "Summarize the following %s:".formatted(entryType),
             formatEntryData(entryData),
             "",
-            "Describe the information content of the outputs.",
+            "Describe the information content of the %s's outputs.".formatted(entryType),
             "Explain each output's meaning or purpose, rather than its concrete representation.",
             "Omit input information.",
             "Be terse."
@@ -33,8 +33,8 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
             "The %s supports the following outputs:".formatted(entryType),
             tag("output-description", summary),
             "",
-            "List the data outputs.".formatted(entryType),
-            "Output one outputs data ID per line and no other text."
+            "List the data outputs that the %s produces.".formatted(entryType),
+            "Output one output data ID per line and no other text."
         );
     }
 
@@ -42,10 +42,10 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
     protected String createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
-            "Use the following description to determine the outputs data accepted by the %s:".formatted(entryType),
+            "Use the following description to determine the outputs data produced by the %s:".formatted(entryType),
             tag("outputs-description", summary),
             "",
-            "Does the %s support the following outputs data?".formatted(entryType),
+            "Does the %s produce the following output data?".formatted(entryType),
             tag("data-name", node.label()),
             tag("data-description", node.definition()),
             "Answer \"yes\" or \"no\" with no other text."

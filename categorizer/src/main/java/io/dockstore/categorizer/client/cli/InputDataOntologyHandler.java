@@ -16,7 +16,7 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
             "Summarize the following %s:".formatted(entryType),
             formatEntryData(entryData),
             "",
-            "Describe the information content of the inputs.",
+            "Describe the information content of the %s's inputs.".formatted(entryType),
             "Explain each inputs's meaning or purpose, rather than its concrete representation.",
             "Omit output information.",
             "Be terse."
@@ -28,12 +28,13 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return joinLines(
             "Classify the %s's inputs into the following categories:".formatted(entryType),
-            createOntologyMarkdownTable(nodes, "Input Data ID", "Input Data Name", "Input Data Description"),
+            // createOntologyMarkdownTable(nodes, "Input Data ID", "Input Data Name", "Input Data Description"),
+            createTaggedOntologyCsv(nodes, "input-data-"),
             "",
             "The %s supports the following inputs:".formatted(entryType),
             tag("input-description", summary),
             "",
-            "List the data inputs.".formatted(entryType),
+            "List the inputs that the %s accepts.".formatted(entryType),
             "Output one input data ID per line and no other text."
         );
     }

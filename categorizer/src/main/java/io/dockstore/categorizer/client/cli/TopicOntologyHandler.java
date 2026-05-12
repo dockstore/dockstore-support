@@ -15,7 +15,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
         return joinLines(
             "Summarize the following %s:".formatted(entryType),
             formatEntryData(entryData),
-            "Describe the field of study, area of application, scientific context, and similar.",
+            "Describe the %s's field of study, area of application, scientific context, and similar.",
             "Omit information about the operations performed by the %s.".formatted(entryType),
             "Be terse and use scientific terminology."
         );
@@ -31,7 +31,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
             "Use the following description of the %s's topics:".formatted(entryType),
             tag("topic-description", summary),
             "",
-            "List the categories that describe the important topics.".formatted(entryType),
+            "List the topics that relate to the %s.".formatted(entryType),
             "Be as specific as possible.",
             "List up to seven topics.",
             "Prefer topics that describe the field of study, area of application, scientific context, or similar.", entryType,
