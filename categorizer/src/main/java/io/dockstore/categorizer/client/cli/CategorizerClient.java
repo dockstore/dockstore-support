@@ -207,8 +207,8 @@ public class CategorizerClient {
                 // Classify into the ontology using AI model
                 try {
                     EntryData entryData = new EntryData(entryType, trsId, description, descriptorFile.getContent());
-                    List<Ontology.Node> allMatchingNodes = new ArrayList<>();
                     // For each Ontology handler, determine the nodes it handles and classify into them.
+                    outputEntryAndVersion(trsId, versionId);
                     for (OntologyHandler handler : ontologyHandlers) {
                         List<Ontology.Node> candidateNodes = handler.handlesNodes(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).toList();
                         if (candidateNodes.isEmpty()) {
@@ -216,14 +216,14 @@ public class CategorizerClient {
                         }
                         LOG.info("{} handles {} nodes", handler, candidateNodes.size());
                         List<Ontology.Node> matchingNodes = handler.categorizeIntoNodes(candidateNodes, entryData, aiModel);
-                        allMatchingNodes.addAll(matchingNodes);
+                        outputMatchingCategories(handler, matchingNodes);
                     }
-                    output(trsId, versionId, allMatchingNodes);
                 } catch (Exception ex) {
                     LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage());
                     numberOfFailures += 1;
                 }
+                // TODO: output matches to csv
             }
 
             LOG.info("Generated categories for {} entries. Failed to categorize {} entries", numberOfCategoriesGenerated, numberOfFailures);
@@ -241,13 +241,17 @@ public class CategorizerClient {
         }
     }
 
-    private void output(String trsId, String versionId, List<Ontology.Node> nodes) {
+    private void outputEntryAndVersion(String trsId, String versionId) {
+
         String dockstoreUrl = "https://dockstore.org/workflows/%s:%s".formatted(trsId.substring(trsId.indexOf("github.com")), versionId);
-        System.out.println("* [%s](%s)".formatted(dockstoreUrl, dockstoreUrl));
+        System.out.println("MARKDOWN:* [%s](%s)".formatted(dockstoreUrl, dockstoreUrl));
+    }
+
+    private void outputMatchingCategories(OntologyHandler handler, List<Ontology.Node> nodes) {
+        System.out.println("MARKDOWN:    * %s:".formatted(handler));
         System.out.println(nodes.stream().map(node ->
-                "    * [%s](%s)".formatted(node.label(), node.source())
+            "MARKDOWN:        * [%s](%s)".formatted(node.label(), node.source())
             ).collect(Collectors.joining("\n")));
-        // TODO: write results to CSV
     }
 
     private List<TrsIdAndVersionId> getCategorizationCandidatesFromFile(String inputFileName) {
