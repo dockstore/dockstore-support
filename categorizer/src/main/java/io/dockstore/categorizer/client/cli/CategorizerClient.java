@@ -21,12 +21,14 @@ import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.Categorize
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.ErrorsCsvHeaders;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.InputCsvHeaders;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.OutputCsvHeaders;
+import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListStaleEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.PopulateCategoriesCommand;
 import io.dockstore.common.NextflowUtilities;
 import io.dockstore.common.NextflowUtilities.NextflowParsingException;
 import io.dockstore.common.S3ClientHelper;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.ApiException;
+import io.dockstore.openapi.client.api.EntriesApi;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.model.FileWrapper;
@@ -75,8 +77,10 @@ public class CategorizerClient {
         final CategorizerCommandLineArgs commandLineArgs = new CategorizerCommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
         final CategorizeEntriesCommand categorizeEntriesCommand = new CategorizeEntriesCommand();
+        final ListStaleEntriesCommand listStaleEntriesCommand = new ListStaleEntriesCommand();
         final PopulateCategoriesCommand populateCategoriesCommand = new PopulateCategoriesCommand();
         jCommander.addCommand(categorizeEntriesCommand);
+        jCommander.addCommand(listStaleEntriesCommand);
         jCommander.addCommand(populateCategoriesCommand);
 
         try {
@@ -103,6 +107,7 @@ public class CategorizerClient {
 
             switch (jCommander.getParsedCommand()) {
             case "categorize-entries" -> categorizerClient.categorizeEntries(categorizerConfig, categorizeEntriesCommand);
+            case "list-stale-entries" -> categorizerClient.listStaleEntries(categorizerConfig, listStaleEntriesCommand);
             case "populate-categories" -> categorizerClient.populateCategories(categorizerConfig, populateCategoriesCommand);
             default -> errorMessage("Unknown command", GENERIC_ERROR);
             }
@@ -304,6 +309,62 @@ public class CategorizerClient {
 
         LOG.info("Retrieved {} out of {} categorization candidates from {}", candidates.size(), totalCandidatesCount, dockstoreServerUrl);
         return candidates;
+    }
+
+    private void listStaleEntries(CategorizerConfig categorizerConfig, ListStaleEntriesCommand listStaleEntriesCommand) {
+        final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
+        final EntriesApi entriesApi = new EntriesApi(apiClient);
+        final List<TrsIdAndVersionId> staleEntries = getStaleEntriesFromDockstore(entriesApi, listStaleEntriesCommand.getIntervalSeconds(), listStaleEntriesCommand.getMax());
+        if (staleEntries.isEmpty()) {
+            LOG.info("No stale entries found");
+            return;
+        }
+        writeCategorizationCandidates(staleEntries);
+    }
+
+    private List<TrsIdAndVersionId> getStaleEntriesFromDockstore(EntriesApi entriesApi, long intervalSeconds, Integer maxEntries) {
+        final String dockstoreServerUrl = entriesApi.getApiClient().getBasePath();
+        List<TrsIdAndVersionId> staleEntries = new ArrayList<>();
+        final int maxPaginationLimit = 1000;
+        if (maxEntries == null) {
+            LOG.info("No maximum specified. Retrieving all stale entries from Dockstore {}", dockstoreServerUrl);
+        } else if (maxEntries > 0) {
+            LOG.info("Retrieving a maximum of {} stale entries from Dockstore {}", maxEntries, dockstoreServerUrl);
+        } else {
+            errorMessage("--max must be greater than 0", CLIENT_ERROR);
+        }
+
+        final int paginationLimit = Math.min(ObjectUtils.firstNonNull(maxEntries, maxPaginationLimit), maxPaginationLimit);
+        int pageNumber = 1;
+        Integer totalStaleEntriesCount = null;
+        while (maxEntries == null || staleEntries.size() < maxEntries) {
+            final int offset = (pageNumber - 1) * paginationLimit;
+            try {
+                final List<TrsIdAndVersionId> staleEntriesFromDockstore = entriesApi.findEntriesToCategorize(intervalSeconds, offset, paginationLimit).stream()
+                        .map(entryLiteAndVersionName -> new TrsIdAndVersionId(entryLiteAndVersionName.getEntryLite().getTrsId(), entryLiteAndVersionName.getVersionName()))
+                        .toList();
+                staleEntries.addAll(staleEntriesFromDockstore);
+            } catch (ApiException exception) {
+                exceptionMessage(exception, "Could not get stale entries from Dockstore", API_ERROR);
+            }
+
+            if (totalStaleEntriesCount == null) {
+                try {
+                    totalStaleEntriesCount = Integer.parseInt(
+                            entriesApi.getApiClient().getResponseHeaders().get("X-total-count").get(0));
+                } catch (Exception exception) {
+                    exceptionMessage(exception, "Could not get X-total-count header value for stale entries", API_ERROR);
+                }
+            }
+
+            if (maxEntries == null || maxEntries > totalStaleEntriesCount) {
+                maxEntries = totalStaleEntriesCount;
+            }
+            pageNumber += 1;
+        }
+
+        LOG.info("Retrieved {} out of {} stale entries from {}", staleEntries.size(), totalStaleEntriesCount, dockstoreServerUrl);
+        return staleEntries;
     }
 
     private void writeCategorizationCandidates(List<TrsIdAndVersionId> candidates) {
