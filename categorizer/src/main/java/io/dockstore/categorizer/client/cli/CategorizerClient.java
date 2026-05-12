@@ -53,7 +53,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Scanner;
 import java.util.stream.Collectors;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.csv.CSVFormat;
@@ -75,9 +74,10 @@ public class CategorizerClient {
         final Instant startTime = Instant.now();
         final CategorizerCommandLineArgs commandLineArgs = new CategorizerCommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
-        final CategorizeEntriesCommand categorizeEntriesCommand = new CategorizeEntriesCommand();
         final ListStaleEntriesCommand listStaleEntriesCommand = new ListStaleEntriesCommand();
+        final CategorizeEntriesCommand categorizeEntriesCommand = new CategorizeEntriesCommand();
         final PopulateCategoriesCommand populateCategoriesCommand = new PopulateCategoriesCommand();
+        // TODO: add rest of commands
         jCommander.addCommand(categorizeEntriesCommand);
         jCommander.addCommand(listStaleEntriesCommand);
         jCommander.addCommand(populateCategoriesCommand);
@@ -105,8 +105,8 @@ public class CategorizerClient {
             final CategorizerClient categorizerClient = new CategorizerClient();
 
             switch (jCommander.getParsedCommand()) {
-            case "categorize-entries" -> categorizerClient.categorizeEntries(categorizerConfig, categorizeEntriesCommand);
             case "list-stale-entries" -> categorizerClient.listStaleEntries(categorizerConfig, listStaleEntriesCommand);
+            case "categorize-entries" -> categorizerClient.categorizeEntries(categorizerConfig, categorizeEntriesCommand);
             case "populate-categories" -> categorizerClient.populateCategories(categorizerConfig, populateCategoriesCommand);
             default -> errorMessage("Unknown command", GENERIC_ERROR);
             }
@@ -133,26 +133,7 @@ public class CategorizerClient {
         final AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
         final String inputFileName = categorizeEntriesCommand.getEntriesCsvFilePath();
 
-        List<TrsIdAndVersionId> categorizationCandidates;
-        if (inputFileName != null) {
-            categorizationCandidates = getCategorizationCandidatesFromFile(inputFileName);
-        } else {
-            categorizationCandidates = getCategorizationCandidatesFromDockstore(extendedGa4GhApi, categorizeEntriesCommand.getMax());
-        }
-
-        if (categorizationCandidates.isEmpty()) {
-            LOG.info("No categorization candidates to process");
-            return;
-        }
-
-        if (categorizeEntriesCommand.isDryRun()) {
-            if (inputFileName == null) {
-                writeCategorizationCandidates(categorizationCandidates);
-            } else {
-                LOG.info("View the categorization candidates in input file {}", inputFileName);
-            }
-            return;
-        }
+        List<TrsIdAndVersionId> categorizationCandidates = getCategorizationCandidatesFromFile(inputFileName);
 
         AIModel aiModel = new LoggingAIModel(AIModelFactory.createModel(aiModelType));
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
@@ -184,6 +165,7 @@ public class CategorizerClient {
                     continue;
                 }
 
+                // TODO: move most of the primary descriptor retrieval code to a helper method in utils
                 // Get required information to create a prompt
                 final String entryType;
                 final FileWrapper descriptorFile;
@@ -214,6 +196,7 @@ public class CategorizerClient {
                 try {
                     EntryData entryData = new EntryData(entryType, trsId, description, descriptorFile.getContent());
                     List<Ontology.Node> allMatchingNodes = new ArrayList<>();
+                    // For each Ontology handler, determine the nodes it handles and classify into them.
                     for (OntologyHandler handler : ontologyHandlers) {
                         List<Ontology.Node> candidateNodes = handler.handlesNodes(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).toList();
                         if (candidateNodes.isEmpty()) {
@@ -252,6 +235,7 @@ public class CategorizerClient {
         System.out.println(nodes.stream().map(node ->
                 "    * [%s](%s)".formatted(node.label(), node.source())
             ).collect(Collectors.joining("\n")));
+        // TODO: write results to CSV
     }
 
     private List<TrsIdAndVersionId> getCategorizationCandidatesFromFile(String inputFileName) {
@@ -429,40 +413,20 @@ public class CategorizerClient {
         } else {
             entriesWithCategories = readCsvFile(populateCategoriesCommand.getCategoriesCsvFilePath(), OutputCsvHeaders.class);
         }
-        int numberOfCategoriesUploaded = 0;
-        int numberOfCategoriesSkippedUpload = 0;
-        final Scanner scanner = new Scanner(System.in);
+        int numberOfCategoriesPopulated = 0;
+        int numberOfCategoriesSkippedPopulation = 0;
 
         for (CSVRecord entryWithCategories : entriesWithCategories) {
             final String trsId = entryWithCategories.get(OutputCsvHeaders.trsId);
-            final String categories = entryWithCategories.get(OutputCsvHeaders.categories);
             final String version = entryWithCategories.get(OutputCsvHeaders.version);
+            final String categoryId = entryWithCategories.get(OutputCsvHeaders.categoryId);
+            final boolean isMember = Boolean.parseBoolean(entryWithCategories.get(OutputCsvHeaders.isMember));
 
-            if (populateCategoriesCommand.isReview()) {
-                System.out.printf("%nReview the following categories for TRS ID %s and version %s:%n", trsId, version);
-                System.out.printf("%s%n%n", categories);
-                String approved = null;
-
-                while (!"y".equals(approved) && !"n".equals(approved)) {
-                    if (approved != null) {
-                        System.out.print("Invalid response. ");
-                    }
-                    System.out.print("Do you approve the categories for upload to Dockstore? y/n [enter]: ");
-                    approved = scanner.nextLine().trim();
-                }
-
-                if ("n".equals(approved)) {
-                    LOG.info("Skipping categories upload for {}", trsId);
-                    numberOfCategoriesSkippedUpload += 1;
-                    continue;
-                }
-            }
-
-            // TODO: replace with actual Dockstore API call to upload categories once the API endpoint is available
-            LOG.info("Uploaded categories for {} (not yet implemented)", trsId);
-            numberOfCategoriesUploaded += 1;
+            // TODO: replace with actual Dockstore API call + logic to populate categories.
+            LOG.info("Populated categories for {} (not yet implemented)", trsId);
+            numberOfCategoriesPopulated += 1;
         }
-        LOG.info("Uploaded categories for {} entries. Skipped upload for {} entries", numberOfCategoriesUploaded, numberOfCategoriesSkippedUpload);
+        LOG.info("Populated categories for {} entries. Skipped upload for {} entries", numberOfCategoriesPopulated, numberOfCategoriesSkippedPopulation);
     }
 
     /**

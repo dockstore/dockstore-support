@@ -35,9 +35,6 @@ public class CategorizerCommandLineArgs {
         @Parameter(names = {"-a", "--ai"}, description = "The AI model to use")
         private AIModelType aiModel = AIModelType.CLAUDE_4_5_HAIKU;
 
-        @Parameter(names = {"-d", "--dryRun"}, description = "Write the public Dockstore entries that are categorization candidates to a file")
-        private boolean isDryRun = false;
-
         @Parameter(names = {"-m", "--max"}, description = "The max number of entries to process. If specified, the value must be greater than 0")
         private Integer max;
 
@@ -51,10 +48,6 @@ public class CategorizerCommandLineArgs {
 
         public AIModelType getAiModel() {
             return aiModel;
-        }
-
-        public boolean isDryRun() {
-            return isDryRun;
         }
 
         public Integer getMax() {
@@ -74,14 +67,11 @@ public class CategorizerCommandLineArgs {
         public enum OutputCsvHeaders {
             trsId,
             version,
-            descriptorUrl, // Raw GitHub URL of the descriptor file used to generate the categories
-            descriptorChecksum, // Checksum of the descriptor file used to generate the categories. Can be used to determine if the content has changed
-            isTruncated, // Whether the descriptor file content was truncated because it exceeded the token maximum
-            promptTokens, // Number of tokens in prompt
-            completionTokens, // Number of tokens in response
-            cost, // Estimated cost of the prompt and completion tokens
-            finishReason, // The reason that the response stopped
-            categories // AI-suggested ontology categories (JSON array)
+            categoryId,
+            isMember
+            /**
+             * TODO: Add back some diagnostic output?
+             */
         }
 
         /**
