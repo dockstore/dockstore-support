@@ -118,4 +118,37 @@ public class CategorizerCommandLineArgs {
             return review;
         }
     }
+
+    @Parameters(commandNames = { "list-all-entries" }, commandDescription = "List all public Dockstore entries.")
+    public static class ListAllEntriesCommand {
+
+        @Parameter(names = {"-m", "--max"}, description = "The max number of entries to retrieve. If specified, the value must be greater than 0")
+        private Integer max;
+
+        public Integer getMax() {
+            return max;
+        }
+    }
+
+    @Parameters(commandNames = { "create-categories" }, commandDescription = "Create categories in Dockstore corresponding to entries in the specified ontology files.")
+    public static class CreateCategoriesCommand {
+
+        @Parameter(names = {"-o", "--ontology"}, required = true, description = "List of paths to ontology JSON files whose entries will be created as categories")
+        private List<String> ontologyJsonPaths;
+
+        public List<String> getOntologyJsonPaths() {
+            return ontologyJsonPaths;
+        }
+    }
+
+    @Parameters(commandNames = { "delete-categories" }, commandDescription = "Delete categories from Dockstore whose IDs match a regular expression.")
+    public static class DeleteCategoriesCommand {
+
+        @Parameter(names = {"-r", "--regexp"}, required = true, description = "Regular expression matched against category IDs; matching categories are deleted")
+        private String categoryIdRegexp;
+
+        public String getCategoryIdRegexp() {
+            return categoryIdRegexp;
+        }
+    }
 }

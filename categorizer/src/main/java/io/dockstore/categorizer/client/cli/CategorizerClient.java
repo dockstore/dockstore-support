@@ -21,6 +21,9 @@ import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.Categorize
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.ErrorsCsvHeaders;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.InputCsvHeaders;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.OutputCsvHeaders;
+import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CreateCategoriesCommand;
+import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.DeleteCategoriesCommand;
+import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListAllEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListStaleEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.PopulateCategoriesCommand;
 import io.dockstore.common.NextflowUtilities;
@@ -74,13 +77,18 @@ public class CategorizerClient {
         final Instant startTime = Instant.now();
         final CategorizerCommandLineArgs commandLineArgs = new CategorizerCommandLineArgs();
         final JCommander jCommander = new JCommander(commandLineArgs);
+        final ListAllEntriesCommand listAllEntriesCommand = new ListAllEntriesCommand();
         final ListStaleEntriesCommand listStaleEntriesCommand = new ListStaleEntriesCommand();
         final CategorizeEntriesCommand categorizeEntriesCommand = new CategorizeEntriesCommand();
         final PopulateCategoriesCommand populateCategoriesCommand = new PopulateCategoriesCommand();
-        // TODO: add rest of commands
+        final CreateCategoriesCommand createCategoriesCommand = new CreateCategoriesCommand();
+        final DeleteCategoriesCommand deleteCategoriesCommand = new DeleteCategoriesCommand();
         jCommander.addCommand(categorizeEntriesCommand);
         jCommander.addCommand(listStaleEntriesCommand);
         jCommander.addCommand(populateCategoriesCommand);
+        jCommander.addCommand(listAllEntriesCommand);
+        jCommander.addCommand(createCategoriesCommand);
+        jCommander.addCommand(deleteCategoriesCommand);
 
         try {
             jCommander.parse(args);
@@ -105,9 +113,12 @@ public class CategorizerClient {
             final CategorizerClient categorizerClient = new CategorizerClient();
 
             switch (jCommander.getParsedCommand()) {
+            case "list-all-entries" -> categorizerClient.listAllEntries(categorizerConfig, listAllEntriesCommand);
             case "list-stale-entries" -> categorizerClient.listStaleEntries(categorizerConfig, listStaleEntriesCommand);
             case "categorize-entries" -> categorizerClient.categorizeEntries(categorizerConfig, categorizeEntriesCommand);
             case "populate-categories" -> categorizerClient.populateCategories(categorizerConfig, populateCategoriesCommand);
+            case "create-categories" -> categorizerClient.createCategories(categorizerConfig, createCategoriesCommand);
+            case "delete-categories" -> categorizerClient.deleteCategories(categorizerConfig, deleteCategoriesCommand);
             default -> errorMessage("Unknown command", GENERIC_ERROR);
             }
         }
@@ -427,6 +438,21 @@ public class CategorizerClient {
             numberOfCategoriesPopulated += 1;
         }
         LOG.info("Populated categories for {} entries. Skipped upload for {} entries", numberOfCategoriesPopulated, numberOfCategoriesSkippedPopulation);
+    }
+
+    private void listAllEntries(CategorizerConfig categorizerConfig, ListAllEntriesCommand listAllEntriesCommand) {
+        // TODO: implement
+        LOG.info("list-all-entries is not yet implemented");
+    }
+
+    private void createCategories(CategorizerConfig categorizerConfig, CreateCategoriesCommand createCategoriesCommand) {
+        // TODO: implement
+        LOG.info("create-categories is not yet implemented");
+    }
+
+    private void deleteCategories(CategorizerConfig categorizerConfig, DeleteCategoriesCommand deleteCategoriesCommand) {
+        // TODO: call yet-to-be-implemented webservice endpoint to delete categories whose IDs match the regexp
+        LOG.info("delete-categories is not yet implemented");
     }
 
     /**
