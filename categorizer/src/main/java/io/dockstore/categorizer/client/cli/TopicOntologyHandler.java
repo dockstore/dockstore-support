@@ -10,6 +10,11 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
+    public String getName() {
+        return "Topics";
+    }
+
+    @Override
     protected String createSummarizeInstruction(EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(

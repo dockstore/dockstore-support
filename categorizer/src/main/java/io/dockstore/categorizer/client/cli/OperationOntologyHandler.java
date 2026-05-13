@@ -10,6 +10,11 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
+    public String getName() {
+        return "Operations";
+    }
+
+    @Override
     protected String createSummarizeInstruction(EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(

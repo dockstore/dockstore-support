@@ -43,6 +43,9 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return aiResponseInfo.aiResponse();
     }
 
+    @Override
+    public abstract String getName();
+
     protected abstract String createSummarizeInstruction(EntryData entryData);
 
     protected String formatEntryData(EntryData entryData) {

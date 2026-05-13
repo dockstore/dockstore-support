@@ -10,6 +10,11 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
+    public String getName() {
+        return "Input data";
+    }
+
+    @Override
     protected String createSummarizeInstruction(EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(

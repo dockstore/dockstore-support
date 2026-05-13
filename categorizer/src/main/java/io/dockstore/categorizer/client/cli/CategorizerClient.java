@@ -248,7 +248,7 @@ public class CategorizerClient {
     }
 
     private void outputMatchingCategories(OntologyHandler handler, List<Ontology.Node> nodes) {
-        System.out.println("MARKDOWN:    * %s:".formatted(handler));
+        System.out.println("MARKDOWN:    * %s:".formatted(handler.getName()));
         System.out.println(nodes.stream().map(node ->
             "MARKDOWN:        * [%s](%s)".formatted(node.label(), node.source())
             ).collect(Collectors.joining("\n")));

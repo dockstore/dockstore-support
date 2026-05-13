@@ -10,6 +10,11 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
+    public String getName() {
+        return "Output formats";
+    }
+
+    @Override
     protected String createSummarizeInstruction(EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
