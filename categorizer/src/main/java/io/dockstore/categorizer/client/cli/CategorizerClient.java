@@ -266,58 +266,12 @@ public class CategorizerClient {
         return candidates;
     }
 
-    private List<TrsIdAndVersionId> getCategorizationCandidatesFromDockstore(ExtendedGa4GhApi extendedGa4GhApi, Integer maxCandidates) {
-        final String dockstoreServerUrl = extendedGa4GhApi.getApiClient().getBasePath();
-        List<TrsIdAndVersionId> candidates = new ArrayList<>();
-        final int maxPaginationLimit = 1000;
-        if (maxCandidates == null) {
-            LOG.info("No maximum specified. Retrieving all categorization candidates from Dockstore {}", dockstoreServerUrl);
-        } else if (maxCandidates > 0) {
-            LOG.info("Retrieving a maximum of {} categorization candidates from Dockstore {}", maxCandidates, dockstoreServerUrl);
-        } else {
-            errorMessage("--max must be greater than 0", CLIENT_ERROR);
-        }
-
-        final int paginationLimit = Math.min(ObjectUtils.firstNonNull(maxCandidates, maxPaginationLimit), maxPaginationLimit);
-        int pageNumber = 1;
-        Integer totalCandidatesCount = null;
-        while (maxCandidates == null || candidates.size() < maxCandidates) {
-            final int offset = (pageNumber - 1) * paginationLimit;
-            try {
-                final List<TrsIdAndVersionId> candidatesFromDockstore = extendedGa4GhApi.getAITopicCandidates(offset, paginationLimit).stream()
-                        .map(entryLiteAndVersionName -> new TrsIdAndVersionId(entryLiteAndVersionName.getEntryLite().getTrsId(), entryLiteAndVersionName.getVersionName()))
-                        .toList();
-                candidates.addAll(candidatesFromDockstore);
-            } catch (ApiException exception) {
-                exceptionMessage(exception, "Could not get categorization candidates from Dockstore", API_ERROR);
-            }
-
-            if (totalCandidatesCount == null) {
-                try {
-                    totalCandidatesCount = Integer.parseInt(
-                            extendedGa4GhApi.getApiClient().getResponseHeaders().get("X-total-count").get(0));
-                } catch (Exception exception) {
-                    exceptionMessage(exception, "Could not get X-total-count header value for categorization candidates", API_ERROR);
-                }
-            }
-
-            if (maxCandidates == null || maxCandidates > totalCandidatesCount) {
-                maxCandidates = totalCandidatesCount;
-            }
-            pageNumber += 1;
-        }
-
-        LOG.info("Retrieved {} out of {} categorization candidates from {}", candidates.size(), totalCandidatesCount, dockstoreServerUrl);
-        return candidates;
-    }
-
     private void listStaleEntries(CategorizerConfig categorizerConfig, ListStaleEntriesCommand listStaleEntriesCommand) {
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final EntriesApi entriesApi = new EntriesApi(apiClient);
         final List<TrsIdAndVersionId> staleEntries = getStaleEntriesFromDockstore(entriesApi, listStaleEntriesCommand.getIntervalSeconds(), listStaleEntriesCommand.getMax());
         if (staleEntries.isEmpty()) {
             LOG.info("No stale entries found");
-            return;
         }
         writeCategorizationCandidates(staleEntries);
     }
@@ -325,7 +279,7 @@ public class CategorizerClient {
     private List<TrsIdAndVersionId> getStaleEntriesFromDockstore(EntriesApi entriesApi, long intervalSeconds, Integer maxEntries) {
         final String dockstoreServerUrl = entriesApi.getApiClient().getBasePath();
         List<TrsIdAndVersionId> staleEntries = new ArrayList<>();
-        final int maxPaginationLimit = 1000;
+        final int maxPaginationLimit = 100;
         if (maxEntries == null) {
             LOG.info("No maximum specified. Retrieving all stale entries from Dockstore {}", dockstoreServerUrl);
         } else if (maxEntries > 0) {
