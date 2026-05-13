@@ -35,9 +35,6 @@ public class CategorizerCommandLineArgs {
         @Parameter(names = {"-a", "--ai"}, description = "The AI model to use")
         private AIModelType aiModel = AIModelType.CLAUDE_4_5_HAIKU;
 
-        @Parameter(names = {"-m", "--max"}, description = "The max number of entries to process. If specified, the value must be greater than 0")
-        private Integer max;
-
         public String getEntriesCsvFilePath() {
             return entriesCsvFilePath;
         }
@@ -48,10 +45,6 @@ public class CategorizerCommandLineArgs {
 
         public AIModelType getAiModel() {
             return aiModel;
-        }
-
-        public Integer getMax() {
-            return max;
         }
 
         /**
@@ -84,6 +77,17 @@ public class CategorizerCommandLineArgs {
         }
     }
 
+    @Parameters(commandNames = { "list-all-entries" }, commandDescription = "List all public Dockstore entries.")
+    public static class ListAllEntriesCommand {
+
+        @Parameter(names = {"-m", "--max"}, description = "The max number of entries to retrieve. If specified, the value must be greater than 0")
+        private int max = Integer.MAX_VALUE;
+
+        public int getMax() {
+            return max;
+        }
+    }
+
     @Parameters(commandNames = { "list-stale-entries" }, commandDescription = "List public Dockstore entries that are new and uncategorized, or that have changed since last categorization.")
     public static class ListStaleEntriesCommand {
 
@@ -91,13 +95,13 @@ public class CategorizerCommandLineArgs {
         private Long intervalSeconds;
 
         @Parameter(names = {"-m", "--max"}, description = "The max number of entries to retrieve. If specified, the value must be greater than 0")
-        private Integer max;
+        private int max = Integer.MAX_VALUE;
 
         public Long getIntervalSeconds() {
             return intervalSeconds;
         }
 
-        public Integer getMax() {
+        public int getMax() {
             return max;
         }
     }
@@ -116,17 +120,6 @@ public class CategorizerCommandLineArgs {
 
         public boolean isReview() {
             return review;
-        }
-    }
-
-    @Parameters(commandNames = { "list-all-entries" }, commandDescription = "List all public Dockstore entries.")
-    public static class ListAllEntriesCommand {
-
-        @Parameter(names = {"-m", "--max"}, description = "The max number of entries to retrieve. If specified, the value must be greater than 0")
-        private Integer max;
-
-        public Integer getMax() {
-            return max;
         }
     }
 

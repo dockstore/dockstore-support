@@ -34,6 +34,7 @@ import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.EntriesApi;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
+import io.dockstore.openapi.client.model.EntryLiteAndVersionName;
 import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.Tool;
 import io.dockstore.openapi.client.model.ToolVersion;
@@ -270,30 +271,38 @@ public class CategorizerClient {
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final EntriesApi entriesApi = new EntriesApi(apiClient);
         final Integer max = listStaleEntriesCommand.getMax();
-        if (max != null && max <= 0) {
-            errorMessage("--max must be greater than 0", CLIENT_ERROR);
-        }
         final List<TrsIdAndVersionId> staleEntries = getStaleEntriesFromDockstore(entriesApi, listStaleEntriesCommand.getIntervalSeconds(), max != null ? max : Integer.MAX_VALUE);
-        if (staleEntries.isEmpty()) {
-            LOG.info("No stale entries found");
-        }
         writeCategorizationCandidates(staleEntries);
     }
 
+    private void listAllEntries(CategorizerConfig categorizerConfig, ListAllEntriesCommand listAllEntriesCommand) {
+        final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
+        final EntriesApi entriesApi = new EntriesApi(apiClient);
+        final int max = listAllEntriesCommand.getMax();
+        List<TrsIdAndVersionId> allEntries = getAllEntriesFromDockstore(entriesApi, max);
+        writeCategorizationCandidates(allEntries);
+    }
+
     private List<TrsIdAndVersionId> getStaleEntriesFromDockstore(EntriesApi entriesApi, long intervalSeconds, int maxEntries) {
-        List<TrsIdAndVersionId> entries = RetrievalUtils.pagedRetrieval((offset, limit) -> {
+        List<EntryLiteAndVersionName> entries = RetrievalUtils.pagedRetrieval((offset, limit) -> {
             try {
-                return entriesApi.findEntriesToCategorize(intervalSeconds, offset, limit).stream();
+                return entriesApi.findEntriesToCategorize(intervalSeconds, offset, limit);
             } catch (ApiException exception) {
                 exceptionMessage(exception, "Could not get stale entries from Dockstore", API_ERROR);
                 return List.of();
             }
         }, maxEntries);
         LOG.info("Retrieved {} stale entries", entries.size());
-        return entries.stream().map(this::convert).toList();
+        return entries.stream().map(this::convertEntry).toList();
     }
 
-    private TrsIdAndVersionId convert(EntryLiteAndVersionName e) {
+    private List<TrsIdAndVersionId> getAllEntriesFromDockstore(EntriesApi entriesApi, int maxEntries) {
+        List<EntryLiteAndVersionName> entries = RetrievalUtils.pagedRetrieval((offset, limit) -> List.of(), maxEntries); // TODO: replace with actual full retrieval call here
+        LOG.info("Retrieved {} entries", entries.size());
+        return entries.stream().map(this::convertEntry).toList();
+    }
+
+    private TrsIdAndVersionId convertEntry(EntryLiteAndVersionName e) {
         return new TrsIdAndVersionId(e.getEntryLite().getTrsId(), e.getVersionName());
     }
 
@@ -373,11 +382,6 @@ public class CategorizerClient {
             numberOfCategoriesPopulated += 1;
         }
         LOG.info("Populated categories for {} entries. Skipped upload for {} entries", numberOfCategoriesPopulated, numberOfCategoriesSkippedPopulation);
-    }
-
-    private void listAllEntries(CategorizerConfig categorizerConfig, ListAllEntriesCommand listAllEntriesCommand) {
-        // TODO: implement
-        LOG.info("list-all-entries is not yet implemented");
     }
 
     private void createCategories(CategorizerConfig categorizerConfig, CreateCategoriesCommand createCategoriesCommand) {
