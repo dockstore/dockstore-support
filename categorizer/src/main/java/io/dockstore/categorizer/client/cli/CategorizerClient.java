@@ -38,6 +38,7 @@ import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.Tool;
 import io.dockstore.openapi.client.model.ToolVersion;
 import io.dockstore.openapi.client.model.ToolVersion.DescriptorTypeEnum;
+import io.dockstore.utils.RetrievalUtils;
 import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModel.AIResponseInfo;
 import io.dockstore.utils.ai.AIModelFactory;
@@ -280,28 +281,20 @@ public class CategorizerClient {
     }
 
     private List<TrsIdAndVersionId> getStaleEntriesFromDockstore(EntriesApi entriesApi, long intervalSeconds, int maxEntries) {
-        List<TrsIdAndVersionId> entries = new ArrayList<>();
-        int offset = 0;
-        int limit = 100;
-        // TODO: think about implementing a utility version of a method that implements paged retrieval
-        while (entries.size() < maxEntries) {
-            final List<TrsIdAndVersionId> page;
+        List<TrsIdAndVersionId> entries = RetrievalUtils.pagedRetrieval((offset, limit) -> {
             try {
-                page = entriesApi.findEntriesToCategorize(intervalSeconds, offset, limit).stream()
-                    .map(e -> new TrsIdAndVersionId(e.getEntryLite().getTrsId(), e.getVersionName()))
-                    .toList();
+                return entriesApi.findEntriesToCategorize(intervalSeconds, offset, limit).stream();
             } catch (ApiException exception) {
                 exceptionMessage(exception, "Could not get stale entries from Dockstore", API_ERROR);
-                break;
+                return List.of();
             }
-            if (page.size() <= 0) {
-                break;
-            }
-            entries.addAll(page);
-            offset += page.size();
-        }
-        LOG.info("Retrieved {} stale entries", staleEntries.size());
-        return staleEntries;
+        }, maxEntries);
+        LOG.info("Retrieved {} stale entries", entries.size());
+        return entries.stream().map(this::convert).toList();
+    }
+
+    private TrsIdAndVersionId convert(EntryLiteAndVersionName e) {
+        return new TrsIdAndVersionId(e.getEntryLite().getTrsId(), e.getVersionName());
     }
 
     private void writeCategorizationCandidates(List<TrsIdAndVersionId> candidates) {
