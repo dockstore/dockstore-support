@@ -62,7 +62,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -269,55 +268,39 @@ public class CategorizerClient {
     private void listStaleEntries(CategorizerConfig categorizerConfig, ListStaleEntriesCommand listStaleEntriesCommand) {
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final EntriesApi entriesApi = new EntriesApi(apiClient);
-        final List<TrsIdAndVersionId> staleEntries = getStaleEntriesFromDockstore(entriesApi, listStaleEntriesCommand.getIntervalSeconds(), listStaleEntriesCommand.getMax());
+        final Integer max = listStaleEntriesCommand.getMax();
+        if (max != null && max <= 0) {
+            errorMessage("--max must be greater than 0", CLIENT_ERROR);
+        }
+        final List<TrsIdAndVersionId> staleEntries = getStaleEntriesFromDockstore(entriesApi, listStaleEntriesCommand.getIntervalSeconds(), max != null ? max : Integer.MAX_VALUE);
         if (staleEntries.isEmpty()) {
             LOG.info("No stale entries found");
         }
         writeCategorizationCandidates(staleEntries);
     }
 
-    private List<TrsIdAndVersionId> getStaleEntriesFromDockstore(EntriesApi entriesApi, long intervalSeconds, Integer maxEntries) {
-        final String dockstoreServerUrl = entriesApi.getApiClient().getBasePath();
-        List<TrsIdAndVersionId> staleEntries = new ArrayList<>();
-        final int maxPaginationLimit = 100;
-        if (maxEntries == null) {
-            LOG.info("No maximum specified. Retrieving all stale entries from Dockstore {}", dockstoreServerUrl);
-        } else if (maxEntries > 0) {
-            LOG.info("Retrieving a maximum of {} stale entries from Dockstore {}", maxEntries, dockstoreServerUrl);
-        } else {
-            errorMessage("--max must be greater than 0", CLIENT_ERROR);
-        }
-
-        final int paginationLimit = Math.min(ObjectUtils.firstNonNull(maxEntries, maxPaginationLimit), maxPaginationLimit);
-        int pageNumber = 1;
-        Integer totalStaleEntriesCount = null;
-        while (maxEntries == null || staleEntries.size() < maxEntries) {
-            final int offset = (pageNumber - 1) * paginationLimit;
+    private List<TrsIdAndVersionId> getStaleEntriesFromDockstore(EntriesApi entriesApi, long intervalSeconds, int maxEntries) {
+        List<TrsIdAndVersionId> entries = new ArrayList<>();
+        int offset = 0;
+        int limit = 100;
+        // TODO: think about implementing a utility version of a method that implements paged retrieval
+        while (entries.size() < maxEntries) {
+            final List<TrsIdAndVersionId> page;
             try {
-                final List<TrsIdAndVersionId> staleEntriesFromDockstore = entriesApi.findEntriesToCategorize(intervalSeconds, offset, paginationLimit).stream()
-                        .map(entryLiteAndVersionName -> new TrsIdAndVersionId(entryLiteAndVersionName.getEntryLite().getTrsId(), entryLiteAndVersionName.getVersionName()))
-                        .toList();
-                staleEntries.addAll(staleEntriesFromDockstore);
+                page = entriesApi.findEntriesToCategorize(intervalSeconds, offset, limit).stream()
+                    .map(e -> new TrsIdAndVersionId(e.getEntryLite().getTrsId(), e.getVersionName()))
+                    .toList();
             } catch (ApiException exception) {
                 exceptionMessage(exception, "Could not get stale entries from Dockstore", API_ERROR);
+                break;
             }
-
-            if (totalStaleEntriesCount == null) {
-                try {
-                    totalStaleEntriesCount = Integer.parseInt(
-                            entriesApi.getApiClient().getResponseHeaders().get("X-total-count").get(0));
-                } catch (Exception exception) {
-                    exceptionMessage(exception, "Could not get X-total-count header value for stale entries", API_ERROR);
-                }
+            if (page.size() <= 0) {
+                break;
             }
-
-            if (maxEntries == null || maxEntries > totalStaleEntriesCount) {
-                maxEntries = totalStaleEntriesCount;
-            }
-            pageNumber += 1;
+            entries.addAll(page);
+            offset += page.size();
         }
-
-        LOG.info("Retrieved {} out of {} stale entries from {}", staleEntries.size(), totalStaleEntriesCount, dockstoreServerUrl);
+        LOG.info("Retrieved {} stale entries", staleEntries.size());
         return staleEntries;
     }
 
