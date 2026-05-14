@@ -2,9 +2,7 @@ package io.dockstore.utils.ai;
 
 import com.google.gson.Gson;
 import io.dockstore.utils.ai.AIModel.Prompt;
-import io.dockstore.utils.ai.ClaudeRequest.Content;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -51,13 +49,17 @@ public class AnthropicClaudeModel extends BaseAIModel {
     // Format the request payload using the model's native structure.
     // See https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-request-response for examples
     private String createNativeClaudeRequest(Prompt prompt) {
-        String system = prompt.systemMessages().stream()
-            .map(AIModel.Message::text)
-            .collect(Collectors.joining("\n"));
-        List<ClaudeRequest.Message> messages = prompt.userMessages().stream()
-            .map(m -> new ClaudeRequest.Message("user", List.of(new Content("text", m.text(), m.cacheable() ? new ClaudeRequest.CacheControl("ephemeral") : null))))
-            .collect(Collectors.toList());
-        ClaudeRequest claudeRequest = new ClaudeRequest(ANTHROPIC_API_VERSION, prompt.maxResponseTokens(), prompt.temperature(), system.isEmpty() ? null : system, messages);
+        List<ClaudeRequest.Content> system = prompt.systemMessages().stream().map(m -> content(m.text(), m.cacheable())).toList();
+        List<ClaudeRequest.Message> messages = prompt.userMessages().stream().map(m -> new ClaudeRequest.Message("user", content(m.text(), m.cacheable()))).toList();
+        ClaudeRequest claudeRequest = new ClaudeRequest(ANTHROPIC_API_VERSION, prompt.maxResponseTokens(), prompt.temperature(), nullIfEmpty(system), nullIfEmpty(messages));
         return GSON.toJson(claudeRequest);
+    }
+
+    private ClaudeRequest.Content content(String text, boolean cacheable) {
+        return new ClaudeRequest.Content("text", text, cacheable ? new ClaudeRequest.CacheControl("ephemeral") : null);
+    }
+
+    private <T> List<T> nullIfEmpty(List<T> values) {
+        return values.isEmpty() ? null : values;
     }
 }
