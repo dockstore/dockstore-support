@@ -1,9 +1,10 @@
 package io.dockstore.utils.ai;
 
 import com.google.gson.Gson;
-import io.dockstore.utils.ai.ClaudeRequest.Message;
+import io.dockstore.utils.ai.AIModel.Prompt;
 import io.dockstore.utils.ai.ClaudeResponse.Content;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -28,12 +29,8 @@ public class AnthropicClaudeModel extends BaseAIModel {
     }
 
     @Override
-    public AIResponseInfo submitPrompt(String prompt, double temperature, int maxResponseTokens) {
-        if (estimateTokens(prompt) > getMaxContextLength()) {
-            prompt = prompt.substring(0, getMaxContextLength());
-        }
-
-        final String nativeRequest = createNativeClaudeRequest(prompt, temperature, maxResponseTokens);
+    public AIResponseInfo submitPrompt(Prompt prompt) {
+        final String nativeRequest = createNativeClaudeRequest(prompt);
 
         // Encode and send the request to the Bedrock Runtime.
         InvokeModelResponse response = bedrockRuntimeClient.invokeModel(request -> request
@@ -52,9 +49,15 @@ public class AnthropicClaudeModel extends BaseAIModel {
     }
 
     // Format the request payload using the model's native structure.
-    private String createNativeClaudeRequest(String prompt, double temperature, int maxResponseTokens) {
-        // See https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-request-response for examples
-        ClaudeRequest claudeRequest = new ClaudeRequest(ANTHROPIC_API_VERSION, maxResponseTokens, temperature, List.of(new Message("user", List.of(new Content("text", prompt)))));
+    // See https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-request-response for examples
+    private String createNativeClaudeRequest(Prompt prompt) {
+        String system = prompt.systemMessages().stream()
+            .map(AIModel.Message::text)
+            .collect(Collectors.joining("\n"));
+        List<ClaudeRequest.Message> messages = prompt.userMessages().stream()
+            .map(m -> new ClaudeRequest.Message("user", List.of(new Content("text", m.text()))))
+            .collect(Collectors.toList());
+        ClaudeRequest claudeRequest = new ClaudeRequest(ANTHROPIC_API_VERSION, prompt.maxResponseTokens(), prompt.temperature(), system.isEmpty() ? null : system, messages);
         return GSON.toJson(claudeRequest);
     }
 }

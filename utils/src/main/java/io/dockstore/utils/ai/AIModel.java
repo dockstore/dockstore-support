@@ -6,12 +6,26 @@ public interface AIModel {
 
     /**
      * Submits a prompt to the AI model and returns the response along with usage metadata.
+     * @param prompt the {@link Prompt} to send to the model
+     * @return an {@link AIResponseInfo} containing the response text, truncation status, token counts, cost, and stop reason
+     */
+    AIResponseInfo submitPrompt(Prompt prompt);
+
+    /**
+     * Submits a prompt to the AI model and returns the response along with usage metadata.
      * @param prompt the text prompt to send to the model
      * @param temperature controls randomness of the response; higher values produce more varied output
      * @param maxResponseTokens the maximum number of tokens to generate in the response
      * @return an {@link AIResponseInfo} containing the response text, truncation status, token counts, cost, and stop reason
      */
-    AIResponseInfo submitPrompt(String prompt, double temperature, int maxResponseTokens);
+    default AIResponseInfo submitPrompt(String prompt, double temperature, int maxResponseTokens) {
+        return submitPrompt(new Prompt.Builder()
+            .systemMessages(List.of())
+            .userMessages(List.of(new Message.Builder().text(prompt).build()))
+            .temperature(temperature)
+            .maxResponseTokens(maxResponseTokens)
+            .build());
+    }
 
     /**
      * Returns the name of this AI model.

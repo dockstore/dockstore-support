@@ -13,9 +13,9 @@ public class LoggingAIModel implements AIModel {
     }
 
     @Override
-    public AIResponseInfo submitPrompt(String prompt, double temperature, int maxResponseTokens) {
+    public AIResponseInfo submitPrompt(AIModel.Prompt prompt) {
         LOG.info("PROMPT {}", prompt);
-        AIResponseInfo responseInfo = delegate.submitPrompt(prompt, temperature, maxResponseTokens);
+        AIResponseInfo responseInfo = delegate.submitPrompt(prompt);
         LOG.info("RESPONSE {}", responseInfo.aiResponse());
         return responseInfo;
     }
