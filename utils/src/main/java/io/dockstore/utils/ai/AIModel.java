@@ -1,5 +1,7 @@
 package io.dockstore.utils.ai;
 
+import java.util.List;
+
 public interface AIModel {
 
     /**
@@ -68,5 +70,59 @@ public interface AIModel {
      * @param stopReason the reason the model stopped generating (e.g., "end_turn", "max_tokens")
      */
     record AIResponseInfo(String aiResponse, boolean isTruncated, long inputTokens, long outputTokens, double cost, String stopReason) {
+    }
+
+    record Message(String text, boolean cacheable) {
+        static final class Builder {
+            private String text;
+            private boolean cacheable;
+
+            public Builder text(String text) {
+                this.text = text;
+                return this;
+            }
+
+            public Builder cacheable(boolean cacheable) {
+                this.cacheable = cacheable;
+                return this;
+            }
+
+            public Message build() {
+                return new Message(text, cacheable);
+            }
+        }
+    }
+
+    record Prompt(List<Message> systemMessages, List<Message> userMessages, double temperature, int maxResponseTokens) {
+        static final class Builder {
+            private List<Message> systemMessages;
+            private List<Message> userMessages;
+            private double temperature;
+            private int maxResponseTokens;
+
+            public Builder systemMessages(List<Message> systemMessages) {
+                this.systemMessages = systemMessages;
+                return this;
+            }
+
+            public Builder userMessages(List<Message> userMessages) {
+                this.userMessages = userMessages;
+                return this;
+            }
+
+            public Builder temperature(double temperature) {
+                this.temperature = temperature;
+                return this;
+            }
+
+            public Builder maxResponseTokens(int maxResponseTokens) {
+                this.maxResponseTokens = maxResponseTokens;
+                return this;
+            }
+
+            public Prompt build() {
+                return new Prompt(systemMessages, userMessages, temperature, maxResponseTokens);
+            }
+        }
     }
 }
