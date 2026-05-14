@@ -2,7 +2,7 @@ package io.dockstore.utils.ai;
 
 import com.google.gson.Gson;
 import io.dockstore.utils.ai.AIModel.Prompt;
-import io.dockstore.utils.ai.ClaudeResponse.Content;
+import io.dockstore.utils.ai.ClaudeRequest.Content;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -55,7 +55,7 @@ public class AnthropicClaudeModel extends BaseAIModel {
             .map(AIModel.Message::text)
             .collect(Collectors.joining("\n"));
         List<ClaudeRequest.Message> messages = prompt.userMessages().stream()
-            .map(m -> new ClaudeRequest.Message("user", List.of(new Content("text", m.text()))))
+            .map(m -> new ClaudeRequest.Message("user", List.of(new Content("text", m.text(), m.cacheable() ? new ClaudeRequest.CacheControl("ephemeral") : null))))
             .collect(Collectors.toList());
         ClaudeRequest claudeRequest = new ClaudeRequest(ANTHROPIC_API_VERSION, prompt.maxResponseTokens(), prompt.temperature(), system.isEmpty() ? null : system, messages);
         return GSON.toJson(claudeRequest);

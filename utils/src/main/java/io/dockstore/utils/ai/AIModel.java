@@ -87,6 +87,7 @@ public interface AIModel {
     }
 
     record Message(String text, boolean cacheable) {
+        @SuppressWarnings("checkstyle:HiddenField")
         static final class Builder {
             private String text;
             private boolean cacheable;
@@ -108,6 +109,7 @@ public interface AIModel {
     }
 
     record Prompt(List<Message> systemMessages, List<Message> userMessages, double temperature, int maxResponseTokens) {
+        @SuppressWarnings("checkstyle:HiddenField")
         static final class Builder {
             private List<Message> systemMessages;
             private List<Message> userMessages;
