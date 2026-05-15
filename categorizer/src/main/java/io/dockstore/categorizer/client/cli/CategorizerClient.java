@@ -314,14 +314,7 @@ public class CategorizerClient {
         final OrganizationsApi organizationsApi = new OrganizationsApi(apiClient);
         final WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
 
-        final Organization organization;
-        try {
-            organization = organizationsApi.getOrganizationByName("ai");
-        } catch (ApiException e) {
-            exceptionMessage(e, "Unable to retrieve organization 'ai'", API_ERROR);
-            return;
-        }
-        final Long organizationId = organization.getId();
+        final Organization organization = getAiOrganization(organizationsApi);
 
         // Precalculate a map of the category ID to the corresponding collection.
         final Map<String, Collection> categoryIdToCollection = new HashMap<>();
@@ -376,7 +369,7 @@ public class CategorizerClient {
             }
 
             try {
-                organizationsApi.addEntryToCollection(organizationId, collection.getId(), entry.getId(), null, null); // TODO: turn reindexing off
+                organizationsApi.addEntryToCollection(organization.getId(), collection.getId(), entry.getId(), null, null); // TODO: turn reindexing off
                 LOG.info("Added entry {} to collection {}", trsId, categoryId);
             } catch (ApiException e) {
                 LOG.error("Unable to add entry {} to collection {}", trsId, categoryId, e);
@@ -400,13 +393,7 @@ public class CategorizerClient {
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final OrganizationsApi organizationsApi = new OrganizationsApi(apiClient);
 
-        final Organization organization;
-        try {
-            organization = organizationsApi.getOrganizationByName("ai");
-        } catch (ApiException e) {
-            exceptionMessage(e, "Unable to retrieve organization 'ai'", API_ERROR);
-            return;
-        }
+        final Organization organization = getAiOrganization(organizationsApi);
 
         for (Ontology.Node node : recommendedNodes) {
             final Collection collection = new Collection();
@@ -420,6 +407,15 @@ public class CategorizerClient {
             } catch (ApiException e) {
                 LOG.error("Unable to create collection for node {}, skipping", node.id(), e);
             }
+        }
+    }
+
+    private Organization getAiOrganization(OrganizationsApi organizationsApi) {
+        try {
+            return organizationsApi.getOrganizationByName("ai");
+        } catch (ApiException e) {
+            exceptionMessage(e, "Unable to retrieve organization 'ai'", API_ERROR);
+            return null;
         }
     }
 
