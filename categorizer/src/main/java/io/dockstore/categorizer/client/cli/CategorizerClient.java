@@ -62,6 +62,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.collections4.IterableUtils;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -212,7 +213,7 @@ public class CategorizerClient {
     }
 
 
-    private List<CSVRecord> readCsv(String path, Class<? extends Enum<?>> csvHeaders) {
+    private Iterable<CSVRecord> readCsv(String path, Class<? extends Enum<?>> csvHeaders) {
         try {
             return IOUtils.readCsv(path, csvHeaders);
         } catch (IOException e) {
@@ -223,7 +224,7 @@ public class CategorizerClient {
 
     private List<TrsIdAndVersion> readEntries(String path) {
         List<TrsIdAndVersion> entries = new ArrayList<>();
-        final List<CSVRecord> entriesCsvRecords = readCsv(path, EntryCsvHeaders.class);
+        final Iterable<CSVRecord> entriesCsvRecords = readCsv(path, EntryCsvHeaders.class);
         for (CSVRecord entry : entriesCsvRecords) {
             final String trsId = entry.get(EntryCsvHeaders.trsId);
             final String versionId = entry.get(EntryCsvHeaders.version);
@@ -305,7 +306,7 @@ public class CategorizerClient {
 
     private void populateCategories(CategorizerConfig categorizerConfig, PopulateCategoriesCommand populateCategoriesCommand) {
         String path = populateCategoriesCommand.getCategorizationsCsvPath();
-        final List<CSVRecord> categorizations = readCsv(path, CategorizationCsvHeaders.class);
+        final List<CSVRecord> categorizations = IterableUtils.toList(readCsv(path, CategorizationCsvHeaders.class));
 
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final OrganizationsApi organizationsApi = new OrganizationsApi(apiClient);
@@ -316,7 +317,7 @@ public class CategorizerClient {
         // Create a Map of the category ID to the corresponding Dockstore Collection.
         // We'll use this later to avoid some redundant calls.
         final Map<String, Collection> categoryIdToCollection = new HashMap<>();
-        for (CSVRecord record : categorizationList) {
+        for (CSVRecord record : categorizations) {
             final String categoryId = record.get(CategorizationCsvHeaders.categoryId);
             if (!categoryIdToCollection.containsKey(categoryId)) {
                 try {
