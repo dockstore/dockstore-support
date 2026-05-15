@@ -3,7 +3,6 @@ package io.dockstore.categorizer.client.cli;
 import static io.dockstore.utils.ConfigFileUtils.getConfiguration;
 import static io.dockstore.utils.DockstoreApiClientUtils.setupApiClient;
 import static io.dockstore.utils.ExceptionHandler.API_ERROR;
-import static io.dockstore.utils.ExceptionHandler.CLIENT_ERROR;
 import static io.dockstore.utils.ExceptionHandler.GENERIC_ERROR;
 import static io.dockstore.utils.ExceptionHandler.IO_ERROR;
 import static io.dockstore.utils.ExceptionHandler.errorMessage;
@@ -277,9 +276,9 @@ public class CategorizerClient {
 
     private void listAllEntries(CategorizerConfig categorizerConfig, ListAllEntriesCommand listAllEntriesCommand) {
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
-        final EntriesApi entriesApi = new EntriesApi(apiClient);
+        final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
         final int max = listAllEntriesCommand.getMax();
-        List<TrsIdAndVersionId> allEntries = getAllEntriesFromDockstore(entriesApi, max);
+        List<TrsIdAndVersionId> allEntries = getAllEntriesFromDockstore(extendedGa4GhApi, max);
         writeCategorizationCandidates(allEntries);
     }
 
@@ -296,8 +295,15 @@ public class CategorizerClient {
         return entries.stream().map(this::convertEntry).toList();
     }
 
-    private List<TrsIdAndVersionId> getAllEntriesFromDockstore(EntriesApi entriesApi, int maxEntries) {
-        List<EntryLiteAndVersionName> entries = RetrievalUtils.pagedRetrieval((offset, limit) -> List.of(), maxEntries); // TODO: replace with actual full retrieval call here
+    private List<TrsIdAndVersionId> getAllEntriesFromDockstore(ExtendedGa4GhApi extendedGa4GhApi, int maxEntries) {
+        List<EntryLiteAndVersionName> entries = RetrievalUtils.pagedRetrieval((offset, limit) -> {
+            try {
+                return extendedGa4GhApi.getAllEntries(offset, limit);
+            } catch (ApiException exception) {
+                exceptionMessage(exception, "Could not get entries from Dockstore", API_ERROR);
+                return List.of();
+            }
+        }, maxEntries);
         LOG.info("Retrieved {} entries", entries.size());
         return entries.stream().map(this::convertEntry).toList();
     }

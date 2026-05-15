@@ -12,7 +12,7 @@ public final class RetrievalUtils {
     }
 
     /**
-     * Retrieves up to {@code count} elements by repeatedly calling {@code retrievalLambda}
+     * Retrieves up to {@code count} elements by repeatedly calling {@code retriever}
      * with successive page offsets and limits until {@code count} elements have been
      * collected or the lambda returns an empty page.
      *
