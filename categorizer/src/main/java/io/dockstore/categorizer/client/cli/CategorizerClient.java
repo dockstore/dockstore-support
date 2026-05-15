@@ -32,11 +32,14 @@ import io.dockstore.openapi.client.api.EntriesApi;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.api.OrganizationsApi;
+import io.dockstore.openapi.client.api.WorkflowsApi;
 import io.dockstore.openapi.client.model.Collection;
+import io.dockstore.openapi.client.model.Entry;
 import io.dockstore.openapi.client.model.EntryLiteAndVersionName;
 import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.Organization;
 import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.Version;
 import io.dockstore.utils.EntryUtils;
 import io.dockstore.utils.RetrievalUtils;
 import io.dockstore.utils.ai.AIModel;
@@ -56,8 +59,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.csv.CSVFormat;
@@ -292,9 +297,7 @@ public class CategorizerClient {
     }
 
     private void populateCategories(CategorizerConfig categorizerConfig, PopulateCategoriesCommand populateCategoriesCommand) {
-        // TODO: set up extendedGa4GhApi and call the Dockstore API to upload categories once the endpoint is available
         final Iterable<CSVRecord> categorizations;
-
         String path = populateCategoriesCommand.getCategorizationsCsvPath();
         LOG.info("Reading file {}", path);
         if (path.startsWith("s3://")) {
@@ -303,14 +306,70 @@ public class CategorizerClient {
             categorizations = readCsvFile(path, CategorizationCsvHeaders.class);
         }
 
-        for (CSVRecord categorization: categorizations) {
+        final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
+        final OrganizationsApi organizationsApi = new OrganizationsApi(apiClient);
+        final WorkflowsApi workflowsApi = new WorkflowsApi(apiClient);
+
+        final Organization organization;
+        try {
+            organization = organizationsApi.getOrganizationByName("ai");
+        } catch (ApiException e) {
+            exceptionMessage(e, "Unable to retrieve organization 'ai'", API_ERROR);
+            return;
+        }
+        final Long organizationId = organization.getId();
+
+        final Map<String, Collection> collectionCache = new HashMap<>();
+
+        for (CSVRecord categorization : categorizations) {
             final String trsId = categorization.get(CategorizationCsvHeaders.trsId);
             final String version = categorization.get(CategorizationCsvHeaders.version);
             final String categoryId = categorization.get(CategorizationCsvHeaders.categoryId);
             final boolean isMember = Boolean.parseBoolean(categorization.get(CategorizationCsvHeaders.isMember));
 
-            // TODO: replace with actual Dockstore API call + logic to populate categories.
+            if (!isMember) {
+                LOG.info("Removing a member from a category is not yet supported, skipping entry {} from category {}", trsId, categoryId);
+                continue;
+            }
+
+            if (!collectionCache.containsKey(categoryId)) {
+                Collection c = null;
+                try {
+                    c = organizationsApi.getCollectionByName("ai", categoryId);
+                } catch (ApiException e) {
+                    LOG.error("Unable to retrieve collection '{}', skipping", categoryId, e);
+                }
+                collectionCache.put(categoryId, c);
+            }
+            final Collection collection = collectionCache.get(categoryId);
+            if (collection == null) {
+                continue;
+            }
+
+            final String entryPath = trsIdToPath(trsId);
+            final Entry entry;
+            try {
+                entry = workflowsApi.getPublishedEntryByPath(entryPath);
+            } catch (ApiException e) {
+                LOG.error("Unable to retrieve entry {}, skipping", trsId, e);
+                continue;
+            }
+
+            try {
+                organizationsApi.addEntryToCollection(organizationId, collection.getId(), entry.getId(), null, null); // TODO: turn reindexing off
+                LOG.info("Added entry {} to collection {}", trsId, categoryId);
+            } catch (ApiException e) {
+                LOG.error("Unable to add entry {} to collection {}, skipping", trsId, categoryId, e);
+            }
         }
+    }
+
+    private static String trsIdToPath(String trsId) {
+        final String workflowPrefix = "#workflow/";
+        if (trsId.startsWith(workflowPrefix)) {
+            return trsId.substring(workflowPrefix.length());
+        }
+        return trsId;
     }
 
     private void createCategories(CategorizerConfig categorizerConfig, CreateCategoriesCommand createCategoriesCommand) {
