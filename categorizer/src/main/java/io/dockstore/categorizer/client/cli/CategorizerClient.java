@@ -305,8 +305,7 @@ public class CategorizerClient {
 
     private void populateCategories(CategorizerConfig categorizerConfig, PopulateCategoriesCommand populateCategoriesCommand) {
         String path = populateCategoriesCommand.getCategorizationsCsvPath();
-        LOG.info("Reading file {}", path);
-        final List<CSVRecord> categorizationList = readCsv(path, CategorizationCsvHeaders.class);
+        final List<CSVRecord> categorizations = readCsv(path, CategorizationCsvHeaders.class);
 
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final OrganizationsApi organizationsApi = new OrganizationsApi(apiClient);
@@ -314,7 +313,8 @@ public class CategorizerClient {
 
         final Organization organization = getAiOrganization(organizationsApi);
 
-        // Precalculate a map of the category ID to the corresponding collection.
+        // Create a Map of the category ID to the corresponding collection.
+        // We'll use this later to avoid some redundant calls.
         final Map<String, Collection> categoryIdToCollection = new HashMap<>();
         for (CSVRecord record : categorizationList) {
             final String categoryId = record.get(CategorizationCsvHeaders.categoryId);
@@ -328,9 +328,10 @@ public class CategorizerClient {
             }
         }
 
-        // Precalculate a map of the entry path to the corresponding entry.
+        // Create a Map of the entry path to the corresponding entry.
+        // We'll use this later to avoid some redundant calls.
         final Map<String, Entry> entryPathToEntry = new HashMap<>();
-        for (CSVRecord record : categorizationList) {
+        for (CSVRecord record : categorizations) {
             final String trsId = record.get(CategorizationCsvHeaders.trsId);
             final String entryPath = trsIdToPath(trsId);
             if (!entryPathToEntry.containsKey(entryPath)) {
@@ -343,7 +344,7 @@ public class CategorizerClient {
             }
         }
 
-        for (CSVRecord categorization: categorizationList) {
+        for (CSVRecord categorization: categorizations) {
             final String trsId = categorization.get(CategorizationCsvHeaders.trsId);
             final String categoryId = categorization.get(CategorizationCsvHeaders.categoryId);
             final boolean isMember = Boolean.parseBoolean(categorization.get(CategorizationCsvHeaders.isMember));
