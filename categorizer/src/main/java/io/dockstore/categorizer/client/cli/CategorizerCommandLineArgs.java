@@ -50,14 +50,14 @@ public class CategorizerCommandLineArgs {
         /**
          * Headers for the input data file of entries to categorize.
          */
-        public enum InputCsvHeaders {
+        public enum EntryCsvHeaders {
             trsId, version
         }
 
         /**
          * Headers for the output file containing the AI-generated categories.
          */
-        public enum OutputCsvHeaders {
+        public enum CategorizationCsvHeaders {
             trsId,
             version,
             categoryId,
@@ -91,13 +91,14 @@ public class CategorizerCommandLineArgs {
     @Parameters(commandNames = { "list-stale-entries" }, commandDescription = "List public Dockstore entries that are new and uncategorized, or that have changed since last categorization.")
     public static class ListStaleEntriesCommand {
 
-        @Parameter(names = {"-i", "--intervalSeconds"}, required = true, description = "Interval in seconds; entries last categorized at least this many seconds ago are eligible for re-categorization if changed")
-        private Long intervalSeconds;
+        @SuppressWarnings("checkstyle:MagicNumber")
+        @Parameter(names = {"-i", "--intervalSeconds"}, description = "Interval in seconds; entries last categorized at least this many seconds ago are eligible for re-categorization if changed")
+        private long intervalSeconds = 3600 * 24 * 30; // seconds/hour * hours/day * days
 
         @Parameter(names = {"-m", "--max"}, description = "The max number of entries to retrieve. If specified, the value must be greater than 0")
         private int max = Integer.MAX_VALUE;
 
-        public Long getIntervalSeconds() {
+        public long getIntervalSeconds() {
             return intervalSeconds;
         }
 
