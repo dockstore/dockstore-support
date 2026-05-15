@@ -313,7 +313,7 @@ public class CategorizerClient {
 
         final Organization organization = getAiOrganization(organizationsApi);
 
-        // Create a Map of the category ID to the corresponding collection.
+        // Create a Map of the category ID to the corresponding Dockstore Collection.
         // We'll use this later to avoid some redundant calls.
         final Map<String, Collection> categoryIdToCollection = new HashMap<>();
         for (CSVRecord record : categorizationList) {
@@ -328,7 +328,7 @@ public class CategorizerClient {
             }
         }
 
-        // Create a Map of the entry path to the corresponding entry.
+        // Create a Map of the entry path to the corresponding Dockstore Entry.
         // We'll use this later to avoid some redundant calls.
         final Map<String, Entry> entryPathToEntry = new HashMap<>();
         for (CSVRecord record : categorizations) {
