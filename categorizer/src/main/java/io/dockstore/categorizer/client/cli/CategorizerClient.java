@@ -169,13 +169,13 @@ public class CategorizerClient {
                     final EntryData entryData = retrieveEntryData(apiClient, trsId, versionId);
                     // For each Ontology handler, determine the nodes it covers and classify into the nodes that are recommended for annotation.
                     for (OntologyHandler handler : ontologyHandlers) {
-                        List<Ontology.Node> coveredNodes = handler.handlesNodes(ontology);
+                        List<Ontology.Node> coveredNodes = handler.coverage(ontology);
                         List<Ontology.Node> candidateNodes = coveredNodes.stream().filter(Ontology.Node::recommendedForAnnotation).toList();
                         if (candidateNodes.isEmpty()) {
                             continue;
                         }
                         LOG.info("{} handles {} nodes", handler, candidateNodes.size());
-                        List<Ontology.Node> matchingNodes = handler.categorizeIntoNodes(candidateNodes, entryData, aiModel);
+                        List<Ontology.Node> matchingNodes = handler.categorize(candidateNodes, entryData, aiModel);
                         for (Ontology.Node matchingNode: matchingNodes) {
                             categorizationsCsvPrinter.printRecord(entry.trsId(), entry.versionId(), matchingNode.id(), true);
                         }
@@ -199,9 +199,11 @@ public class CategorizerClient {
     }
 
     private void checkOverlappingHandlers(List<OntologyHandler> handlers, Ontology ontology) {
-        List<String> ids = handlers.stream().flatMap(h -> h.handlesNodes(ontology).stream().map(Ontology.Node::id)).toList();
+        // Calculate the IDs of the recommended-for-annotation nodes that are covered by each Ontology Handler, and concatenate them into a single list.
+        List<String> ids = handlers.stream().flatMap(h -> h.coverage(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).map(Ontology.Node::id)).toList();
+        // If there are duplicate IDs, multiple Ontology handlers are handling the same node.
         if (ids.size() != new HashSet<>(ids).size()) {
-            errorMessage("Some ontology nodes are handled by multiple handlers.", GENERIC_ERROR);
+            errorMessage("Some recommendedForAnnotation Ontology nodes are covered by multiple OntologyHandlers.", GENERIC_ERROR);
         }
     }
 

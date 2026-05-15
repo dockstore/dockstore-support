@@ -23,12 +23,12 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     @Override
-    public List<Ontology.Node> handlesNodes(Ontology ontology) {
+    public List<Ontology.Node> coverage(Ontology ontology) {
         return ontology.getNodes().stream().filter(node -> prefix.equals(node.id()) || node.id().startsWith(prefix + "-")).toList();
     }
 
     @Override
-    public List<Ontology.Node> categorizeIntoNodes(List<Ontology.Node> nodes, EntryData entryData, AIModel aiModel) {
+    public List<Ontology.Node> categorize(List<Ontology.Node> nodes, EntryData entryData, AIModel aiModel) {
         String summary = summarize(entryData, aiModel);
         List<Ontology.Node> matches = classify(nodes, summary, entryData, aiModel);
         return verify(matches, summary, entryData, aiModel);
