@@ -49,12 +49,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -142,15 +142,14 @@ public class CategorizerClient {
         final Ga4Ghv20Api ga4Ghv20Api = new Ga4Ghv20Api(apiClient);
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
         final List<String> ontologyPaths = categorizeEntriesCommand.getOntologyJsonPaths();
-        final Ontology ontology = combineOntologies(ontologyPaths.stream().map(CategorizerClient::readOntology).toList());
+        final Ontology ontology = readOntologies(ontologyPaths);
         final AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
-        final String inputFileName = categorizeEntriesCommand.getEntriesCsvFilePath();
+        final String entriesPath = categorizeEntriesCommand.getEntriesCsvFilePath();
 
-        List<TrsIdAndVersion> categorizationCandidates = getCategorizationCandidatesFromFile(inputFileName);
+        List<TrsIdAndVersion> entries = readEntries(entriesPath);
 
         AIModel aiModel = new LoggingAIModel(AIModelFactory.createModel(aiModelType));
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
-        final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
 
         final List<OntologyHandler> ontologyHandlers = List.of(
             new OperationOntologyHandler(),
@@ -163,15 +162,14 @@ public class CategorizerClient {
 
         checkOverlappingHandlers(ontologyHandlers, ontology);
 
-        final String categoriesFileName = "generated-categories" + outputFileNameSuffix;
-        final String errorsFileName = "errors" + outputFileNameSuffix;
+        final String errorsFileName = "errors";
         int numberOfCategoriesGenerated = 0;
         int numberOfFailures = 0;
-        try (CSVPrinter categoriesCsvPrinter = createCsvPrinter(categoriesFileName, CategorizationCsvHeaders.class);
+        try (CSVPrinter categorizationsCsvPrinter = createCsvPrinter(new PrintWriter(System.out), CategorizationCsvHeaders.class);
                 CSVPrinter errorsCsvPrinter = createCsvPrinter(errorsFileName, ErrorsCsvHeaders.class)) {
-            for (TrsIdAndVersion candidate : categorizationCandidates) {
-                final String trsId = candidate.trsId();
-                final String versionId = candidate.versionId();
+            for (TrsIdAndVersion entry: entries) {
+                final String trsId = entry.trsId();
+                final String versionId = entry.versionId();
                 if (StringUtils.isEmpty(versionId)) {
                     LOG.error("Unable to categorize entry with TRS ID '{}' and version '{}' because version name is empty, skipping", trsId, versionId);
                     errorsCsvPrinter.printRecord(trsId, versionId, "Version name is empty");
@@ -188,7 +186,7 @@ public class CategorizerClient {
                     final Tool tool = ga4Ghv20Api.toolsIdGet(trsId);
                     entryType = tool.getToolclass().getName().toLowerCase();
                     final List<ToolVersion> filteredVersion = tool.getVersions().stream()
-                            .filter(v -> v.getName().equals(candidate.versionId())).toList();
+                            .filter(v -> v.getName().equals(entry.versionId())).toList();
                     if (filteredVersion.isEmpty()) {
                         LOG.error("Unable to categorize entry with TRS ID '{}' and version '{}' because could not retrieve version, skipping", trsId, versionId);
                         errorsCsvPrinter.printRecord(trsId, versionId, "Could not retrieve version");
@@ -200,7 +198,7 @@ public class CategorizerClient {
                     descriptorFile = getDescriptorFile(ga4Ghv20Api, trsId, versionId, version.getDescriptorType());
                     description = tool.getDescription();
                 } catch (ApiException ex) {
-                    LOG.error("Failed to get information for categorization candidate with TRS ID {} and version {} from Dockstore, skipping", trsId, versionId, ex);
+                    LOG.error("Failed to get information for entry with TRS ID {} and version {} from Dockstore, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage().replace("\n", " "));
                     numberOfFailures += 1;
                     continue;
@@ -210,7 +208,7 @@ public class CategorizerClient {
                 try {
                     EntryData entryData = new EntryData(entryType, trsId, description, descriptorFile.getContent());
                     // For each Ontology handler, determine the nodes it handles and classify into them.
-                    outputEntryAndVersion(trsId, versionId);
+                    // outputEntryAndVersion(trsId, versionId);
                     for (OntologyHandler handler : ontologyHandlers) {
                         List<Ontology.Node> candidateNodes = handler.handlesNodes(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).toList();
                         if (candidateNodes.isEmpty()) {
@@ -218,7 +216,10 @@ public class CategorizerClient {
                         }
                         LOG.info("{} handles {} nodes", handler, candidateNodes.size());
                         List<Ontology.Node> matchingNodes = handler.categorizeIntoNodes(candidateNodes, entryData, aiModel);
-                        outputMatchingCategories(handler, matchingNodes);
+                        for (Ontology.Node matchingNode: matchingNodes) {
+                            categorizationsCsvPrinter.printRecord(entry.trsId(), entry.versionId(), matchingNode.id(), true);
+                        }
+                        // outputMatchingCategories(handler, matchingNodes);
                     }
                 } catch (Exception ex) {
                     LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
@@ -228,9 +229,11 @@ public class CategorizerClient {
                 // TODO: output matches to csv
             }
 
+            /*
             LOG.info("Generated categories for {} entries. Failed to categorize {} entries", numberOfCategoriesGenerated, numberOfFailures);
             logFile(numberOfCategoriesGenerated, categoriesFileName, "View generated categories in file " + categoriesFileName);
             logFile(numberOfFailures, errorsFileName, "View entries that failed categorization in file " + errorsFileName);
+            */
         } catch (IOException e) {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
@@ -256,16 +259,16 @@ public class CategorizerClient {
             ).collect(Collectors.joining("\n")));
     }
 
-    private List<TrsIdAndVersion> getCategorizationCandidatesFromFile(String inputFileName) {
-        List<TrsIdAndVersion> candidates = new ArrayList<>();
-        final Iterable<CSVRecord> entriesCsvRecords = readCsvFile(inputFileName, EntryCsvHeaders.class);
+    private List<TrsIdAndVersion> readEntries(String path) {
+        List<TrsIdAndVersion> entries = new ArrayList<>();
+        final Iterable<CSVRecord> entriesCsvRecords = readCsvFile(path, EntryCsvHeaders.class);
         for (CSVRecord entry : entriesCsvRecords) {
             final String trsId = entry.get(EntryCsvHeaders.trsId);
             final String versionId = entry.get(EntryCsvHeaders.version);
-            candidates.add(new TrsIdAndVersion(trsId, versionId));
+            entries.add(new TrsIdAndVersion(trsId, versionId));
         }
-        LOG.info("Retrieved {} categorization candidates from input file {}", candidates.size(), inputFileName);
-        return candidates;
+        LOG.info("Read {} entries from input file {}", entries.size(), path);
+        return entries;
     }
 
     private void listStaleEntries(CategorizerConfig categorizerConfig, ListStaleEntriesCommand listStaleEntriesCommand) {
@@ -369,28 +372,24 @@ public class CategorizerClient {
 
     private void populateCategories(CategorizerConfig categorizerConfig, PopulateCategoriesCommand populateCategoriesCommand) {
         // TODO: set up extendedGa4GhApi and call the Dockstore API to upload categories once the endpoint is available
-        final Iterable<CSVRecord> entriesWithCategories;
+        final Iterable<CSVRecord> categorizations;
 
-        LOG.info("Reading file {}", populateCategoriesCommand.getCategoriesCsvFilePath());
-        if (populateCategoriesCommand.getCategoriesCsvFilePath().startsWith("s3://")) {
-            entriesWithCategories = readS3CsvFile(populateCategoriesCommand.getCategoriesCsvFilePath());
+        String path = populateCategoriesCommand.getCategorizationsCsvPath();
+        LOG.info("Reading file {}", path);
+        if (path.startsWith("s3://")) {
+            categorizations = readS3CsvFile(path);
         } else {
-            entriesWithCategories = readCsvFile(populateCategoriesCommand.getCategoriesCsvFilePath(), CategorizationCsvHeaders.class);
+            categorizations = readCsvFile(path, CategorizationCsvHeaders.class);
         }
-        int numberOfCategoriesPopulated = 0;
-        int numberOfCategoriesSkippedPopulation = 0;
 
-        for (CSVRecord entryWithCategories : entriesWithCategories) {
-            final String trsId = entryWithCategories.get(CategorizationCsvHeaders.trsId);
-            final String version = entryWithCategories.get(CategorizationCsvHeaders.version);
-            final String categoryId = entryWithCategories.get(CategorizationCsvHeaders.categoryId);
-            final boolean isMember = Boolean.parseBoolean(entryWithCategories.get(CategorizationCsvHeaders.isMember));
+        for (CSVRecord categorization: categorizations) {
+            final String trsId = categorization.get(CategorizationCsvHeaders.trsId);
+            final String version = categorization.get(CategorizationCsvHeaders.version);
+            final String categoryId = categorization.get(CategorizationCsvHeaders.categoryId);
+            final boolean isMember = Boolean.parseBoolean(categorization.get(CategorizationCsvHeaders.isMember));
 
             // TODO: replace with actual Dockstore API call + logic to populate categories.
-            LOG.info("Populated categories for {} (not yet implemented)", trsId);
-            numberOfCategoriesPopulated += 1;
         }
-        LOG.info("Populated categories for {} entries. Skipped upload for {} entries", numberOfCategoriesPopulated, numberOfCategoriesSkippedPopulation);
     }
 
     private void createCategories(CategorizerConfig categorizerConfig, CreateCategoriesCommand createCategoriesCommand) {
@@ -414,23 +413,8 @@ public class CategorizerClient {
         }
     }
 
-    public static String removeCategoryTagsFromResponse(String aiResponse) {
-        String cleaned = StringUtils.removeStart(aiResponse, "<categories>");
-        return StringUtils.removeEnd(cleaned, "</categories>");
-    }
-
-    private static Ontology combineOntologies(List<Ontology> ontologies) {
-        Ontology combined = new Ontology();
-        for (Ontology ontology : ontologies) {
-            for (Ontology.Node node : ontology.getNodes()) {
-                combined.addNode(node.id(), node.label(), node.definition(), node.parentIds(), node.source(), node.recommendedForAnnotation());
-            }
-        }
-        return combined;
-    }
-
-    private static Ontology readOntology(String fileName) {
-        try (Reader reader = new FileReader(fileName, StandardCharsets.UTF_8)) {
+    private static Ontology readOntology(String path) {
+        try (Reader reader = new FileReader(path, StandardCharsets.UTF_8)) {
             JsonArray jsonArray = JsonParser.parseReader(reader).getAsJsonArray();
             Ontology ontology = new Ontology();
             for (JsonElement element : jsonArray) {
@@ -453,8 +437,26 @@ public class CategorizerClient {
         }
     }
 
+    private static Ontology readOntologies(List<String> paths) {
+        return combineOntologies(paths.stream().map(CategorizerClient::readOntology).toList());
+    }
+
+    private static Ontology combineOntologies(List<Ontology> ontologies) {
+        Ontology combined = new Ontology();
+        for (Ontology ontology : ontologies) {
+            for (Ontology.Node node : ontology.getNodes()) {
+                combined.addNode(node.id(), node.label(), node.definition(), node.parentIds(), node.source(), node.recommendedForAnnotation());
+            }
+        }
+        return combined;
+    }
+
     private static CSVPrinter createCsvPrinter(String fileName, Class<? extends Enum<?>> csvHeaders) throws IOException {
-        return new CSVPrinter(new FileWriter(fileName, StandardCharsets.UTF_8), CSVFormat.DEFAULT.builder().setHeader(csvHeaders).build());
+        return createCsvPrinter(new FileWriter(fileName, StandardCharsets.UTF_8), csvHeaders);
+    }
+
+    private static CSVPrinter createCsvPrinter(Writer writer, Class<? extends Enum<?>> csvHeaders) throws IOException {
+        return new CSVPrinter(writer, CSVFormat.DEFAULT.builder().setHeader(csvHeaders).build());
     }
 
     private static Iterable<CSVRecord> readCsvFile(String inputCsvFilePath, Class<? extends Enum<?>> csvHeaders) {
