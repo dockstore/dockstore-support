@@ -25,7 +25,6 @@ import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.DeleteCate
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListAllEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListStaleEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.PopulateCategoriesCommand;
-import io.dockstore.common.S3ClientHelper;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.EntriesApi;
@@ -40,6 +39,7 @@ import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.Organization;
 import io.dockstore.openapi.client.model.Tool;
 import io.dockstore.utils.EntryUtils;
+import io.dockstore.utils.IOUtils;
 import io.dockstore.utils.RetrievalUtils;
 import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModel.AIResponseInfo;
@@ -49,7 +49,6 @@ import io.dockstore.utils.ai.LoggingAIModel;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
@@ -215,7 +214,7 @@ public class CategorizerClient {
 
     private List<TrsIdAndVersion> readEntries(String path) {
         List<TrsIdAndVersion> entries = new ArrayList<>();
-        final Iterable<CSVRecord> entriesCsvRecords = readCsvFile(path, EntryCsvHeaders.class);
+        final Iterable<CSVRecord> entriesCsvRecords = IOUtils.readCsvFile(path, EntryCsvHeaders.class);
         for (CSVRecord entry : entriesCsvRecords) {
             final String trsId = entry.get(EntryCsvHeaders.trsId);
             final String versionId = entry.get(EntryCsvHeaders.version);
@@ -300,9 +299,9 @@ public class CategorizerClient {
         String path = populateCategoriesCommand.getCategorizationsCsvPath();
         LOG.info("Reading file {}", path);
         if (path.startsWith("s3://")) {
-            categorizations = readS3CsvFile(path);
+            categorizations = IOUtils.readS3CsvFile(path, CategorizationCsvHeaders.class);
         } else {
-            categorizations = readCsvFile(path, CategorizationCsvHeaders.class);
+            categorizations = IOUtils.readCsvFile(path, CategorizationCsvHeaders.class);
         }
 
         final List<CSVRecord> categorizationList = new ArrayList<>();
@@ -479,52 +478,6 @@ public class CategorizerClient {
 
     private static CSVPrinter createCsvPrinter(Writer writer, Class<? extends Enum<?>> csvHeaders) throws IOException {
         return new CSVPrinter(writer, CSVFormat.DEFAULT.builder().setHeader(csvHeaders).build());
-    }
-
-    private static Iterable<CSVRecord> readCsvFile(String inputCsvFilePath, Class<? extends Enum<?>> csvHeaders) {
-        Iterable<CSVRecord> csvRecords = null;
-        try {
-            final Reader reader = new FileReader(inputCsvFilePath);
-            csvRecords = parseCsvRecords(reader, csvHeaders);
-        } catch (IOException e) {
-            exceptionMessage(e, "Unable to read input CSV file", IO_ERROR);
-        }
-        return csvRecords;
-    }
-
-    private static Iterable<CSVRecord> readS3CsvFile(String s3FileUri) {
-        final software.amazon.awssdk.services.s3.S3Client s3Client = S3ClientHelper.getS3Client();
-        final String s3FileKey = s3FileUri.replace("s3://", "");
-        final List<String> s3FileKeyComponents = List.of(s3FileKey.split("/"));
-        if (s3FileKeyComponents.size() < 2) {
-            errorMessage("Invalid S3 URI", IO_ERROR);
-        }
-        final String bucketName = s3FileKeyComponents.get(0);
-        final String fileKey = String.join("/", s3FileKeyComponents.subList(1, s3FileKeyComponents.size()));
-        final software.amazon.awssdk.services.s3.model.GetObjectRequest getObjectRequest =
-                software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
-                        .bucket(bucketName)
-                        .key(fileKey)
-                        .build();
-        final software.amazon.awssdk.core.ResponseInputStream<software.amazon.awssdk.services.s3.model.GetObjectResponse> getObjectResponse =
-                s3Client.getObject(getObjectRequest);
-        final InputStreamReader streamReader = new InputStreamReader(getObjectResponse, StandardCharsets.UTF_8);
-        return parseCsvRecords(streamReader, CategorizationCsvHeaders.class);
-    }
-
-    private static Iterable<CSVRecord> parseCsvRecords(Reader reader, Class<? extends Enum<?>> csvHeaders) {
-        Iterable<CSVRecord> csvRecords = null;
-        CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
-                .setHeader(csvHeaders)
-                .setSkipHeaderRecord(true)
-                .setTrim(true)
-                .build();
-        try {
-            csvRecords = csvFormat.parse(reader);
-        } catch (IOException e) {
-            exceptionMessage(e, "Unable to read input CSV file", IO_ERROR);
-        }
-        return csvRecords;
     }
 
     private static void writeCategoryRecord(CSVPrinter csvPrinter, String trsId, String versionId, FileWrapper descriptorFile, AIResponseInfo aiResponseInfo) {
