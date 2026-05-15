@@ -31,8 +31,11 @@ import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.EntriesApi;
 import io.dockstore.openapi.client.api.ExtendedGa4GhApi;
 import io.dockstore.openapi.client.api.Ga4Ghv20Api;
+import io.dockstore.openapi.client.api.OrganizationsApi;
+import io.dockstore.openapi.client.model.Collection;
 import io.dockstore.openapi.client.model.EntryLiteAndVersionName;
 import io.dockstore.openapi.client.model.FileWrapper;
+import io.dockstore.openapi.client.model.Organization;
 import io.dockstore.openapi.client.model.Tool;
 import io.dockstore.utils.EntryUtils;
 import io.dockstore.utils.RetrievalUtils;
@@ -311,8 +314,34 @@ public class CategorizerClient {
     }
 
     private void createCategories(CategorizerConfig categorizerConfig, CreateCategoriesCommand createCategoriesCommand) {
-        // TODO: implement
-        LOG.info("create-categories is not yet implemented");
+        final Ontology ontology = readOntologies(createCategoriesCommand.getOntologyJsonPaths());
+        final List<Ontology.Node> recommendedNodes = ontology.getNodes().stream().filter(Ontology.Node::recommendedForAnnotation).toList();
+        LOG.info("Found {} recommended nodes", recommendedNodes.size());
+
+        final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
+        final OrganizationsApi organizationsApi = new OrganizationsApi(apiClient);
+
+        final Organization organization;
+        try {
+            organization = organizationsApi.getOrganizationByName("ai");
+        } catch (ApiException e) {
+            exceptionMessage(e, "Unable to retrieve organization 'ai'", API_ERROR);
+            return;
+        }
+
+        for (Ontology.Node node : recommendedNodes) {
+            final Collection collection = new Collection();
+            collection.setName(node.id());
+            collection.setDisplayName(node.label());
+            collection.setDescription(node.definition());
+            collection.putMetadataItem("source", node.source());
+            try {
+                organizationsApi.createCollection(collection, organization.getId());
+                LOG.info("Created collection for node {}", node.id());
+            } catch (ApiException e) {
+                LOG.error("Unable to create collection for node {}, skipping", node.id(), e);
+            }
+        }
     }
 
     private void deleteCategories(CategorizerConfig categorizerConfig, DeleteCategoriesCommand deleteCategoriesCommand) {
