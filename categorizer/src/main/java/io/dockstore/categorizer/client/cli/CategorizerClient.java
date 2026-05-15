@@ -56,7 +56,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -154,7 +153,6 @@ public class CategorizerClient {
             new InputDataOntologyHandler(),
             new OutputDataOntologyHandler()
         );
-
         checkOverlappingHandlers(ontologyHandlers, ontology);
 
         final String errorsFileName = "errors";
@@ -201,24 +199,12 @@ public class CategorizerClient {
     private void checkOverlappingHandlers(List<OntologyHandler> handlers, Ontology ontology) {
         // Calculate the IDs of the recommended-for-annotation nodes that are covered by each Ontology Handler, and concatenate them into a single list.
         List<String> ids = handlers.stream().flatMap(h -> h.coverage(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).map(Ontology.Node::id)).toList();
-        // If there are duplicate IDs, multiple Ontology handlers are handling the same node.
+        // If there are duplicate IDs, multiple Ontology handlers cover the same recommended-for-annotation node.
         if (ids.size() != new HashSet<>(ids).size()) {
-            errorMessage("Some recommendedForAnnotation Ontology nodes are covered by multiple OntologyHandlers.", GENERIC_ERROR);
+            errorMessage("Multiple OntologyHandlers cover the same recommended-for-annotation node.", GENERIC_ERROR);
         }
     }
 
-    private void outputEntryAndVersion(String trsId, String versionId) {
-
-        String dockstoreUrl = "https://dockstore.org/workflows/%s:%s".formatted(trsId.substring(trsId.indexOf("github.com")), versionId);
-        System.out.println("MARKDOWN:* [%s](%s)".formatted(dockstoreUrl, dockstoreUrl));
-    }
-
-    private void outputMatchingCategories(OntologyHandler handler, List<Ontology.Node> nodes) {
-        System.out.println("MARKDOWN:    * %s:".formatted(handler.getName()));
-        System.out.println(nodes.stream().map(node ->
-            "MARKDOWN:        * [%s](%s)".formatted(node.label(), node.source())
-            ).collect(Collectors.joining("\n")));
-    }
 
     private List<TrsIdAndVersion> readEntries(String path) {
         List<TrsIdAndVersion> entries = new ArrayList<>();
