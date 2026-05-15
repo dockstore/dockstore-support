@@ -323,29 +323,29 @@ public class CategorizerClient {
         }
         final Long organizationId = organization.getId();
 
-        // Precalculate a map of the category ID to the corresponding collection's numeric Dockstore ID.
-        final Map<String, Long> categoryIdToDockstoreId = new HashMap<>();
+        // Precalculate a map of the category ID to the corresponding collection.
+        final Map<String, Collection> categoryIdToCollection = new HashMap<>();
         for (CSVRecord record : categorizationList) {
             final String categoryId = record.get(CategorizationCsvHeaders.categoryId);
-            if (!categoryIdToDockstoreId.containsKey(categoryId)) {
+            if (!categoryIdToCollection.containsKey(categoryId)) {
                 try {
                     final Collection collection = organizationsApi.getCollectionByName("ai", categoryId);
-                    categoryIdToDockstoreId.put(categoryId, collection.getId());
+                    categoryIdToCollection.put(categoryId, collection);
                 } catch (ApiException e) {
                     LOG.error("Unable to retrieve collection '{}'", categoryId, e);
                 }
             }
         }
 
-        // Precalculate a map of the entry path to the corresponding entry's numeric Dockstore ID.
-        final Map<String, Long> entryPathToDockstoreId = new HashMap<>();
+        // Precalculate a map of the entry path to the corresponding entry.
+        final Map<String, Entry> entryPathToEntry = new HashMap<>();
         for (CSVRecord record : categorizationList) {
             final String trsId = record.get(CategorizationCsvHeaders.trsId);
             final String entryPath = trsIdToPath(trsId);
-            if (!entryPathToDockstoreId.containsKey(entryPath)) {
+            if (!entryPathToEntry.containsKey(entryPath)) {
                 try {
                     final Entry entry = workflowsApi.getPublishedEntryByPath(entryPath);
-                    entryPathToDockstoreId.put(entryPath, entry.getId());
+                    entryPathToEntry.put(entryPath, entry);
                 } catch (ApiException e) {
                     LOG.error("Unable to retrieve entry '{}'", trsId, e);
                 }
@@ -362,21 +362,21 @@ public class CategorizerClient {
                 continue;
             }
 
-            final Long collectionId = categoryIdToDockstoreId.get(categoryId);
-            if (collectionId == null) {
+            final Collection collection = categoryIdToCollection.get(categoryId);
+            if (collection == null) {
                 LOG.info("No corresponding collection '{}'", categoryId);
                 continue;
             }
 
             final String entryPath = trsIdToPath(trsId);
-            final Long entryId = entryPathToDockstoreId.get(entryPath);
-            if (entryId == null) {
+            final Entry entry = entryPathToEntry.get(entryPath);
+            if (entry == null) {
                 LOG.info("No corresponding entry '{}'", trsId);
                 continue;
             }
 
             try {
-                organizationsApi.addEntryToCollection(organizationId, collectionId, entryId, null, null); // TODO: turn reindexing off
+                organizationsApi.addEntryToCollection(organizationId, collection.getId(), entry.getId(), null, null); // TODO: turn reindexing off
                 LOG.info("Added entry {} to collection {}", trsId, categoryId);
             } catch (ApiException e) {
                 LOG.error("Unable to add entry {} to collection {}", trsId, categoryId, e);
