@@ -212,9 +212,18 @@ public class CategorizerClient {
     }
 
 
+    private List<CSVRecord> readCsv(String path, Class<? extends Enum<?>> csvHeaders) {
+        try {
+            return IOUtils.readCsv(path, csvHeaders);
+        } catch (IOException e) {
+            exceptionMessage(e, "Unable to read CSV file: " + path, IO_ERROR);
+            return List.of();
+        }
+    }
+
     private List<TrsIdAndVersion> readEntries(String path) {
         List<TrsIdAndVersion> entries = new ArrayList<>();
-        final Iterable<CSVRecord> entriesCsvRecords = IOUtils.readCsvFile(path, EntryCsvHeaders.class);
+        final List<CSVRecord> entriesCsvRecords = readCsv(path, EntryCsvHeaders.class);
         for (CSVRecord entry : entriesCsvRecords) {
             final String trsId = entry.get(EntryCsvHeaders.trsId);
             final String versionId = entry.get(EntryCsvHeaders.version);
@@ -295,19 +304,9 @@ public class CategorizerClient {
     }
 
     private void populateCategories(CategorizerConfig categorizerConfig, PopulateCategoriesCommand populateCategoriesCommand) {
-        final Iterable<CSVRecord> categorizations;
         String path = populateCategoriesCommand.getCategorizationsCsvPath();
         LOG.info("Reading file {}", path);
-        if (path.startsWith("s3://")) {
-            categorizations = IOUtils.readS3CsvFile(path, CategorizationCsvHeaders.class);
-        } else {
-            categorizations = IOUtils.readCsvFile(path, CategorizationCsvHeaders.class);
-        }
-
-        final List<CSVRecord> categorizationList = new ArrayList<>();
-        for (CSVRecord record : categorizations) {
-            categorizationList.add(record);
-        }
+        final List<CSVRecord> categorizationList = readCsv(path, CategorizationCsvHeaders.class);
 
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final OrganizationsApi organizationsApi = new OrganizationsApi(apiClient);
