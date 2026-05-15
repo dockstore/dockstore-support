@@ -25,8 +25,6 @@ import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.DeleteCate
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListAllEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListStaleEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.PopulateCategoriesCommand;
-import io.dockstore.common.NextflowUtilities;
-import io.dockstore.common.NextflowUtilities.NextflowParsingException;
 import io.dockstore.common.S3ClientHelper;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.ApiException;
@@ -36,8 +34,7 @@ import io.dockstore.openapi.client.api.Ga4Ghv20Api;
 import io.dockstore.openapi.client.model.EntryLiteAndVersionName;
 import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.Tool;
-import io.dockstore.openapi.client.model.ToolVersion;
-import io.dockstore.openapi.client.model.ToolVersion.DescriptorTypeEnum;
+import io.dockstore.utils.EntryUtils;
 import io.dockstore.utils.RetrievalUtils;
 import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModel.AIResponseInfo;
@@ -65,7 +62,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,15 +135,14 @@ public class CategorizerClient {
     private void categorizeEntries(CategorizerConfig categorizerConfig, CategorizeEntriesCommand categorizeEntriesCommand) {
         final String dockstoreServerUrl = categorizerConfig.dockstoreServerUrl();
         final ApiClient apiClient = setupApiClient(dockstoreServerUrl, categorizerConfig.dockstoreToken());
-        final Ga4Ghv20Api ga4Ghv20Api = new Ga4Ghv20Api(apiClient);
-        final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
+
         final List<String> ontologyPaths = categorizeEntriesCommand.getOntologyJsonPaths();
         final Ontology ontology = readOntologies(ontologyPaths);
-        final AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
-        final String entriesPath = categorizeEntriesCommand.getEntriesCsvFilePath();
 
+        final String entriesPath = categorizeEntriesCommand.getEntriesCsvFilePath();
         List<TrsIdAndVersion> entries = readEntries(entriesPath);
 
+        AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
         AIModel aiModel = new LoggingAIModel(AIModelFactory.createModel(aiModelType));
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
 
@@ -163,54 +158,19 @@ public class CategorizerClient {
         checkOverlappingHandlers(ontologyHandlers, ontology);
 
         final String errorsFileName = "errors";
-        int numberOfCategoriesGenerated = 0;
         int numberOfFailures = 0;
         try (CSVPrinter categorizationsCsvPrinter = createCsvPrinter(new PrintWriter(System.out), CategorizationCsvHeaders.class);
                 CSVPrinter errorsCsvPrinter = createCsvPrinter(errorsFileName, ErrorsCsvHeaders.class)) {
             for (TrsIdAndVersion entry: entries) {
                 final String trsId = entry.trsId();
                 final String versionId = entry.versionId();
-                if (StringUtils.isEmpty(versionId)) {
-                    LOG.error("Unable to categorize entry with TRS ID '{}' and version '{}' because version name is empty, skipping", trsId, versionId);
-                    errorsCsvPrinter.printRecord(trsId, versionId, "Version name is empty");
-                    numberOfFailures += 1;
-                    continue;
-                }
-
-                // TODO: move most of the primary descriptor retrieval code to a helper method in utils
-                // Get required information to create a prompt
-                final String entryType;
-                final FileWrapper descriptorFile;
-                final String description;
                 try {
-                    final Tool tool = ga4Ghv20Api.toolsIdGet(trsId);
-                    entryType = tool.getToolclass().getName().toLowerCase();
-                    final List<ToolVersion> filteredVersion = tool.getVersions().stream()
-                            .filter(v -> v.getName().equals(entry.versionId())).toList();
-                    if (filteredVersion.isEmpty()) {
-                        LOG.error("Unable to categorize entry with TRS ID '{}' and version '{}' because could not retrieve version, skipping", trsId, versionId);
-                        errorsCsvPrinter.printRecord(trsId, versionId, "Could not retrieve version");
-                        numberOfFailures += 1;
-                        continue;
-                    }
-
-                    final ToolVersion version = filteredVersion.get(0);
-                    descriptorFile = getDescriptorFile(ga4Ghv20Api, trsId, versionId, version.getDescriptorType());
-                    description = tool.getDescription();
-                } catch (ApiException ex) {
-                    LOG.error("Failed to get information for entry with TRS ID {} and version {} from Dockstore, skipping", trsId, versionId, ex);
-                    errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage().replace("\n", " "));
-                    numberOfFailures += 1;
-                    continue;
-                }
-
-                // Classify into the ontology using AI model
-                try {
-                    EntryData entryData = new EntryData(entryType, trsId, description, descriptorFile.getContent());
-                    // For each Ontology handler, determine the nodes it handles and classify into them.
-                    // outputEntryAndVersion(trsId, versionId);
+                    // Retrieve data about the entry.
+                    final EntryData entryData = retrieveEntryData(apiClient, trsId, versionId);
+                    // For each Ontology handler, determine the nodes it covers and classify into the nodes that are recommended for annotation.
                     for (OntologyHandler handler : ontologyHandlers) {
-                        List<Ontology.Node> candidateNodes = handler.handlesNodes(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).toList();
+                        List<Ontology.Node> coveredNodes = handler.handlesNodes(ontology);
+                        List<Ontology.Node> candidateNodes = coveredNodes.stream().filter(Ontology.Node::recommendedForAnnotation).toList();
                         if (candidateNodes.isEmpty()) {
                             continue;
                         }
@@ -219,18 +179,17 @@ public class CategorizerClient {
                         for (Ontology.Node matchingNode: matchingNodes) {
                             categorizationsCsvPrinter.printRecord(entry.trsId(), entry.versionId(), matchingNode.id(), true);
                         }
-                        // outputMatchingCategories(handler, matchingNodes);
                     }
                 } catch (Exception ex) {
                     LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
                     errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage());
-                    numberOfFailures += 1;
+                    numberOfFailures++;
                 }
                 // TODO: output matches to csv
             }
 
+            LOG.info("Failed to categorize {} entries", numberOfFailures);
             /*
-            LOG.info("Generated categories for {} entries. Failed to categorize {} entries", numberOfCategoriesGenerated, numberOfFailures);
             logFile(numberOfCategoriesGenerated, categoriesFileName, "View generated categories in file " + categoriesFileName);
             logFile(numberOfFailures, errorsFileName, "View entries that failed categorization in file " + errorsFileName);
             */
@@ -330,44 +289,15 @@ public class CategorizerClient {
         }
     }
 
-    private FileWrapper getDescriptorFile(Ga4Ghv20Api ga4Ghv20Api, String trsId, String versionId, List<DescriptorTypeEnum> descriptorTypes) throws ApiException {
-        FileWrapper descriptorFile = null;
-        for (int i = 0; i < descriptorTypes.size(); ++i) {
-            DescriptorTypeEnum descriptorType = descriptorTypes.get(i);
-            try {
-                descriptorFile = ga4Ghv20Api.toolsIdVersionsVersionIdTypeDescriptorGet(trsId, descriptorType.toString(), versionId);
-            } catch (ApiException ex) {
-                if (i == descriptorTypes.size() - 1) {
-                    throw ex;
-                }
-                continue;
-            }
-
-            if (descriptorType == DescriptorTypeEnum.NFL) {
-                Optional<FileWrapper> nextflowMainScript = getNextflowMainScript(descriptorFile.getContent(), ga4Ghv20Api, trsId, versionId, descriptorType);
-                if (nextflowMainScript.isPresent()) {
-                    descriptorFile = nextflowMainScript.get();
-                }
-            }
+    private EntryData retrieveEntryData(ApiClient apiClient, String trsId, String versionId) throws ApiException {
+        final Tool tool = new Ga4Ghv20Api(apiClient).toolsIdGet(trsId);
+        final String entryType = tool.getToolclass().getName().toLowerCase();
+        final String description = tool.getDescription();
+        final Optional<FileWrapper> primaryDescriptor = EntryUtils.retrievePrimaryDescriptor(apiClient, trsId, versionId);
+        if (primaryDescriptor.isEmpty()) {
+            throw new RuntimeException("Could not retrieve version");
         }
-
-        return descriptorFile;
-    }
-
-    private Optional<FileWrapper> getNextflowMainScript(String nextflowConfigFileContent, Ga4Ghv20Api ga4Ghv20Api, String trsId, String versionId, DescriptorTypeEnum descriptorType) {
-        final String mainScriptPath;
-        try {
-            mainScriptPath = NextflowUtilities.grabConfig(nextflowConfigFileContent).getString("manifest.mainScript", "main.nf");
-        } catch (NextflowParsingException e) {
-            LOG.error("Could not grab config", e);
-            return Optional.empty();
-        }
-        try {
-            return Optional.of(ga4Ghv20Api.toolsIdVersionsVersionIdTypeDescriptorRelativePathGet(trsId, descriptorType.toString(), versionId, mainScriptPath));
-        } catch (ApiException exception) {
-            LOG.error("Could not get Nextflow main script {}", mainScriptPath, exception);
-            return Optional.empty();
-        }
+        return new EntryData(entryType, trsId, description, primaryDescriptor.get().getContent());
     }
 
     private void populateCategories(CategorizerConfig categorizerConfig, PopulateCategoriesCommand populateCategoriesCommand) {
