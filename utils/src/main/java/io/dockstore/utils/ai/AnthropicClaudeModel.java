@@ -27,7 +27,7 @@ public class AnthropicClaudeModel extends BaseAIModel {
     }
 
     @Override
-    public AIResponseInfo submitPrompt(AIModel.Prompt prompt) {
+    public AIResponseInfo submitPrompt(Prompt prompt) {
         final String nativeRequest = createNativeClaudeRequest(prompt);
 
         // Encode and send the request to the Bedrock Runtime.
