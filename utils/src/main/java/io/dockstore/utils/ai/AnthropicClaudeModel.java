@@ -49,25 +49,30 @@ public class AnthropicClaudeModel extends BaseAIModel {
     // Format the request payload using the model's native structure.
     // See https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-request-response for examples
     private String createNativeClaudeRequest(Prompt prompt) {
-        List<ClaudeRequest.Content> systemContents = toClaudeContents(prompt.systemMessages());
-        ClaudeRequest.Message userMessage = toClaudeUserMessage(prompt.userMessages());
-        ClaudeRequest claudeRequest = new ClaudeRequest(ANTHROPIC_API_VERSION, prompt.maxResponseTokens(), prompt.temperature(), nullIfEmpty(systemContents), List.of(userMessage));
+        List<ClaudeRequest.Content> systemContent = nullIfEmpty(toClaudeContent(prompt.systemContent()));
+        List<ClaudeRequest.Message> userMessages = List.of(toClaudeUserMessage(prompt.userContent()));
+        ClaudeRequest claudeRequest = new ClaudeRequest(
+            ANTHROPIC_API_VERSION,
+            prompt.maxResponseTokens(),
+            prompt.temperature(),
+            systemContent,
+            userMessages);
         return GSON.toJson(claudeRequest);
     }
 
-    private List<ClaudeRequest.Content> toClaudeContents(List<AIModel.Message> messages) {
+    private List<ClaudeRequest.Content> toClaudeContent(List<AIModel.Content> content) {
         List<ClaudeRequest.Content> result = new ArrayList<>();
-        for (int i = 0; i < messages.size(); i++) {
-            if (messages.get(i) instanceof AIModel.Text text) {
-                boolean cacheable = i + 1 < messages.size() && messages.get(i + 1) instanceof AIModel.CacheMarker;
-                result.add(new ClaudeRequest.Content("text", text.text(), cacheable ? new ClaudeRequest.CacheControl("ephemeral") : null));
+        for (int i = 0; i < content.size(); i++) {
+            if (content.get(i) instanceof Textable textable) {
+                boolean cacheable = i + 1 < content.size() && content.get(i + 1) instanceof AIModel.CacheMarker;
+                result.add(new ClaudeRequest.Content("text", textable.toText(), cacheable ? new ClaudeRequest.CacheControl("ephemeral") : null));
             }
         }
         return result;
     }
 
-    private ClaudeRequest.Message toClaudeUserMessage(List<AIModel.Message> messages) {
-        List<ClaudeRequest.Content> contents = toClaudeContents(messages);
+    private ClaudeRequest.Message toClaudeUserMessage(List<AIModel.Content> content) {
+        List<ClaudeRequest.Content> contents = toClaudeContent(content);
         return new ClaudeRequest.Message("user", contents);
     }
 

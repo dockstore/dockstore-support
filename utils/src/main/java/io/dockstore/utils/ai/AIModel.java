@@ -86,36 +86,44 @@ public interface AIModel {
     record AIResponseInfo(String aiResponse, boolean isTruncated, long inputTokens, long outputTokens, double cost, String stopReason) {
     }
 
-    interface Message {
+    interface Content {
     }
 
-    record Text(String text) implements Message {
+    interface Textable {
+        String toText();
     }
 
-    record CacheMarker() implements Message {
+    record Text(String text) implements Content, Textable {
+        @Override
+        public String toText() {
+            return text;
+        }
     }
 
-    record Prompt(List<Message> systemMessages, List<Message> userMessages, double temperature, int maxResponseTokens) {
+    record CacheMarker() implements Content {
+    }
+
+    record Prompt(List<Content> systemContent, List<Content> userContent, double temperature, int maxResponseTokens) {
         @SuppressWarnings("checkstyle:HiddenField")
         static final class Builder {
-            private List<Message> systemMessages = new ArrayList<>();
-            private List<Message> userMessages = new ArrayList<>();
+            private List<Content> systemContent = new ArrayList<>();
+            private List<Content> userContent = new ArrayList<>();
             private double temperature = 0.0;
             @SuppressWarnings("checkstyle:magicnumber")
             private int maxResponseTokens = 100;
 
             public Builder system(String text) {
-                systemMessages.add(new Text(text));
+                systemContent.add(new Text(text));
                 return this;
             }
 
             public Builder text(String text) {
-                userMessages.add(new Text(text));
+                userContent.add(new Text(text));
                 return this;
             }
 
             public Builder cache() {
-                userMessages.add(new CacheMarker());
+                userContent.add(new CacheMarker());
                 return this;
             }
 
@@ -130,7 +138,7 @@ public interface AIModel {
             }
 
             public Prompt build() {
-                return new Prompt(systemMessages, userMessages, temperature, maxResponseTokens);
+                return new Prompt(systemContent, userContent, temperature, maxResponseTokens);
             }
         }
     }
