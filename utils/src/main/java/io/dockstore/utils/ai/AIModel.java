@@ -1,5 +1,6 @@
 package io.dockstore.utils.ai;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public interface AIModel {
@@ -20,8 +21,7 @@ public interface AIModel {
      */
     default AIResponseInfo submitPrompt(String prompt, double temperature, int maxResponseTokens) {
         return submitPrompt(new Prompt.Builder()
-            .systemMessages(List.of())
-            .userMessages(List.of(new Message.Builder().text(prompt).build()))
+            .text(prompt)
             .temperature(temperature)
             .maxResponseTokens(maxResponseTokens)
             .build());
@@ -86,43 +86,36 @@ public interface AIModel {
     record AIResponseInfo(String aiResponse, boolean isTruncated, long inputTokens, long outputTokens, double cost, String stopReason) {
     }
 
-    record Message(String text, boolean cacheable) {
-        @SuppressWarnings("checkstyle:HiddenField")
-        static final class Builder {
-            private String text;
-            private boolean cacheable;
+    interface Message {
+    }
 
-            public Builder text(String text) {
-                this.text = text;
-                return this;
-            }
+    record Text(String text) implements Message {
+    }
 
-            public Builder cacheable(boolean cacheable) {
-                this.cacheable = cacheable;
-                return this;
-            }
-
-            public Message build() {
-                return new Message(text, cacheable);
-            }
-        }
+    record CacheMarker() implements Message {
     }
 
     record Prompt(List<Message> systemMessages, List<Message> userMessages, double temperature, int maxResponseTokens) {
         @SuppressWarnings("checkstyle:HiddenField")
         static final class Builder {
-            private List<Message> systemMessages;
-            private List<Message> userMessages;
-            private double temperature;
-            private int maxResponseTokens;
+            private List<Message> systemMessages = new ArrayList<>();
+            private List<Message> userMessages = new ArrayList<>();
+            private double temperature = 0.0;
+            @SuppressWarnings("checkstyle:magicnumber")
+            private int maxResponseTokens = 100;
 
-            public Builder systemMessages(List<Message> systemMessages) {
-                this.systemMessages = systemMessages;
+            public Builder system(String text) {
+                systemMessages.add(new Text(text));
                 return this;
             }
 
-            public Builder userMessages(List<Message> userMessages) {
-                this.userMessages = userMessages;
+            public Builder text(String text) {
+                userMessages.add(new Text(text));
+                return this;
+            }
+
+            public Builder cache() {
+                userMessages.add(new CacheMarker());
                 return this;
             }
 

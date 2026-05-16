@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
 public record ClaudeRequest(@SerializedName(value = "anthropic_version") String anthropicVersion, @SerializedName(value = "max_tokens") int maxTokens, double temperature, List<Content> system, List<Message> messages) {
-    public record Message(String role, Content content) {
+    public record Message(String role, List<Content> content) {
 
     }
     public record Content(String type, String text, @SerializedName(value = "cache_control") CacheControl cacheControl) {
