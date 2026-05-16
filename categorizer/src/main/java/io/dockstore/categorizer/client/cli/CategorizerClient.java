@@ -173,7 +173,7 @@ public class CategorizerClient {
                     // Retrieve data about the entry.
                     final EntryData entryData = retrieveEntryData(apiClient, trsId, versionId);
                     // For each Ontology handler, determine the nodes it covers and classify into the nodes that are recommended for annotation.
-                    for (OntologyHandler handler : ontologyHandlers) {
+                    for (OntologyHandler handler: ontologyHandlers) {
                         List<Ontology.Node> coveredNodes = handler.coverage(ontology);
                         List<Ontology.Node> candidateNodes = coveredNodes.stream().filter(Ontology.Node::recommendedForAnnotation).toList();
                         if (candidateNodes.isEmpty()) {
@@ -225,7 +225,7 @@ public class CategorizerClient {
     private List<TrsIdAndVersion> readEntries(String path) {
         List<TrsIdAndVersion> entries = new ArrayList<>();
         final Iterable<CSVRecord> entriesCsvRecords = readCsv(path, EntryCsvHeaders.class);
-        for (CSVRecord entry : entriesCsvRecords) {
+        for (CSVRecord entry: entriesCsvRecords) {
             final String trsId = entry.get(EntryCsvHeaders.trsId);
             final String versionId = entry.get(EntryCsvHeaders.version);
             entries.add(new TrsIdAndVersion(trsId, versionId));
@@ -284,7 +284,7 @@ public class CategorizerClient {
     private void writeEntries(List<TrsIdAndVersion> candidates, Writer writer) {
         try {
             CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.builder().setHeader(EntryCsvHeaders.class).build());
-            for (TrsIdAndVersion candidate : candidates) {
+            for (TrsIdAndVersion candidate: candidates) {
                 csvPrinter.printRecord(candidate.trsId(), candidate.versionId());
             }
             writer.flush();
@@ -314,34 +314,29 @@ public class CategorizerClient {
 
         final Organization organization = getAiOrganization(organizationsApi);
 
-        // Create a Map of the category ID to the corresponding Dockstore Collection.
-        // We'll use this later to avoid some redundant calls.
+        // Map category IDs to the corresponding Dockstore Collections.
+        // We'll use this later to avoid some redundant requests.
+        final List<String> categoryIds = categorizations.stream().map(r -> r.get(CategorizationCsvHeaders.categoryId)).distinct().toList();
         final Map<String, Collection> categoryIdToCollection = new HashMap<>();
-        for (CSVRecord record : categorizations) {
-            final String categoryId = record.get(CategorizationCsvHeaders.categoryId);
-            if (!categoryIdToCollection.containsKey(categoryId)) {
-                try {
-                    final Collection collection = organizationsApi.getCollectionByName("ai", categoryId);
-                    categoryIdToCollection.put(categoryId, collection);
-                } catch (ApiException e) {
-                    LOG.error("Unable to retrieve collection '{}'", categoryId, e);
-                }
+        for (String categoryId: categoryIds) {
+            try {
+                categoryIdToCollection.put(categoryId, organizationsApi.getCollectionByName("ai", categoryId));
+                LOG.info("Retrieved category '{}'", categoryId);
+            } catch (ApiException e) {
+                LOG.error("Unable to retrieve category '{}'", categoryId, e);
             }
         }
 
-        // Create a Map of the entry path to the corresponding Dockstore Entry.
-        // We'll use this later to avoid some redundant calls.
+        // Map entry paths to the corresponding Dockstore Entries.
+        // We'll use this later to avoid some redundant requests.
+        final List<String> entryPaths = categorizations.stream().map(r -> r.get(CategorizationCsvHeaders.trsId)).map(this::trsIdToPath).distinct().toList();
         final Map<String, Entry> entryPathToEntry = new HashMap<>();
-        for (CSVRecord record : categorizations) {
-            final String trsId = record.get(CategorizationCsvHeaders.trsId);
-            final String entryPath = trsIdToPath(trsId);
-            if (!entryPathToEntry.containsKey(entryPath)) {
-                try {
-                    final Entry entry = workflowsApi.getPublishedEntryByPath(entryPath);
-                    entryPathToEntry.put(entryPath, entry);
-                } catch (ApiException e) {
-                    LOG.error("Unable to retrieve entry '{}'", trsId, e);
-                }
+        for (String entryPath: entryPaths) {
+            try {
+                entryPathToEntry.put(entryPath, workflowsApi.getPublishedEntryByPath(entryPath));
+                LOG.info("Retrieved entry '{}'", entryPath);
+            } catch (ApiException e) {
+                LOG.error("Unable to retrieve entry '{}'", entryPath, e);
             }
         }
 
@@ -349,6 +344,7 @@ public class CategorizerClient {
             final String trsId = categorization.get(CategorizationCsvHeaders.trsId);
             final String categoryId = categorization.get(CategorizationCsvHeaders.categoryId);
             final boolean isMember = Boolean.parseBoolean(categorization.get(CategorizationCsvHeaders.isMember));
+            final String entryPath = trsIdToPath(trsId);
 
             if (!isMember) {
                 LOG.info("Removing a member from a category is not yet supported, skipping entry {} from category {}", trsId, categoryId);
@@ -357,27 +353,26 @@ public class CategorizerClient {
 
             final Collection collection = categoryIdToCollection.get(categoryId);
             if (collection == null) {
-                LOG.info("No corresponding collection '{}'", categoryId);
+                LOG.info("No corresponding category '{}'", categoryId);
                 continue;
             }
-
-            final String entryPath = trsIdToPath(trsId);
             final Entry entry = entryPathToEntry.get(entryPath);
             if (entry == null) {
                 LOG.info("No corresponding entry '{}'", trsId);
                 continue;
             }
 
+            // TODO: add logic to confirm that a human has not removed the entry from the category.  In such case, we won't add.
             try {
                 organizationsApi.addEntryToCollection(organization.getId(), collection.getId(), entry.getId(), null, null); // TODO: turn reindexing off
-                LOG.info("Added entry {} to collection {}", trsId, categoryId);
+                LOG.info("Added entry {} to category {}", trsId, categoryId);
             } catch (ApiException e) {
-                LOG.error("Unable to add entry {} to collection {}", trsId, categoryId, e);
+                LOG.error("Unable to add entry {} to category {}", trsId, categoryId, e);
             }
         }
     }
 
-    private static String trsIdToPath(String trsId) {
+    private String trsIdToPath(String trsId) {
         final String workflowPrefix = "#workflow/";
         if (trsId.startsWith(workflowPrefix)) {
             return trsId.substring(workflowPrefix.length());
@@ -395,7 +390,7 @@ public class CategorizerClient {
 
         final Organization organization = getAiOrganization(organizationsApi);
 
-        for (Ontology.Node node : recommendedNodes) {
+        for (Ontology.Node node: recommendedNodes) {
             final Collection collection = new Collection();
             collection.setName(node.id());
             collection.setDisplayName(node.label());
@@ -439,7 +434,7 @@ public class CategorizerClient {
         try (Reader reader = new FileReader(path, StandardCharsets.UTF_8)) {
             JsonArray jsonArray = JsonParser.parseReader(reader).getAsJsonArray();
             Ontology ontology = new Ontology();
-            for (JsonElement element : jsonArray) {
+            for (JsonElement element: jsonArray) {
                 JsonObject obj = element.getAsJsonObject();
                 String id = obj.get("id").getAsString();
                 String label = obj.get("label").getAsString();
@@ -447,7 +442,7 @@ public class CategorizerClient {
                 String source = obj.get("source").getAsString();
                 boolean recommendedForAnnotation = obj.get("recommended_for_annotation").getAsBoolean();
                 List<String> parentIds = new ArrayList<>();
-                for (JsonElement parent : obj.get("parent_ids").getAsJsonArray()) {
+                for (JsonElement parent: obj.get("parent_ids").getAsJsonArray()) {
                     parentIds.add(parent.getAsString());
                 }
                 ontology.addNode(id, label, definition, parentIds, source, recommendedForAnnotation);
@@ -465,8 +460,8 @@ public class CategorizerClient {
 
     private static Ontology combineOntologies(List<Ontology> ontologies) {
         Ontology combined = new Ontology();
-        for (Ontology ontology : ontologies) {
-            for (Ontology.Node node : ontology.getNodes()) {
+        for (Ontology ontology: ontologies) {
+            for (Ontology.Node node: ontology.getNodes()) {
                 combined.addNode(node.id(), node.label(), node.definition(), node.parentIds(), node.source(), node.recommendedForAnnotation());
             }
         }
