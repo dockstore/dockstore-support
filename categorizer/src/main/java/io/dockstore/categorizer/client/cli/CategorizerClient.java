@@ -329,14 +329,14 @@ public class CategorizerClient {
 
         // Map entry paths to the corresponding Dockstore Entries.
         // We'll use this later to avoid some redundant requests.
-        final List<String> entryPaths = categorizations.stream().map(r -> r.get(CategorizationCsvHeaders.trsId)).map(this::trsIdToPath).distinct().toList();
-        final Map<String, Entry> entryPathToEntry = new HashMap<>();
-        for (String entryPath: entryPaths) {
+        final List<String> trsIds = categorizations.stream().map(r -> r.get(CategorizationCsvHeaders.trsId)).distinct().toList();
+        final Map<String, Entry> trsIdToEntry = new HashMap<>();
+        for (String trsId: trsIds) {
             try {
-                entryPathToEntry.put(entryPath, workflowsApi.getPublishedEntryByPath(entryPath));
-                LOG.info("Retrieved entry '{}'", entryPath);
+                trsIdToEntry.put(trsId, workflowsApi.getPublishedEntryByPath(trsIdToPath(trsId)));
+                LOG.info("Retrieved entry '{}'", trsId);
             } catch (ApiException e) {
-                LOG.error("Unable to retrieve entry '{}'", entryPath, e);
+                LOG.error("Unable to retrieve entry '{}'", trsId, e);
             }
         }
 
@@ -344,7 +344,6 @@ public class CategorizerClient {
             final String trsId = categorization.get(CategorizationCsvHeaders.trsId);
             final String categoryId = categorization.get(CategorizationCsvHeaders.categoryId);
             final boolean isMember = Boolean.parseBoolean(categorization.get(CategorizationCsvHeaders.isMember));
-            final String entryPath = trsIdToPath(trsId);
 
             if (!isMember) {
                 LOG.info("Removing a member from a category is not yet supported, skipping entry {} from category {}", trsId, categoryId);
@@ -356,7 +355,7 @@ public class CategorizerClient {
                 LOG.info("No corresponding category '{}'", categoryId);
                 continue;
             }
-            final Entry entry = entryPathToEntry.get(entryPath);
+            final Entry entry = trsIdToEntry.get(trsId);
             if (entry == null) {
                 LOG.info("No corresponding entry '{}'", trsId);
                 continue;
