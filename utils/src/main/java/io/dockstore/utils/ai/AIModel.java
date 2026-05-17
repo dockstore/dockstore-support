@@ -106,24 +106,36 @@ public interface AIModel {
     record Prompt(List<Content> systemContent, List<Content> userContent, double temperature, int maxResponseTokens) {
         @SuppressWarnings("checkstyle:HiddenField")
         static final class Builder {
+            enum Mode { USER, SYSTEM }
+
             private List<Content> systemContent = new ArrayList<>();
             private List<Content> userContent = new ArrayList<>();
             private double temperature = 0.0;
             @SuppressWarnings("checkstyle:magicnumber")
             private int maxResponseTokens = 100;
+            private Mode mode = Mode.USER;
 
-            public Builder system(String text) {
-                systemContent.add(new Text(text));
+            public Builder user() {
+                mode = Mode.USER;
                 return this;
             }
 
+            public Builder system() {
+                mode = Mode.SYSTEM;
+                return this;
+            }
+
+            private List<Content> currentContent() {
+                return mode == Mode.SYSTEM ? systemContent : userContent;
+            }
+
             public Builder text(String text) {
-                userContent.add(new Text(text));
+                currentContent().add(new Text(text));
                 return this;
             }
 
             public Builder cache() {
-                userContent.add(new CacheMarker());
+                currentContent().add(new CacheMarker());
                 return this;
             }
 
