@@ -26,6 +26,16 @@ public abstract class BaseAIModel implements AIModel {
     }
 
     @Override
+    public double getPricePerCacheWriteToken() {
+        return aiModelType.getPricePerCacheWriteToken();
+    }
+
+    @Override
+    public double getPricePerCacheReadToken() {
+        return aiModelType.getPricePerCacheReadToken();
+    }
+
+    @Override
     public int getMaxContextLength() {
         return aiModelType.getMaxContextLength();
     }

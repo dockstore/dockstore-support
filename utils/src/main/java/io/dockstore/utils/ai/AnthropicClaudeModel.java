@@ -40,10 +40,13 @@ public class AnthropicClaudeModel extends BaseAIModel {
 
         final String aiResponse = claudeResponse.content().get(0).text();
         final String stopReason = claudeResponse.stopReason();
-        final long inputTokens = claudeResponse.usage().inputTokens();
+        final long uncachedInputTokens = claudeResponse.usage().inputTokens();
+        final long cacheReadTokens = claudeResponse.usage().cacheReadTokens();
+        final long cacheWriteTokens = claudeResponse.usage().cacheWriteTokens();
         final long outputTokens = claudeResponse.usage().outputTokens();
+        final double cost = this.calculatePrice(uncachedInputTokens, cacheReadTokens, cacheWriteTokens, outputTokens);
 
-        return new AIResponseInfo(aiResponse, false, inputTokens, outputTokens, this.calculatePrice(inputTokens, outputTokens), stopReason);
+        return new AIResponseInfo(aiResponse, false, uncachedInputTokens, cacheReadTokens, cacheWriteTokens, outputTokens, cost, stopReason);
     }
 
     // Format the request payload using the model's native structure.

@@ -36,6 +36,16 @@ public class LoggingAIModel implements AIModel {
     }
 
     @Override
+    public double getPricePerCacheWriteToken() {
+        return delegate.getPricePerCacheWriteToken();
+    }
+
+    @Override
+    public double getPricePerCacheReadToken() {
+        return delegate.getPricePerCacheReadToken();
+    }
+
+    @Override
     public int getMaxContextLength() {
         return delegate.getMaxContextLength();
     }
