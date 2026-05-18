@@ -1,8 +1,7 @@
 package io.dockstore.utils.ai;
 
-public class TotalCostAIModel implements AIModel {
+public class TotalCostAIModel extends DelegatingAIModel {
 
-    private final AIModel delegate;
     private final double costLimit;
     private double totalCost = 0.0;
     private long totalInputTokens = 0;
@@ -13,13 +12,13 @@ public class TotalCostAIModel implements AIModel {
     }
 
     public TotalCostAIModel(AIModel delegate, double costLimit) {
-        this.delegate = delegate;
+        super(delegate);
         this.costLimit = costLimit;
     }
 
     @Override
     public AIResponseInfo submitPrompt(Prompt prompt) {
-        AIResponseInfo response = delegate.submitPrompt(prompt);
+        AIResponseInfo response = super.submitPrompt(prompt);
         totalCost += response.cost();
         totalInputTokens += response.inputTokens();
         totalOutputTokens += response.outputTokens();
@@ -28,36 +27,6 @@ public class TotalCostAIModel implements AIModel {
                 String.format("Cost limit of $%.6f exceeded: total cost is $%.6f", costLimit, totalCost));
         }
         return response;
-    }
-
-    @Override
-    public String getModelName() {
-        return delegate.getModelName();
-    }
-
-    @Override
-    public double getPricePerInputToken() {
-        return delegate.getPricePerInputToken();
-    }
-
-    @Override
-    public double getPricePerOutputToken() {
-        return delegate.getPricePerOutputToken();
-    }
-
-    @Override
-    public double getPricePerCacheWriteToken() {
-        return delegate.getPricePerCacheWriteToken();
-    }
-
-    @Override
-    public double getPricePerCacheReadToken() {
-        return delegate.getPricePerCacheReadToken();
-    }
-
-    @Override
-    public int getMaxContextLength() {
-        return delegate.getMaxContextLength();
     }
 
     public double getTotalCost() {
