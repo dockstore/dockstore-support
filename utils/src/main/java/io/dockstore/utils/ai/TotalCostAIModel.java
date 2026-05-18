@@ -1,6 +1,6 @@
 package io.dockstore.utils.ai;
 
-public class LimitAIModel implements AIModel {
+public class TotalCostAIModel implements AIModel {
 
     private final AIModel delegate;
     private final double costLimit;
@@ -8,11 +8,11 @@ public class LimitAIModel implements AIModel {
     private long totalInputTokens = 0;
     private long totalOutputTokens = 0;
 
-    public LimitAIModel(AIModel delegate) {
+    public TotalCostAIModel(AIModel delegate) {
         this(delegate, Double.POSITIVE_INFINITY);
     }
 
-    public LimitAIModel(AIModel delegate, double costLimit) {
+    public TotalCostAIModel(AIModel delegate, double costLimit) {
         this.delegate = delegate;
         this.costLimit = costLimit;
     }
