@@ -196,8 +196,8 @@ public class TopicGeneratorClient {
                             + " in one sentence that starts with a present tense verb in the <summary> tags. Use a maximum of 150 characters.\n<content>"
                             + descriptorFile.getContent() + "</content>";
                     final double temperature = 0.5; // The amount of randomness injected into the response. Ranges from 0 to 1. Pick 0.5 as the middle ground between predictability and creativity.
-                    final int maxResponseTokens = 100; // One token is roughly 4 characters. Using 100 tokens because setting it too low might truncate the response.
-                    AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, temperature, maxResponseTokens);
+                    final int outputTokens = 100; // One token is roughly 4 characters. Using 100 tokens because setting it too low might truncate the response.
+                    AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, temperature, outputTokens);
                     String cleanedResponse = removeSummaryTagsFromTopic(aiResponseInfo.aiResponse());
                     aiResponseInfo = new AIResponseInfo(cleanedResponse, aiResponseInfo.isTruncated(), aiResponseInfo.inputTokens(), aiResponseInfo.outputTokens(), aiResponseInfo.cost(), aiResponseInfo.stopReason());
                     boolean isCensoredTopic = isSuspiciousTopic(aiResponseInfo.aiResponse());

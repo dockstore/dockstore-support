@@ -16,14 +16,14 @@ public interface AIModel {
      * Submits a prompt to the AI model and returns the response along with usage metadata.
      * @param prompt the text prompt to send to the model
      * @param temperature controls randomness of the response; higher values produce more varied output
-     * @param maxResponseTokens the maximum number of tokens to generate in the response
+     * @param outputTokens the maximum number of tokens to generate in the response
      * @return an {@link AIResponseInfo} containing the response text, truncation status, token counts, cost, and stop reason
      */
-    default AIResponseInfo submitPrompt(String prompt, double temperature, int maxResponseTokens) {
+    default AIResponseInfo submitPrompt(String prompt, double temperature, int outputTokens) {
         return submitPrompt(new Prompt.Builder()
             .text(prompt)
             .temperature(temperature)
-            .maxResponseTokens(maxResponseTokens)
+            .outputTokens(outputTokens)
             .build());
     }
 
@@ -135,7 +135,7 @@ public interface AIModel {
     record CacheMarker() implements Content {
     }
 
-    record Prompt(List<Content> systemContent, List<Content> userContent, double temperature, int maxResponseTokens) {
+    record Prompt(List<Content> systemContent, List<Content> userContent, double temperature, int outputTokens) {
         @SuppressWarnings("checkstyle:HiddenField")
         static final class Builder {
             enum Mode { USER, SYSTEM }
@@ -144,7 +144,7 @@ public interface AIModel {
             private List<Content> userContent = new ArrayList<>();
             private double temperature = 0.0;
             @SuppressWarnings("checkstyle:magicnumber")
-            private int maxResponseTokens = 100;
+            private int outputTokens = 100;
             private Mode mode = Mode.USER;
 
             public Builder user() {
@@ -176,13 +176,13 @@ public interface AIModel {
                 return this;
             }
 
-            public Builder maxResponseTokens(int maxResponseTokens) {
-                this.maxResponseTokens = maxResponseTokens;
+            public Builder outputTokens(int outputTokens) {
+                this.outputTokens = outputTokens;
                 return this;
             }
 
             public Prompt build() {
-                return new Prompt(systemContent, userContent, temperature, maxResponseTokens);
+                return new Prompt(systemContent, userContent, temperature, outputTokens);
             }
         }
     }

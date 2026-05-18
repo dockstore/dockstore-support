@@ -56,7 +56,7 @@ public class AnthropicClaudeModel extends BaseAIModel {
         List<ClaudeRequest.Message> userMessages = List.of(toClaudeUserMessage(prompt.userContent()));
         ClaudeRequest claudeRequest = new ClaudeRequest(
             ANTHROPIC_API_VERSION,
-            prompt.maxResponseTokens(),
+            prompt.outputTokens(),
             prompt.temperature(),
             systemContent,
             userMessages);
