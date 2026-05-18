@@ -41,7 +41,7 @@ import io.dockstore.openapi.client.model.ToolVersion.DescriptorTypeEnum;
 import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModel.AIResponseInfo;
 import io.dockstore.utils.ai.AIModelFactory;
-import io.dockstore.utils.ai.AIModelType;
+import io.dockstore.utils.ai.ClaudeAIModelType;
 import io.dockstore.utils.ai.LoggingAIModel;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -141,7 +141,7 @@ public class CategorizerClient {
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
         final List<String> ontologyPaths = categorizeEntriesCommand.getOntologyJsonPaths();
         final Ontology ontology = combineOntologies(ontologyPaths.stream().map(CategorizerClient::readOntology).toList());
-        final AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
+        final ClaudeAIModelType aiModelType = categorizeEntriesCommand.getAiModel();
         final String inputFileName = categorizeEntriesCommand.getEntriesCsvFilePath();
 
         List<TrsIdAndVersionId> categorizationCandidates = getCategorizationCandidatesFromFile(inputFileName);

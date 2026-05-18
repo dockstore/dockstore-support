@@ -33,8 +33,8 @@ import io.dockstore.topicgenerator.helper.CSVHelper;
 import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModel.AIResponseInfo;
 import io.dockstore.utils.ai.AIModelFactory;
-import io.dockstore.utils.ai.AIModelType;
 import io.dockstore.utils.ai.ChuckNorrisFilter;
+import io.dockstore.utils.ai.ClaudeAIModelType;
 import io.dockstore.utils.ai.StringFilter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -118,7 +118,7 @@ public class TopicGeneratorClient {
         final ApiClient apiClient = setupApiClient(dockstoreServerUrl, topicGeneratorConfig.dockstoreToken());
         final Ga4Ghv20Api ga4Ghv20Api = new Ga4Ghv20Api(apiClient);
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
-        final AIModelType aiModelType = generateTopicsCommand.getAiModel();
+        final ClaudeAIModelType aiModelType = generateTopicsCommand.getAiModel();
         final String inputFileName = generateTopicsCommand.getEntriesCsvFilePath();
 
         List<TrsIdAndVersionId> aiTopicCandidates;

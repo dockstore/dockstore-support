@@ -5,7 +5,7 @@ public final class AIModelFactory {
     private AIModelFactory() {
     }
 
-    public static AIModel createModel(AIModelType type) {
+    public static AIModel createModel(ClaudeAIModelType type) {
         return new AnthropicClaudeModel(type);
     }
 }
