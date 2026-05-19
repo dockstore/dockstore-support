@@ -170,14 +170,16 @@ public class CategorizerClient {
                 try {
                     // Retrieve data about the entry.
                     final EntryData entryData = retrieveEntryData(apiClient, trsId, version);
-                    // For each Ontology handler, determine the nodes it covers and classify into the nodes that are recommended for annotation.
+                    // For each ontology handler, categorize the entry into the appropriate nodes (categories).
                     for (OntologyHandler handler: ontologyHandlers) {
+                        // Determine the "recommended for annotation" nodes that the handler covers.
                         List<Ontology.Node> coveredNodes = handler.coverage(ontology);
                         List<Ontology.Node> candidateNodes = coveredNodes.stream().filter(Ontology.Node::recommendedForAnnotation).toList();
                         if (candidateNodes.isEmpty()) {
                             continue;
                         }
                         LOG.info("{} handles {} nodes", handler, candidateNodes.size());
+                        // Determine which nodes (categories) match the entry, and write the matching node information to the CSV.
                         List<Ontology.Node> matchingNodes = handler.categorize(candidateNodes, entryData, aiModel);
                         for (Ontology.Node matchingNode: matchingNodes) {
                             categorizationsWriter.write(new Categorization(entry.trsId(), entry.version(), matchingNode.id(), true));
@@ -195,7 +197,8 @@ public class CategorizerClient {
     }
 
     private void checkOverlappingHandlers(List<OntologyHandler> handlers, Ontology ontology) {
-        // Calculate the IDs of the recommended-for-annotation nodes that are covered by each Ontology Handler, and concatenate them into a single list.
+        // For each ontology handler, calculate the IDs of the recommended-for-annotation nodes it covers.
+        // Concatenate the IDs into a single list.
         List<String> ids = handlers.stream().flatMap(h -> h.coverage(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).map(Ontology.Node::id)).toList();
         // If there are duplicate IDs, multiple Ontology handlers cover the same recommended-for-annotation node.
         if (ids.size() != new HashSet<>(ids).size()) {
@@ -218,7 +221,7 @@ public class CategorizerClient {
         final int max = listStaleEntriesCommand.getMax();
         final long intervalSeconds = listStaleEntriesCommand.getIntervalSeconds();
         final List<TrsIdAndVersion> staleEntries = getStaleEntriesFromDockstore(entriesApi, intervalSeconds, max);
-        writeEntriesToStdout(staleEntries);
+        writeCsvToStdout(staleEntries, TrsIdAndVersion.class);
     }
 
     private void listAllEntries(CategorizerConfig categorizerConfig, ListAllEntriesCommand listAllEntriesCommand) {
@@ -226,7 +229,7 @@ public class CategorizerClient {
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
         final int max = listAllEntriesCommand.getMax();
         List<TrsIdAndVersion> allEntries = getAllEntriesFromDockstore(extendedGa4GhApi, max);
-        writeEntriesToStdout(allEntries);
+        writeCsvToStdout(allEntries, TrsIdAndVersion.class);
     }
 
     private List<TrsIdAndVersion> getStaleEntriesFromDockstore(EntriesApi entriesApi, long intervalSeconds, int maxEntries) {
@@ -259,9 +262,9 @@ public class CategorizerClient {
         return new TrsIdAndVersion(e.getEntryLite().getTrsId(), e.getVersionName());
     }
 
-    private void writeEntriesToStdout(List<TrsIdAndVersion> candidates) {
-        try (Writer writer = stdoutWriter(); CsvWriter<TrsIdAndVersion> csvWriter = new CsvWriter<>(writer, TrsIdAndVersion.class)) {
-            csvWriter.writeAll(candidates);
+    private <T> void writeCsvToStdout(Iterable<T> items, Class<T> pojoClass) {
+        try (Writer writer = stdoutWriter(); CsvWriter<T> csvWriter = new CsvWriter<>(writer, pojoClass)) {
+            csvWriter.writeAll(items);
         } catch (IOException e) {
             exceptionMessage(e, "Unable to write CSV output", IO_ERROR);
         }
@@ -409,12 +412,8 @@ public class CategorizerClient {
             collections = collections.stream().filter(c -> ontologyIds.contains(c.getName())).toList();
             LOG.info("Filtered to {} collections present in ontologies", collections.size());
         }
-        try (Writer writer = stdoutWriter(); CsvWriter<CategoryId> csvWriter = new CsvWriter<>(writer, CategoryId.class)) {
-            List<CategoryId> categoryIds = collections.stream().map(c -> new CategoryId(c.getName())).toList();
-            csvWriter.writeAll(categoryIds);
-        } catch (IOException e) {
-            exceptionMessage(e, "Unable to write CSV output", IO_ERROR);
-        }
+        List<CategoryId> categoryIds = collections.stream().map(c -> new CategoryId(c.getName())).toList();
+        writeCsvToStdout(categoryIds, CategoryId.class);
     }
 
     private void deleteCategories(CategorizerConfig categorizerConfig, DeleteCategoriesCommand deleteCategoriesCommand) {
