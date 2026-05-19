@@ -11,19 +11,18 @@ import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.SequenceWriter;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.dockstore.categorizer.Ontology;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand;
-import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.CategorizationCsvHeaders;
-import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.EntryCsvHeaders;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CreateCategoriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.DeleteCategoriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListAllEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListCategoriesCommand;
-import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListCategoriesCommand.CategoryCsvHeaders;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListStaleEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.PopulateCategoriesCommand;
 import io.dockstore.openapi.client.ApiClient;
@@ -43,15 +42,12 @@ import io.dockstore.utils.EntryUtils;
 import io.dockstore.utils.IOUtils;
 import io.dockstore.utils.RetrievalUtils;
 import io.dockstore.utils.ai.AIModel;
-import io.dockstore.utils.ai.AIModel.AIResponseInfo;
 import io.dockstore.utils.ai.AIModelFactory;
 import io.dockstore.utils.ai.AIModelType;
 import io.dockstore.utils.ai.LoggingAIModel;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -67,9 +63,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.IterableUtils;
 import org.apache.commons.configuration2.INIConfiguration;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -169,13 +162,13 @@ public class CategorizerClient {
         checkOverlappingHandlers(ontologyHandlers, ontology);
 
         int numberOfFailures = 0;
-        try (CSVPrinter categorizationsCsvPrinter = createCsvPrinter(new PrintWriter(System.out), CategorizationCsvHeaders.class)) {
+        try (SequenceWriter categorizationsWriter = IOUtils.writeCsv(new OutputStreamWriter(System.out, StandardCharsets.UTF_8), Categorization.class)) {
             for (TrsIdAndVersion entry: entries) {
                 final String trsId = entry.trsId();
-                final String versionId = entry.versionId();
+                final String version = entry.version();
                 try {
                     // Retrieve data about the entry.
-                    final EntryData entryData = retrieveEntryData(apiClient, trsId, versionId);
+                    final EntryData entryData = retrieveEntryData(apiClient, trsId, version);
                     // For each Ontology handler, determine the nodes it covers and classify into the nodes that are recommended for annotation.
                     for (OntologyHandler handler: ontologyHandlers) {
                         List<Ontology.Node> coveredNodes = handler.coverage(ontology);
@@ -186,11 +179,11 @@ public class CategorizerClient {
                         LOG.info("{} handles {} nodes", handler, candidateNodes.size());
                         List<Ontology.Node> matchingNodes = handler.categorize(candidateNodes, entryData, aiModel);
                         for (Ontology.Node matchingNode: matchingNodes) {
-                            categorizationsCsvPrinter.printRecord(entry.trsId(), entry.versionId(), matchingNode.id(), true);
+                            categorizationsWriter.write(new Categorization(entry.trsId(), entry.version(), matchingNode.id(), true));
                         }
                     }
                 } catch (Exception ex) {
-                    LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
+                    LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, version, ex);
                     numberOfFailures++;
                 }
             }
@@ -210,9 +203,9 @@ public class CategorizerClient {
     }
 
 
-    private Iterable<CSVRecord> readCsv(String path, Class<? extends Enum<?>> csvHeaders) {
+    private <T> Iterable<T> readCsv(String path, Class<T> pojoClass) {
         try {
-            return IOUtils.readCsv(path, csvHeaders);
+            return IOUtils.readCsv(path, pojoClass);
         } catch (IOException e) {
             exceptionMessage(e, "Unable to read CSV file: " + path, IO_ERROR);
             return List.of();
@@ -220,13 +213,7 @@ public class CategorizerClient {
     }
 
     private List<TrsIdAndVersion> readEntries(String path) {
-        List<TrsIdAndVersion> entries = new ArrayList<>();
-        final Iterable<CSVRecord> entriesCsvRecords = readCsv(path, EntryCsvHeaders.class);
-        for (CSVRecord entry: entriesCsvRecords) {
-            final String trsId = entry.get(EntryCsvHeaders.trsId);
-            final String versionId = entry.get(EntryCsvHeaders.version);
-            entries.add(new TrsIdAndVersion(trsId, versionId));
-        }
+        List<TrsIdAndVersion> entries = IterableUtils.toList(readCsv(path, TrsIdAndVersion.class));
         LOG.info("Read {} entries from input file {}", entries.size(), path);
         return entries;
     }
@@ -279,12 +266,10 @@ public class CategorizerClient {
     }
 
     private void writeEntries(List<TrsIdAndVersion> candidates, Writer writer) {
-        try {
-            CSVPrinter csvPrinter = new CSVPrinter(writer, CSVFormat.DEFAULT.builder().setHeader(EntryCsvHeaders.class).build());
+        try (SequenceWriter csvWriter = IOUtils.writeCsv(writer, TrsIdAndVersion.class)) {
             for (TrsIdAndVersion candidate: candidates) {
-                csvPrinter.printRecord(candidate.trsId(), candidate.versionId());
+                csvWriter.write(candidate);
             }
-            writer.flush();
         } catch (IOException e) {
             exceptionMessage(e, "Unable to write CSV output", IO_ERROR);
         }
@@ -303,7 +288,7 @@ public class CategorizerClient {
 
     private void populateCategories(CategorizerConfig categorizerConfig, PopulateCategoriesCommand populateCategoriesCommand) {
         String path = populateCategoriesCommand.getCategorizationsCsvPath();
-        final List<CSVRecord> categorizations = IterableUtils.toList(readCsv(path, CategorizationCsvHeaders.class));
+        final List<Categorization> categorizations = IterableUtils.toList(readCsv(path, Categorization.class));
 
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final OrganizationsApi organizationsApi = new OrganizationsApi(apiClient);
@@ -313,7 +298,7 @@ public class CategorizerClient {
 
         // Map category IDs to the corresponding Dockstore Collections.
         // We'll use this later to avoid some redundant requests.
-        final List<String> categoryIds = categorizations.stream().map(r -> r.get(CategorizationCsvHeaders.categoryId)).distinct().toList();
+        final List<String> categoryIds = categorizations.stream().map(Categorization::categoryId).distinct().toList();
         final Map<String, Collection> categoryIdToCollection = new HashMap<>();
         for (String categoryId: categoryIds) {
             try {
@@ -326,7 +311,7 @@ public class CategorizerClient {
 
         // Map entry paths to the corresponding Dockstore Entries.
         // We'll use this later to avoid some redundant requests.
-        final List<String> trsIds = categorizations.stream().map(r -> r.get(CategorizationCsvHeaders.trsId)).distinct().toList();
+        final List<String> trsIds = categorizations.stream().map(Categorization::trsId).distinct().toList();
         final Map<String, Entry> trsIdToEntry = new HashMap<>();
         for (String trsId: trsIds) {
             try {
@@ -337,10 +322,10 @@ public class CategorizerClient {
             }
         }
 
-        for (CSVRecord categorization: categorizations) {
-            final String trsId = categorization.get(CategorizationCsvHeaders.trsId);
-            final String categoryId = categorization.get(CategorizationCsvHeaders.categoryId);
-            final boolean isMember = Boolean.parseBoolean(categorization.get(CategorizationCsvHeaders.isMember));
+        for (Categorization categorization: categorizations) {
+            final String trsId = categorization.trsId();
+            final String categoryId = categorization.categoryId();
+            final boolean isMember = categorization.isMember();
 
             if (!isMember) {
                 LOG.info("Removing a member from a category is not yet supported, skipping entry {} from category {}", trsId, categoryId);
@@ -428,9 +413,9 @@ public class CategorizerClient {
             collections = collections.stream().filter(c -> ontologyIds.contains(c.getName())).toList();
             LOG.info("Filtered to {} collections present in ontologies", collections.size());
         }
-        try (CSVPrinter csvPrinter = createCsvPrinter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8), CategoryCsvHeaders.class)) {
+        try (SequenceWriter csvWriter = IOUtils.writeCsv(new OutputStreamWriter(System.out, StandardCharsets.UTF_8), CategoryId.class)) {
             for (Collection collection: collections) {
-                csvPrinter.printRecord(collection.getName());
+                csvWriter.write(new CategoryId(collection.getName()));
             }
         } catch (IOException e) {
             exceptionMessage(e, "Unable to write CSV output", IO_ERROR);
@@ -440,8 +425,8 @@ public class CategorizerClient {
     private void deleteCategories(CategorizerConfig categorizerConfig, DeleteCategoriesCommand deleteCategoriesCommand) {
         final String path = deleteCategoriesCommand.getCategoriesCsvPath();
         final List<String> categoryIds = new ArrayList<>();
-        for (CSVRecord record: readCsv(path, CategoryCsvHeaders.class)) {
-            categoryIds.add(record.get(CategoryCsvHeaders.categoryId));
+        for (CategoryId record: readCsv(path, CategoryId.class)) {
+            categoryIds.add(record.categoryId());
         }
         LOG.info("Read {} category IDs from {}", categoryIds.size(), path);
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
@@ -507,23 +492,15 @@ public class CategorizerClient {
         return combined;
     }
 
-    private static CSVPrinter createCsvPrinter(String fileName, Class<? extends Enum<?>> csvHeaders) throws IOException {
-        return createCsvPrinter(new FileWriter(fileName, StandardCharsets.UTF_8), csvHeaders);
+    @JsonPropertyOrder({"trsId", "version"})
+    public record TrsIdAndVersion(String trsId, String version) {
     }
 
-    private static CSVPrinter createCsvPrinter(Writer writer, Class<? extends Enum<?>> csvHeaders) throws IOException {
-        return new CSVPrinter(writer, CSVFormat.DEFAULT.builder().setHeader(csvHeaders).build());
+    @JsonPropertyOrder({"trsId", "version", "categoryId", "isMember"})
+    public record Categorization(String trsId, String version, String categoryId, boolean isMember) {
     }
 
-    private static void writeCategoryRecord(CSVPrinter csvPrinter, String trsId, String versionId, FileWrapper descriptorFile, AIResponseInfo aiResponseInfo) {
-        String descriptorChecksum = descriptorFile.getChecksum().isEmpty() ? "" : descriptorFile.getChecksum().get(0).getChecksum();
-        try {
-            csvPrinter.printRecord(trsId, versionId, descriptorFile.getUrl(), descriptorChecksum, aiResponseInfo.isTruncated(), aiResponseInfo.inputTokens(), aiResponseInfo.outputTokens(), aiResponseInfo.cost(), aiResponseInfo.stopReason(), aiResponseInfo.aiResponse());
-        } catch (IOException e) {
-            LOG.error("Unable to write CSV record to file, skipping", e);
-        }
-    }
-
-    public record TrsIdAndVersion(String trsId, String versionId) {
+    @JsonPropertyOrder({"categoryId"})
+    public record CategoryId(String categoryId) {
     }
 }

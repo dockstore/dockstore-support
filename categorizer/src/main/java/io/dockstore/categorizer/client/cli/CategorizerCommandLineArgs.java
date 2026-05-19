@@ -47,34 +47,6 @@ public class CategorizerCommandLineArgs {
             return aiModel;
         }
 
-        /**
-         * Headers for the input data file of entries to categorize.
-         */
-        public enum EntryCsvHeaders {
-            trsId, version
-        }
-
-        /**
-         * Headers for the output file containing the AI-generated categories.
-         */
-        public enum CategorizationCsvHeaders {
-            trsId,
-            version,
-            categoryId,
-            isMember
-            /**
-             * TODO: Add back some diagnostic output?
-             */
-        }
-
-        /**
-         * Headers for entries that failed to have categories generated.
-         */
-        public enum ErrorsCsvHeaders {
-            trsId,
-            version,
-            errorMessage
-        }
     }
 
     @Parameters(commandNames = { "list-all-entries" }, commandDescription = "List all published entries on Dockstore.")
@@ -138,9 +110,6 @@ public class CategorizerCommandLineArgs {
             return ontologyJsonPaths;
         }
 
-        public enum CategoryCsvHeaders {
-            categoryId
-        }
     }
 
     @Parameters(commandNames = { "delete-categories" }, commandDescription = "Delete the specified list of AI-managed categories from Dockstore.")
