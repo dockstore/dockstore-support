@@ -3,6 +3,7 @@ package io.dockstore.categorizer.client.cli;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import io.dockstore.utils.ai.AIModelType;
+import io.dockstore.utils.ai.AIModelTypeConverter;
 import io.dockstore.utils.ai.ClaudeAIModelType;
 import java.io.File;
 import java.util.List;
@@ -33,7 +34,7 @@ public class CategorizerCommandLineArgs {
         @Parameter(names = {"-o", "--ontology"}, required = true, description = "List of paths to ontology JSON files")
         private List<String> ontologyJsonPaths;
 
-        @Parameter(names = {"-a", "--ai"}, description = "The AI model to use")
+        @Parameter(names = {"-a", "--ai"}, description = "The AI model to use", converter = AIModelTypeConverter.class)
         private AIModelType aiModel = ClaudeAIModelType.CLAUDE_4_5_HAIKU;
 
         @Parameter(names = {"-m", "--max"}, description = "The max number of entries to process. If specified, the value must be greater than 0")

@@ -122,6 +122,10 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>aws-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
