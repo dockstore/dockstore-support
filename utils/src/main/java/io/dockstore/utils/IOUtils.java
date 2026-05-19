@@ -1,15 +1,10 @@
 package io.dockstore.utils;
 
-import com.fasterxml.jackson.databind.MappingIterator;
-import com.fasterxml.jackson.databind.SequenceWriter;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import io.dockstore.common.S3ClientHelper;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -40,30 +35,4 @@ public final class IOUtils {
         }
     }
 
-    public static <T> Iterable<T> readCsv(Reader reader, Class<T> pojoClass) throws IOException {
-        CsvMapper mapper = new CsvMapper();
-        CsvSchema schema = mapper.schemaFor(pojoClass).withHeader();
-        MappingIterator<T> iterator = mapper.readerFor(pojoClass).with(schema).readValues(reader);
-        return new Iterable<>() {
-            private boolean consumed = false;
-            @Override
-            public java.util.Iterator<T> iterator() {
-                if (consumed) {
-                    throw new IllegalStateException("iterator already retrieved");
-                }
-                consumed = true;
-                return iterator;
-            }
-        };
-    }
-
-    public static <T> Iterable<T> readCsv(String path, Class<T> pojoClass) throws IOException {
-        return readCsv(reader(path), pojoClass);
-    }
-
-    public static <T> SequenceWriter writeCsv(Writer writer, Class<T> pojoClass) throws IOException {
-        CsvMapper mapper = new CsvMapper();
-        CsvSchema schema = mapper.schemaFor(pojoClass).withHeader();
-        return mapper.writerFor(pojoClass).with(schema).writeValues(writer);
-    }
 }
