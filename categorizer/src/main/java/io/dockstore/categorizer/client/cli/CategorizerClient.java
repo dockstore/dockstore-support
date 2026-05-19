@@ -12,10 +12,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.dockstore.categorizer.Ontology;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CreateCategoriesCommand;
@@ -46,7 +42,6 @@ import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModelFactory;
 import io.dockstore.utils.ai.AIModelType;
 import io.dockstore.utils.ai.LoggingAIModel;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
@@ -63,7 +58,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.configuration2.INIConfiguration;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -434,53 +428,19 @@ public class CategorizerClient {
         }
     }
 
-    /**
-     * Logs the file name if the number of results is greater than 0. Otherwise deletes the file.
-     */
-    private void logFile(int numberOfResults, String resultsFileName, String logMessage) {
-        if (numberOfResults == 0) {
-            FileUtils.deleteQuietly(FileUtils.getFile(resultsFileName));
-        } else {
-            LOG.info("{}", logMessage);
-        }
-    }
-
-    private static Ontology readOntology(String path) {
-        try (Reader reader = new FileReader(path, StandardCharsets.UTF_8)) {
-            JsonArray jsonArray = JsonParser.parseReader(reader).getAsJsonArray();
-            Ontology ontology = new Ontology();
-            for (JsonElement element: jsonArray) {
-                JsonObject obj = element.getAsJsonObject();
-                String id = obj.get("id").getAsString();
-                String label = obj.get("label").getAsString();
-                String definition = obj.get("definition").getAsString();
-                String source = obj.get("source").getAsString();
-                boolean recommendedForAnnotation = obj.get("recommended_for_annotation").getAsBoolean();
-                List<String> parentIds = new ArrayList<>();
-                for (JsonElement parent: obj.get("parent_ids").getAsJsonArray()) {
-                    parentIds.add(parent.getAsString());
+    private static Ontology readOntologies(List<String> paths) {
+        try {
+            List<Ontology> ontologies = new ArrayList<>();
+            for (String path : paths) {
+                try (Reader reader = IOUtils.reader(path)) {
+                    ontologies.add(Ontology.read(reader));
                 }
-                ontology.addNode(id, label, definition, parentIds, source, recommendedForAnnotation);
             }
-            return ontology;
+            return Ontology.combine(ontologies);
         } catch (IOException e) {
             exceptionMessage(e, "Unable to read ontology file", IO_ERROR);
             throw new RuntimeException("aborting");
         }
-    }
-
-    private static Ontology readOntologies(List<String> paths) {
-        return combineOntologies(paths.stream().map(CategorizerClient::readOntology).toList());
-    }
-
-    private static Ontology combineOntologies(List<Ontology> ontologies) {
-        Ontology combined = new Ontology();
-        for (Ontology ontology: ontologies) {
-            for (Ontology.Node node: ontology.getNodes()) {
-                combined.addNode(node.id(), node.label(), node.definition(), node.parentIds(), node.source(), node.recommendedForAnnotation());
-            }
-        }
-        return combined;
     }
 
     @JsonPropertyOrder({"trsId", "version"})
