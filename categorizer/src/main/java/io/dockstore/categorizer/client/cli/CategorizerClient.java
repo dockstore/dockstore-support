@@ -145,7 +145,8 @@ public class CategorizerClient {
         final Ontology ontology = readOntologies(ontologyPaths);
 
         final String entriesPath = categorizeEntriesCommand.getEntriesCsvFilePath();
-        List<TrsIdAndVersion> entries = readEntries(entriesPath);
+        List<TrsIdAndVersion> entries = readCsv(entriesPath, TrsIdAndVersion.class);
+        LOG.info("Read {} entries from input file {}", entries.size(), entriesPath);
 
         AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
         AIModel aiModel = new LoggingAIModel(AIModelFactory.createModel(aiModelType));
@@ -162,7 +163,7 @@ public class CategorizerClient {
         checkOverlappingHandlers(ontologyHandlers, ontology);
 
         int numberOfFailures = 0;
-        try (CsvWriter<Categorization> categorizationsWriter = new CsvWriter<>(new OutputStreamWriter(System.out, StandardCharsets.UTF_8), Categorization.class)) {
+        try (Writer writer = stdoutWriter(); CsvWriter<Categorization> categorizationsWriter = new CsvWriter<>(writer, Categorization.class)) {
             for (TrsIdAndVersion entry: entries) {
                 final String trsId = entry.trsId();
                 final String version = entry.version();
@@ -202,13 +203,6 @@ public class CategorizerClient {
         }
     }
 
-
-    private List<TrsIdAndVersion> readEntries(String path) {
-        List<TrsIdAndVersion> entries = readCsv(path, TrsIdAndVersion.class);
-        LOG.info("Read {} entries from input file {}", entries.size(), path);
-        return entries;
-    }
-
     private <T> List<T> readCsv(String path, Class<T> pojoClass) {
         try (Reader reader = IOUtils.reader(path); CsvReader<T> csvReader = new CsvReader<>(reader, pojoClass)) {
             return csvReader.readAll();
@@ -224,7 +218,7 @@ public class CategorizerClient {
         final int max = listStaleEntriesCommand.getMax();
         final long intervalSeconds = listStaleEntriesCommand.getIntervalSeconds();
         final List<TrsIdAndVersion> staleEntries = getStaleEntriesFromDockstore(entriesApi, intervalSeconds, max);
-        writeEntries(staleEntries, new OutputStreamWriter(System.out, StandardCharsets.UTF_8));
+        writeEntriesToStdout(staleEntries);
     }
 
     private void listAllEntries(CategorizerConfig categorizerConfig, ListAllEntriesCommand listAllEntriesCommand) {
@@ -232,7 +226,7 @@ public class CategorizerClient {
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
         final int max = listAllEntriesCommand.getMax();
         List<TrsIdAndVersion> allEntries = getAllEntriesFromDockstore(extendedGa4GhApi, max);
-        writeEntries(allEntries, new OutputStreamWriter(System.out, StandardCharsets.UTF_8));
+        writeEntriesToStdout(allEntries);
     }
 
     private List<TrsIdAndVersion> getStaleEntriesFromDockstore(EntriesApi entriesApi, long intervalSeconds, int maxEntries) {
@@ -265,12 +259,16 @@ public class CategorizerClient {
         return new TrsIdAndVersion(e.getEntryLite().getTrsId(), e.getVersionName());
     }
 
-    private void writeEntries(List<TrsIdAndVersion> candidates, Writer writer) {
-        try (CsvWriter<TrsIdAndVersion> csvWriter = new CsvWriter<>(writer, TrsIdAndVersion.class)) {
+    private void writeEntriesToStdout(List<TrsIdAndVersion> candidates) {
+        try (Writer writer = stdoutWriter(); CsvWriter<TrsIdAndVersion> csvWriter = new CsvWriter<>(writer, TrsIdAndVersion.class)) {
             csvWriter.writeAll(candidates);
         } catch (IOException e) {
             exceptionMessage(e, "Unable to write CSV output", IO_ERROR);
         }
+    }
+
+    private Writer stdoutWriter() {
+        return new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
     }
 
     private EntryData retrieveEntryData(ApiClient apiClient, String trsId, String versionId) throws ApiException {
@@ -411,10 +409,9 @@ public class CategorizerClient {
             collections = collections.stream().filter(c -> ontologyIds.contains(c.getName())).toList();
             LOG.info("Filtered to {} collections present in ontologies", collections.size());
         }
-        try (CsvWriter<CategoryId> csvWriter = new CsvWriter<>(new OutputStreamWriter(System.out, StandardCharsets.UTF_8), CategoryId.class)) {
-            for (Collection collection: collections) {
-                csvWriter.write(new CategoryId(collection.getName()));
-            }
+        try (Writer writer = stdoutWriter(); CsvWriter<CategoryId> csvWriter = new CsvWriter<>(writer, CategoryId.class)) {
+            List<CategoryId> categoryIds = collections.stream().map(c -> new CategoryId(c.getName())).toList();
+            csvWriter.writeAll(categoryIds);
         } catch (IOException e) {
             exceptionMessage(e, "Unable to write CSV output", IO_ERROR);
         }
