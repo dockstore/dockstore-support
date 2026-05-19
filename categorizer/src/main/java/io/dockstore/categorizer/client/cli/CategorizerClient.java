@@ -368,13 +368,13 @@ public class CategorizerClient {
             final Collection collection = new Collection();
             collection.setName(node.id());
             collection.setDisplayName(node.label());
-            collection.setDescription(node.definition());
+            collection.setTopic(node.definition());
             collection.putMetadataItem("source", node.source());
             try {
                 organizationsApi.createCollection(collection, organization.getId());
-                LOG.info("Created collection for node {}", node.id());
+                LOG.info("Created category for node {}", node.id());
             } catch (ApiException e) {
-                LOG.error("Unable to create collection for node {}, skipping", node.id(), e);
+                LOG.error("Unable to create category for node {}, skipping", node.id(), e);
             }
         }
     }
