@@ -19,10 +19,11 @@ import io.dockstore.categorizer.Ontology;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.CategorizationCsvHeaders;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.EntryCsvHeaders;
-import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CategorizeEntriesCommand.ErrorsCsvHeaders;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.CreateCategoriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.DeleteCategoriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListAllEntriesCommand;
+import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListCategoriesCommand;
+import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListCategoriesCommand.CategoryCsvHeaders;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListStaleEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.PopulateCategoriesCommand;
 import io.dockstore.openapi.client.ApiClient;
@@ -62,6 +63,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.commons.collections4.IterableUtils;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.csv.CSVFormat;
@@ -86,12 +89,14 @@ public class CategorizerClient {
         final CategorizeEntriesCommand categorizeEntriesCommand = new CategorizeEntriesCommand();
         final PopulateCategoriesCommand populateCategoriesCommand = new PopulateCategoriesCommand();
         final CreateCategoriesCommand createCategoriesCommand = new CreateCategoriesCommand();
+        final ListCategoriesCommand listCategoriesCommand = new ListCategoriesCommand();
         final DeleteCategoriesCommand deleteCategoriesCommand = new DeleteCategoriesCommand();
-        jCommander.addCommand(categorizeEntriesCommand);
-        jCommander.addCommand(listStaleEntriesCommand);
-        jCommander.addCommand(populateCategoriesCommand);
         jCommander.addCommand(listAllEntriesCommand);
+        jCommander.addCommand(listStaleEntriesCommand);
+        jCommander.addCommand(categorizeEntriesCommand);
+        jCommander.addCommand(populateCategoriesCommand);
         jCommander.addCommand(createCategoriesCommand);
+        jCommander.addCommand(listCategoriesCommand);
         jCommander.addCommand(deleteCategoriesCommand);
 
         try {
@@ -122,6 +127,7 @@ public class CategorizerClient {
             case "categorize-entries" -> categorizerClient.categorizeEntries(categorizerConfig, categorizeEntriesCommand);
             case "populate-categories" -> categorizerClient.populateCategories(categorizerConfig, populateCategoriesCommand);
             case "create-categories" -> categorizerClient.createCategories(categorizerConfig, createCategoriesCommand);
+            case "list-categories" -> categorizerClient.listCategories(categorizerConfig, listCategoriesCommand);
             case "delete-categories" -> categorizerClient.deleteCategories(categorizerConfig, deleteCategoriesCommand);
             default -> errorMessage("Unknown command", GENERIC_ERROR);
             }
@@ -162,10 +168,8 @@ public class CategorizerClient {
         );
         checkOverlappingHandlers(ontologyHandlers, ontology);
 
-        final String errorsFileName = "errors";
         int numberOfFailures = 0;
-        try (CSVPrinter categorizationsCsvPrinter = createCsvPrinter(new PrintWriter(System.out), CategorizationCsvHeaders.class);
-                CSVPrinter errorsCsvPrinter = createCsvPrinter(errorsFileName, ErrorsCsvHeaders.class)) {
+        try (CSVPrinter categorizationsCsvPrinter = createCsvPrinter(new PrintWriter(System.out), CategorizationCsvHeaders.class)) {
             for (TrsIdAndVersion entry: entries) {
                 final String trsId = entry.trsId();
                 final String versionId = entry.versionId();
@@ -187,17 +191,10 @@ public class CategorizerClient {
                     }
                 } catch (Exception ex) {
                     LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, versionId, ex);
-                    errorsCsvPrinter.printRecord(trsId, versionId, ex.getMessage());
                     numberOfFailures++;
                 }
-                // TODO: output matches to csv
             }
-
             LOG.info("Failed to categorize {} entries", numberOfFailures);
-            /*
-            logFile(numberOfCategoriesGenerated, categoriesFileName, "View generated categories in file " + categoriesFileName);
-            logFile(numberOfFailures, errorsFileName, "View entries that failed categorization in file " + errorsFileName);
-            */
         } catch (IOException e) {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
@@ -363,7 +360,7 @@ public class CategorizerClient {
 
             // TODO: add logic to confirm that a human has not removed the entry from the category.  In such case, we won't add.
             try {
-                organizationsApi.addEntryToCollection(organization.getId(), collection.getId(), entry.getId(), null, null); // TODO: turn reindexing off
+                organizationsApi.addEntryToCollection(organization.getId(), collection.getId(), entry.getId(), null, null); // TODO: turn off reindexing
                 LOG.info("Added entry {} to category {}", trsId, categoryId);
             } catch (ApiException e) {
                 LOG.error("Unable to add entry {} to category {}", trsId, categoryId, e);
@@ -413,9 +410,52 @@ public class CategorizerClient {
         }
     }
 
+    private void listCategories(CategorizerConfig categorizerConfig, ListCategoriesCommand listCategoriesCommand) {
+        final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
+        final OrganizationsApi organizationsApi = new OrganizationsApi(apiClient);
+        final Organization organization = getAiOrganization(organizationsApi);
+        List<Collection> collections;
+        try {
+            collections = organizationsApi.getCollectionsFromOrganization(organization.getId(), "");
+        } catch (ApiException e) {
+            exceptionMessage(e, "Unable to retrieve collections for organization 'ai'", API_ERROR);
+            return;
+        }
+        LOG.info("Retrieved {} collections", collections.size());
+        final List<String> ontologyPaths = listCategoriesCommand.getOntologyJsonPaths();
+        if (ontologyPaths != null) {
+            final Set<String> ontologyIds = readOntologies(ontologyPaths).getNodes().stream().map(Ontology.Node::id).collect(Collectors.toSet());
+            collections = collections.stream().filter(c -> ontologyIds.contains(c.getName())).toList();
+            LOG.info("Filtered to {} collections present in ontologies", collections.size());
+        }
+        try (CSVPrinter csvPrinter = createCsvPrinter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8), CategoryCsvHeaders.class)) {
+            for (Collection collection: collections) {
+                csvPrinter.printRecord(collection.getName());
+            }
+        } catch (IOException e) {
+            exceptionMessage(e, "Unable to write CSV output", IO_ERROR);
+        }
+    }
+
     private void deleteCategories(CategorizerConfig categorizerConfig, DeleteCategoriesCommand deleteCategoriesCommand) {
-        // TODO: call yet-to-be-implemented webservice endpoint to delete categories whose IDs match the regexp
-        LOG.info("delete-categories is not yet implemented");
+        final String path = deleteCategoriesCommand.getCategoriesCsvPath();
+        final List<String> categoryIds = new ArrayList<>();
+        for (CSVRecord record: readCsv(path, CategoryCsvHeaders.class)) {
+            categoryIds.add(record.get(CategoryCsvHeaders.categoryId));
+        }
+        LOG.info("Read {} category IDs from {}", categoryIds.size(), path);
+        final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
+        final OrganizationsApi organizationsApi = new OrganizationsApi(apiClient);
+        final Organization organization = getAiOrganization(organizationsApi);
+        for (String categoryId: categoryIds) {
+            try {
+                final Collection collection = organizationsApi.getCollectionByName("ai", categoryId);
+                organizationsApi.deleteCollection(organization.getId(), collection.getId(), null); // TODO: turn off reindexing
+                LOG.info("Deleted category '{}'", categoryId);
+            } catch (ApiException e) {
+                LOG.error("Unable to delete category '{}', skipping", categoryId, e);
+            }
+        }
     }
 
     /**
