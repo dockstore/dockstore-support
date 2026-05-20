@@ -61,8 +61,15 @@ import org.apache.commons.configuration2.INIConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * CLI entry point for the Dockstore categorizer tool. Parses command-line arguments via JCommander
+ * and dispatches to one of several commands: listing all or stale entries, AI-driven categorization
+ * of entries against ontology nodes, creating/populating/listing/deleting Dockstore categories
+ * in the "ai" organization that represent the nodes of the backing ontologies.
+ */
 public class CategorizerClient {
     private static final Logger LOG = LoggerFactory.getLogger(CategorizerClient.class);
+    private static final String AI_ORGANIZATION_NAME = "ai";
 
     CategorizerClient() {
     }
@@ -310,7 +317,7 @@ public class CategorizerClient {
         final Map<String, Collection> categoryIdToCollection = new HashMap<>();
         for (String categoryId: categoryIds) {
             try {
-                categoryIdToCollection.put(categoryId, organizationsApi.getCollectionByName("ai", categoryId));
+                categoryIdToCollection.put(categoryId, organizationsApi.getCollectionByName(AI_ORGANIZATION_NAME, categoryId));
                 LOG.info("Retrieved category '{}'", categoryId);
             } catch (ApiException e) {
                 LOG.error("Unable to retrieve category '{}'", categoryId, e);
@@ -397,9 +404,9 @@ public class CategorizerClient {
 
     private Organization getAiOrganization(OrganizationsApi organizationsApi) {
         try {
-            return organizationsApi.getOrganizationByName("ai");
+            return organizationsApi.getOrganizationByName(AI_ORGANIZATION_NAME);
         } catch (ApiException e) {
-            exceptionMessage(e, "Unable to retrieve organization 'ai'", API_ERROR);
+            exceptionMessage(e, "Unable to retrieve organization '%s'".formatted(AI_ORGANIZATION_NAME), API_ERROR);
             return null;
         }
     }
@@ -435,7 +442,7 @@ public class CategorizerClient {
         final Organization organization = getAiOrganization(organizationsApi);
         for (String categoryId: categoryIds) {
             try {
-                final Collection collection = organizationsApi.getCollectionByName("ai", categoryId);
+                final Collection collection = organizationsApi.getCollectionByName(AI_ORGANIZATION_NAME, categoryId);
                 organizationsApi.deleteCollection(organization.getId(), collection.getId(), null); // TODO: turn off reindexing
                 LOG.info("Deleted category '{}'", categoryId);
             } catch (ApiException e) {

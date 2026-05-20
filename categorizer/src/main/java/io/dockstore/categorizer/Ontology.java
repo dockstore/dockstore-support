@@ -14,6 +14,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Represents a biological or scientific ontology as a directed acyclic graph of nodes,
+ * where each node has an id, label, definition, and zero or more parent nodes.
+ * Supports traversal of parent/child/ancestor relationships and can be deserialized
+ * from JSON or merged from multiple ontologies via {@link #combine}.
+ */
 public class Ontology {
 
     private final List<Node> nodes = new ArrayList<>();
