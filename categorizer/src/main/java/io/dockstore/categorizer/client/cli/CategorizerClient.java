@@ -126,8 +126,67 @@ public class CategorizerClient {
         }
     }
 
+    private void listAllEntries(CategorizerConfig categorizerConfig, ListAllEntriesCommand listAllEntriesCommand) {
+        final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
+        final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
+        final int max = listAllEntriesCommand.getMax();
+        List<TrsIdAndVersion> allEntries = getAllEntriesFromDockstore(extendedGa4GhApi, max);
+        writeCsvToStdout(allEntries, TrsIdAndVersion.class);
+    }
+
+    private List<TrsIdAndVersion> getAllEntriesFromDockstore(ExtendedGa4GhApi extendedGa4GhApi, int maxEntries) {
+        List<EntryLiteAndVersionName> entries = RetrievalUtils.pagedRetrieval((offset, limit) -> {
+            try {
+                return extendedGa4GhApi.getAllEntries(offset, limit);
+            } catch (ApiException exception) {
+                exceptionMessage(exception, "Could not get entries from Dockstore", API_ERROR);
+                return List.of();
+            }
+        }, maxEntries);
+        LOG.info("Retrieved {} entries", entries.size());
+        return entries.stream().map(this::convertEntry).toList();
+    }
+
+    private void listStaleEntries(CategorizerConfig categorizerConfig, ListStaleEntriesCommand listStaleEntriesCommand) {
+        final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
+        final EntriesApi entriesApi = new EntriesApi(apiClient);
+        final int max = listStaleEntriesCommand.getMax();
+        final long intervalSeconds = listStaleEntriesCommand.getIntervalSeconds();
+        final List<TrsIdAndVersion> staleEntries = getStaleEntriesFromDockstore(entriesApi, intervalSeconds, max);
+        writeCsvToStdout(staleEntries, TrsIdAndVersion.class);
+    }
+
+    private List<TrsIdAndVersion> getStaleEntriesFromDockstore(EntriesApi entriesApi, long intervalSeconds, int maxEntries) {
+        List<EntryLiteAndVersionName> entries = RetrievalUtils.pagedRetrieval((offset, limit) -> {
+            try {
+                return entriesApi.findEntriesToCategorize(intervalSeconds, offset, limit);
+            } catch (ApiException exception) {
+                exceptionMessage(exception, "Could not get stale entries from Dockstore", API_ERROR);
+                return List.of();
+            }
+        }, maxEntries);
+        LOG.info("Retrieved {} stale entries", entries.size());
+        return entries.stream().map(this::convertEntry).toList();
+    }
+
+    private TrsIdAndVersion convertEntry(EntryLiteAndVersionName e) {
+        return new TrsIdAndVersion(e.getEntryLite().getTrsId(), e.getVersionName());
+    }
+
+    private <T> void writeCsvToStdout(Iterable<T> items, Class<T> pojoClass) {
+        try (Writer writer = stdoutWriter(); CsvWriter<T> csvWriter = new CsvWriter<>(writer, pojoClass)) {
+            csvWriter.writeAll(items);
+        } catch (IOException e) {
+            exceptionMessage(e, "Unable to write CSV output", IO_ERROR);
+        }
+    }
+
+    private Writer stdoutWriter() {
+        return new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
+    }
+
     /**
-     * Categorizes public entries by asking the AI model to suggest ontology categories based on the entry's primary descriptor.
+     * Categorizes the specified Dockstore entries by retrieving entry information and using AI to classify into the specified ontologies.
      * @param categorizerConfig
      * @param categorizeEntriesCommand
      */
@@ -190,8 +249,23 @@ public class CategorizerClient {
         }
     }
 
+    private static Ontology readOntologies(List<String> paths) {
+        try {
+            List<Ontology> ontologies = new ArrayList<>();
+            for (String path : paths) {
+                try (Reader reader = IOUtils.reader(path)) {
+                    ontologies.add(Ontology.read(reader));
+                }
+            }
+            return Ontology.combine(ontologies);
+        } catch (IOException e) {
+            exceptionMessage(e, "Unable to read ontology file", IO_ERROR);
+            throw new RuntimeException("aborting");
+        }
+    }
+
     private void checkOverlappingHandlers(List<OntologyHandler> handlers, Ontology ontology) {
-        // For each ontology handler, calculate the IDs of the recommended-for-annotation nodes it covers.
+        // For each ontology handler, calculate the IDs of the recommended-for-annotation nodes that it covers.
         // Concatenate the IDs into a single list.
         List<String> ids = handlers.stream().flatMap(h -> h.coverage(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).map(Ontology.Node::id)).toList();
         // If there are duplicate IDs, multiple Ontology handlers cover the same recommended-for-annotation node.
@@ -207,65 +281,6 @@ public class CategorizerClient {
             exceptionMessage(e, "Unable to read CSV file: " + path, IO_ERROR);
             return List.of();
         }
-    }
-
-    private void listStaleEntries(CategorizerConfig categorizerConfig, ListStaleEntriesCommand listStaleEntriesCommand) {
-        final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
-        final EntriesApi entriesApi = new EntriesApi(apiClient);
-        final int max = listStaleEntriesCommand.getMax();
-        final long intervalSeconds = listStaleEntriesCommand.getIntervalSeconds();
-        final List<TrsIdAndVersion> staleEntries = getStaleEntriesFromDockstore(entriesApi, intervalSeconds, max);
-        writeCsvToStdout(staleEntries, TrsIdAndVersion.class);
-    }
-
-    private void listAllEntries(CategorizerConfig categorizerConfig, ListAllEntriesCommand listAllEntriesCommand) {
-        final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
-        final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
-        final int max = listAllEntriesCommand.getMax();
-        List<TrsIdAndVersion> allEntries = getAllEntriesFromDockstore(extendedGa4GhApi, max);
-        writeCsvToStdout(allEntries, TrsIdAndVersion.class);
-    }
-
-    private List<TrsIdAndVersion> getStaleEntriesFromDockstore(EntriesApi entriesApi, long intervalSeconds, int maxEntries) {
-        List<EntryLiteAndVersionName> entries = RetrievalUtils.pagedRetrieval((offset, limit) -> {
-            try {
-                return entriesApi.findEntriesToCategorize(intervalSeconds, offset, limit);
-            } catch (ApiException exception) {
-                exceptionMessage(exception, "Could not get stale entries from Dockstore", API_ERROR);
-                return List.of();
-            }
-        }, maxEntries);
-        LOG.info("Retrieved {} stale entries", entries.size());
-        return entries.stream().map(this::convertEntry).toList();
-    }
-
-    private List<TrsIdAndVersion> getAllEntriesFromDockstore(ExtendedGa4GhApi extendedGa4GhApi, int maxEntries) {
-        List<EntryLiteAndVersionName> entries = RetrievalUtils.pagedRetrieval((offset, limit) -> {
-            try {
-                return extendedGa4GhApi.getAllEntries(offset, limit);
-            } catch (ApiException exception) {
-                exceptionMessage(exception, "Could not get entries from Dockstore", API_ERROR);
-                return List.of();
-            }
-        }, maxEntries);
-        LOG.info("Retrieved {} entries", entries.size());
-        return entries.stream().map(this::convertEntry).toList();
-    }
-
-    private TrsIdAndVersion convertEntry(EntryLiteAndVersionName e) {
-        return new TrsIdAndVersion(e.getEntryLite().getTrsId(), e.getVersionName());
-    }
-
-    private <T> void writeCsvToStdout(Iterable<T> items, Class<T> pojoClass) {
-        try (Writer writer = stdoutWriter(); CsvWriter<T> csvWriter = new CsvWriter<>(writer, pojoClass)) {
-            csvWriter.writeAll(items);
-        } catch (IOException e) {
-            exceptionMessage(e, "Unable to write CSV output", IO_ERROR);
-        }
-    }
-
-    private Writer stdoutWriter() {
-        return new OutputStreamWriter(System.out, StandardCharsets.UTF_8);
     }
 
     private EntryData retrieveEntryData(ApiClient apiClient, String trsId, String versionId) throws ApiException {
@@ -344,6 +359,7 @@ public class CategorizerClient {
                 LOG.error("Unable to add entry {} to category {}", trsId, categoryId, e);
             }
         }
+        // TODO: bulk reindex at the end
     }
 
     private String trsIdToPath(String trsId) {
@@ -425,21 +441,6 @@ public class CategorizerClient {
             } catch (ApiException e) {
                 LOG.error("Unable to delete category '{}', skipping", categoryId, e);
             }
-        }
-    }
-
-    private static Ontology readOntologies(List<String> paths) {
-        try {
-            List<Ontology> ontologies = new ArrayList<>();
-            for (String path : paths) {
-                try (Reader reader = IOUtils.reader(path)) {
-                    ontologies.add(Ontology.read(reader));
-                }
-            }
-            return Ontology.combine(ontologies);
-        } catch (IOException e) {
-            exceptionMessage(e, "Unable to read ontology file", IO_ERROR);
-            throw new RuntimeException("aborting");
         }
     }
 
