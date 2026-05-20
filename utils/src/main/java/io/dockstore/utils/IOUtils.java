@@ -10,6 +10,7 @@ import java.util.List;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
+/** Utilities for reading local file paths or S3 URIs. */
 public final class IOUtils {
 
     private IOUtils() {

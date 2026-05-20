@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
+/** Utilities for paginated retrieval of elements from offset/limit-based data sources. */
 public final class RetrievalUtils {
 
     private static final int PAGE_LIMIT = 100;

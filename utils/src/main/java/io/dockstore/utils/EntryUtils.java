@@ -14,6 +14,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Utilities for retrieving Dockstore entry information via the GA4GH TRS API. */
 public final class EntryUtils {
     private static final Logger LOG = LoggerFactory.getLogger(EntryUtils.class);
 
