@@ -385,6 +385,8 @@ public class CategorizerClient {
                 LOG.error("Unable to update time of last categorization for entry {}", trsId, e);
             }
         }
+
+        // TODO: after the categories are populated, we need to reindex the involed entries in ES
     }
 
     private String trsIdToPath(String trsId) {
@@ -473,6 +475,8 @@ public class CategorizerClient {
                 LOG.error("Unable to delete category '{}', skipping", categoryId, e);
             }
         }
+
+        // TODO: after the categories are deleted, we need to do a bulk ES reindex
     }
 
     @JsonPropertyOrder({"trsId", "version"})
