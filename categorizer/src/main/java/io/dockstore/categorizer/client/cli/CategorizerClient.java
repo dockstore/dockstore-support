@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
  * CLI entry point for the Dockstore categorizer tool. Parses command-line arguments via JCommander
  * and dispatches to one of several commands: listing all or stale entries, AI-driven categorization
  * of entries against ontology nodes, creating/populating/listing/deleting Dockstore categories
- * in the "ai" organization that represent the nodes of the backing ontologies.
+ * in the Dockstore AI categorizer organization that represent the nodes of the backing ontologies.
  */
 public class CategorizerClient {
     private static final Logger LOG = LoggerFactory.getLogger(CategorizerClient.class);
@@ -386,7 +386,7 @@ public class CategorizerClient {
             }
         }
 
-        // TODO: after the categories are populated, we need to reindex the involed entries in ES
+        // TODO: after the categories are populated, we need to reindex the involved entries in ES
     }
 
     private String trsIdToPath(String trsId) {
