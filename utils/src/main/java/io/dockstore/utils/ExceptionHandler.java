@@ -5,6 +5,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Centralised error reporting and exit-code handling for CLI commands.
+ *
  * @author gluu
  * @since 26/01/17
  */
