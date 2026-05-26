@@ -58,6 +58,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.configuration2.INIConfiguration;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +70,7 @@ import org.slf4j.LoggerFactory;
  */
 public class CategorizerClient {
     private static final Logger LOG = LoggerFactory.getLogger(CategorizerClient.class);
-    private static final String AI_ORGANIZATION_NAME = "ai";
+    private static final String AI_ORGANIZATION_NAME = "dockstoreai";
 
     CategorizerClient() {
     }
@@ -337,6 +338,7 @@ public class CategorizerClient {
             }
         }
 
+        // For each Categorization, add or remove the entry from the category.
         for (Categorization categorization: categorizations) {
             final String trsId = categorization.trsId();
             final String categoryId = categorization.categoryId();
@@ -360,13 +362,29 @@ public class CategorizerClient {
 
             // TODO: add logic to confirm that a human has not removed the entry from the category.  In such case, we won't add.
             try {
-                organizationsApi.addEntryToCollection(organization.getId(), collection.getId(), entry.getId(), null, null); // TODO: turn off reindexing
+                organizationsApi.addEntryToCollection(organization.getId(), collection.getId(), entry.getId(), null, false); // TODO: adjust to set the curator to "AI", once that functionality enters the lexicon
                 LOG.info("Added entry {} to category {}", trsId, categoryId);
             } catch (ApiException e) {
                 LOG.error("Unable to add entry {} to category {}", trsId, categoryId, e);
             }
         }
-        // TODO: bulk reindex at the end
+
+        // For each entry that was categorized and exists on the webservice, update the "time of last categorization".
+        // It is probably good enough to use "now" as the time of last categorization, even though the actual categorization happened a bit earlier.
+        final EntriesApi entriesApi = new EntriesApi(apiClient);
+        final List<String> categorizedTrsIds = categorizations.stream().map(Categorization::trsId).distinct().toList();
+        for (String trsId: categorizedTrsIds) {
+            final Entry entry = trsIdToEntry.get(trsId);
+            if (entry == null) {
+                continue;
+            }
+            try {
+                entriesApi.setLastCategorizedDate(entry.getId(), null, null);
+                LOG.info("Updated time of last categorization for entry {}", trsId);
+            } catch (ApiException e) {
+                LOG.error("Unable to update time of last categorization for entry {}", trsId, e);
+            }
+        }
     }
 
     private String trsIdToPath(String trsId) {
@@ -388,10 +406,16 @@ public class CategorizerClient {
         final Organization organization = getAiOrganization(organizationsApi);
 
         for (Ontology.Node node: recommendedNodes) {
+            final int maxCategoryNameLength = 90;
+            final int maxCategoryDisplayNameLength = 90;
+            final int maxCategoryTopicLength = 255;
             final Collection collection = new Collection();
-            collection.setName(node.id());
-            collection.setDisplayName(node.label());
-            collection.setTopic(node.definition());
+            // TODO: adjust the code that truncates these fields to work better.
+            // We might simply skip categories that have an ID or display name that's more than the limit,
+            // and we might truncate the definition at the end of a sentence, if possible.
+            collection.setName(StringUtils.truncate(node.id(), maxCategoryNameLength));
+            collection.setDisplayName(StringUtils.truncate(node.label(), maxCategoryDisplayNameLength));
+            collection.setTopic(StringUtils.truncate(node.definition(), maxCategoryTopicLength));
             collection.putMetadataItem("source", node.source());
             try {
                 organizationsApi.createCollection(collection, organization.getId());
@@ -419,7 +443,7 @@ public class CategorizerClient {
         try {
             collections = organizationsApi.getCollectionsFromOrganization(organization.getId(), "");
         } catch (ApiException e) {
-            exceptionMessage(e, "Unable to retrieve collections for organization 'ai'", API_ERROR);
+            exceptionMessage(e, "Unable to retrieve collections for organization '%s'".formatted(AI_ORGANIZATION_NAME), API_ERROR);
             return;
         }
         LOG.info("Retrieved {} collections", collections.size());
@@ -443,7 +467,7 @@ public class CategorizerClient {
         for (String categoryId: categoryIds) {
             try {
                 final Collection collection = organizationsApi.getCollectionByName(AI_ORGANIZATION_NAME, categoryId);
-                organizationsApi.deleteCollection(organization.getId(), collection.getId(), null); // TODO: turn off reindexing
+                organizationsApi.deleteCollection(organization.getId(), collection.getId(), false);
                 LOG.info("Deleted category '{}'", categoryId);
             } catch (ApiException e) {
                 LOG.error("Unable to delete category '{}', skipping", categoryId, e);
