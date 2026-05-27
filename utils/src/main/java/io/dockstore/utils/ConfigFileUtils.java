@@ -11,6 +11,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Utilities for reading INI-format Dockstore configuration files. */
 public final class ConfigFileUtils {
     public static final String CONFIG_FILE_ERROR = "Could not get configuration file";
     public static final String DOCKSTORE_SECTION = "dockstore";

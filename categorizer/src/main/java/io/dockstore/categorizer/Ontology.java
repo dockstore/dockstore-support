@@ -1,5 +1,11 @@
 package io.dockstore.categorizer;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,6 +14,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Represents a biological or scientific ontology as a directed acyclic graph of nodes,
+ * where each node has an id, label, definition, and zero or more parent nodes.
+ * Supports traversal of parent/child/ancestor relationships and can be deserialized
+ * from JSON or merged from multiple ontologies via {@link #combine}.
+ */
 public class Ontology {
 
     private final List<Node> nodes = new ArrayList<>();
@@ -45,6 +57,35 @@ public class Ontology {
 
     public List<Node> getNodes() {
         return nodes;
+    }
+
+    public static Ontology read(Reader reader) throws IOException {
+        JsonArray jsonArray = JsonParser.parseReader(reader).getAsJsonArray();
+        Ontology ontology = new Ontology();
+        for (JsonElement element: jsonArray) {
+            JsonObject obj = element.getAsJsonObject();
+            String id = obj.get("id").getAsString();
+            String label = obj.get("label").getAsString();
+            String definition = obj.get("definition").getAsString();
+            String source = obj.get("source").getAsString();
+            boolean recommendedForAnnotation = obj.get("recommended_for_annotation").getAsBoolean();
+            List<String> parentIds = new ArrayList<>();
+            for (JsonElement parent: obj.get("parent_ids").getAsJsonArray()) {
+                parentIds.add(parent.getAsString());
+            }
+            ontology.addNode(id, label, definition, parentIds, source, recommendedForAnnotation);
+        }
+        return ontology;
+    }
+
+    public static Ontology combine(List<Ontology> ontologies) {
+        Ontology combined = new Ontology();
+        for (Ontology ontology: ontologies) {
+            for (Node node: ontology.getNodes()) {
+                combined.addNode(node.id(), node.label(), node.definition(), node.parentIds(), node.source(), node.recommendedForAnnotation());
+            }
+        }
+        return combined;
     }
 
     public record Node(String id, String label, String definition, List<String> parentIds, String source, boolean recommendedForAnnotation, Ontology ontology) {
