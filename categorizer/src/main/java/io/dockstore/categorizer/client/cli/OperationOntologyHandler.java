@@ -23,7 +23,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
             .user().text(presentEntry(entryData)).cache()
             .text(lines(
                 "", "",
-                "In 200 words, describe the %s's purpose, functionality, and the operations it performs.".formatted(entryType, entryType),
+                "In 200 words, describe the %s's purpose, functionality, and the operations it performs.".formatted(entryType),
                 "Omit the %s's name.".formatted(entryType),
                 "Be terse.",
                 "Use scientific terminology."
@@ -44,9 +44,10 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
                 tag("operations-description", summary),
                 "",
                 "List the operations that the %s performs.".formatted(entryType),
-                "Prefer operations that describe an important capability of the %s.".formatted(entryType),
+                "Prefer operations that describe the %s's functionality as a whole.".formatted(entryType),
                 // "Prefer operations that differentiate the %s from other %ss.".formatted(entryType, entryType),
                 "Prefer operations that are more specific.",
+                "Include operations you are not sure about.",
                 "Output one operation ID per line and no other text."
             ))
             .outputTokens(MAX_CLASSIFY_TOKENS)
@@ -58,7 +59,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         String question = isGenericNode(node)
             ? "Is the following operation the sole purpose of the %s?".formatted(entryType)
-            : "Does the %s perform the following operation, and is it the purpose or an important capability of the %s?\n".formatted(entryType, entryType);
+            : "Does the %s perform the following operation, and is it the purpose or an important capability of the %s?".formatted(entryType, entryType);
 
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
@@ -67,8 +68,10 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
                 tag("description", summary),
                 "",
                 question,
-                "Answer \"yes\" or \"no\" with no other text.",
-                "\"" + node.label() + "\": " + node.definition()
+                "",
+                "\"" + node.label() + "\": " + node.definition(),
+                "",
+                "Answer \"yes\" or \"no\" with no other text."
             ))
             .outputTokens(MAX_VERIFY_TOKENS)
             .build();

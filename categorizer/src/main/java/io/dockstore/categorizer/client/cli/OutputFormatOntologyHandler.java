@@ -60,8 +60,7 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
                 "",
                 "Does the %s produce the following output format?".formatted(entryType),
                 "Answer \"yes\" or \"no\" with no other text.",
-                tag("format-name", node.label()),
-                tag("format-description", node.definition())
+                "\"" + node.label() + "\": " + node.definition()
             ))
             .outputTokens(MAX_VERIFY_TOKENS)
             .build();
