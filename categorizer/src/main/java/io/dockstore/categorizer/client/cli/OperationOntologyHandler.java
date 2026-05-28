@@ -19,8 +19,8 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createSummarizeInstruction(EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
-            .user().text(createGenericEntryPresentation(entryData)).cache()
+            .system().text(stateIdentity())
+            .user().text(presentEntry(entryData)).cache()
             .text(joinLines(
                 "", "",
                 "In 200 words, describe the %s's purpose, functionality, and the operations it performs.".formatted(entryType, entryType),
@@ -36,8 +36,8 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
-            .user().text(createGenericCategoriesPresentation(nodes, "operations performed by the %s".formatted(entryType), "operation-")).cache()
+            .system().text(stateIdentity())
+            .user().text(presentCategories(nodes, "operations performed by the %s".formatted(entryType), "operation-")).cache()
             .text(joinLines(
                 "", "",
                 "The %s performs the following operations:".formatted(entryType),
@@ -61,7 +61,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
             : "Does the %s perform the following operation, and is it the purpose or an important capability of the %s?\n".formatted(entryType, entryType);
 
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
+            .system().text(stateIdentity())
             .user().text(joinLines(
                 "Given the following %s description:".formatted(entryType),
                 tag("description", summary),

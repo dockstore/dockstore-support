@@ -19,9 +19,10 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createSummarizeInstruction(EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
-            .user().text(joinLines(
-                createGenericEntryPresentation(entryData),
+            .system().text(stateIdentity())
+            .user().text(presentEntry(entryData)).cache()
+            .text(joinLines(
+                "", "",
                 "Describe the information content of the %s's inputs.".formatted(entryType),
                 "Explain each inputs's meaning or purpose, rather than its concrete representation.",
                 "Omit output information.",
@@ -35,9 +36,10 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
-            .user().text(joinLines(
-                createGenericCategoriesPresentation(nodes, "%s's inputs".formatted(entryType), "input-data-"),
+            .system().text(stateIdentity())
+            .user().text(presentCategories(nodes, "%s's inputs".formatted(entryType), "input-data-")).cache()
+            .text(joinLines(
+                "", "",
                 "The %s supports the following inputs:".formatted(entryType),
                 tag("input-description", summary),
                 "",
@@ -52,7 +54,7 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
+            .system().text(stateIdentity())
             .user().text(joinLines(
                 "Use the following description to determine the input data accepted by the %s:".formatted(entryType),
                 tag("input-description", summary),

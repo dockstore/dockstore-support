@@ -19,9 +19,10 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createSummarizeInstruction(EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
-            .user().text(joinLines(
-                createGenericEntryPresentation(entryData),
+            .system().text(stateIdentity())
+            .user().text(presentEntry(entryData)).cache()
+            .text(joinLines(
+                "", "",
                 "Describe the %s's field of study, area of application, scientific context, and similar.",
                 "Omit information about the operations performed by the %s.".formatted(entryType),
                 "Be terse and use scientific terminology."
@@ -34,9 +35,10 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
-            .user().text(joinLines(
-                createGenericCategoriesPresentation(nodes, entryType, "topic-"),
+            .system().text(stateIdentity())
+            .user().text(presentCategories(nodes, entryType, "topic-")).cache()
+            .text(joinLines(
+                "", "",
                 "Use the following description of the %s's topics:".formatted(entryType),
                 tag("topic-description", summary),
                 "",
@@ -54,7 +56,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
+            .system().text(stateIdentity())
             .user().text(joinLines(
                 "Use the following %s description:".formatted(entryType),
                 tag("topic-description", summary),

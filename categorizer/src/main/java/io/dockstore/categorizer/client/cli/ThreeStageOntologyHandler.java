@@ -79,11 +79,11 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     protected abstract AIModel.Prompt createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData);
 
-    protected static String createIdentityStatement() {
+    protected static String stateIdentity() {
         return "You are a genomics and bioinformatics expert.";
     }
 
-    protected String createGenericEntryPresentation(EntryData entryData) {
+    protected String presentEntry(EntryData entryData) {
         return joinLines(
             "Summarize the following %s:".formatted(entryData.entryType()),
              formatEntryData(entryData),
@@ -91,7 +91,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         );
     }
 
-    protected String createGenericCategoriesPresentation(List<Ontology.Node> nodes, String what, String csvPrefix) {
+    protected String presentCategories(List<Ontology.Node> nodes, String what, String csvPrefix) {
         return joinLines(
             "Classify the %s into the following categories:".formatted(what),
             createTaggedOntologyCsv(nodes, csvPrefix),

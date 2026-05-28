@@ -19,9 +19,10 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createSummarizeInstruction(EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
-            .user().text(joinLines(
-                createGenericEntryPresentation(entryData),
+            .system().text(stateIdentity())
+            .user().text(presentEntry(entryData)).cache()
+            .text(joinLines(
+                "", "",
                 "Describe the information content of the %s's outputs.".formatted(entryType),
                 "Explain each output's meaning or purpose, rather than its concrete representation.",
                 "Omit input information.",
@@ -35,9 +36,10 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
-            .user().text(joinLines(
-                createGenericCategoriesPresentation(nodes, "%s's outputs".formatted(entryType), "output-data-"),
+            .system().text(stateIdentity())
+            .user().text(presentCategories(nodes, "%s's outputs".formatted(entryType), "output-data-")).cache()
+            .text(joinLines(
+                "", "",
                 "The %s supports the following outputs:".formatted(entryType),
                 tag("output-description", summary),
                 "",
@@ -52,7 +54,7 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
+            .system().text(stateIdentity())
             .user().text(joinLines(
                 "Use the following description to determine the outputs data produced by the %s:".formatted(entryType),
                 tag("outputs-description", summary),

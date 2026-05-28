@@ -18,9 +18,10 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
     @Override
     protected AIModel.Prompt createSummarizeInstruction(EntryData entryData) {
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
-            .user().text(joinLines(
-                createGenericEntryPresentation(entryData),
+            .system().text(stateIdentity())
+            .user().text(presentEntry(entryData)).cache()
+            .text(joinLines(
+                "", "",
                 "List the input file formats.",
                 "Detail the format variants and format versions.",
                 "Omit output formats.",
@@ -34,9 +35,10 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
-            .user().text(joinLines(
-                createGenericCategoriesPresentation(nodes, "%s's input formats".formatted(entryType), "input-format-"),
+            .system().text(stateIdentity())
+            .user().text(presentCategories(nodes, "%s's input formats".formatted(entryType), "input-format-")).cache()
+            .text(joinLines(
+                "", "",
                 "The %s accepts the following inputs:".formatted(entryType),
                 tag("input-description", summary),
                 "",
@@ -51,7 +53,7 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
+            .system().text(stateIdentity())
             .user().text(joinLines(
                 "Use the following description to determine the input formats accepted by the %s:".formatted(entryType),
                 tag("input-description", summary),

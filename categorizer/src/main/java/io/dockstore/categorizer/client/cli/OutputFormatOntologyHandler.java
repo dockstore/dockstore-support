@@ -18,9 +18,10 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
     @Override
     protected AIModel.Prompt createSummarizeInstruction(EntryData entryData) {
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
-            .user().text(joinLines(
-                createGenericEntryPresentation(entryData),
+            .system().text(stateIdentity())
+            .user().text(presentEntry(entryData)).cache()
+            .text(joinLines(
+                "", "",
                 "List the output file formats.",
                 "Detail the format variants and format versions.",
                 "Omit input formats.",
@@ -34,9 +35,10 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
-            .user().text(joinLines(
-                createGenericCategoriesPresentation(nodes, "%s's output formats".formatted(entryType), "output-format-"),
+            .system().text(stateIdentity())
+            .user().text(presentCategories(nodes, "%s's output formats".formatted(entryType), "output-format-")).cache()
+            .text(joinLines(
+                "", "",
                 "The %s produces the following outputs:".formatted(entryType),
                 tag("output-description", summary),
                 "",
@@ -51,7 +53,7 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
     protected AIModel.Prompt createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(createIdentityStatement())
+            .system().text(stateIdentity())
             .user().text(joinLines(
                 "Use the following description to determine the output formats produced by the %s:".formatted(entryType),
                 tag("output-description", summary),
