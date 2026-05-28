@@ -40,8 +40,9 @@ public class BedrockClaudeModel extends BaseAIModel {
 
         ClaudeResponse claudeResponse = GSON.fromJson(response.body().asUtf8String(), ClaudeResponse.class);
 
-        final String aiResponse = claudeResponse.content().get(0).text();
+        final String text = claudeResponse.content().get(0).text();
         final String stopReason = claudeResponse.stopReason();
+        final boolean isTruncated = "max_tokens".equals(stopReason);
         final long uncachedInputTokens = claudeResponse.usage().inputTokens();
         final long cacheReadTokens = claudeResponse.usage().cacheReadTokens();
         final long cacheWriteTokens = claudeResponse.usage().cacheWriteTokens();
@@ -52,14 +53,14 @@ public class BedrockClaudeModel extends BaseAIModel {
                 + (cacheWriteTokens * modelType.getPricePerCacheWriteToken())
                 + (outputTokens * modelType.getPricePerOutputToken());
 
-        return new Response(aiResponse, false, inputTokens, outputTokens, cost, stopReason);
+        return new Response(text, isTruncated, inputTokens, outputTokens, cost, stopReason);
     }
 
     // Format the request payload using the model's native structure.
     // See https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-request-response for examples
     private String createNativeClaudeRequest(Prompt prompt) {
         List<ClaudeRequest.Content> systemContent = toClaudeContent(prompt.systemContent());
-        List<ClaudeRequest.Message> userContent = toClaudeContent(prompt.userContent());
+        List<ClaudeRequest.Content> userContent = toClaudeContent(prompt.userContent());
         ClaudeRequest claudeRequest = new ClaudeRequest(
             ANTHROPIC_API_VERSION,
             prompt.outputTokens(),
