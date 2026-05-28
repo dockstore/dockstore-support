@@ -83,9 +83,25 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return "You are a genomics and bioinformatics expert.";
     }
 
-    protected static String createTaggedOntologyCsv(List<Ontology.Node> nodes, String prefix) {
-        String tagName = prefix + "csv";
-        return tag(tagName, createOntologyCsv(nodes, prefix));
+    protected String createGenericEntryPresentation(EntryData entryData) {
+        return joinLines(
+            "Summarize the following %s:".formatted(entryData.entryType()),
+             formatEntryData(entryData),
+            ""
+        );
+    }
+
+    protected String createGenericCategoriesPresentation(List<Ontology.Node> nodes, String what, String csvPrefix) {
+        return joinLines(
+            "Classify the %s into the following categories:".formatted(what),
+            createTaggedOntologyCsv(nodes, csvPrefix),
+            ""
+        );
+    }
+
+    protected String createTaggedOntologyCsv(List<Ontology.Node> nodes, String csvPrefix) {
+        String tagName = csvPrefix + "csv";
+        return tag(tagName, createOntologyCsv(nodes, csvPrefix));
     }
 
     /*
@@ -101,9 +117,9 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     */
 
     // TODO: investigate 3rd party library
-    protected static String createOntologyCsv(List<Ontology.Node> nodes, String prefix) {
+    protected String createOntologyCsv(List<Ontology.Node> nodes, String csvPrefix) {
         StringBuilder sb = new StringBuilder();
-        sb.append("%sid,%sname,%sdescription\n".formatted(prefix, prefix, prefix));
+        sb.append("%sid,%sname,%sdescription\n".formatted(csvPrefix, csvPrefix, csvPrefix));
         for (Ontology.Node node: nodes) {
             sb.append(escapeCsvField(node.id())).append(",")
                 .append(escapeCsvField(node.label())).append(",")
@@ -112,18 +128,18 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return sb.toString();
     }
 
-    private static String escapeCsvField(String value) {
+    private String escapeCsvField(String value) {
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;
     }
 
-    protected static String tag(String tagName, String content) {
+    protected String tag(String tagName, String content) {
         return joinLines("<%s>".formatted(tagName), content, "</%s>".formatted(tagName));
     }
 
-    protected static String joinLines(String... values) {
+    protected String joinLines(String... values) {
         return String.join("\n", values);
     }
 }
