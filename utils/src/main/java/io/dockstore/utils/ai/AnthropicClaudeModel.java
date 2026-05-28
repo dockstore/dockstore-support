@@ -10,7 +10,7 @@ import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 
-public class AnthropicClaudeModel implements AIModel {
+public class AnthropicClaudeModel extends BaseAIModel {
     private static final Logger LOG = LoggerFactory.getLogger(AnthropicClaudeModel.class);
     private static final Gson GSON = new Gson();
     // Anthropic API version must be the value below.
@@ -21,30 +21,11 @@ public class AnthropicClaudeModel implements AIModel {
     private final BedrockRuntimeClient bedrockRuntimeClient;
 
     public AnthropicClaudeModel(ClaudeAIModelType modelType) {
+        super(modelType);
         this.modelType = modelType;
         bedrockRuntimeClient = BedrockRuntimeClient.builder()
                 .credentialsProvider(DefaultCredentialsProvider.create())
                 .build();
-    }
-
-    @Override
-    public String getModelName() {
-        return modelType.getModelId();
-    }
-
-    @Override
-    public double getPricePerInputToken() {
-        return modelType.getPricePerInputToken();
-    }
-
-    @Override
-    public double getPricePerOutputToken() {
-        return modelType.getPricePerOutputToken();
-    }
-
-    @Override
-    public int getMaxContextLength() {
-        return modelType.getMaxContextLength();
     }
 
     @Override
