@@ -58,14 +58,15 @@ public class BedrockClaudeModel extends BaseAIModel {
     // Format the request payload using the model's native structure.
     // See https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-request-response for examples
     private String createNativeClaudeRequest(Prompt prompt) {
-        List<ClaudeRequest.Content> systemContent = nullIfEmpty(toClaudeContent(prompt.systemContent()));
-        List<ClaudeRequest.Message> userMessages = List.of(toClaudeUserMessage(prompt.userContent()));
+        List<ClaudeRequest.Content> systemContent = toClaudeContent(prompt.systemContent());
+        List<ClaudeRequest.Message> userContent = toClaudeContent(prompt.userContent());
         ClaudeRequest claudeRequest = new ClaudeRequest(
             ANTHROPIC_API_VERSION,
             prompt.outputTokens(),
             prompt.temperature(),
-            systemContent,
-            userMessages);
+            nullIfEmpty(systemContent),
+            List.of(new ClaudeRequest.Message("user", userContent))
+        );
         return GSON.toJson(claudeRequest);
     }
 
@@ -78,11 +79,6 @@ public class BedrockClaudeModel extends BaseAIModel {
             }
         }
         return result;
-    }
-
-    private ClaudeRequest.Message toClaudeUserMessage(List<Prompt.Content> content) {
-        List<ClaudeRequest.Content> contents = toClaudeContent(content);
-        return new ClaudeRequest.Message("user", contents);
     }
 
     private <T> List<T> nullIfEmpty(List<T> values) {
