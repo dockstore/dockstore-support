@@ -33,7 +33,8 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return joinLines(
             "Classify the %s's outputs into the following categories:".formatted(entryType),
-            createOntologyMarkdownTable(nodes, "Output Data ID", "Output Data Name", "Output Data Description"),
+            // createOntologyMarkdownTable(nodes, "Output Data ID", "Output Data Name", "Output Data Description"),
+            createTaggedOntologyCsv(nodes, "output-data-"),
             "",
             "The %s supports the following outputs:".formatted(entryType),
             tag("output-description", summary),
