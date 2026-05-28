@@ -1,13 +1,10 @@
 package io.dockstore.categorizer.client.cli;
 
 import io.dockstore.categorizer.Ontology;
-import io.dockstore.utils.ai.AIModel;
-import java.util.List;
 
 public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
 
     OutputDataOntologyHandler() {
-        super("output-data");
     }
 
     @Override
@@ -16,55 +13,45 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected AIModel.Prompt createSummarizeInstruction(EntryData entryData) {
-        String entryType = entryData.entryType();
-        return AIModel.Prompt.builder()
-            .system().text(stateIdentity())
-            .user().text(presentEntry(entryData)).cache()
-            .text(lines(
-                "", "",
-                "Describe the information content of the %s's outputs.".formatted(entryType),
-                "Explain each output's meaning or purpose, rather than its concrete representation.",
-                "Omit input information.",
-                "Be terse."
-            ))
-            .outputTokens(MAX_SUMMARIZE_TOKENS)
-            .build();
+    protected String getRootId() {
+        return "output-data";
     }
 
     @Override
-    protected AIModel.Prompt createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
-        String entryType = entryData.entryType();
-        return AIModel.Prompt.builder()
-            .system().text(stateIdentity())
-            .user().text(presentCategories(nodes, "%s's outputs".formatted(entryType))).cache()
-            .text(lines(
-                "", "",
-                "The %s supports the following outputs:".formatted(entryType),
-                tag("output-description", summary),
-                "",
-                "List the data outputs that the %s produces.".formatted(entryType),
-                "Output one output data ID per line and no other text."
-            ))
-            .outputTokens(MAX_CLASSIFY_TOKENS)
-            .build();
+    protected String getSingularPhrase() {
+        return "output data";
     }
 
     @Override
-    protected AIModel.Prompt createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
-        String entryType = entryData.entryType();
-        return AIModel.Prompt.builder()
-            .system().text(stateIdentity())
-            .user().text(lines(
-                "Use the following description to determine the outputs data produced by the %s:".formatted(entryType),
-                tag("outputs-description", summary),
-                "",
-                "Does the %s produce the following output data?".formatted(entryType),
-                tag("data-name", node.label()),
-                tag("data-description", node.definition()),
-                "Answer \"yes\" or \"no\" with no other text."
-            ))
-            .outputTokens(MAX_VERIFY_TOKENS)
-            .build();
+    protected String getPluralPhrase(EntryData entryData) {
+        return "%s's outputs".formatted(entryData.entryType());
     }
+
+    @Override
+    protected String getSummarizeCommand(EntryData entryData) {
+        String entryType = entryData.entryType();
+        return lines(
+            "", "",
+            "Describe the information content of the %s's outputs.".formatted(entryType),
+            "Explain each output's meaning or purpose, rather than its concrete representation.",
+            "Omit input information.",
+            "Be terse."
+        );
+    }
+
+    @Override
+    protected String getSummaryDescription(EntryData entryData) {
+        return "The %s supports the following outputs:".formatted(entryData.entryType());
+    }
+
+    @Override
+    protected String getClassifyCommand(EntryData entryData) {
+        return "List the data outputs that the %s produces.".formatted(entryData.entryType());
+    }
+
+    @Override
+    protected String getVerifyQuestion(EntryData entryData, Ontology.Node node) {
+        return "Does the %s produce the following output data?".formatted(entryData.entryType());
+    }
+
 }

@@ -1,13 +1,10 @@
 package io.dockstore.categorizer.client.cli;
 
 import io.dockstore.categorizer.Ontology;
-import io.dockstore.utils.ai.AIModel;
-import java.util.List;
 
 public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
 
     InputDataOntologyHandler() {
-        super("input-data");
     }
 
     @Override
@@ -16,55 +13,45 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected AIModel.Prompt createSummarizeInstruction(EntryData entryData) {
-        String entryType = entryData.entryType();
-        return AIModel.Prompt.builder()
-            .system().text(stateIdentity())
-            .user().text(presentEntry(entryData)).cache()
-            .text(lines(
-                "", "",
-                "Describe the information content of the %s's inputs.".formatted(entryType),
-                "Explain each inputs's meaning or purpose, rather than its concrete representation.",
-                "Omit output information.",
-                "Be terse."
-            ))
-            .outputTokens(MAX_SUMMARIZE_TOKENS)
-            .build();
+    protected String getRootId() {
+        return "input-data";
     }
 
     @Override
-    protected AIModel.Prompt createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
-        String entryType = entryData.entryType();
-        return AIModel.Prompt.builder()
-            .system().text(stateIdentity())
-            .user().text(presentCategories(nodes, "%s's inputs".formatted(entryType))).cache()
-            .text(lines(
-                "", "",
-                "The %s supports the following inputs:".formatted(entryType),
-                tag("input-description", summary),
-                "",
-                "List the inputs that the %s accepts.".formatted(entryType),
-                "Output one input data ID per line and no other text."
-            ))
-            .outputTokens(MAX_CLASSIFY_TOKENS)
-            .build();
+    protected String getSingularPhrase() {
+        return "input data";
     }
 
     @Override
-    protected AIModel.Prompt createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
-        String entryType = entryData.entryType();
-        return AIModel.Prompt.builder()
-            .system().text(stateIdentity())
-            .user().text(lines(
-                "Use the following description to determine the input data accepted by the %s:".formatted(entryType),
-                tag("input-description", summary),
-                "",
-                "Does the %s support the following input data?".formatted(entryType),
-                tag("data-name", node.label()),
-                tag("data-description", node.definition()),
-                "Answer \"yes\" or \"no\" with no other text."
-            ))
-            .outputTokens(MAX_VERIFY_TOKENS)
-            .build();
+    protected String getPluralPhrase(EntryData entryData) {
+        return "%s's inputs".formatted(entryData.entryType());
     }
+
+    @Override
+    protected String getSummarizeCommand(EntryData entryData) {
+        String entryType = entryData.entryType();
+        return lines(
+            "", "",
+            "Describe the information content of the %s's inputs.".formatted(entryType),
+            "Explain each inputs's meaning or purpose, rather than its concrete representation.",
+            "Omit output information.",
+            "Be terse."
+        );
+    }
+
+    @Override
+    protected String getSummaryDescription(EntryData entryData) {
+        return "The %s supports the following inputs:".formatted(entryData.entryType());
+    }
+
+    @Override
+    protected String getClassifyCommand(EntryData entryData) {
+        return "List the inputs that the %s accepts.".formatted(entryData.entryType());
+    }
+
+    @Override
+    protected String getVerifyQuestion(EntryData entryData, Ontology.Node node) {
+        return "Does the %s support the following input data?".formatted(entryData.entryType());
+    }
+
 }

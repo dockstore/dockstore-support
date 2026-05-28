@@ -15,15 +15,11 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     protected static final int MAX_VERIFY_TOKENS = 5;
 
     private static final Logger LOG = LoggerFactory.getLogger(ThreeStageOntologyHandler.class);
-    private final String prefix;
-
-    ThreeStageOntologyHandler(String prefix) {
-        this.prefix = prefix;
-    }
 
     @Override
     public List<Ontology.Node> coverage(Ontology ontology) {
-        return ontology.getNodes().stream().filter(node -> prefix.equals(node.id()) || node.id().startsWith(prefix + "-")).toList();
+        String rootId = getRootId();
+        return ontology.getNodes().stream().filter(node -> rootId.equals(node.id()) || node.id().startsWith(rootId + "-")).toList();
     }
 
     @Override
@@ -34,19 +30,56 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     private String summarize(EntryData entryData, AIModel aiModel) {
-        AIModel.Response response = aiModel.submitPrompt(createSummarizeInstruction(entryData));
+        AIModel.Response response = aiModel.submitPrompt(createSummarizePrompt(entryData));
         return response.text();
     }
 
     @Override
     public abstract String getName();
 
-    protected abstract AIModel.Prompt createSummarizeInstruction(EntryData entryData);
+    protected abstract String getRootId();
+
+    protected abstract String getSingularPhrase();
+
+    protected abstract String getPluralPhrase(EntryData entryData);
+
+    protected abstract String getSummarizeCommand(EntryData entryData);
+
+    protected abstract String getSummaryDescription(EntryData entryData);
+
+    protected abstract String getClassifyCommand(EntryData entryData);
+
+    protected abstract String getVerifyQuestion(EntryData entryData, Ontology.Node node);
+
+    protected AIModel.Prompt createSummarizePrompt(EntryData entryData) {
+        return AIModel.Prompt.builder()
+            .system().text(stateIdentity())
+            .user().text(presentEntry(entryData)).cache()
+            .text(getSummarizeCommand(entryData))
+            .outputTokens(MAX_SUMMARIZE_TOKENS)
+            .build();
+    }
 
     private List<Ontology.Node> classify(List<Ontology.Node> nodes, String summary, EntryData entryData, AIModel aiModel) {
-        AIModel.Response response = aiModel.submitPrompt(createClassifyInstruction(nodes, summary, entryData));
+        AIModel.Response response = aiModel.submitPrompt(createClassifyPrompt(nodes, summary, entryData));
         List<String> ids = Arrays.stream(response.text().split("\n")).map(String::trim).distinct().toList();
         return filterHallucinations(ids, nodes);
+    }
+
+    protected AIModel.Prompt createClassifyPrompt(List<Ontology.Node> nodes, String summary, EntryData entryData) {
+        return AIModel.Prompt.builder()
+            .system().text(stateIdentity())
+            .user().text(presentCategories(nodes, getPluralPhrase(entryData))).cache()
+            .text(lines(
+                "", "",
+                getSummaryDescription(entryData),
+                tag(getRootId() + "-description", summary),
+                "",
+                getClassifyCommand(entryData),
+                "Output one %s ID per line and no other text.".formatted(getSingularPhrase())
+            ))
+            .outputTokens(MAX_CLASSIFY_TOKENS)
+            .build();
     }
 
     private List<Ontology.Node> filterHallucinations(List<String> ids, List<Ontology.Node> nodes) {
@@ -59,15 +92,29 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     private boolean verify(Ontology.Node node, String summary, EntryData entryData, AIModel aiModel) {
-        AIModel.Response response = aiModel.submitPrompt(createVerifyInstruction(node, summary, entryData));
+        AIModel.Response response = aiModel.submitPrompt(createVerifyPrompt(node, summary, entryData));
         boolean verified = response.text().length() > 0 && response.text().substring(0, 1).toLowerCase().equals("y");
         LOG.info("VERIFIED {} {}", node.id(), verified);
         return verified;
     }
 
-    protected abstract AIModel.Prompt createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData);
-
-    protected abstract AIModel.Prompt createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData);
+    protected AIModel.Prompt createVerifyPrompt(Ontology.Node node, String summary, EntryData entryData) {
+        String entryType = entryData.entryType();
+        return AIModel.Prompt.builder()
+            .system().text(stateIdentity())
+            .user().text(lines(
+                "Given the following %s description:".formatted(entryType),
+                tag("description", summary),
+                "",
+                getVerifyQuestion(entryData, node),
+                "",
+                "\"" + node.label() + "\": " + node.definition(),
+                "",
+                "Answer \"yes\" or \"no\" with no other text."
+            ))
+            .outputTokens(MAX_VERIFY_TOKENS)
+            .build();
+    }
 
     protected static String stateIdentity() {
         return "You are a genomics and bioinformatics expert.\n";
@@ -85,18 +132,19 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     protected String presentCategories(List<Ontology.Node> nodes, String what) {
-        return 
+        return
             "Classify the %s into the following categories:\n".formatted(what)
             + "\n"
-            + "<%s-csv>\n".formatted(prefix)
+            + "<%s-csv>\n".formatted(getRootId())
             + createOntologyCsv(nodes)
-            + "</%s-csv>\n".formatted(prefix);
+            + "</%s-csv>\n".formatted(getRootId());
     }
 
     // TODO: investigate 3rd party library
     protected String createOntologyCsv(List<Ontology.Node> nodes) {
+        String rootId = getRootId();
         StringBuilder sb = new StringBuilder();
-        sb.append("%s-id,%s-name,%s-description\n".formatted(prefix, prefix, prefix));
+        sb.append("%s-id,%s-name,%s-description\n".formatted(rootId, rootId, rootId));
         for (Ontology.Node node: nodes) {
             sb.append(escapeCsvField(node.id())).append(",")
                 .append(escapeCsvField(node.label())).append(",")
