@@ -10,17 +10,17 @@ import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 
-public class AnthropicClaudeModel extends BaseAIModel {
-    private static final Logger LOG = LoggerFactory.getLogger(AnthropicClaudeModel.class);
+public class BedrockClaudeModel extends BaseAIModel {
+    private static final Logger LOG = LoggerFactory.getLogger(BedrockClaudeModel.class);
     private static final Gson GSON = new Gson();
     // Anthropic API version must be the value below.
     // See https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html#model-parameters-anthropic-claude-messages-request-response
     private static final String ANTHROPIC_API_VERSION = "bedrock-2023-05-31";
 
-    private final ClaudeAIModelType modelType;
+    private final ClaudeModelType modelType;
     private final BedrockRuntimeClient bedrockRuntimeClient;
 
-    public AnthropicClaudeModel(ClaudeAIModelType modelType) {
+    public BedrockClaudeModel(ClaudeModelType modelType) {
         super(modelType);
         this.modelType = modelType;
         bedrockRuntimeClient = BedrockRuntimeClient.builder()

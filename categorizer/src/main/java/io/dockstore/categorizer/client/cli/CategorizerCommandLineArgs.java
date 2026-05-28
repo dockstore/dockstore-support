@@ -4,7 +4,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import io.dockstore.utils.ai.AIModelType;
 import io.dockstore.utils.ai.AIModelTypeConverter;
-import io.dockstore.utils.ai.ClaudeAIModelType;
+import io.dockstore.utils.ai.ClaudeModelType;
 import java.io.File;
 import java.util.List;
 
@@ -35,7 +35,7 @@ public class CategorizerCommandLineArgs {
         private List<String> ontologyJsonPaths;
 
         @Parameter(names = {"-a", "--ai"}, description = "The AI model to use", converter = AIModelTypeConverter.class)
-        private AIModelType aiModel = ClaudeAIModelType.CLAUDE_4_5_HAIKU;
+        private AIModelType aiModel = ClaudeModelType.CLAUDE_4_5_HAIKU;
 
         public String getEntriesCsvFilePath() {
             return entriesCsvFilePath;

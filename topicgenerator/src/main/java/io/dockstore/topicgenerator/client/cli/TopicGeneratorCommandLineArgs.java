@@ -4,7 +4,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import io.dockstore.utils.ai.AIModelType;
 import io.dockstore.utils.ai.AIModelTypeConverter;
-import io.dockstore.utils.ai.ClaudeAIModelType;
+import io.dockstore.utils.ai.ClaudeModelType;
 import java.io.File;
 
 public class TopicGeneratorCommandLineArgs {
@@ -31,7 +31,7 @@ public class TopicGeneratorCommandLineArgs {
         private String entriesCsvFilePath;
 
         @Parameter(names = {"-a", "--ai"}, description = "The AI model to use", converter = AIModelTypeConverter.class)
-        private AIModelType aiModel = ClaudeAIModelType.CLAUDE_4_5_HAIKU;
+        private AIModelType aiModel = ClaudeModelType.CLAUDE_4_5_HAIKU;
 
         @Parameter(names = {"-d", "--dryRun"}, description = "Write the public Dockstore entries that are AI topic candidates to a file")
         private boolean isDryRun = false;

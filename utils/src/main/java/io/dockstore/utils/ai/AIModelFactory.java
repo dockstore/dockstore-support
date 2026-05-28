@@ -6,6 +6,6 @@ public final class AIModelFactory {
     }
 
     public static AIModel createModel(AIModelType type) {
-        return new AnthropicClaudeModel((ClaudeAIModelType) type);
+        return new BedrockClaudeModel((ClaudeModelType) type);
     }
 }

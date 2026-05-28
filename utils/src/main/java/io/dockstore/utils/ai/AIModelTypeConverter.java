@@ -9,9 +9,9 @@ public class AIModelTypeConverter implements IStringConverter<AIModelType> {
     @Override
     public AIModelType convert(String value) {
         try {
-            return ClaudeAIModelType.valueOf(value.toUpperCase());
+            return ClaudeModelType.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException e) {
-            String validValues = Arrays.stream(ClaudeAIModelType.values())
+            String validValues = Arrays.stream(ClaudeModelType.values())
                 .map(Enum::name)
                 .collect(Collectors.joining(", "));
             throw new ParameterException("Invalid AI model '" + value + "'. Valid values: " + validValues);
