@@ -21,9 +21,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
             .user().text(joinLines(
-                "Summarize the following %s:".formatted(entryType),
-                formatEntryData(entryData),
-                "",
+                createGenericEntryPresentation(entryData),
                 "In 200 words, describe the %s's purpose, functionality, and the operations it performs.".formatted(entryType, entryType),
                 "Omit the %s's name.".formatted(entryType),
                 "Be terse.",
@@ -39,10 +37,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
             .user().text(joinLines(
-                "Classify the operations performed by the %s into the following categories:".formatted(entryType),
-                // createOntologyMarkdownTable(nodes, "Operation ID", "Operation Name", "Operation Description"),
-                createTaggedOntologyCsv(nodes, "operation-"),
-                "",
+                createGenericCategoriesPresentation(nodes, "operations performed by the %s".formatted(entryType), "operation-"),
                 "The %s performs the following operations:".formatted(entryType),
                 tag("operations-description", summary),
                 "",

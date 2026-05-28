@@ -17,13 +17,10 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
 
     @Override
     protected AIModel.Prompt createSummarizeInstruction(EntryData entryData) {
-        String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
             .user().text(joinLines(
-                "Summarize the following %s:".formatted(entryType),
-                formatEntryData(entryData),
-                "",
+                createGenericEntryPresentation(entryData),
                 "List the input file formats.",
                 "Detail the format variants and format versions.",
                 "Omit output formats.",
@@ -39,10 +36,7 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
             .user().text(joinLines(
-                "Classify the %s's input formats into the following categories:".formatted(entryType),
-                // createOntologyMarkdownTable(nodes, "Input Format ID", "Input Format Name", "Input Format Description"),
-                createTaggedOntologyCsv(nodes, "input-format-"),
-                "",
+                createGenericCategoriesPresentation(nodes, "%s's input formats".formatted(entryType), "input-format-"),
                 "The %s accepts the following inputs:".formatted(entryType),
                 tag("input-description", summary),
                 "",

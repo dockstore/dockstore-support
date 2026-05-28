@@ -21,9 +21,7 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
             .user().text(joinLines(
-                "Summarize the following %s:".formatted(entryType),
-                formatEntryData(entryData),
-                "",
+                createGenericEntryPresentation(entryData),
                 "Describe the information content of the %s's outputs.".formatted(entryType),
                 "Explain each output's meaning or purpose, rather than its concrete representation.",
                 "Omit input information.",
@@ -39,10 +37,7 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
             .user().text(joinLines(
-                "Classify the %s's outputs into the following categories:".formatted(entryType),
-                // createOntologyMarkdownTable(nodes, "Output Data ID", "Output Data Name", "Output Data Description"),
-                createTaggedOntologyCsv(nodes, "output-data-"),
-                "",
+                createGenericCategoriesPresentation(nodes, "%s's outputs".formatted(entryType), "output-data-"),
                 "The %s supports the following outputs:".formatted(entryType),
                 tag("output-description", summary),
                 "",

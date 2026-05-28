@@ -21,8 +21,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
             .user().text(joinLines(
-                "Summarize the following %s:".formatted(entryType),
-                formatEntryData(entryData),
+                createGenericEntryPresentation(entryData),
                 "Describe the %s's field of study, area of application, scientific context, and similar.",
                 "Omit information about the operations performed by the %s.".formatted(entryType),
                 "Be terse and use scientific terminology."
@@ -37,9 +36,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
             .user().text(joinLines(
-                "Classify the %s into the following categories:".formatted(entryType),
-                createTaggedOntologyCsv(nodes, "topic-"),
-                "",
+                createGenericCategoriesPresentation(nodes, entryType, "topic-"),
                 "Use the following description of the %s's topics:".formatted(entryType),
                 tag("topic-description", summary),
                 "",

@@ -17,13 +17,10 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
 
     @Override
     protected AIModel.Prompt createSummarizeInstruction(EntryData entryData) {
-        String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
             .user().text(joinLines(
-                "Summarize the following %s:".formatted(entryType),
-                formatEntryData(entryData),
-                "",
+                createGenericEntryPresentation(entryData),
                 "List the output file formats.",
                 "Detail the format variants and format versions.",
                 "Omit input formats.",
@@ -39,10 +36,7 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
             .user().text(joinLines(
-                "Classify the %s's output formats into the following categories:".formatted(entryType),
-                // createOntologyMarkdownTable(nodes, "Output Format ID", "Output Format Name", "Output Format Description"),
-                createTaggedOntologyCsv(nodes, "output-format-"),
-                "",
+                createGenericCategoriesPresentation(nodes, "%s's output formats".formatted(entryType), "output-format-"),
                 "The %s produces the following outputs:".formatted(entryType),
                 tag("output-description", summary),
                 "",

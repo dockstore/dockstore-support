@@ -21,9 +21,7 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
             .user().text(joinLines(
-                "Summarize the following %s:".formatted(entryType),
-                formatEntryData(entryData),
-                "",
+                createGenericEntryPresentation(entryData),
                 "Describe the information content of the %s's inputs.".formatted(entryType),
                 "Explain each inputs's meaning or purpose, rather than its concrete representation.",
                 "Omit output information.",
@@ -39,10 +37,7 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
             .user().text(joinLines(
-                "Classify the %s's inputs into the following categories:".formatted(entryType),
-                // createOntologyMarkdownTable(nodes, "Input Data ID", "Input Data Name", "Input Data Description"),
-                createTaggedOntologyCsv(nodes, "input-data-"),
-                "",
+                createGenericCategoriesPresentation(nodes, "%s's inputs".formatted(entryType), "input-data-"),
                 "The %s supports the following inputs:".formatted(entryType),
                 tag("input-description", summary),
                 "",
