@@ -71,12 +71,11 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             .system().text(stateIdentity())
             .user().text(presentCategories(nodes, getPluralPhrase(entryData))).cache()
             .text(lines(
-                "", "",
-                getSummaryDescription(entryData),
-                tag(getRootId() + "-description", summary),
+                "",
+                saySummary(entryData, summary),
                 "",
                 getClassifyCommand(entryData),
-                "Output one %s ID per line and no other text.".formatted(getSingularPhrase())
+                sayOneIdPerLine()
             ))
             .outputTokens(MAX_CLASSIFY_TOKENS)
             .build();
@@ -103,17 +102,32 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
             .user().text(lines(
-                "Given the following %s description:".formatted(entryType),
-                tag("description", summary),
+                "",
+                saySummary(entryData, summary),
                 "",
                 getVerifyQuestion(entryData, node),
+                sayAnswerYesNo(),
                 "",
-                "\"" + node.label() + "\": " + node.definition(),
-                "",
-                "Answer \"yes\" or \"no\" with no other text."
+                sayOntologyNode(node)
             ))
             .outputTokens(MAX_VERIFY_TOKENS)
             .build();
+    }
+
+    protected String sayOneIdPerLine() {
+        return "Output one %s ID per line and no other text.".formatted(getSingularPhrase());
+    }
+
+    protected String sayOntologyNode(Ontology.Node node) {
+        return "\"" + node.label() + "\": " + node.definition();
+    }
+
+    protected String saySummary(EntryData entryData, String summary) {
+        return getSummaryDescription(entryData) + "\n" + tag("description", summary);
+    }
+
+    protected String sayAnswerYesNo() {
+        return "Answer \"yes\" or \"no\" with no other text.";
     }
 
     protected static String stateIdentity() {
