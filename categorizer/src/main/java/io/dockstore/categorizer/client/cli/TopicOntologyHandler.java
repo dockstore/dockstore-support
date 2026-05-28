@@ -10,24 +10,13 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String sayPluralPhrase(EntryData entryData) {
-        return entryData.entryType();
-    }
-
-    @Override
     protected List<String> saySummarizeInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
         return List.of(
-            "", "",
-            "Describe the %s's field of study, area of application, scientific context, and similar.",
+            "In about 200 words, describe the %s's field of study, area of application, scientific context, and similar.".formatted(entryType),
             "Omit information about the operations performed by the %s.".formatted(entryType),
             "Be terse and use scientific terminology."
         );
-    }
-
-    @Override
-    protected List<String> saySummaryIntro(EntryData entryData) {
-        return List.of("Use the following description of the %s's topics:".formatted(entryData.entryType()));
     }
 
     @Override
@@ -36,14 +25,29 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
         return List.of(
             "List the topics that relate to the %s.".formatted(entryType),
             "Be as specific as possible.",
-            "List up to seven topics.",
-            "Prefer topics that describe the field of study, area of application, scientific context, or similar.", entryType
+            "Prefer topics that describe the field of study, area of application, scientific context, or similar.",
+            "Include topics you are not sure about."
         );
     }
 
     @Override
     protected List<String> sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
-        return List.of("Does the following topic accurately describe the %s's field of study, area of application, scientific context, or similar?".formatted(entryData.entryType()));
+        String entryType = entryData.entryType();
+        return List.of(
+            "Does the following topic accurately describe the %s's field of study, area of application, scientific context, or similar?".formatted(entryType)
+        );
+    }
+
+    @Override
+    protected List<String> saySummaryIntro(EntryData entryData) {
+        return List.of(
+            "The %s relates to the following topics:".formatted(entryData.entryType())
+        );
+    }
+
+    @Override
+    protected String sayPluralPhrase(EntryData entryData) {
+        return "topics relating to the %s".formatted(entryData.entryType());
     }
 
 }

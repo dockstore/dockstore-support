@@ -175,6 +175,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     protected List<String> sayEntry(EntryData entryData) {
+        // TODO: limit the length of these fields
         return concatenate(
             tag("type", entryData.entryType()),
             tag("trsId", entryData.trsId()),

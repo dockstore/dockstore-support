@@ -10,15 +10,9 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String sayPluralPhrase(EntryData entryData) {
-        return "operations performed by the %s".formatted(entryData.entryType());
-    }
-
-    @Override
     protected List<String> saySummarizeInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
         return List.of(
-            "", "",
             "In 200 words, describe the %s's purpose, functionality, and the operations it performs.".formatted(entryType),
             "Omit the %s's name.".formatted(entryType),
             "Be terse.",
@@ -27,17 +21,11 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected List<String> saySummaryIntro(EntryData entryData) {
-        return List.of("The %s performs the following operations:".formatted(entryData.entryType()));
-    }
-
-    @Override
     protected List<String> sayClassifyInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
         return List.of(
             "List the operations that the %s performs.".formatted(entryType),
             "Prefer operations that describe the %s's functionality as a whole.".formatted(entryType),
-            // "Prefer operations that differentiate the %s from other %ss.".formatted(entryType, entryType),
             "Prefer operations that are more specific.",
             "Include operations you are not sure about."
         );
@@ -48,7 +36,8 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return List.of(isGenericNode(node)
             ? "Is the following operation the sole purpose of the %s?".formatted(entryType)
-            : "Does the %s perform the following operation, and is it the purpose or an important capability of the %s?".formatted(entryType, entryType));
+            : "Does the %s perform the following operation, and is it the purpose or an important capability of the %s?".formatted(entryType, entryType)
+        );
     }
 
     private boolean isGenericNode(Ontology.Node node) {
@@ -56,6 +45,18 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         return node.ontology().getAncestors(id).stream().anyMatch(ancestor -> "operation-data-handling".equals(ancestor.id()))
             || "operation-read-mapping".equals(id)
             || "operation-read-pre-processing".equals(id);
+    }
+
+    @Override
+    protected List<String> saySummaryIntro(EntryData entryData) {
+        return List.of(
+            "The %s performs the following operations:".formatted(entryData.entryType())
+        );
+    }
+
+    @Override
+    protected String sayPluralPhrase(EntryData entryData) {
+        return "operations performed by the %s".formatted(entryData.entryType());
     }
 
 }
