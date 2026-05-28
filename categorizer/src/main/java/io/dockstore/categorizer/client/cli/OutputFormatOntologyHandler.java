@@ -28,7 +28,7 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String getSummarizeCommand(EntryData entryData) {
+    protected String saySummarizeInstructions(EntryData entryData) {
         return lines(
             "", "",
             "List the output file formats.",
@@ -39,17 +39,17 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String getSummaryDescription(EntryData entryData) {
+    protected String saySummaryIntro(EntryData entryData) {
         return "The %s produces the following outputs:".formatted(entryData.entryType());
     }
 
     @Override
-    protected String getClassifyCommand(EntryData entryData) {
+    protected String sayClassifyInstructions(EntryData entryData) {
         return "List the output formats that the %s produces.".formatted(entryData.entryType());
     }
 
     @Override
-    protected String getVerifyQuestion(EntryData entryData, Ontology.Node node) {
+    protected String sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
         return "Does the %s produce the following output format?".formatted(entryData.entryType());
     }
 

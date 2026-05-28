@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,19 +45,17 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     protected abstract String getPluralPhrase(EntryData entryData);
 
-    protected abstract String getSummarizeCommand(EntryData entryData);
+    protected abstract String saySummarizeInstructions(EntryData entryData);
 
-    protected abstract String getSummaryDescription(EntryData entryData);
+    protected abstract String sayClassifyInstructions(EntryData entryData);
 
-    protected abstract String getClassifyCommand(EntryData entryData);
-
-    protected abstract String getVerifyQuestion(EntryData entryData, Ontology.Node node);
+    protected abstract String sayVerifyInstructions(EntryData entryData, Ontology.Node node);
 
     protected AIModel.Prompt createSummarizePrompt(EntryData entryData) {
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(presentEntry(entryData)).cache()
-            .text(getSummarizeCommand(entryData))
+            .user().text(lines(sayEntryIntro(entryData), sayEntry(entryData))).cache()
+            .text(saySummarizeInstructions(entryData))
             .outputTokens(MAX_SUMMARIZE_TOKENS)
             .build();
     }
@@ -69,12 +69,12 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     protected AIModel.Prompt createClassifyPrompt(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(presentCategories(nodes, getPluralPhrase(entryData))).cache()
+            .user().text(lines(sayCategoriesIntro(entryData), sayCategories(nodes))).cache()
             .text(lines(
                 "",
-                saySummary(entryData, summary),
+                lines(saySummaryIntro(entryData), saySummary(summary)),
                 "",
-                getClassifyCommand(entryData),
+                sayClassifyInstructions(entryData),
                 sayOneIdPerLine()
             ))
             .outputTokens(MAX_CLASSIFY_TOKENS)
@@ -103,9 +103,9 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             .system().text(stateIdentity())
             .user().text(lines(
                 "",
-                saySummary(entryData, summary),
+                lines(saySummaryIntro(entryData), saySummary(summary)),
                 "",
-                getVerifyQuestion(entryData, node),
+                sayVerifyInstructions(entryData, node),
                 sayAnswerYesNo(),
                 "",
                 sayOntologyNode(node)
@@ -122,8 +122,10 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return "\"" + node.label() + "\": " + node.definition();
     }
 
-    protected String saySummary(EntryData entryData, String summary) {
-        return getSummaryDescription(entryData) + "\n" + tag("description", summary);
+    protected abstract String saySummaryIntro(EntryData entryData);
+
+    protected String saySummary(String summary) {
+        return tag("description", summary);
     }
 
     protected String sayAnswerYesNo() {
@@ -134,10 +136,12 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return "You are a genomics and bioinformatics expert.\n";
     }
 
-    protected String presentEntry(EntryData entryData) {
+    protected String sayEntryIntro(EntryData entryData) {
+        return "Summarize the following %s:".formatted(entryData.entryType());
+    }
+
+    protected String sayEntry(EntryData entryData) {
         return lines(
-            "Summarize the following %s:".formatted(entryData.entryType()),
-            "",
             tag("type", entryData.entryType()),
             tag("trsId", entryData.trsId()),
             tag("code", entryData.descriptorFileContent()),
@@ -145,13 +149,14 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         );
     }
 
-    protected String presentCategories(List<Ontology.Node> nodes, String what) {
-        return
-            "Classify the %s into the following categories:\n".formatted(what)
-            + "\n"
-            + "<%s-csv>\n".formatted(getRootId())
+    protected String sayCategoriesIntro(EntryData entryData) {
+        return "Classify the %s into the following categories:".formatted(getPluralPhrase(entryData));
+    }
+
+    protected String sayCategories(List<Ontology.Node> nodes) {
+        return "<%s-csv>\n".formatted(getRootId())
             + createOntologyCsv(nodes)
-            + "</%s-csv>\n".formatted(getRootId());
+            + "</%s-csv>".formatted(getRootId());
     }
 
     // TODO: investigate 3rd party library
@@ -178,7 +183,11 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return lines("<%s>".formatted(tagName), content, "</%s>".formatted(tagName));
     }
 
-    protected String lines(String... values) {
-        return String.join("\n", values) + "\n";
+    protected String lines(Object... values) {
+        return Arrays.stream(values)
+            .flatMap(value -> value instanceof Iterable<?> iterable
+                ? StreamSupport.stream(iterable.spliterator(), false).map(Object::toString)
+                : Stream.of(value.toString()))
+            .collect(Collectors.joining("\n")) + "\n";
     }
 }

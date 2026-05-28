@@ -28,7 +28,7 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String getSummarizeCommand(EntryData entryData) {
+    protected String saySummarizeInstructions(EntryData entryData) {
         return lines(
             "", "",
             "List the input file formats.",
@@ -39,17 +39,17 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String getSummaryDescription(EntryData entryData) {
+    protected String saySummaryIntro(EntryData entryData) {
         return "The %s accepts the following inputs:".formatted(entryData.entryType());
     }
 
     @Override
-    protected String getClassifyCommand(EntryData entryData) {
+    protected String sayClassifyInstructions(EntryData entryData) {
         return "List the input formats that the %s accepts.".formatted(entryData.entryType());
     }
 
     @Override
-    protected String getVerifyQuestion(EntryData entryData, Ontology.Node node) {
+    protected String sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
         return "Does the %s accept the following input format?".formatted(entryData.entryType());
     }
 

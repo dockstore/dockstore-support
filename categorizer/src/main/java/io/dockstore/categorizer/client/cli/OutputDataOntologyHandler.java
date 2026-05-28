@@ -28,7 +28,7 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String getSummarizeCommand(EntryData entryData) {
+    protected String saySummarizeInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
         return lines(
             "", "",
@@ -40,17 +40,17 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String getSummaryDescription(EntryData entryData) {
+    protected String saySummaryIntro(EntryData entryData) {
         return "The %s supports the following outputs:".formatted(entryData.entryType());
     }
 
     @Override
-    protected String getClassifyCommand(EntryData entryData) {
+    protected String sayClassifyInstructions(EntryData entryData) {
         return "List the data outputs that the %s produces.".formatted(entryData.entryType());
     }
 
     @Override
-    protected String getVerifyQuestion(EntryData entryData, Ontology.Node node) {
+    protected String sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
         return "Does the %s produce the following output data?".formatted(entryData.entryType());
     }
 

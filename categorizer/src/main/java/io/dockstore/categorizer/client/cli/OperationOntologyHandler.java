@@ -28,7 +28,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String getSummarizeCommand(EntryData entryData) {
+    protected String saySummarizeInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
         return lines(
             "", "",
@@ -40,12 +40,12 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String getSummaryDescription(EntryData entryData) {
+    protected String saySummaryIntro(EntryData entryData) {
         return "The %s performs the following operations:".formatted(entryData.entryType());
     }
 
     @Override
-    protected String getClassifyCommand(EntryData entryData) {
+    protected String sayClassifyInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
         return lines(
             "List the operations that the %s performs.".formatted(entryType),
@@ -57,7 +57,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String getVerifyQuestion(EntryData entryData, Ontology.Node node) {
+    protected String sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
         String entryType = entryData.entryType();
         return isGenericNode(node)
             ? "Is the following operation the sole purpose of the %s?".formatted(entryType)
