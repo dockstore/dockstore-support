@@ -21,7 +21,7 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
             .user().text(presentEntry(entryData)).cache()
-            .text(joinLines(
+            .text(lines(
                 "", "",
                 "Describe the information content of the %s's outputs.".formatted(entryType),
                 "Explain each output's meaning or purpose, rather than its concrete representation.",
@@ -37,8 +37,8 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(presentCategories(nodes, "%s's outputs".formatted(entryType), "output-data-")).cache()
-            .text(joinLines(
+            .user().text(presentCategories(nodes, "%s's outputs".formatted(entryType))).cache()
+            .text(lines(
                 "", "",
                 "The %s supports the following outputs:".formatted(entryType),
                 tag("output-description", summary),
@@ -55,7 +55,7 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(joinLines(
+            .user().text(lines(
                 "Use the following description to determine the outputs data produced by the %s:".formatted(entryType),
                 tag("outputs-description", summary),
                 "",

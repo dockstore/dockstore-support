@@ -20,7 +20,7 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
             .user().text(presentEntry(entryData)).cache()
-            .text(joinLines(
+            .text(lines(
                 "", "",
                 "List the input file formats.",
                 "Detail the format variants and format versions.",
@@ -36,8 +36,8 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(presentCategories(nodes, "%s's input formats".formatted(entryType), "input-format-")).cache()
-            .text(joinLines(
+            .user().text(presentCategories(nodes, "%s's input formats".formatted(entryType))).cache()
+            .text(lines(
                 "", "",
                 "The %s accepts the following inputs:".formatted(entryType),
                 tag("input-description", summary),
@@ -54,7 +54,7 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(joinLines(
+            .user().text(lines(
                 "Use the following description to determine the input formats accepted by the %s:".formatted(entryType),
                 tag("input-description", summary),
                 "",

@@ -21,7 +21,7 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
             .user().text(presentEntry(entryData)).cache()
-            .text(joinLines(
+            .text(lines(
                 "", "",
                 "Describe the information content of the %s's inputs.".formatted(entryType),
                 "Explain each inputs's meaning or purpose, rather than its concrete representation.",
@@ -37,8 +37,8 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(presentCategories(nodes, "%s's inputs".formatted(entryType), "input-data-")).cache()
-            .text(joinLines(
+            .user().text(presentCategories(nodes, "%s's inputs".formatted(entryType))).cache()
+            .text(lines(
                 "", "",
                 "The %s supports the following inputs:".formatted(entryType),
                 tag("input-description", summary),
@@ -55,7 +55,7 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(joinLines(
+            .user().text(lines(
                 "Use the following description to determine the input data accepted by the %s:".formatted(entryType),
                 tag("input-description", summary),
                 "",

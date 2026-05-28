@@ -21,7 +21,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
             .user().text(presentEntry(entryData)).cache()
-            .text(joinLines(
+            .text(lines(
                 "", "",
                 "In 200 words, describe the %s's purpose, functionality, and the operations it performs.".formatted(entryType, entryType),
                 "Omit the %s's name.".formatted(entryType),
@@ -37,8 +37,8 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(presentCategories(nodes, "operations performed by the %s".formatted(entryType), "operation-")).cache()
-            .text(joinLines(
+            .user().text(presentCategories(nodes, "operations performed by the %s".formatted(entryType))).cache()
+            .text(lines(
                 "", "",
                 "The %s performs the following operations:".formatted(entryType),
                 tag("operations-description", summary),
@@ -62,7 +62,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
 
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(joinLines(
+            .user().text(lines(
                 "Given the following %s description:".formatted(entryType),
                 tag("description", summary),
                 "",

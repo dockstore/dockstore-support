@@ -21,7 +21,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
             .user().text(presentEntry(entryData)).cache()
-            .text(joinLines(
+            .text(lines(
                 "", "",
                 "Describe the %s's field of study, area of application, scientific context, and similar.",
                 "Omit information about the operations performed by the %s.".formatted(entryType),
@@ -36,8 +36,8 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(presentCategories(nodes, entryType, "topic-")).cache()
-            .text(joinLines(
+            .user().text(presentCategories(nodes, entryType)).cache()
+            .text(lines(
                 "", "",
                 "Use the following description of the %s's topics:".formatted(entryType),
                 tag("topic-description", summary),
@@ -57,7 +57,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(joinLines(
+            .user().text(lines(
                 "Use the following %s description:".formatted(entryType),
                 tag("topic-description", summary),
                 "",

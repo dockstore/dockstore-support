@@ -20,7 +20,7 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
             .user().text(presentEntry(entryData)).cache()
-            .text(joinLines(
+            .text(lines(
                 "", "",
                 "List the output file formats.",
                 "Detail the format variants and format versions.",
@@ -36,8 +36,8 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(presentCategories(nodes, "%s's output formats".formatted(entryType), "output-format-")).cache()
-            .text(joinLines(
+            .user().text(presentCategories(nodes, "%s's output formats".formatted(entryType))).cache()
+            .text(lines(
                 "", "",
                 "The %s produces the following outputs:".formatted(entryType),
                 tag("output-description", summary),
@@ -54,7 +54,7 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(stateIdentity())
-            .user().text(joinLines(
+            .user().text(lines(
                 "Use the following description to determine the output formats produced by the %s:".formatted(entryType),
                 tag("output-description", summary),
                 "",

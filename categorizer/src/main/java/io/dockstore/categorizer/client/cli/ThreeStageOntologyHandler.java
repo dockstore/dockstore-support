@@ -43,16 +43,6 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     protected abstract AIModel.Prompt createSummarizeInstruction(EntryData entryData);
 
-    protected String formatEntryData(EntryData entryData) {
-        // TODO: Limit some of these?
-        return joinLines(
-            tag("type", entryData.entryType()),
-            tag("trsId", entryData.trsId()),
-            tag("code", entryData.descriptorFileContent()),
-            tag("description", entryData.description())
-        );
-    }
-
     private List<Ontology.Node> classify(List<Ontology.Node> nodes, String summary, EntryData entryData, AIModel aiModel) {
         AIModel.Response response = aiModel.submitPrompt(createClassifyInstruction(nodes, summary, entryData));
         List<String> ids = Arrays.stream(response.text().split("\n")).map(String::trim).distinct().toList();
@@ -80,46 +70,33 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     protected abstract AIModel.Prompt createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData);
 
     protected static String stateIdentity() {
-        return "You are a genomics and bioinformatics expert.";
+        return "You are a genomics and bioinformatics expert.\n";
     }
 
     protected String presentEntry(EntryData entryData) {
-        return joinLines(
+        return lines(
             "Summarize the following %s:".formatted(entryData.entryType()),
-             formatEntryData(entryData),
-            ""
+            "",
+            tag("type", entryData.entryType()),
+            tag("trsId", entryData.trsId()),
+            tag("code", entryData.descriptorFileContent()),
+            tag("description", entryData.description())
         );
     }
 
-    protected String presentCategories(List<Ontology.Node> nodes, String what, String csvPrefix) {
-        return joinLines(
-            "Classify the %s into the following categories:".formatted(what),
-            createTaggedOntologyCsv(nodes, csvPrefix),
-            ""
-        );
+    protected String presentCategories(List<Ontology.Node> nodes, String what) {
+        return 
+            "Classify the %s into the following categories:\n".formatted(what)
+            + "\n"
+            + "<%s-csv>\n".formatted(prefix)
+            + createOntologyCsv(nodes)
+            + "</%s-csv>\n".formatted(prefix);
     }
-
-    protected String createTaggedOntologyCsv(List<Ontology.Node> nodes, String csvPrefix) {
-        String tagName = csvPrefix + "csv";
-        return tag(tagName, createOntologyCsv(nodes, csvPrefix));
-    }
-
-    /*
-    protected static String createOntologyMarkdownTable(List<Ontology.Node> nodes, String idHeader, String labelHeader, String definitionHeader) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("| %s | %s | %s |\n".formatted(idHeader, labelHeader, definitionHeader));
-        sb.append("| --- | --- | --- |\n");
-        for (Ontology.Node node: nodes) {
-            sb.append("| %s | %s | %s |\n".formatted(node.id(), node.label(), node.definition()));
-        }
-        return sb.toString();
-    }
-    */
 
     // TODO: investigate 3rd party library
-    protected String createOntologyCsv(List<Ontology.Node> nodes, String csvPrefix) {
+    protected String createOntologyCsv(List<Ontology.Node> nodes) {
         StringBuilder sb = new StringBuilder();
-        sb.append("%sid,%sname,%sdescription\n".formatted(csvPrefix, csvPrefix, csvPrefix));
+        sb.append("%s-id,%s-name,%s-description\n".formatted(prefix, prefix, prefix));
         for (Ontology.Node node: nodes) {
             sb.append(escapeCsvField(node.id())).append(",")
                 .append(escapeCsvField(node.label())).append(",")
@@ -136,10 +113,10 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     protected String tag(String tagName, String content) {
-        return joinLines("<%s>".formatted(tagName), content, "</%s>".formatted(tagName));
+        return lines("<%s>".formatted(tagName), content, "</%s>".formatted(tagName));
     }
 
-    protected String joinLines(String... values) {
-        return String.join("\n", values);
+    protected String lines(String... values) {
+        return String.join("\n", values) + "\n";
     }
 }
