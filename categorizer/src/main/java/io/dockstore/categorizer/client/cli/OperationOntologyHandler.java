@@ -18,9 +18,11 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     protected String createSummarizeInstruction(EntryData entryData) {
         String entryType = entryData.entryType();
         return joinLines(
-            "Summarize the purpose and functionality of the following %s in 200 words or less.".formatted(entryType),
-            "Omit the %s's name.  Be terse and use scientific terminology.".formatted(entryType),
-            formatEntryData(entryData)
+            "Summarize the following %s:".formatted(entryType),
+            formatEntryData(entryData),
+            "",
+            "In 200 words or less, describe the %s's functionality and the operations it performs.".formatted(entryType, entryType),
+            "Omit the %s's name.  Be terse and use scientific terminology.".formatted(entryType)
         );
     }
 

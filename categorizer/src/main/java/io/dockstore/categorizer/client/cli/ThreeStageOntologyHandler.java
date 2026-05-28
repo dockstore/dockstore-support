@@ -101,6 +101,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return tag(tagName, createOntologyCsv(nodes, prefix));
     }
 
+    /*
     protected static String createOntologyMarkdownTable(List<Ontology.Node> nodes, String idHeader, String labelHeader, String definitionHeader) {
         StringBuilder sb = new StringBuilder();
         sb.append("| %s | %s | %s |\n".formatted(idHeader, labelHeader, definitionHeader));
@@ -110,6 +111,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         }
         return sb.toString();
     }
+    */
 
     // TODO: investigate 3rd party library
     protected static String createOntologyCsv(List<Ontology.Node> nodes, String prefix) {
