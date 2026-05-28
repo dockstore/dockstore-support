@@ -10,11 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class ThreeStageOntologyHandler implements OntologyHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(ThreeStageOntologyHandler.class);
-    private static final int MAX_SUMMARIZE_TOKENS = 500;
-    private static final int MAX_CLASSIFY_TOKENS = 200;
-    private static final int MAX_VERIFY_TOKENS = 5;
+    protected static final int MAX_SUMMARIZE_TOKENS = 500;
+    protected static final int MAX_CLASSIFY_TOKENS = 200;
+    protected static final int MAX_VERIFY_TOKENS = 5;
 
+    private static final Logger LOG = LoggerFactory.getLogger(ThreeStageOntologyHandler.class);
     private final String prefix;
 
     ThreeStageOntologyHandler(String prefix) {
@@ -34,18 +34,14 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     private String summarize(EntryData entryData, AIModel aiModel) {
-        String prompt = joinLines(
-            createIdentityStatement(),
-            createSummarizeInstruction(entryData)
-        );
-        AIModel.Response response = aiModel.submitPrompt(AIModel.Prompt.builder().text(prompt).outputTokens(MAX_SUMMARIZE_TOKENS).build());
+        AIModel.Response response = aiModel.submitPrompt(createSummarizeInstruction(entryData));
         return response.text();
     }
 
     @Override
     public abstract String getName();
 
-    protected abstract String createSummarizeInstruction(EntryData entryData);
+    protected abstract AIModel.Prompt createSummarizeInstruction(EntryData entryData);
 
     protected String formatEntryData(EntryData entryData) {
         // TODO: Limit some of these?
@@ -58,12 +54,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     private List<Ontology.Node> classify(List<Ontology.Node> nodes, String summary, EntryData entryData, AIModel aiModel) {
-        String prompt = joinLines(
-            createIdentityStatement(),
-            createClassifyInstruction(nodes, summary, entryData)
-        );
-
-        AIModel.Response response = aiModel.submitPrompt(AIModel.Prompt.builder().text(prompt).outputTokens(MAX_CLASSIFY_TOKENS).build());
+        AIModel.Response response = aiModel.submitPrompt(createClassifyInstruction(nodes, summary, entryData));
         List<String> ids = Arrays.stream(response.text().split("\n")).map(String::trim).distinct().toList();
         return filterHallucinations(ids, nodes);
     }
@@ -78,22 +69,18 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     private boolean verify(Ontology.Node node, String summary, EntryData entryData, AIModel aiModel) {
-        String prompt = joinLines(
-            createIdentityStatement(),
-            createVerifyInstruction(node, summary, entryData)
-        );
-        AIModel.Response response = aiModel.submitPrompt(AIModel.Prompt.builder().text(prompt).outputTokens(MAX_VERIFY_TOKENS).build());
+        AIModel.Response response = aiModel.submitPrompt(createVerifyInstruction(node, summary, entryData));
         boolean verified = response.text().length() > 0 && response.text().substring(0, 1).toLowerCase().equals("y");
         LOG.info("VERIFIED {} {}", node.id(), verified);
         return verified;
     }
 
-    protected abstract String createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData);
+    protected abstract AIModel.Prompt createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData);
 
-    protected abstract String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData);
+    protected abstract AIModel.Prompt createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData);
 
-    private String createIdentityStatement() {
-        return "You are a scientist and genomics and bioinformatics expert.\n";
+    protected static String createIdentityStatement() {
+        return "You are a genomics and bioinformatics expert.";
     }
 
     protected static String createTaggedOntologyCsv(List<Ontology.Node> nodes, String prefix) {
