@@ -11,10 +11,10 @@ public class LoggingAIModel extends DelegatingAIModel {
     }
 
     @Override
-    public AIResponseInfo submitPrompt(AIModel.Prompt prompt) {
+    public Response submitPrompt(AIModel.Prompt prompt) {
         LOG.info("PROMPT {}", prompt);
-        AIResponseInfo responseInfo = super.submitPrompt(prompt);
-        LOG.info("RESPONSE {}", responseInfo.aiResponse());
+        Response responseInfo = super.submitPrompt(prompt);
+        LOG.info("RESPONSE {}", responseInfo.text());
         return responseInfo;
     }
 }

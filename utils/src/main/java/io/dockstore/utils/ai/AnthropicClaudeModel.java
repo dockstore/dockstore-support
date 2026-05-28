@@ -48,7 +48,7 @@ public class AnthropicClaudeModel implements AIModel {
     }
 
     @Override
-    public AIResponseInfo submitPrompt(Prompt prompt) {
+    public Response submitPrompt(Prompt prompt) {
         final String nativeRequest = createNativeClaudeRequest(prompt);
 
         // Encode and send the request to the Bedrock Runtime.
@@ -71,7 +71,7 @@ public class AnthropicClaudeModel implements AIModel {
                 + (cacheWriteTokens * modelType.getPricePerCacheWriteToken())
                 + (outputTokens * modelType.getPricePerOutputToken());
 
-        return new AIResponseInfo(aiResponse, false, inputTokens, outputTokens, cost, stopReason);
+        return new Response(aiResponse, false, inputTokens, outputTokens, cost, stopReason);
     }
 
     // Format the request payload using the model's native structure.
@@ -88,18 +88,18 @@ public class AnthropicClaudeModel implements AIModel {
         return GSON.toJson(claudeRequest);
     }
 
-    private List<ClaudeRequest.Content> toClaudeContent(List<AIModel.Content> content) {
+    private List<ClaudeRequest.Content> toClaudeContent(List<Prompt.Content> content) {
         List<ClaudeRequest.Content> result = new ArrayList<>();
         for (int i = 0; i < content.size(); i++) {
-            if (content.get(i) instanceof Textable textable) {
-                boolean cacheable = i + 1 < content.size() && content.get(i + 1) instanceof AIModel.CacheMarker;
+            if (content.get(i) instanceof Prompt.Textable textable) {
+                boolean cacheable = i + 1 < content.size() && content.get(i + 1) instanceof Prompt.CacheMarker;
                 result.add(new ClaudeRequest.Content("text", textable.toText(), cacheable ? new ClaudeRequest.CacheControl("ephemeral") : null));
             }
         }
         return result;
     }
 
-    private ClaudeRequest.Message toClaudeUserMessage(List<AIModel.Content> content) {
+    private ClaudeRequest.Message toClaudeUserMessage(List<Prompt.Content> content) {
         List<ClaudeRequest.Content> contents = toClaudeContent(content);
         return new ClaudeRequest.Message("user", contents);
     }

@@ -17,8 +17,8 @@ public class TotalCostAIModel extends DelegatingAIModel {
     }
 
     @Override
-    public AIResponseInfo submitPrompt(Prompt prompt) {
-        AIResponseInfo response = super.submitPrompt(prompt);
+    public Response submitPrompt(Prompt prompt) {
+        Response response = super.submitPrompt(prompt);
         totalCost += response.cost();
         totalInputTokens += response.inputTokens();
         totalOutputTokens += response.outputTokens();

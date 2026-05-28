@@ -9,7 +9,7 @@ public abstract class DelegatingAIModel implements AIModel {
     }
 
     @Override
-    public AIResponseInfo submitPrompt(Prompt prompt) {
+    public Response submitPrompt(Prompt prompt) {
         return delegate.submitPrompt(prompt);
     }
 

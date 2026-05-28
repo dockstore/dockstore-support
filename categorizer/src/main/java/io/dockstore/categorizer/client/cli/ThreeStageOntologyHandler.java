@@ -2,7 +2,6 @@ package io.dockstore.categorizer.client.cli;
 
 import io.dockstore.categorizer.Ontology;
 import io.dockstore.utils.ai.AIModel;
-import io.dockstore.utils.ai.AIModel.AIResponseInfo;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +38,8 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             createIdentityStatement(),
             createSummarizeInstruction(entryData)
         );
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, MAX_SUMMARIZE_TOKENS);
-        return aiResponseInfo.aiResponse();
+        AIModel.Response response = aiModel.submitPrompt(prompt, 0.0, MAX_SUMMARIZE_TOKENS);
+        return response.text();
     }
 
     @Override
@@ -64,9 +63,8 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             createClassifyInstruction(nodes, summary, entryData)
         );
 
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, MAX_CLASSIFY_TOKENS);
-        String response = aiResponseInfo.aiResponse();
-        List<String> ids = Arrays.stream(response.split("\n")).map(String::trim).distinct().toList();
+        AIModel.Response response = aiModel.submitPrompt(prompt, 0.0, MAX_CLASSIFY_TOKENS);
+        List<String> ids = Arrays.stream(response.text().split("\n")).map(String::trim).distinct().toList();
         return filterHallucinations(ids, nodes);
     }
 
@@ -84,9 +82,8 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             createIdentityStatement(),
             createVerifyInstruction(node, summary, entryData)
         );
-        AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, 0.0, MAX_VERIFY_TOKENS);
-        String response = aiResponseInfo.aiResponse();
-        boolean verified = response.length() > 0 && response.substring(0, 1).toLowerCase().equals("y");
+        AIModel.Response response = aiModel.submitPrompt(prompt, 0.0, MAX_VERIFY_TOKENS);
+        boolean verified = response.text().length() > 0 && response.text().substring(0, 1).toLowerCase().equals("y");
         LOG.info("VERIFIED {} {}", node.id(), verified);
         return verified;
     }
