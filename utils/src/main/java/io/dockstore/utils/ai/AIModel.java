@@ -13,21 +13,6 @@ public interface AIModel {
     Response submitPrompt(Prompt prompt);
 
     /**
-     * Submits a prompt to the AI model and returns the response along with usage metadata.
-     * @param prompt the text prompt to send to the model
-     * @param temperature controls randomness of the response; higher values produce more varied output
-     * @param outputTokens the maximum number of tokens to generate in the response
-     * @return an {@link Response} containing the response text, truncation status, token counts, cost, and stop reason
-     */
-    default Response submitPrompt(String prompt, double temperature, int outputTokens) {
-        return submitPrompt(new Prompt.Builder()
-            .text(prompt)
-            .temperature(temperature)
-            .outputTokens(outputTokens)
-            .build());
-    }
-
-    /**
      * Returns the name of this AI model.
      * @return the model name
      */
@@ -89,7 +74,7 @@ public interface AIModel {
     record Prompt(List<Prompt.Content> systemContent, List<Prompt.Content> userContent, double temperature, int outputTokens) {
 
         @SuppressWarnings("checkstyle:HiddenField")
-        static final class Builder {
+        public static final class Builder {
             private static final int DEFAULT_OUTPUT_TOKENS = 100;
             private enum Mode { USER, SYSTEM }
 
@@ -138,10 +123,10 @@ public interface AIModel {
             }
         }
 
-        interface Content {
+        public interface Content {
         }
 
-        interface Textable {
+        public interface Textable {
             String toText();
         }
 

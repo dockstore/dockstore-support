@@ -196,7 +196,7 @@ public class TopicGeneratorClient {
                             + descriptorFile.getContent() + "</content>";
                     final double temperature = 0.5; // The amount of randomness injected into the response. Ranges from 0 to 1. Pick 0.5 as the middle ground between predictability and creativity.
                     final int outputTokens = 100; // One token is roughly 4 characters. Using 100 tokens because setting it too low might truncate the response.
-                    AIModel.Response response = aiModel.submitPrompt(prompt, temperature, outputTokens);
+                    AIModel.Response response = aiModel.submitPrompt(new AIModel.Prompt.Builder().text(prompt).temperature(temperature).outputTokens(outputTokens).build());
                     String cleanedResponse = removeSummaryTagsFromTopic(response.text());
                     response = new AIModel.Response(cleanedResponse, response.isTruncated(), response.inputTokens(), response.outputTokens(), response.cost(), response.stopReason());
                     boolean isCensoredTopic = isSuspiciousTopic(response.text());
