@@ -1,6 +1,7 @@
 package io.dockstore.categorizer.client.cli;
 
 import io.dockstore.categorizer.Ontology;
+import java.util.List;
 
 public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
 
@@ -28,8 +29,8 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String saySummarizeInstructions(EntryData entryData) {
-        return lines(
+    protected List<String> saySummarizeInstructions(EntryData entryData) {
+        return List.of(
             "", "",
             "List the output file formats.",
             "Detail the format variants and format versions.",
@@ -39,18 +40,18 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String saySummaryIntro(EntryData entryData) {
-        return "The %s produces the following outputs:".formatted(entryData.entryType());
+    protected List<String> saySummaryIntro(EntryData entryData) {
+        return List.of("The %s produces the following outputs:".formatted(entryData.entryType()));
     }
 
     @Override
-    protected String sayClassifyInstructions(EntryData entryData) {
-        return "List the output formats that the %s produces.".formatted(entryData.entryType());
+    protected List<String> sayClassifyInstructions(EntryData entryData) {
+        return List.of("List the output formats that the %s produces.".formatted(entryData.entryType()));
     }
 
     @Override
-    protected String sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
-        return "Does the %s produce the following output format?".formatted(entryData.entryType());
+    protected List<String> sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
+        return List.of("Does the %s produce the following output format?".formatted(entryData.entryType()));
     }
 
 }

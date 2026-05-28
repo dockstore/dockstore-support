@@ -1,6 +1,7 @@
 package io.dockstore.categorizer.client.cli;
 
 import io.dockstore.categorizer.Ontology;
+import java.util.List;
 
 public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
 
@@ -28,8 +29,8 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String saySummarizeInstructions(EntryData entryData) {
-        return lines(
+    protected List<String> saySummarizeInstructions(EntryData entryData) {
+        return List.of(
             "", "",
             "List the input file formats.",
             "Detail the format variants and format versions.",
@@ -39,18 +40,18 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String saySummaryIntro(EntryData entryData) {
-        return "The %s accepts the following inputs:".formatted(entryData.entryType());
+    protected List<String> saySummaryIntro(EntryData entryData) {
+        return List.of("The %s accepts the following inputs:".formatted(entryData.entryType()));
     }
 
     @Override
-    protected String sayClassifyInstructions(EntryData entryData) {
-        return "List the input formats that the %s accepts.".formatted(entryData.entryType());
+    protected List<String> sayClassifyInstructions(EntryData entryData) {
+        return List.of("List the input formats that the %s accepts.".formatted(entryData.entryType()));
     }
 
     @Override
-    protected String sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
-        return "Does the %s accept the following input format?".formatted(entryData.entryType());
+    protected List<String> sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
+        return List.of("Does the %s accept the following input format?".formatted(entryData.entryType()));
     }
 
 }

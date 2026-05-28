@@ -45,17 +45,27 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     protected abstract String getPluralPhrase(EntryData entryData);
 
-    protected abstract String saySummarizeInstructions(EntryData entryData);
+    protected abstract List<String> saySummarizeInstructions(EntryData entryData);
 
-    protected abstract String sayClassifyInstructions(EntryData entryData);
+    protected abstract List<String> sayClassifyInstructions(EntryData entryData);
 
-    protected abstract String sayVerifyInstructions(EntryData entryData, Ontology.Node node);
+    protected abstract List<String> sayVerifyInstructions(EntryData entryData, Ontology.Node node);
 
     protected AIModel.Prompt createSummarizePrompt(EntryData entryData) {
         return AIModel.Prompt.builder()
-            .system().text(stateIdentity())
-            .user().text(lines(sayEntryIntro(entryData), sayEntry(entryData))).cache()
-            .text(saySummarizeInstructions(entryData))
+            .system()
+            .text(lines(
+                 sayIdentity()
+            ))
+            .user()
+            .text(lines(
+                 sayEntryIntro(entryData),
+                 sayEntry(entryData)
+            ))
+            .cache()
+            .text(lines(
+                 saySummarizeInstructions(entryData)
+            ))
             .outputTokens(MAX_SUMMARIZE_TOKENS)
             .build();
     }
@@ -68,11 +78,19 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     protected AIModel.Prompt createClassifyPrompt(List<Ontology.Node> nodes, String summary, EntryData entryData) {
         return AIModel.Prompt.builder()
-            .system().text(stateIdentity())
-            .user().text(lines(sayCategoriesIntro(entryData), sayCategories(nodes))).cache()
+            .system()
             .text(lines(
-                "",
-                lines(saySummaryIntro(entryData), saySummary(summary)),
+                 sayIdentity()
+            ))
+            .user()
+            .text(lines(
+                sayCategoriesIntro(entryData),
+                sayCategories(nodes)
+            ))
+            .cache()
+            .text(lines(
+                saySummaryIntro(entryData),
+                saySummary(summary),
                 "",
                 sayClassifyInstructions(entryData),
                 sayOneIdPerLine()
@@ -100,10 +118,14 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     protected AIModel.Prompt createVerifyPrompt(Ontology.Node node, String summary, EntryData entryData) {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
-            .system().text(stateIdentity())
-            .user().text(lines(
-                "",
-                lines(saySummaryIntro(entryData), saySummary(summary)),
+            .system()
+            .text(lines(
+                sayIdentity()
+            ))
+            .user()
+            .text(lines(
+                saySummaryIntro(entryData),
+                saySummary(summary),
                 "",
                 sayVerifyInstructions(entryData, node),
                 sayAnswerYesNo(),
@@ -122,18 +144,18 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return "\"" + node.label() + "\": " + node.definition();
     }
 
-    protected abstract String saySummaryIntro(EntryData entryData);
+    protected abstract List<String> saySummaryIntro(EntryData entryData);
 
     protected String saySummary(String summary) {
-        return tag("description", summary);
+        return tag("%s-description".formatted(getRootId()), summary);
     }
 
     protected String sayAnswerYesNo() {
         return "Answer \"yes\" or \"no\" with no other text.";
     }
 
-    protected static String stateIdentity() {
-        return "You are a genomics and bioinformatics expert.\n";
+    protected static String sayIdentity() {
+        return "You are a genomics and bioinformatics expert.";
     }
 
     protected String sayEntryIntro(EntryData entryData) {

@@ -1,6 +1,7 @@
 package io.dockstore.categorizer.client.cli;
 
 import io.dockstore.categorizer.Ontology;
+import java.util.List;
 
 public class OperationOntologyHandler extends ThreeStageOntologyHandler {
 
@@ -28,9 +29,9 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String saySummarizeInstructions(EntryData entryData) {
+    protected List<String> saySummarizeInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
-        return lines(
+        return List.of(
             "", "",
             "In 200 words, describe the %s's purpose, functionality, and the operations it performs.".formatted(entryType),
             "Omit the %s's name.".formatted(entryType),
@@ -40,14 +41,14 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String saySummaryIntro(EntryData entryData) {
-        return "The %s performs the following operations:".formatted(entryData.entryType());
+    protected List<String> saySummaryIntro(EntryData entryData) {
+        return List.of("The %s performs the following operations:".formatted(entryData.entryType()));
     }
 
     @Override
-    protected String sayClassifyInstructions(EntryData entryData) {
+    protected List<String> sayClassifyInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
-        return lines(
+        return List.of(
             "List the operations that the %s performs.".formatted(entryType),
             "Prefer operations that describe the %s's functionality as a whole.".formatted(entryType),
             // "Prefer operations that differentiate the %s from other %ss.".formatted(entryType, entryType),
@@ -57,11 +58,11 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
+    protected List<String> sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
         String entryType = entryData.entryType();
-        return isGenericNode(node)
+        return List.of(isGenericNode(node)
             ? "Is the following operation the sole purpose of the %s?".formatted(entryType)
-            : "Does the %s perform the following operation, and is it the purpose or an important capability of the %s?".formatted(entryType, entryType);
+            : "Does the %s perform the following operation, and is it the purpose or an important capability of the %s?".formatted(entryType, entryType));
     }
 
     private boolean isGenericNode(Ontology.Node node) {

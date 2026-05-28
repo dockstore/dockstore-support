@@ -1,6 +1,7 @@
 package io.dockstore.categorizer.client.cli;
 
 import io.dockstore.categorizer.Ontology;
+import java.util.List;
 
 public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
 
@@ -28,9 +29,9 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String saySummarizeInstructions(EntryData entryData) {
+    protected List<String> saySummarizeInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
-        return lines(
+        return List.of(
             "", "",
             "Describe the information content of the %s's outputs.".formatted(entryType),
             "Explain each output's meaning or purpose, rather than its concrete representation.",
@@ -40,18 +41,18 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    protected String saySummaryIntro(EntryData entryData) {
-        return "The %s supports the following outputs:".formatted(entryData.entryType());
+    protected List<String> saySummaryIntro(EntryData entryData) {
+        return List.of("The %s supports the following outputs:".formatted(entryData.entryType()));
     }
 
     @Override
-    protected String sayClassifyInstructions(EntryData entryData) {
-        return "List the data outputs that the %s produces.".formatted(entryData.entryType());
+    protected List<String> sayClassifyInstructions(EntryData entryData) {
+        return List.of("List the data outputs that the %s produces.".formatted(entryData.entryType()));
     }
 
     @Override
-    protected String sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
-        return "Does the %s produce the following output data?".formatted(entryData.entryType());
+    protected List<String> sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
+        return List.of("Does the %s produce the following output data?".formatted(entryData.entryType()));
     }
 
 }
