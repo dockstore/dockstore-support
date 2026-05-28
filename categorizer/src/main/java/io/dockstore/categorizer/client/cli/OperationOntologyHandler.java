@@ -20,8 +20,9 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
-            .user().text(joinLines(
-                createGenericEntryPresentation(entryData),
+            .user().text(createGenericEntryPresentation(entryData)).cache()
+            .text(joinLines(
+                "", "",
                 "In 200 words, describe the %s's purpose, functionality, and the operations it performs.".formatted(entryType, entryType),
                 "Omit the %s's name.".formatted(entryType),
                 "Be terse.",
@@ -36,15 +37,16 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return AIModel.Prompt.builder()
             .system().text(createIdentityStatement())
-            .user().text(joinLines(
-                createGenericCategoriesPresentation(nodes, "operations performed by the %s".formatted(entryType), "operation-"),
+            .user().text(createGenericCategoriesPresentation(nodes, "operations performed by the %s".formatted(entryType), "operation-")).cache()
+            .text(joinLines(
+                "", "",
                 "The %s performs the following operations:".formatted(entryType),
                 tag("operations-description", summary),
                 "",
                 "List the operations that the %s performs.".formatted(entryType),
-                "Prefer operations that summarize the %s as a whole.".formatted(entryType),
+                "Prefer operations that describe an important capability of the %s.".formatted(entryType),
                 // "Prefer operations that differentiate the %s from other %ss.".formatted(entryType, entryType),
-                // "Prefer operations that are very specific.",
+                "Prefer operations that are more specific.",
                 "Output one operation ID per line and no other text."
             ))
             .outputTokens(MAX_CLASSIFY_TOKENS)
