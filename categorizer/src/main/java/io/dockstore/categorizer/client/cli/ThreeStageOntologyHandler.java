@@ -38,7 +38,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             createIdentityStatement(),
             createSummarizeInstruction(entryData)
         );
-        AIModel.Response response = aiModel.submitPrompt(new AIModel.Prompt.Builder().text(prompt).outputTokens(MAX_SUMMARIZE_TOKENS).build());
+        AIModel.Response response = aiModel.submitPrompt(AIModel.Prompt.builder().text(prompt).outputTokens(MAX_SUMMARIZE_TOKENS).build());
         return response.text();
     }
 
@@ -63,7 +63,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             createClassifyInstruction(nodes, summary, entryData)
         );
 
-        AIModel.Response response = aiModel.submitPrompt(new AIModel.Prompt.Builder().text(prompt).outputTokens(MAX_CLASSIFY_TOKENS).build());
+        AIModel.Response response = aiModel.submitPrompt(AIModel.Prompt.builder().text(prompt).outputTokens(MAX_CLASSIFY_TOKENS).build());
         List<String> ids = Arrays.stream(response.text().split("\n")).map(String::trim).distinct().toList();
         return filterHallucinations(ids, nodes);
     }
@@ -82,7 +82,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             createIdentityStatement(),
             createVerifyInstruction(node, summary, entryData)
         );
-        AIModel.Response response = aiModel.submitPrompt(new AIModel.Prompt.Builder().text(prompt).outputTokens(MAX_VERIFY_TOKENS).build());
+        AIModel.Response response = aiModel.submitPrompt(AIModel.Prompt.builder().text(prompt).outputTokens(MAX_VERIFY_TOKENS).build());
         boolean verified = response.text().length() > 0 && response.text().substring(0, 1).toLowerCase().equals("y");
         LOG.info("VERIFIED {} {}", node.id(), verified);
         return verified;

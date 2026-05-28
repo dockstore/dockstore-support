@@ -11,7 +11,7 @@ class AIModelPromptBuilderTest {
 
     @Test
     void defaultsAreApplied() {
-        Prompt prompt = new Prompt.Builder().build();
+        Prompt prompt = Prompt.builder().build();
         assertEquals(0.0, prompt.temperature());
         assertEquals(100, prompt.outputTokens());
         assertTrue(prompt.systemContent().isEmpty());
@@ -20,7 +20,7 @@ class AIModelPromptBuilderTest {
 
     @Test
     void textGoesToUserContentByDefault() {
-        Prompt prompt = new Prompt.Builder().text("hello").build();
+        Prompt prompt = Prompt.builder().text("hello").build();
         assertEquals(1, prompt.userContent().size());
         assertEquals(new Prompt.Text("hello"), prompt.userContent().get(0));
         assertTrue(prompt.systemContent().isEmpty());
@@ -28,7 +28,7 @@ class AIModelPromptBuilderTest {
 
     @Test
     void explicitUserTextGoesToUserContent() {
-        Prompt prompt = new Prompt.Builder().user().text("hello").build();
+        Prompt prompt = Prompt.builder().user().text("hello").build();
         assertEquals(1, prompt.userContent().size());
         assertEquals(new Prompt.Text("hello"), prompt.userContent().get(0));
         assertTrue(prompt.systemContent().isEmpty());
@@ -36,7 +36,7 @@ class AIModelPromptBuilderTest {
 
     @Test
     void systemTextGoesToSystemContent() {
-        Prompt prompt = new Prompt.Builder().system().text("sys").build();
+        Prompt prompt = Prompt.builder().system().text("sys").build();
         assertEquals(1, prompt.systemContent().size());
         assertEquals(new Prompt.Text("sys"), prompt.systemContent().get(0));
         assertTrue(prompt.userContent().isEmpty());
@@ -44,7 +44,7 @@ class AIModelPromptBuilderTest {
 
     @Test
     void modeSwitchingRoutesContentCorrectly() {
-        Prompt prompt = new Prompt.Builder()
+        Prompt prompt = Prompt.builder()
             .system().text("sys")
             .user().text("usr")
             .build();
@@ -56,7 +56,7 @@ class AIModelPromptBuilderTest {
 
     @Test
     void multipleTextCallsAccumulateInOrder() {
-        Prompt prompt = new Prompt.Builder()
+        Prompt prompt = Prompt.builder()
             .text("first")
             .text("second")
             .build();
@@ -67,7 +67,7 @@ class AIModelPromptBuilderTest {
 
     @Test
     void cacheAddsMarkerToUserContent() {
-        Prompt prompt = new Prompt.Builder().text("a").cache().build();
+        Prompt prompt = Prompt.builder().text("a").cache().build();
         assertEquals(2, prompt.userContent().size());
         assertEquals(new Prompt.Text("a"), prompt.userContent().get(0));
         assertTrue(prompt.userContent().get(1) instanceof Prompt.CacheMarker);
@@ -75,7 +75,7 @@ class AIModelPromptBuilderTest {
 
     @Test
     void cacheAddsMarkerToSystemContent() {
-        Prompt prompt = new Prompt.Builder().system().text("s").cache().build();
+        Prompt prompt = Prompt.builder().system().text("s").cache().build();
         assertEquals(2, prompt.systemContent().size());
         assertEquals(new Prompt.Text("s"), prompt.systemContent().get(0));
         assertTrue(prompt.systemContent().get(1) instanceof Prompt.CacheMarker);
@@ -83,19 +83,19 @@ class AIModelPromptBuilderTest {
 
     @Test
     void temperatureIsSet() {
-        Prompt prompt = new Prompt.Builder().temperature(0.7).build();
+        Prompt prompt = Prompt.builder().temperature(0.7).build();
         assertEquals(0.7, prompt.temperature());
     }
 
     @Test
     void outputTokensIsSet() {
-        Prompt prompt = new Prompt.Builder().outputTokens(512).build();
+        Prompt prompt = Prompt.builder().outputTokens(512).build();
         assertEquals(512, prompt.outputTokens());
     }
 
     @Test
     void builderMethodsReturnSameInstance() {
-        Prompt.Builder builder = new Prompt.Builder();
+        Prompt.Builder builder = Prompt.builder();
         assertSame(builder, builder.user());
         assertSame(builder, builder.system());
         assertSame(builder, builder.text("x"));
@@ -106,7 +106,7 @@ class AIModelPromptBuilderTest {
 
     @Test
     void mixedSystemAndUserContent() {
-        Prompt prompt = new Prompt.Builder()
+        Prompt prompt = Prompt.builder()
             .system().text("sys1").text("sys2").cache()
             .user().text("usr1").cache().text("usr2")
             .system().text("sys3").cache()

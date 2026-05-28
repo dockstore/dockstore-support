@@ -73,6 +73,10 @@ public interface AIModel {
 
     record Prompt(List<Prompt.Content> systemContent, List<Prompt.Content> userContent, double temperature, int outputTokens) {
 
+        public static Builder builder() {
+            return new Builder();
+        }
+
         @SuppressWarnings("checkstyle:HiddenField")
         public static final class Builder {
             private static final int DEFAULT_OUTPUT_TOKENS = 100;
