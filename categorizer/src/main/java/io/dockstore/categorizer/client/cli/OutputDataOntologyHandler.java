@@ -6,25 +6,11 @@ import java.util.List;
 public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
 
     OutputDataOntologyHandler() {
+        super("output-data");
     }
 
     @Override
-    public String getName() {
-        return "Output data";
-    }
-
-    @Override
-    protected String getRootId() {
-        return "output-data";
-    }
-
-    @Override
-    protected String getSingularPhrase() {
-        return "output data";
-    }
-
-    @Override
-    protected String getPluralPhrase(EntryData entryData) {
+    protected String sayPluralPhrase(EntryData entryData) {
         return "%s's outputs".formatted(entryData.entryType());
     }
 

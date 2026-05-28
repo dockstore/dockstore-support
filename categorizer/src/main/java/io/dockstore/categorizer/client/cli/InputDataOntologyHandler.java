@@ -6,25 +6,11 @@ import java.util.List;
 public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
 
     InputDataOntologyHandler() {
+        super("input-data");
     }
 
     @Override
-    public String getName() {
-        return "Input data";
-    }
-
-    @Override
-    protected String getRootId() {
-        return "input-data";
-    }
-
-    @Override
-    protected String getSingularPhrase() {
-        return "input data";
-    }
-
-    @Override
-    protected String getPluralPhrase(EntryData entryData) {
+    protected String sayPluralPhrase(EntryData entryData) {
         return "%s's inputs".formatted(entryData.entryType());
     }
 

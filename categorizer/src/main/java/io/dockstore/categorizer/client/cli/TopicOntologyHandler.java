@@ -6,25 +6,11 @@ import java.util.List;
 public class TopicOntologyHandler extends ThreeStageOntologyHandler {
 
     TopicOntologyHandler() {
+        super("topic");
     }
 
     @Override
-    public String getName() {
-        return "Topics";
-    }
-
-    @Override
-    protected String getRootId() {
-        return "topic";
-    }
-
-    @Override
-    protected String getSingularPhrase() {
-        return "topic";
-    }
-
-    @Override
-    protected String getPluralPhrase(EntryData entryData) {
+    protected String sayPluralPhrase(EntryData entryData) {
         return entryData.entryType();
     }
 

@@ -6,25 +6,11 @@ import java.util.List;
 public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
 
     OutputFormatOntologyHandler() {
+        super("output-format");
     }
 
     @Override
-    public String getName() {
-        return "Output formats";
-    }
-
-    @Override
-    protected String getRootId() {
-        return "output-format";
-    }
-
-    @Override
-    protected String getSingularPhrase() {
-        return "output format";
-    }
-
-    @Override
-    protected String getPluralPhrase(EntryData entryData) {
+    protected String sayPluralPhrase(EntryData entryData) {
         return "%s's output formats".formatted(entryData.entryType());
     }
 

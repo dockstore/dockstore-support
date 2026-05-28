@@ -6,25 +6,11 @@ import java.util.List;
 public class OperationOntologyHandler extends ThreeStageOntologyHandler {
 
     OperationOntologyHandler() {
+        super("operation");
     }
 
     @Override
-    public String getName() {
-        return "Operations";
-    }
-
-    @Override
-    protected String getRootId() {
-        return "operation";
-    }
-
-    @Override
-    protected String getSingularPhrase() {
-        return "operation";
-    }
-
-    @Override
-    protected String getPluralPhrase(EntryData entryData) {
+    protected String sayPluralPhrase(EntryData entryData) {
         return "operations performed by the %s".formatted(entryData.entryType());
     }
 

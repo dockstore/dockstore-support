@@ -6,25 +6,11 @@ import java.util.List;
 public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
 
     InputFormatOntologyHandler() {
+        super("input-format");
     }
 
     @Override
-    public String getName() {
-        return "Input formats";
-    }
-
-    @Override
-    protected String getRootId() {
-        return "input-format";
-    }
-
-    @Override
-    protected String getSingularPhrase() {
-        return "input format";
-    }
-
-    @Override
-    protected String getPluralPhrase(EntryData entryData) {
+    protected String sayPluralPhrase(EntryData entryData) {
         return "%s's input formats".formatted(entryData.entryType());
     }
 

@@ -17,11 +17,27 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     protected static final int MAX_CLASSIFY_TOKENS = 200;
     protected static final int MAX_VERIFY_TOKENS = 5;
 
+    private static final String BLANK = "";
     private static final Logger LOG = LoggerFactory.getLogger(ThreeStageOntologyHandler.class);
+
+    private final String rootId;
+
+    protected ThreeStageOntologyHandler(String rootId) {
+        this.rootId = rootId;
+    }
+
+    protected String getRootId() {
+        return rootId;
+    }
+
+    @Override
+    public String getName() {
+        return rootId;
+    }
 
     @Override
     public List<Ontology.Node> coverage(Ontology ontology) {
-        String rootId = getRootId();
+        // TODO: change this to a scan that includes all ontology nodes with an ancestor corresponding to the rootId.
         return ontology.getNodes().stream().filter(node -> rootId.equals(node.id()) || node.id().startsWith(rootId + "-")).toList();
     }
 
@@ -59,14 +75,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return verified;
     }
 
-    @Override
-    public abstract String getName();
-
-    protected abstract String getRootId();
-
-    protected abstract String getSingularPhrase();
-
-    protected abstract String getPluralPhrase(EntryData entryData);
+    protected abstract String sayPluralPhrase(EntryData entryData);
 
     protected abstract List<String> saySummarizeInstructions(EntryData entryData);
 
@@ -84,7 +93,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             .text(lines(
                  sayEntryIntro(entryData),
                  sayEntry(entryData),
-                ""
+                BLANK
             ))
             .cache()
             .text(lines(
@@ -104,13 +113,13 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             .text(lines(
                 sayCategoriesIntro(entryData),
                 sayCategories(nodes),
-                ""
+                BLANK
             ))
             .cache()
             .text(lines(
                 saySummaryIntro(entryData),
                 saySummary(summary),
-                "",
+                BLANK,
                 sayClassifyInstructions(entryData),
                 sayOneIdPerLine()
             ))
@@ -129,10 +138,10 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             .text(lines(
                 saySummaryIntro(entryData),
                 saySummary(summary),
-                "",
+                BLANK,
                 sayVerifyInstructions(entryData, node),
                 sayAnswerYesNo(),
-                "",
+                BLANK,
                 sayOntologyNode(node)
             ))
             .outputTokens(MAX_VERIFY_TOKENS)
@@ -140,7 +149,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     protected String sayOneIdPerLine() {
-        return "Output one %s-id per line and no other text.".formatted(getRootId());
+        return "Output one %s-id per line and no other text.".formatted(rootId);
     }
 
     protected String sayOntologyNode(Ontology.Node node) {
@@ -150,7 +159,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     protected abstract List<String> saySummaryIntro(EntryData entryData);
 
     protected List<String> saySummary(String summary) {
-        return tag(getRootId() + "-description", summary);
+        return tag(rootId + "-description", summary);
     }
 
     protected String sayAnswerYesNo() {
@@ -166,35 +175,32 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     protected List<String> sayEntry(EntryData entryData) {
-        return Stream.of(
+        return concatenate(
             tag("type", entryData.entryType()),
             tag("trsId", entryData.trsId()),
             tag("code", entryData.descriptorFileContent()),
             tag("description", entryData.description())
-        )
-        .flatMap(List::stream)
-        .toList();
+        );
     }
 
     protected String sayCategoriesIntro(EntryData entryData) {
-        return "Classify the %s into the following categories:".formatted(getPluralPhrase(entryData));
+        return "Classify the %s into the following categories:".formatted(sayPluralPhrase(entryData));
     }
 
     protected List<String> sayCategories(List<Ontology.Node> nodes) {
-        return tag(getRootId() + "-csv", csv(nodes));
+        return tag(rootId + "-csv", csv(nodes));
     }
 
     private List<String> csv(List<Ontology.Node> nodes) {
-        String prefix = getRootId();
         List<String> lines = new ArrayList<>();
-        lines.add("%s-id,%s-name,%s-description".formatted(prefix, prefix, prefix));
+        lines.add("%s-id,%s-name,%s-description".formatted(rootId, rootId, rootId));
         for (Ontology.Node node: nodes) {
-            lines.add(escapeCsvField(node.id() + "," + escapeCsvField(node.label()) + "," + escapeCsvField(node.definition())));
+            lines.add(escapeCsv(node.id() + "," + escapeCsv(node.label()) + "," + escapeCsv(node.definition())));
         }
         return lines;
     }
 
-    private String escapeCsvField(String value) {
+    private String escapeCsv(String value) {
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
@@ -220,4 +226,11 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
                 : Stream.of(value.toString()))
             .collect(Collectors.joining("\n")) + "\n";
     }
+
+    protected static <T> List<T> concatenate(Iterable<T> a, Iterable<T> b, Iterable<T> c, Iterable<T> d) {
+        return Stream.of(a, b, c, d)
+            .flatMap(iterable -> StreamSupport.stream(iterable.spliterator(), false))
+            .toList();
+    }
+
 }
