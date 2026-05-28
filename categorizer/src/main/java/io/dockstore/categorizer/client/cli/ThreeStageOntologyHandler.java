@@ -2,6 +2,7 @@ package io.dockstore.categorizer.client.cli;
 
 import io.dockstore.categorizer.Ontology;
 import io.dockstore.utils.ai.AIModel;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,28 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return response.text();
     }
 
+    private List<Ontology.Node> classify(List<Ontology.Node> nodes, String summary, EntryData entryData, AIModel aiModel) {
+        AIModel.Response response = aiModel.submitPrompt(createClassifyPrompt(nodes, summary, entryData));
+        List<String> ids = Arrays.stream(response.text().split("\n")).map(String::trim).distinct().toList();
+        return filterHallucinations(ids, nodes);
+    }
+
+    private List<Ontology.Node> filterHallucinations(List<String> ids, List<Ontology.Node> nodes) {
+        Map<String, Ontology.Node> candidateIdToNode = nodes.stream().collect(Collectors.toMap(Ontology.Node::id, node -> node));
+        return ids.stream().filter(candidateIdToNode::containsKey).map(candidateIdToNode::get).toList();
+    }
+
+    private List<Ontology.Node> verify(List<Ontology.Node> nodes, String summary, EntryData entryData, AIModel aiModel) {
+        return nodes.stream().filter(node -> verify(node, summary, entryData, aiModel)).toList();
+    }
+
+    private boolean verify(Ontology.Node node, String summary, EntryData entryData, AIModel aiModel) {
+        AIModel.Response response = aiModel.submitPrompt(createVerifyPrompt(node, summary, entryData));
+        boolean verified = response.text().length() > 0 && response.text().substring(0, 1).toLowerCase().equals("y");
+        LOG.info("VERIFIED {} {}", node.id(), verified);
+        return verified;
+    }
+
     @Override
     public abstract String getName();
 
@@ -60,7 +83,8 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             .user()
             .text(lines(
                  sayEntryIntro(entryData),
-                 sayEntry(entryData)
+                 sayEntry(entryData),
+                ""
             ))
             .cache()
             .text(lines(
@@ -68,12 +92,6 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             ))
             .outputTokens(MAX_SUMMARIZE_TOKENS)
             .build();
-    }
-
-    private List<Ontology.Node> classify(List<Ontology.Node> nodes, String summary, EntryData entryData, AIModel aiModel) {
-        AIModel.Response response = aiModel.submitPrompt(createClassifyPrompt(nodes, summary, entryData));
-        List<String> ids = Arrays.stream(response.text().split("\n")).map(String::trim).distinct().toList();
-        return filterHallucinations(ids, nodes);
     }
 
     protected AIModel.Prompt createClassifyPrompt(List<Ontology.Node> nodes, String summary, EntryData entryData) {
@@ -85,7 +103,8 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             .user()
             .text(lines(
                 sayCategoriesIntro(entryData),
-                sayCategories(nodes)
+                sayCategories(nodes),
+                ""
             ))
             .cache()
             .text(lines(
@@ -97,22 +116,6 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             ))
             .outputTokens(MAX_CLASSIFY_TOKENS)
             .build();
-    }
-
-    private List<Ontology.Node> filterHallucinations(List<String> ids, List<Ontology.Node> nodes) {
-        Map<String, Ontology.Node> candidateIdToNode = nodes.stream().collect(Collectors.toMap(Ontology.Node::id, node -> node));
-        return ids.stream().filter(candidateIdToNode::containsKey).map(candidateIdToNode::get).toList();
-    }
-
-    private List<Ontology.Node> verify(List<Ontology.Node> nodes, String summary, EntryData entryData, AIModel aiModel) {
-        return nodes.stream().filter(node -> verify(node, summary, entryData, aiModel)).toList();
-    }
-
-    private boolean verify(Ontology.Node node, String summary, EntryData entryData, AIModel aiModel) {
-        AIModel.Response response = aiModel.submitPrompt(createVerifyPrompt(node, summary, entryData));
-        boolean verified = response.text().length() > 0 && response.text().substring(0, 1).toLowerCase().equals("y");
-        LOG.info("VERIFIED {} {}", node.id(), verified);
-        return verified;
     }
 
     protected AIModel.Prompt createVerifyPrompt(Ontology.Node node, String summary, EntryData entryData) {
@@ -137,7 +140,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     protected String sayOneIdPerLine() {
-        return "Output one %s ID per line and no other text.".formatted(getSingularPhrase());
+        return "Output one %s-id per line and no other text.".formatted(getRootId());
     }
 
     protected String sayOntologyNode(Ontology.Node node) {
@@ -146,8 +149,8 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     protected abstract List<String> saySummaryIntro(EntryData entryData);
 
-    protected String saySummary(String summary) {
-        return tag("%s-description".formatted(getRootId()), summary);
+    protected List<String> saySummary(String summary) {
+        return tag(getRootId() + "-description", summary);
     }
 
     protected String sayAnswerYesNo() {
@@ -162,36 +165,33 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return "Summarize the following %s:".formatted(entryData.entryType());
     }
 
-    protected String sayEntry(EntryData entryData) {
-        return lines(
+    protected List<String> sayEntry(EntryData entryData) {
+        return Stream.of(
             tag("type", entryData.entryType()),
             tag("trsId", entryData.trsId()),
             tag("code", entryData.descriptorFileContent()),
             tag("description", entryData.description())
-        );
+        )
+        .flatMap(List::stream)
+        .toList();
     }
 
     protected String sayCategoriesIntro(EntryData entryData) {
         return "Classify the %s into the following categories:".formatted(getPluralPhrase(entryData));
     }
 
-    protected String sayCategories(List<Ontology.Node> nodes) {
-        return "<%s-csv>\n".formatted(getRootId())
-            + createOntologyCsv(nodes)
-            + "</%s-csv>".formatted(getRootId());
+    protected List<String> sayCategories(List<Ontology.Node> nodes) {
+        return tag(getRootId() + "-csv", csv(nodes));
     }
 
-    // TODO: investigate 3rd party library
-    protected String createOntologyCsv(List<Ontology.Node> nodes) {
-        String rootId = getRootId();
-        StringBuilder sb = new StringBuilder();
-        sb.append("%s-id,%s-name,%s-description\n".formatted(rootId, rootId, rootId));
+    private List<String> csv(List<Ontology.Node> nodes) {
+        String prefix = getRootId();
+        List<String> lines = new ArrayList<>();
+        lines.add("%s-id,%s-name,%s-description".formatted(prefix, prefix, prefix));
         for (Ontology.Node node: nodes) {
-            sb.append(escapeCsvField(node.id())).append(",")
-                .append(escapeCsvField(node.label())).append(",")
-                .append(escapeCsvField(node.definition())).append("\n");
+            lines.add(escapeCsvField(node.id() + "," + escapeCsvField(node.label()) + "," + escapeCsvField(node.definition())));
         }
-        return sb.toString();
+        return lines;
     }
 
     private String escapeCsvField(String value) {
@@ -201,11 +201,19 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return value;
     }
 
-    protected String tag(String tagName, String content) {
-        return lines("<%s>".formatted(tagName), content, "</%s>".formatted(tagName));
+    private List<String> tag(String tagName, String content) {
+        return tag(tagName, List.of(content));
     }
 
-    protected String lines(Object... values) {
+    private List<String> tag(String tagName, List<String> content) {
+        List<String> lines = new ArrayList<>();
+        lines.add("<%s>".formatted(tagName));
+        lines.addAll(content);
+        lines.add("</%s>".formatted(tagName));
+        return lines;
+    }
+
+    private String lines(Object... values) {
         return Arrays.stream(values)
             .flatMap(value -> value instanceof Iterable<?> iterable
                 ? StreamSupport.stream(iterable.spliterator(), false).map(Object::toString)
