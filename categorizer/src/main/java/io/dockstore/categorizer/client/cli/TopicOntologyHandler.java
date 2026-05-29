@@ -13,7 +13,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
     protected List<String> saySummarizeInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
         return List.of(
-            "Describe the %s's field of study, area of application, scientific context, and similar.".formatted(entryType),
+            "Describe the %s's research field, application area, and scientific context.".formatted(entryType),
             "Omit information about the operations that the %s performs.".formatted(entryType)
         );
     }
@@ -23,7 +23,9 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return List.of(
             "List the topics that the %s relates to.".formatted(entryType),
-            "Prefer topics that describe the field of study, area of application, scientific context, or similar.",
+            "Include topics that describe the %s's research field, application area, or scientific context.".formatted(entryType),
+            "Include topics that describe the %s's overall role.".formatted(entryType),
+            "Prefer topics that differentiate this %s from other %ss.".formatted(entryType, entryType),
             "Prefer topics that are more specific.",
             "List up to seven topics."
         );

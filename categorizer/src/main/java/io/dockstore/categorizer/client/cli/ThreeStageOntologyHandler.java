@@ -126,7 +126,8 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
                 saySummary(summary),
                 BLANK,
                 sayClassifyInstructions(entryData),
-                sayOneIdPerLine()
+                sayOneIdPerLine(),
+                saySelectIdsFromTheList()
             ))
             .outputTokens(MAX_CLASSIFY_TOKENS)
             .build();
@@ -152,6 +153,10 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             ))
             .outputTokens(MAX_VERIFY_TOKENS)
             .build();
+    }
+
+    protected String saySelectIdsFromTheList() {
+        return "Select %s IDs from the above CSV.  Do not use other IDs.".formatted(rootId.replace("-", " "));
     }
 
     protected String sayOneIdPerLine() {
