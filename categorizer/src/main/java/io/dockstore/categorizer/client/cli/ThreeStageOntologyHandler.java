@@ -97,7 +97,8 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             ))
             .cache()
             .text(lines(
-                 saySummarizeInstructions(entryData)
+                 saySummarizeInstructions(entryData),
+                 sayWordLimitAndStyle()
             ))
             .outputTokens(MAX_SUMMARIZE_TOKENS)
             .build();
@@ -168,6 +169,10 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     protected static String sayIdentity() {
         return "You are a genomics and bioinformatics expert.";
+    }
+
+    protected String sayWordLimitAndStyle() {
+        return "Respond with about 200 words.  Be terse.  Use scientific terminology.";
     }
 
     protected String sayEntryIntro(EntryData entryData) {

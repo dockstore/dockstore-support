@@ -15,8 +15,7 @@ public class OutputDataOntologyHandler extends ThreeStageOntologyHandler {
         return List.of(
             "Describe the information content of the %s's outputs.".formatted(entryType),
             "Explain each output's meaning or purpose, rather than its concrete representation.",
-            "Omit input information.",
-            "Be terse."
+            "Omit input information."
         );
     }
 

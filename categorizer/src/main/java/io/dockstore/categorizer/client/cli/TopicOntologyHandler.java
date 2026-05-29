@@ -13,9 +13,8 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
     protected List<String> saySummarizeInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
         return List.of(
-            "In about 200 words, describe the %s's field of study, area of application, scientific context, and similar.".formatted(entryType),
-            "Omit information about the operations performed by the %s.".formatted(entryType),
-            "Be terse and use scientific terminology."
+            "Describe the %s's field of study, area of application, scientific context, and similar.".formatted(entryType),
+            "Omit information about the operations performed by the %s.".formatted(entryType)
         );
     }
 

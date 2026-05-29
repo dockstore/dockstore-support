@@ -21,8 +21,7 @@ public class InputDataOntologyHandler extends ThreeStageOntologyHandler {
             "", "",
             "Describe the information content of the %s's inputs.".formatted(entryType),
             "Explain each inputs's meaning or purpose, rather than its concrete representation.",
-            "Omit output information.",
-            "Be terse."
+            "Omit output information."
         );
     }
 

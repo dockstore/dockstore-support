@@ -13,10 +13,8 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     protected List<String> saySummarizeInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
         return List.of(
-            "In 200 words, describe the %s's purpose, functionality, and the operations it performs.".formatted(entryType),
-            "Omit the %s's name.".formatted(entryType),
-            "Be terse.",
-            "Use scientific terminology."
+            "Describe the %s's purpose, functionality, and the operations it performs.".formatted(entryType),
+            "Omit the %s's name.".formatted(entryType)
         );
     }
 

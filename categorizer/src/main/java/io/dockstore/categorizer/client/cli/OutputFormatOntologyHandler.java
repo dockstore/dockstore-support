@@ -14,8 +14,7 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
         return List.of(
             "List the output file formats that the %s produces.".formatted(entryData.entryType()),
             "Detail the format variants and format versions.",
-            "Omit input formats.",
-            "Be terse."
+            "Omit input formats."
         );
     }
 
