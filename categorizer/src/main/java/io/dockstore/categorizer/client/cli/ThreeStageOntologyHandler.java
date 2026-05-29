@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -157,8 +158,15 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return "Output one %s ID per line and no other text.".formatted(rootId.replace("-", " "));
     }
 
-    protected String sayOntologyNode(Ontology.Node node) {
-        return "\"" + node.label() + "\": " + node.definition();
+    protected List<String> sayOntologyNode(Ontology.Node node) {
+        return List.of(
+            "%s: \"%s\"".formatted(sayOntologyType(), node.label()),
+            "Description: \"%s\"".formatted(node.definition())
+        );
+    }
+
+    protected String sayOntologyType() {
+        return StringUtils.capitalize(rootId.replace("-", " "));
     }
 
     protected abstract List<String> saySummaryIntro(EntryData entryData);
@@ -198,16 +206,20 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     protected List<String> sayCategories(List<Ontology.Node> nodes) {
-        return tag(rootId + "-tsv", tsv(nodes));
+        return tag(rootId + "-csv", csv(nodes));
     }
 
-    private List<String> tsv(List<Ontology.Node> nodes) {
+    private List<String> csv(List<Ontology.Node> nodes) {
         List<String> lines = new ArrayList<>();
-        lines.add("ID\tName\tDescription");
+        lines.add("id,name,description");
         for (Ontology.Node node: nodes) {
-            lines.add(node.id() + "\t" + node.label() + "\t" + node.definition());
+            lines.add(node.id() + "," + escapeCsv(node.label()) + "," + escapeCsv(node.definition()));
         }
         return lines;
+    }
+
+    private String escapeCsv(String value) {
+        return "\"" + value.replace("\"", "\"\"") + "\"";
     }
 
     private List<String> tag(String tagName, String content) {

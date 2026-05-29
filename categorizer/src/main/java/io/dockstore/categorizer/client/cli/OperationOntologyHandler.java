@@ -23,9 +23,9 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return List.of(
             "List the operations that the %s performs.".formatted(entryType),
-            "Prefer operations that describe the %s's functionality as a whole.".formatted(entryType),
-            "Prefer operations that are more specific.",
-            "Include operations you are not sure about."
+            "Include operations that describe the %s's purpose as a whole.".formatted(entryType),
+            "Prefer operations that differentiate the %s from other %ss.".formatted(entryType, entryType),
+            "Prefer operations that are more specific."
         );
     }
 
