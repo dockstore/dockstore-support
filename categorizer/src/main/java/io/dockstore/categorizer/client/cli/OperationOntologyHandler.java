@@ -54,7 +54,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
 
     @Override
     protected String sayPluralPhrase(EntryData entryData) {
-        return "operations performed by the %s".formatted(entryData.entryType());
+        return "%s's operations".formatted(entryData.entryType());
     }
 
 }

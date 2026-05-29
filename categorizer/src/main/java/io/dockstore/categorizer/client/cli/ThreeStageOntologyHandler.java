@@ -87,18 +87,19 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
         return AIModel.Prompt.builder()
             .system()
             .text(lines(
-                 sayIdentity()
+                sayIdentity()
             ))
             .user()
             .text(lines(
-                 sayEntryIntro(entryData),
-                 sayEntry(entryData),
+                sayEntryIntro(entryData),
+                BLANK,
+                sayEntry(entryData),
                 BLANK
             ))
             .cache()
             .text(lines(
-                 saySummarizeInstructions(entryData),
-                 sayWordLimitAndStyle()
+                saySummarizeInstructions(entryData),
+                sayWordLimitAndStyle()
             ))
             .outputTokens(MAX_SUMMARIZE_TOKENS)
             .build();
@@ -113,12 +114,14 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             .user()
             .text(lines(
                 sayCategoriesIntro(entryData),
+                BLANK,
                 sayCategories(nodes),
                 BLANK
             ))
             .cache()
             .text(lines(
                 saySummaryIntro(entryData),
+                BLANK,
                 saySummary(summary),
                 BLANK,
                 sayClassifyInstructions(entryData),
@@ -138,6 +141,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
             .user()
             .text(lines(
                 saySummaryIntro(entryData),
+                BLANK,
                 saySummary(summary),
                 BLANK,
                 sayVerifyInstructions(entryData, node),
@@ -150,7 +154,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     protected String sayOneIdPerLine() {
-        return "Output one %s-id per line and no other text.".formatted(rootId);
+        return "Output one %s ID per line and no other text.".formatted(rootId);
     }
 
     protected String sayOntologyNode(Ontology.Node node) {
@@ -199,18 +203,15 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     private List<String> csv(List<Ontology.Node> nodes) {
         List<String> lines = new ArrayList<>();
-        lines.add("%s-id,%s-name,%s-description".formatted(rootId, rootId, rootId));
+        lines.add("\"%s-id\",\"%s-name\",\"%s-description\"".formatted(rootId, rootId, rootId));
         for (Ontology.Node node: nodes) {
-            lines.add(escapeCsv(node.id() + "," + escapeCsv(node.label()) + "," + escapeCsv(node.definition())));
+            lines.add("\"%s\",\"%s\",\"%s\"".formatted(escapeCsv(node.id()), escapeCsv(node.label()), escapeCsv(node.definition())));
         }
         return lines;
     }
 
     private String escapeCsv(String value) {
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        }
-        return value;
+        return "\"" + value.replace("\"", "\"\"") + "\"";
     }
 
     private List<String> tag(String tagName, String content) {

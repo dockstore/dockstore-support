@@ -14,7 +14,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
         String entryType = entryData.entryType();
         return List.of(
             "Describe the %s's field of study, area of application, scientific context, and similar.".formatted(entryType),
-            "Omit information about the operations performed by the %s.".formatted(entryType)
+            "Omit information about the operations that the %s performs.".formatted(entryType)
         );
     }
 
@@ -22,9 +22,9 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
     protected List<String> sayClassifyInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
         return List.of(
-            "List the topics that relate to the %s.".formatted(entryType),
-            "Be as specific as possible.",
+            "List the topics that the %s relates to.".formatted(entryType),
             "Prefer topics that describe the field of study, area of application, scientific context, or similar.",
+            "Prefer topics that are more specific.",
             "Include topics you are not sure about."
         );
     }
@@ -46,7 +46,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
 
     @Override
     protected String sayPluralPhrase(EntryData entryData) {
-        return "topics relating to the %s".formatted(entryData.entryType());
+        return "%s's topics".formatted(entryData.entryType());
     }
 
 }
