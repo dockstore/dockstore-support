@@ -154,7 +154,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     protected String sayOneIdPerLine() {
-        return "Output one %s ID per line and no other text.".formatted(rootId);
+        return "Output one %s ID per line and no other text.".formatted(rootId.replace("-", " "));
     }
 
     protected String sayOntologyNode(Ontology.Node node) {
