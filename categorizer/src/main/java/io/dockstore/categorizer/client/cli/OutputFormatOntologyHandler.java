@@ -35,7 +35,7 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
     @Override
     protected List<String> saySummaryIntro(EntryData entryData) {
         return List.of(
-            "The %s produces the following outputs:".formatted(entryData.entryType())
+            "The %s produces the following output formats:".formatted(entryData.entryType())
         );
     }
 

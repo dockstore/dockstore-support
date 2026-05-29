@@ -198,20 +198,16 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     protected List<String> sayCategories(List<Ontology.Node> nodes) {
-        return tag(rootId + "-csv", csv(nodes));
+        return tag(rootId + "-tsv", tsv(nodes));
     }
 
-    private List<String> csv(List<Ontology.Node> nodes) {
+    private List<String> tsv(List<Ontology.Node> nodes) {
         List<String> lines = new ArrayList<>();
-        lines.add("\"%s-id\",\"%s-name\",\"%s-description\"".formatted(rootId, rootId, rootId));
+        lines.add("ID\tName\tDescription");
         for (Ontology.Node node: nodes) {
-            lines.add("\"%s\",\"%s\",\"%s\"".formatted(escapeCsv(node.id()), escapeCsv(node.label()), escapeCsv(node.definition())));
+            lines.add(node.id() + "\t" + node.label() + "\t" + node.definition());
         }
         return lines;
-    }
-
-    private String escapeCsv(String value) {
-        return "\"" + value.replace("\"", "\"\"") + "\"";
     }
 
     private List<String> tag(String tagName, String content) {

@@ -24,8 +24,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
         return List.of(
             "List the topics that the %s relates to.".formatted(entryType),
             "Prefer topics that describe the field of study, area of application, scientific context, or similar.",
-            "Prefer topics that are more specific.",
-            "Include topics you are not sure about."
+            "Prefer topics that are more specific."
         );
     }
 
