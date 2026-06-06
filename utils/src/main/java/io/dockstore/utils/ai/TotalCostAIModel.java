@@ -1,5 +1,9 @@
 package io.dockstore.utils.ai;
 
+/**
+ * Decorator that accumulates the total cost and token usage across all invocations, optionally
+ * enforcing a cost limit.
+ */
 public class TotalCostAIModel extends DelegatingAIModel {
 
     private final double costLimit;

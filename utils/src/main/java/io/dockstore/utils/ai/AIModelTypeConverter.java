@@ -5,6 +5,9 @@ import com.beust.jcommander.ParameterException;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+/**
+ * JCommander converter that parses a string into an {@link AIModelType}.
+ */
 public class AIModelTypeConverter implements IStringConverter<AIModelType> {
     @Override
     public AIModelType convert(String value) {

@@ -3,6 +3,9 @@ package io.dockstore.utils.ai;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Interface for submitting prompts to an AI model and retrieving responses with usage metadata.
+ */
 public interface AIModel {
 
     /**

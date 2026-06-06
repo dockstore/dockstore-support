@@ -1,5 +1,8 @@
 package io.dockstore.utils.ai;
 
+/**
+ * Abstract decorator that forwards all {@link AIModel} calls to an inner delegate.
+ */
 public abstract class DelegatingAIModel implements AIModel {
 
     private final AIModel delegate;

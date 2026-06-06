@@ -3,6 +3,9 @@ package io.dockstore.utils.ai;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Decorator that logs each prompt and its response text when delegating to another {@link AIModel}.
+ */
 public class LoggingAIModel extends DelegatingAIModel {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingAIModel.class);
 
