@@ -74,12 +74,29 @@ public interface AIModel {
     record Response(String text, boolean isTruncated, long inputTokens, long outputTokens, double cost, String stopReason) {
     }
 
+    /**
+     * A prompt submitted to an AI model, containing system and user content blocks along with generation parameters.
+     * Use {@link #builder()} to construct instances.
+     * @param systemContent content blocks providing system-level context or instructions
+     * @param userContent content blocks forming the user turn
+     * @param temperature sampling temperature controlling output randomness; 0.0 produces deterministic output
+     * @param outputTokens maximum number of tokens the model may generate in its response
+     */
     record Prompt(List<Prompt.Content> systemContent, List<Prompt.Content> userContent, double temperature, int outputTokens) {
 
+        /**
+         * Creates a new {@link Builder} for constructing a {@link Prompt}.
+         * @return a new Builder instance
+         */
         public static Builder builder() {
             return new Builder();
         }
 
+        /**
+         * Fluent builder for constructing a {@link Prompt}.
+         * Call {@link #user()} or {@link #system()} to select which content list subsequent
+         * {@link #text} and {@link #cache} calls append to; the builder starts in user mode.
+         */
         @SuppressWarnings("checkstyle:HiddenField")
         public static final class Builder {
             private static final int DEFAULT_OUTPUT_TOKENS = 100;
@@ -91,11 +108,19 @@ public interface AIModel {
             private int outputTokens = DEFAULT_OUTPUT_TOKENS;
             private Mode mode = Mode.USER;
 
+            /**
+             * Switches subsequent {@link #text} and {@link #cache} calls to target the user content list.
+             * @return this builder
+             */
             public Builder user() {
                 mode = Mode.USER;
                 return this;
             }
 
+            /**
+             * Switches subsequent {@link #text} and {@link #cache} calls to target the system content list.
+             * @return this builder
+             */
             public Builder system() {
                 mode = Mode.SYSTEM;
                 return this;
@@ -105,38 +130,76 @@ public interface AIModel {
                 return mode == Mode.SYSTEM ? systemContent : userContent;
             }
 
+            /**
+             * Appends a text block to the current content list.
+             * @param text the text to append
+             * @return this builder
+             */
             public Builder text(String text) {
                 currentContent().add(new Text(text));
                 return this;
             }
 
+            /**
+             * Appends a cache marker to the current content list, signaling to the model provider
+             * that content up to this point should be cached.
+             * @return this builder
+             */
             public Builder cache() {
                 currentContent().add(new CacheMarker());
                 return this;
             }
 
+            /**
+             * Sets the sampling temperature.
+             * @param temperature controls output randomness; 0.0 produces deterministic output
+             * @return this builder
+             */
             public Builder temperature(double temperature) {
                 this.temperature = temperature;
                 return this;
             }
 
+            /**
+             * Sets the maximum number of tokens the model may generate in its response.
+             * @param outputTokens the token limit for the model's response
+             * @return this builder
+             */
             public Builder outputTokens(int outputTokens) {
                 this.outputTokens = outputTokens;
                 return this;
             }
 
+            /**
+             * Builds and returns the {@link Prompt}.
+             * @return a new Prompt with the configured content and parameters
+             */
             public Prompt build() {
                 return new Prompt(systemContent, userContent, temperature, outputTokens);
             }
         }
 
+        /**
+         * Marker interface for all elements that can appear in a prompt's content.
+         */
         public interface Content {
         }
 
+        /**
+         * Implemented by content elements that have a plain-text representation.
+         */
         public interface Textable {
+            /**
+             * Returns the text representation of this content element.
+             * @return the text string
+             */
             String toText();
         }
 
+        /**
+         * Holds a plain text string.
+         * @param text the text string
+         */
         record Text(String text) implements Content, Textable {
             @Override
             public String toText() {
@@ -144,6 +207,9 @@ public interface AIModel {
             }
         }
 
+        /**
+         * Marker that indicates that all content prior to it should be cached, if possible.
+         */
         record CacheMarker() implements Content {
         }
     }
