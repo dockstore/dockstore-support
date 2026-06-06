@@ -13,9 +13,32 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Ontology handler that implements a three-stage process, consisting of the following steps:
+ * <ol>
+ *   <li><b>Summarize</b>: Distills the entry's type, TRS ID, descriptor content, and description
+ *       into a compact summary using an AI prompt.</li>
+ *   <li><b>Classify</b>: Presents the candidate ontology nodes (as a CSV of id, name, description)
+ *       and the summary to the AI, which returns a list of matching node IDs.  IDs that do not
+ *       correspond to any candidate node are discarded as hallucinations.</li>
+ *   <li><b>Verify</b>: For each node returned by the classify step, run a yes/no AI prompt that
+ *       asks if the summary matches the node, filtering out any node that does not match.</li>
+ * </ol>
+ */
 public abstract class ThreeStageOntologyHandler implements OntologyHandler {
+    /**
+     * Suggested maximum number of tokens in the summary generated during the "summarize" step.
+     * At 1.5 tokens per word, this would accomodate slightly over 300 words.
+     */
     protected static final int MAX_SUMMARIZE_TOKENS = 500;
+    /**
+     * Suggested maximum number of tokens in the list of IDs produced by the "classify" step.
+     * At ten tokens per ID, this would accomodate about 20 IDs.
+     */
     protected static final int MAX_CLASSIFY_TOKENS = 200;
+    /**
+     * Suggested maximum number of tokens in the yes/no answer to the "verify" step.
+     */
     protected static final int MAX_VERIFY_TOKENS = 5;
 
     private static final String BLANK = "";
