@@ -127,7 +127,7 @@ public class CategorizerClient {
             case "create-categories" -> categorizerClient.createCategories(categorizerConfig, createCategoriesCommand);
             case "list-categories" -> categorizerClient.listCategories(categorizerConfig, listCategoriesCommand);
             case "delete-categories" -> categorizerClient.deleteCategories(categorizerConfig, deleteCategoriesCommand);
-            case "reindex-entries" -> categorizerClient.reindexEntries(categorizerConfig);
+            case "reindex-entries" -> categorizerClient.reindexEntries(categorizerConfig, reindexEntriesCommand);
             default -> errorMessage("Unknown command", GENERIC_ERROR);
             }
         }
@@ -483,7 +483,7 @@ public class CategorizerClient {
         // TODO: after the categories are deleted, we need to do a bulk ES reindex
     }
 
-    private void reindexEntries(CategorizerConfig categorizerConfig) {
+    private void reindexEntries(CategorizerConfig categorizerConfig, ReindexEntriesCommand reindexEntriesCommand) {
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
         LOG.info("Reindexing entries");
