@@ -20,6 +20,7 @@ import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListAllEnt
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListCategoriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ListStaleEntriesCommand;
 import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.PopulateCategoriesCommand;
+import io.dockstore.categorizer.client.cli.CategorizerCommandLineArgs.ReindexEntriesCommand;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.ApiException;
 import io.dockstore.openapi.client.api.EntriesApi;
@@ -86,6 +87,7 @@ public class CategorizerClient {
         final CreateCategoriesCommand createCategoriesCommand = new CreateCategoriesCommand();
         final ListCategoriesCommand listCategoriesCommand = new ListCategoriesCommand();
         final DeleteCategoriesCommand deleteCategoriesCommand = new DeleteCategoriesCommand();
+        final ReindexEntriesCommand reindexEntriesCommand = new ReindexEntriesCommand();
         jCommander.addCommand(listAllEntriesCommand);
         jCommander.addCommand(listStaleEntriesCommand);
         jCommander.addCommand(categorizeEntriesCommand);
@@ -93,6 +95,7 @@ public class CategorizerClient {
         jCommander.addCommand(createCategoriesCommand);
         jCommander.addCommand(listCategoriesCommand);
         jCommander.addCommand(deleteCategoriesCommand);
+        jCommander.addCommand(reindexEntriesCommand);
 
         try {
             jCommander.parse(args);
@@ -124,6 +127,7 @@ public class CategorizerClient {
             case "create-categories" -> categorizerClient.createCategories(categorizerConfig, createCategoriesCommand);
             case "list-categories" -> categorizerClient.listCategories(categorizerConfig, listCategoriesCommand);
             case "delete-categories" -> categorizerClient.deleteCategories(categorizerConfig, deleteCategoriesCommand);
+            case "reindex-entries" -> categorizerClient.reindexEntries(categorizerConfig);
             default -> errorMessage("Unknown command", GENERIC_ERROR);
             }
         }
@@ -477,6 +481,18 @@ public class CategorizerClient {
         }
 
         // TODO: after the categories are deleted, we need to do a bulk ES reindex
+    }
+
+    private void reindexEntries(CategorizerConfig categorizerConfig) {
+        final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
+        final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
+        LOG.info("Reindexing entries");
+        try {
+            final Integer count = extendedGa4GhApi.updateTheWorkflowsAndToolsIndices();
+            LOG.info("Reindexed {} entries", count);
+        } catch (ApiException e) {
+            exceptionMessage(e, "Unable to reindex entries", API_ERROR);
+        }
     }
 
     @JsonPropertyOrder({"trsId", "version"})

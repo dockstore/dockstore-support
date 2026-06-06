@@ -122,4 +122,8 @@ public class CategorizerCommandLineArgs {
             return categoriesCsvPath;
         }
     }
+
+    @Parameters(commandNames = { "reindex-entries" }, commandDescription = "Trigger a reindex of all published entries on Dockstore.")
+    public static class ReindexEntriesCommand {
+    }
 }
