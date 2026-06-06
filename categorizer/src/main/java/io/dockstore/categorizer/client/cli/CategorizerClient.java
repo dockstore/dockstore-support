@@ -56,6 +56,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.configuration2.INIConfiguration;
@@ -402,6 +403,7 @@ public class CategorizerClient {
     }
 
     private void createCategories(CategorizerConfig categorizerConfig, CreateCategoriesCommand createCategoriesCommand) {
+        confirmStructuralCategoryChange(categorizerConfig);
         final Ontology ontology = readOntologies(createCategoriesCommand.getOntologyJsonPaths());
         final List<Ontology.Node> recommendedNodes = ontology.getNodes().stream().filter(Ontology.Node::recommendedForAnnotation).toList();
         LOG.info("Found {} recommended nodes", recommendedNodes.size());
@@ -429,6 +431,16 @@ public class CategorizerClient {
             } catch (ApiException e) {
                 LOG.error("Unable to create category for node {}, skipping", node.id(), e);
             }
+        }
+    }
+
+    private void confirmStructuralCategoryChange(CategorizerConfig categorizerConfig) {
+        System.err.println("WARNING: This command changes the number or structure of the Categories on %s.".formatted(categorizerConfig.dockstoreServerUrl()));
+        System.err.print("Do you want to continue? yes/no [enter]: ");
+        final Scanner scanner = new Scanner(System.in);
+        String answer = scanner.nextLine().trim();
+        if (!"yes".equals(answer)) {
+            errorMessage("Aborting command.", GENERIC_ERROR);
         }
     }
 
@@ -464,6 +476,7 @@ public class CategorizerClient {
     }
 
     private void deleteCategories(CategorizerConfig categorizerConfig, DeleteCategoriesCommand deleteCategoriesCommand) {
+        confirmStructuralCategoryChange(categorizerConfig);
         final String path = deleteCategoriesCommand.getCategoriesCsvPath();
         final List<String> categoryIds = readCsv(path, CategoryId.class).stream().map(CategoryId::categoryId).toList();
         LOG.info("Read {} category IDs from {}", categoryIds.size(), path);
