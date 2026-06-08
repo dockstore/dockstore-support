@@ -3,40 +3,21 @@ package io.dockstore.utils.ai;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LoggingAIModel implements AIModel {
+/**
+ * Decorator that logs each prompt and its response text when delegating to another {@link AIModel}.
+ */
+public class LoggingAIModel extends DelegatingAIModel {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingAIModel.class);
 
-    private final AIModel delegate;
-
     public LoggingAIModel(AIModel delegate) {
-        this.delegate = delegate;
+        super(delegate);
     }
 
     @Override
-    public AIResponseInfo submitPrompt(String prompt, double temperature, int maxResponseTokens) {
+    public Response submitPrompt(AIModel.Prompt prompt) {
         LOG.info("PROMPT {}", prompt);
-        AIResponseInfo responseInfo = delegate.submitPrompt(prompt, temperature, maxResponseTokens);
-        LOG.info("RESPONSE {}", responseInfo.aiResponse());
+        Response responseInfo = super.submitPrompt(prompt);
+        LOG.info("RESPONSE {}", responseInfo.text());
         return responseInfo;
-    }
-
-    @Override
-    public String getModelName() {
-        return delegate.getModelName();
-    }
-
-    @Override
-    public double getPricePerInputToken() {
-        return delegate.getPricePerInputToken();
-    }
-
-    @Override
-    public double getPricePerOutputToken() {
-        return delegate.getPricePerOutputToken();
-    }
-
-    @Override
-    public int getMaxContextLength() {
-        return delegate.getMaxContextLength();
     }
 }

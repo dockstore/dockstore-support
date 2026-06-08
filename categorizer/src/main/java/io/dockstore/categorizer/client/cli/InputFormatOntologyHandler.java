@@ -10,51 +10,37 @@ public class InputFormatOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    public String getName() {
-        return "Input formats";
-    }
-
-    @Override
-    protected String createSummarizeInstruction(EntryData entryData) {
-        String entryType = entryData.entryType();
-        return joinLines(
-            "Summarize the following %s:".formatted(entryType),
-            formatEntryData(entryData),
-            "",
-            "List the input file formats.",
+    protected List<String> saySummarizeInstructions(EntryData entryData) {
+        return List.of(
+            "List the input file formats that the %s supports.".formatted(entryData.entryType()),
             "Detail the format variants and format versions.",
-            "Omit output formats.",
-            "Be terse."
+            "Omit output formats."
         );
     }
 
     @Override
-    protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
-        String entryType = entryData.entryType();
-        return joinLines(
-            "Classify the %s's input formats into the following categories:".formatted(entryType),
-            // createOntologyMarkdownTable(nodes, "Input Format ID", "Input Format Name", "Input Format Description"),
-            createTaggedOntologyCsv(nodes, "input-format-"),
-            "",
-            "The %s accepts the following inputs:".formatted(entryType),
-            tag("input-description", summary),
-            "",
-            "List the input formats that the %s accepts.".formatted(entryType),
-            "Output one input format ID per line and no other text."
+    protected List<String> sayClassifyInstructions(EntryData entryData) {
+        return List.of(
+            "List the input formats that the %s supports.".formatted(entryData.entryType())
         );
     }
 
     @Override
-    protected String createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
-        String entryType = entryData.entryType();
-        return joinLines(
-            "Use the following description to determine the input formats accepted by the %s:".formatted(entryType),
-            tag("input-description", summary),
-            "",
-            "Does the %s accept the following input format?".formatted(entryType),
-            "Answer \"yes\" or \"no\" with no other text.",
-            tag("format-name", node.label()),
-            tag("format-description", node.definition())
+    protected List<String> sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
+        return List.of(
+            "Does the %s support the following input format?".formatted(entryData.entryType())
         );
+    }
+
+    @Override
+    protected List<String> saySummaryIntro(EntryData entryData) {
+        return List.of(
+            "The %s supports the following input formats:".formatted(entryData.entryType())
+        );
+    }
+
+    @Override
+    protected String sayPluralPhrase(EntryData entryData) {
+        return "%s's input formats".formatted(entryData.entryType());
     }
 }

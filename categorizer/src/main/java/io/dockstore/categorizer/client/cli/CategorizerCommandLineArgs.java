@@ -3,6 +3,8 @@ package io.dockstore.categorizer.client.cli;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import io.dockstore.utils.ai.AIModelType;
+import io.dockstore.utils.ai.AIModelTypeConverter;
+import io.dockstore.utils.ai.ClaudeModelType;
 import java.io.File;
 import java.util.List;
 
@@ -32,8 +34,8 @@ public class CategorizerCommandLineArgs {
         @Parameter(names = {"-o", "--ontology"}, required = true, description = "List of paths to ontology JSON files")
         private List<String> ontologyJsonPaths;
 
-        @Parameter(names = {"-a", "--ai"}, description = "The AI model to use")
-        private AIModelType aiModel = AIModelType.CLAUDE_4_5_HAIKU;
+        @Parameter(names = {"-a", "--ai"}, description = "The AI model to use", converter = AIModelTypeConverter.class)
+        private AIModelType aiModel = ClaudeModelType.CLAUDE_4_5_HAIKU;
 
         public String getEntriesCsvFilePath() {
             return entriesCsvFilePath;
