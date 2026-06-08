@@ -35,6 +35,10 @@ public class CategorizerCommandLineArgs {
         @Parameter(names = {"-a", "--ai"}, description = "The AI model to use")
         private AIModelType aiModel = AIModelType.CLAUDE_4_5_HAIKU;
 
+        @SuppressWarnings("checkstyle:MagicNumber")
+        @Parameter(names = {"--threadCount"}, description = "The number of threads to use for categorization")
+        private int threadCount = 16;
+
         public String getEntriesCsvFilePath() {
             return entriesCsvFilePath;
         }
@@ -45,6 +49,10 @@ public class CategorizerCommandLineArgs {
 
         public AIModelType getAiModel() {
             return aiModel;
+        }
+
+        public int getThreadCount() {
+            return threadCount;
         }
 
     }

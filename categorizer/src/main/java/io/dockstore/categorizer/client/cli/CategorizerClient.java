@@ -58,6 +58,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.lang3.StringUtils;
@@ -228,9 +232,10 @@ public class CategorizerClient {
         );
         checkOverlappingHandlers(ontologyHandlers, ontology);
 
-        int numberOfFailures = 0;
+        final int threadCount = categorizeEntriesCommand.getThreadCount();
+        final AtomicInteger numberOfFailures = new AtomicInteger(0);
         try (Writer writer = stdoutWriter(); CsvWriter<Categorization> categorizationsWriter = new CsvWriter<>(writer, Categorization.class)) {
-            for (TrsIdAndVersion entry: entries) {
+            List<Runnable> runnables = entries.stream().<Runnable>map(entry -> () -> {
                 final String trsId = entry.trsId();
                 final String version = entry.version();
                 try {
@@ -247,18 +252,36 @@ public class CategorizerClient {
                         LOG.info("{} handles {} nodes", handler, candidateNodes.size());
                         // Determine which nodes (categories) match the entry, and write the matching node information to the CSV.
                         List<Ontology.Node> matchingNodes = handler.categorize(candidateNodes, entryData, aiModel);
-                        for (Ontology.Node matchingNode: matchingNodes) {
-                            categorizationsWriter.write(new Categorization(entry.trsId(), entry.version(), matchingNode.id(), true));
+                        synchronized (categorizationsWriter) {
+                            for (Ontology.Node matchingNode: matchingNodes) {
+                                categorizationsWriter.write(new Categorization(entry.trsId(), entry.version(), matchingNode.id(), true));
+                            }
                         }
                     }
                 } catch (Exception ex) {
                     LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, version, ex);
-                    numberOfFailures++;
+                    numberOfFailures.incrementAndGet();
                 }
-            }
-            LOG.info("Failed to categorize {} entries", numberOfFailures);
+            }).toList();
+
+            LOG.info("Categorizing {} entries using {} threads", entries.size(), threadCount);
+            runAndWaitUntilDone(runnables, threadCount);
+            LOG.info("Failed to categorize {} entries", numberOfFailures.get());
         } catch (IOException e) {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
+        }
+    }
+
+    private void runAndWaitUntilDone(List<Runnable> runnables, int threadCount) {
+        ExecutorService es = Executors.newFixedThreadPool(threadCount);
+        runnables.forEach(es::execute);
+        es.shutdown();
+        try {
+            es.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+        } catch (InterruptedException e) {
+            LOG.info("InterruptedException while waiting for threads to complete");
+            es.shutdownNow();
+            Thread.currentThread().interrupt();
         }
     }
 
