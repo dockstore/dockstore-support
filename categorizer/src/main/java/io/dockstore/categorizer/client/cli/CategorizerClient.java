@@ -409,7 +409,7 @@ public class CategorizerClient {
                 continue;
             }
             try {
-                entriesApi.setLastCategorizedDate(entry.getId(), null, null);
+                entriesApi.setLastCategorizedDate(entry.getId(), "", null);
                 LOG.info("Updated time of last categorization for entry {}", trsId);
             } catch (ApiException e) {
                 LOG.error("Unable to update time of last categorization for entry {}", trsId, e);
@@ -459,7 +459,7 @@ public class CategorizerClient {
 
             final Collection collection = new Collection();
             collection.setName(name);
-            collection.setDisplayName(displayName);
+            collection.setDisplayName(displayName.replace('/', '-')); // TODO: loosen requirement in webservice
             collection.setTopic(StringUtils.truncate(node.definition(), maxCategoryTopicLength));
             collection.putMetadataItem("source", node.source());
             try {
