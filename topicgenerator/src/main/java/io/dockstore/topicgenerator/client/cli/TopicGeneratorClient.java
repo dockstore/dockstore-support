@@ -31,7 +31,6 @@ import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.Gene
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.UploadTopicsCommand;
 import io.dockstore.topicgenerator.helper.CSVHelper;
 import io.dockstore.utils.ai.AIModel;
-import io.dockstore.utils.ai.AIModel.AIResponseInfo;
 import io.dockstore.utils.ai.AIModelFactory;
 import io.dockstore.utils.ai.AIModelType;
 import io.dockstore.utils.ai.ChuckNorrisFilter;
@@ -196,17 +195,17 @@ public class TopicGeneratorClient {
                             + " in one sentence that starts with a present tense verb in the <summary> tags. Use a maximum of 150 characters.\n<content>"
                             + descriptorFile.getContent() + "</content>";
                     final double temperature = 0.5; // The amount of randomness injected into the response. Ranges from 0 to 1. Pick 0.5 as the middle ground between predictability and creativity.
-                    final int maxResponseTokens = 100; // One token is roughly 4 characters. Using 100 tokens because setting it too low might truncate the response.
-                    AIResponseInfo aiResponseInfo = aiModel.submitPrompt(prompt, temperature, maxResponseTokens);
-                    String cleanedResponse = removeSummaryTagsFromTopic(aiResponseInfo.aiResponse());
-                    aiResponseInfo = new AIResponseInfo(cleanedResponse, aiResponseInfo.isTruncated(), aiResponseInfo.inputTokens(), aiResponseInfo.outputTokens(), aiResponseInfo.cost(), aiResponseInfo.stopReason());
-                    boolean isCensoredTopic = isSuspiciousTopic(aiResponseInfo.aiResponse());
+                    final int outputTokens = 100; // One token is roughly 4 characters. Using 100 tokens because setting it too low might truncate the response.
+                    AIModel.Response response = aiModel.submitPrompt(AIModel.Prompt.builder().text(prompt).temperature(temperature).outputTokens(outputTokens).build());
+                    String cleanedResponse = removeSummaryTagsFromTopic(response.text());
+                    response = new AIModel.Response(cleanedResponse, response.isTruncated(), response.inputTokens(), response.outputTokens(), response.cost(), response.stopReason());
+                    boolean isCensoredTopic = isSuspiciousTopic(response.text());
                     if (isCensoredTopic) {
                         // Write censored topics to a different file
-                        CSVHelper.writeRecord(filteredTopicsCsvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
+                        CSVHelper.writeRecord(filteredTopicsCsvPrinter, trsId, versionId, descriptorFile, response);
                         numberOfCensoredTopics += 1;
                     } else {
-                        CSVHelper.writeRecord(unfilteredTopicsCsvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
+                        CSVHelper.writeRecord(unfilteredTopicsCsvPrinter, trsId, versionId, descriptorFile, response);
                     }
                     LOG.info("Generated topic for entry with TRS ID {} and version {}.{}", trsId, versionId, isCensoredTopic ? "The topic was filtered because it is potentially offensive" : "");
                     numberOfTopicsGenerated += 1;

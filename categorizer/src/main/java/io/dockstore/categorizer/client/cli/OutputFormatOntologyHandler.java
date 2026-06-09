@@ -10,51 +10,38 @@ public class OutputFormatOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    public String getName() {
-        return "Output formats";
-    }
-
-    @Override
-    protected String createSummarizeInstruction(EntryData entryData) {
-        String entryType = entryData.entryType();
-        return joinLines(
-            "Summarize the following %s:".formatted(entryType),
-            formatEntryData(entryData),
-            "",
-            "List the output file formats.",
+    protected List<String> saySummarizeInstructions(EntryData entryData) {
+        return List.of(
+            "List the output file formats that the %s produces.".formatted(entryData.entryType()),
             "Detail the format variants and format versions.",
-            "Omit input formats.",
-            "Be terse."
+            "Omit input formats."
         );
     }
 
     @Override
-    protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
-        String entryType = entryData.entryType();
-        return joinLines(
-            "Classify the %s's output formats into the following categories:".formatted(entryType),
-            // createOntologyMarkdownTable(nodes, "Output Format ID", "Output Format Name", "Output Format Description"),
-            createTaggedOntologyCsv(nodes, "output-format-"),
-            "",
-            "The %s produces the following outputs:".formatted(entryType),
-            tag("output-description", summary),
-            "",
-            "List the output formats that the %s produces.".formatted(entryType),
-            "Output one output format ID per line and no other text."
+    protected List<String> sayClassifyInstructions(EntryData entryData) {
+        return List.of(
+            "List the output formats that the %s produces.".formatted(entryData.entryType())
         );
     }
 
     @Override
-    protected String createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
-        String entryType = entryData.entryType();
-        return joinLines(
-            "Use the following description to determine the output formats produced by the %s:".formatted(entryType),
-            tag("output-description", summary),
-            "",
-            "Does the %s produce the following output format?".formatted(entryType),
-            "Answer \"yes\" or \"no\" with no other text.",
-            tag("format-name", node.label()),
-            tag("format-description", node.definition())
+    protected List<String> sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
+        return List.of(
+            "Does the %s produce the following output format?".formatted(entryData.entryType())
         );
     }
+
+    @Override
+    protected List<String> saySummaryIntro(EntryData entryData) {
+        return List.of(
+            "The %s produces the following output formats:".formatted(entryData.entryType())
+        );
+    }
+
+    @Override
+    protected String sayPluralPhrase(EntryData entryData) {
+        return "%s's output formats".formatted(entryData.entryType());
+    }
+
 }

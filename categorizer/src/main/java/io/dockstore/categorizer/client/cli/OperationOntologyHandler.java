@@ -10,53 +10,31 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
     }
 
     @Override
-    public String getName() {
-        return "Operations";
-    }
-
-    @Override
-    protected String createSummarizeInstruction(EntryData entryData) {
+    protected List<String> saySummarizeInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
-        return joinLines(
-            "Summarize the purpose and functionality of the following %s in 200 words or less.".formatted(entryType),
-            "Omit the %s's name.  Be terse and use scientific terminology.".formatted(entryType),
-            formatEntryData(entryData)
+        return List.of(
+            "Describe the %s's purpose, functionality, and the operations it performs.".formatted(entryType),
+            "Omit the %s's name.".formatted(entryType)
         );
     }
 
     @Override
-    protected String createClassifyInstruction(List<Ontology.Node> nodes, String summary, EntryData entryData) {
+    protected List<String> sayClassifyInstructions(EntryData entryData) {
         String entryType = entryData.entryType();
-        return joinLines(
-            "Classify the operations performed by the %s into the following categories:".formatted(entryType),
-            // createOntologyMarkdownTable(nodes, "Operation ID", "Operation Name", "Operation Description"),
-            createTaggedOntologyCsv(nodes, "operation-"),
-            "",
-            "The %s performs the following operations:".formatted(entryType),
-            tag("operations-description", summary),
-            "",
+        return List.of(
             "List the operations that the %s performs.".formatted(entryType),
-            "Prefer operations that summarize the purpose or functionality of the %s as a whole.".formatted(entryType),
+            "Include operations that describe the %s's purpose as a whole.".formatted(entryType),
             "Prefer operations that differentiate the %s from other %ss.".formatted(entryType, entryType),
-            "Prefer operations that are very specific.",
-            "Output one operation ID per line and no other text."
+            "Prefer operations that are more specific."
         );
     }
 
     @Override
-    protected String createVerifyInstruction(Ontology.Node node, String summary, EntryData entryData) {
+    protected List<String> sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
         String entryType = entryData.entryType();
-        String question = isGenericNode(node)
+        return List.of(isGenericNode(node)
             ? "Is the following operation the sole purpose of the %s?".formatted(entryType)
-            : "Does the %s perform the following operation, and is it the purpose or an important capability of the %s?\n".formatted(entryType, entryType);
-
-        return joinLines(
-            "Given the following %s description:".formatted(entryType),
-            tag("description", summary),
-            "",
-            question,
-            "Answer \"yes\" or \"no\" with no other text.",
-            "\"" + node.label() + "\": " + node.definition()
+            : "Does the %s perform the following operation, and is it the purpose or an important capability of the %s?".formatted(entryType, entryType)
         );
     }
 
@@ -65,6 +43,18 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
         return node.ontology().getAncestors(id).stream().anyMatch(ancestor -> "operation-data-handling".equals(ancestor.id()))
             || "operation-read-mapping".equals(id)
             || "operation-read-pre-processing".equals(id);
+    }
+
+    @Override
+    protected List<String> saySummaryIntro(EntryData entryData) {
+        return List.of(
+            "The %s performs the following operations:".formatted(entryData.entryType())
+        );
+    }
+
+    @Override
+    protected String sayPluralPhrase(EntryData entryData) {
+        return "%s's operations".formatted(entryData.entryType());
     }
 
 }

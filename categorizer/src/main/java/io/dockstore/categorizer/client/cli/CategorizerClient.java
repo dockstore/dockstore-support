@@ -39,10 +39,10 @@ import io.dockstore.utils.CsvWriter;
 import io.dockstore.utils.EntryUtils;
 import io.dockstore.utils.IOUtils;
 import io.dockstore.utils.RetrievalUtils;
-import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModelFactory;
 import io.dockstore.utils.ai.AIModelType;
 import io.dockstore.utils.ai.LoggingAIModel;
+import io.dockstore.utils.ai.TotalCostAIModel;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
@@ -219,7 +219,7 @@ public class CategorizerClient {
         LOG.info("Read {} entries from input file {}", entries.size(), entriesPath);
 
         AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
-        AIModel aiModel = new LoggingAIModel(AIModelFactory.createModel(aiModelType));
+        TotalCostAIModel aiModel = new TotalCostAIModel(new LoggingAIModel(AIModelFactory.createModel(aiModelType)));
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
 
         final List<OntologyHandler> ontologyHandlers = List.of(
@@ -271,6 +271,7 @@ public class CategorizerClient {
         } catch (IOException e) {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
+        LOG.info("Total cost: {}", aiModel.getTotalCost());
     }
 
     private void runAndWaitUntilDone(List<Runnable> runnables, int threadCount) {

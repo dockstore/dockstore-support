@@ -6,7 +6,7 @@ import static io.dockstore.utils.ExceptionHandler.exceptionMessage;
 
 import io.dockstore.common.S3ClientHelper;
 import io.dockstore.openapi.client.model.FileWrapper;
-import io.dockstore.utils.ai.AIModel.AIResponseInfo;
+import io.dockstore.utils.ai.AIModel;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -91,10 +91,10 @@ public final class CSVHelper {
         }
     }
 
-    public static void writeRecord(CSVPrinter csvPrinter, String trsId, String versionId, FileWrapper descriptorFile, AIResponseInfo aiResponseInfo) {
+    public static void writeRecord(CSVPrinter csvPrinter, String trsId, String versionId, FileWrapper descriptorFile, AIModel.Response response) {
         String descriptorChecksum = descriptorFile.getChecksum().isEmpty() ? "" : descriptorFile.getChecksum().get(0).getChecksum();
         try {
-            csvPrinter.printRecord(trsId, versionId, descriptorFile.getUrl(), descriptorChecksum, aiResponseInfo.isTruncated(), aiResponseInfo.inputTokens(), aiResponseInfo.outputTokens(), aiResponseInfo.cost(), aiResponseInfo.stopReason(), aiResponseInfo.aiResponse());
+            csvPrinter.printRecord(trsId, versionId, descriptorFile.getUrl(), descriptorChecksum, response.isTruncated(), response.inputTokens(), response.outputTokens(), response.cost(), response.stopReason(), response.text());
         } catch (IOException e) {
             LOG.error("Unable to write CSV record to file, skipping", e);
         }
