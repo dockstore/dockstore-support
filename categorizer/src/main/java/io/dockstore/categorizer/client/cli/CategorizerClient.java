@@ -209,7 +209,7 @@ public class CategorizerClient {
      */
     private void categorizeEntries(CategorizerConfig categorizerConfig, CategorizeEntriesCommand categorizeEntriesCommand) {
         final String dockstoreServerUrl = categorizerConfig.dockstoreServerUrl();
-        final ApiClient apiClient = setupApiClient(dockstoreServerUrl, categorizerConfig.dockstoreToken());
+        final String dockstoreToken = categorizerConfig.dockstoreToken();
 
         final List<String> ontologyPaths = categorizeEntriesCommand.getOntologyJsonPaths();
         final Ontology ontology = readOntologies(ontologyPaths);
@@ -240,6 +240,7 @@ public class CategorizerClient {
                 final String version = entry.version();
                 try {
                     // Retrieve data about the entry.
+                    final ApiClient apiClient = setupApiClient(dockstoreServerUrl, dockstoreToken);
                     final EntryData entryData = retrieveEntryData(apiClient, trsId, version);
                     // For each ontology handler, categorize the entry into the appropriate nodes (categories).
                     for (OntologyHandler handler: ontologyHandlers) {
