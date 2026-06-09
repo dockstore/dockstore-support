@@ -442,12 +442,24 @@ public class CategorizerClient {
             final int maxCategoryNameLength = 90;
             final int maxCategoryDisplayNameLength = 90;
             final int maxCategoryTopicLength = 255;
+
+            final String name = node.id();
+            final String displayName = node.label();
+            final String topic = node.definition();
+
+            // Check the name and display name, and if they are too long, skip the category.
+            if (name.length() > maxCategoryNameLength) {
+                LOG.error("Category name {} is too long (maximum allowed length is {} characters), skipping.", name, maxCategoryNameLength);
+                continue;
+            }
+            if (displayName.length() > maxCategoryDisplayNameLength) {
+                LOG.error("Category display name {} is too long (maximum allowed length is {} characters), skipping.", displayName, maxCategoryDisplayNameLength);
+                continue;
+            }
+
             final Collection collection = new Collection();
-            // TODO: adjust the code that truncates these fields to work better.
-            // We might simply skip categories that have an ID or display name that's more than the limit,
-            // and we might truncate the definition at the end of a sentence, if possible.
-            collection.setName(StringUtils.truncate(node.id(), maxCategoryNameLength));
-            collection.setDisplayName(StringUtils.truncate(node.label(), maxCategoryDisplayNameLength));
+            collection.setName(name);
+            collection.setDisplayName(displayName);
             collection.setTopic(StringUtils.truncate(node.definition(), maxCategoryTopicLength));
             collection.putMetadataItem("source", node.source());
             try {
@@ -490,12 +502,14 @@ public class CategorizerClient {
             return;
         }
         LOG.info("Retrieved {} collections", collections.size());
+
         final List<String> ontologyPaths = listCategoriesCommand.getOntologyJsonPaths();
         if (ontologyPaths != null) {
             final Set<String> ontologyIds = readOntologies(ontologyPaths).getNodes().stream().map(Ontology.Node::id).collect(Collectors.toSet());
             collections = collections.stream().filter(c -> ontologyIds.contains(c.getName())).toList();
             LOG.info("Filtered to {} collections present in ontologies", collections.size());
         }
+
         List<CategoryId> categoryIds = collections.stream().map(c -> new CategoryId(c.getName())).toList();
         writeCsvToStdout(categoryIds, CategoryId.class);
     }
