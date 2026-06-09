@@ -390,7 +390,7 @@ public class CategorizerClient {
 
             // TODO: add logic to confirm that a human has not removed the entry from the category.  In such case, we won't add.
             try {
-                organizationsApi.addEntryToCollection(organization.getId(), collection.getId(), entry.getId(), null, false); // TODO: adjust to set the curator to "AI", once that functionality enters the lexicon
+                organizationsApi.addEntryToCollection(organization.getId(), collection.getId(), entry.getId(), null, "AI", false);
                 LOG.info("Added entry {} to category {}", trsId, categoryId);
             } catch (ApiException e) {
                 LOG.error("Unable to add entry {} to category {}", trsId, categoryId, e);
