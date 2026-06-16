@@ -60,7 +60,6 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.commons.configuration2.INIConfiguration;
@@ -292,15 +291,8 @@ public class CategorizerClient {
 
     /** Submits all runnables to a fixed thread pool and blocks until every task has finished. */
     private void runAndWaitUntilDone(List<Runnable> runnables, int threadCount) {
-        ExecutorService es = Executors.newFixedThreadPool(threadCount);
-        runnables.forEach(es::execute);
-        es.shutdown();
-        try {
-            es.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-        } catch (InterruptedException e) {
-            LOG.info("InterruptedException while waiting for threads to complete");
-            es.shutdownNow();
-            Thread.currentThread().interrupt();
+        try (ExecutorService es = Executors.newFixedThreadPool(threadCount)) {
+            runnables.forEach(es::execute);
         }
     }
 
@@ -499,7 +491,7 @@ public class CategorizerClient {
             final Collection collection = new Collection();
             collection.setName(name);
             collection.setDisplayName(displayName.replace('/', '-')); // TODO: loosen requirement in webservice
-            collection.setTopic(StringUtils.truncate(node.definition(), maxCategoryTopicLength));
+            collection.setTopic(StringUtils.truncate(topic, maxCategoryTopicLength));
             collection.putMetadataItem("source", node.source());
             try {
                 organizationsApi.createCollection(collection, organization.getId());
