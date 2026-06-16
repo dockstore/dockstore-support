@@ -81,6 +81,10 @@ public class CategorizerClient {
     CategorizerClient() {
     }
 
+    /**
+     * Parses command-line arguments and dispatches to the appropriate command handler.
+     * Logs total wall-clock time on completion.
+     */
     public static void main(String[] args) {
         final Instant startTime = Instant.now();
         final CategorizerCommandLineArgs commandLineArgs = new CategorizerCommandLineArgs();
@@ -143,6 +147,7 @@ public class CategorizerClient {
         }
     }
 
+    /** Fetches all published entries from Dockstore and writes them as CSV to stdout. */
     private void listAllEntries(CategorizerConfig categorizerConfig, ListAllEntriesCommand listAllEntriesCommand) {
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
@@ -151,6 +156,7 @@ public class CategorizerClient {
         writeCsvToStdout(allEntries, TrsIdAndVersion.class);
     }
 
+    /** Pages through all published entries via the GA4GH API, up to {@code maxEntries}. */
     private List<TrsIdAndVersion> getAllEntriesFromDockstore(ExtendedGa4GhApi extendedGa4GhApi, int maxEntries) {
         List<EntryLiteAndVersionName> entries = RetrievalUtils.pagedRetrieval((offset, limit) -> {
             try {
@@ -164,6 +170,7 @@ public class CategorizerClient {
         return entries.stream().map(this::convertEntry).toList();
     }
 
+    /** Fetches entries whose categorization is older than the configured interval and writes them as CSV to stdout. */
     private void listStaleEntries(CategorizerConfig categorizerConfig, ListStaleEntriesCommand listStaleEntriesCommand) {
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final EntriesApi entriesApi = new EntriesApi(apiClient);
@@ -173,6 +180,7 @@ public class CategorizerClient {
         writeCsvToStdout(staleEntries, TrsIdAndVersion.class);
     }
 
+    /** Pages through entries not categorized within {@code intervalSeconds}, up to {@code maxEntries}. */
     private List<TrsIdAndVersion> getStaleEntriesFromDockstore(EntriesApi entriesApi, long intervalSeconds, int maxEntries) {
         List<EntryLiteAndVersionName> entries = RetrievalUtils.pagedRetrieval((offset, limit) -> {
             try {
@@ -190,6 +198,7 @@ public class CategorizerClient {
         return new TrsIdAndVersion(e.getEntryLite().getTrsId(), e.getVersionName());
     }
 
+    /** Serializes {@code items} as CSV rows to stdout, using the field order declared on {@code pojoClass}. */
     private <T> void writeCsvToStdout(Iterable<T> items, Class<T> pojoClass) {
         try (Writer writer = stdoutWriter(); CsvWriter<T> csvWriter = new CsvWriter<>(writer, pojoClass)) {
             csvWriter.writeAll(items);
@@ -203,9 +212,10 @@ public class CategorizerClient {
     }
 
     /**
-     * Categorizes the specified Dockstore entries by retrieving entry information and using AI to classify into the specified ontologies.
-     * @param categorizerConfig
-     * @param categorizeEntriesCommand
+     * AI-categorizes the entries listed in the input CSV and writes matching ontology node assignments to stdout as CSV.
+     * Each entry is processed in a worker thread; per-entry failures are counted and logged but do not abort the run.
+     * @param categorizerConfig server URL and API token
+     * @param categorizeEntriesCommand parsed CLI args: ontology paths, input CSV, AI model, cost limit, thread count
      */
     private void categorizeEntries(CategorizerConfig categorizerConfig, CategorizeEntriesCommand categorizeEntriesCommand) {
         final String dockstoreServerUrl = categorizerConfig.dockstoreServerUrl();
@@ -280,6 +290,7 @@ public class CategorizerClient {
         LOG.info("Total cost: ${}", aiModel.getTotalCost());
     }
 
+    /** Submits all runnables to a fixed thread pool and blocks until every task has finished. */
     private void runAndWaitUntilDone(List<Runnable> runnables, int threadCount) {
         ExecutorService es = Executors.newFixedThreadPool(threadCount);
         runnables.forEach(es::execute);
@@ -293,6 +304,7 @@ public class CategorizerClient {
         }
     }
 
+    /** Reads one or more ontology JSON files and merges them into a single {@link Ontology}. */
     private static Ontology readOntologies(List<String> paths) {
         try {
             List<Ontology> ontologies = new ArrayList<>();
@@ -308,6 +320,10 @@ public class CategorizerClient {
         }
     }
 
+    /**
+     * Aborts if any two handlers claim the same recommended-for-annotation ontology node,
+     * which would produce duplicate entries in the categorization output.
+     */
     private void checkOverlappingHandlers(List<OntologyHandler> handlers, Ontology ontology) {
         // For each ontology handler, calculate the IDs of the recommended-for-annotation nodes that it covers.
         // Concatenate the IDs into a single list.
@@ -318,6 +334,7 @@ public class CategorizerClient {
         }
     }
 
+    /** Reads all rows from a CSV file into a list of {@code pojoClass} instances. */
     private <T> List<T> readCsv(String path, Class<T> pojoClass) {
         try (Reader reader = IOUtils.reader(path); CsvReader<T> csvReader = new CsvReader<>(reader, pojoClass)) {
             return csvReader.readAll();
@@ -327,6 +344,10 @@ public class CategorizerClient {
         }
     }
 
+    /**
+     * Fetches the entry's type, description, and primary descriptor content from Dockstore.
+     * Throws if the requested version cannot be retrieved.
+     */
     private EntryData retrieveEntryData(ApiClient apiClient, String trsId, String versionId) throws ApiException {
         final Tool tool = new Ga4Ghv20Api(apiClient).toolsIdGet(trsId);
         final String entryType = tool.getToolclass().getName().toLowerCase();
@@ -338,6 +359,11 @@ public class CategorizerClient {
         return new EntryData(entryType, trsId, description, primaryDescriptor.get().getContent());
     }
 
+    /**
+     * Applies AI-generated categorizations to Dockstore: adds entries to the corresponding
+     * category Collections and stamps each successfully categorized entry with the current time
+     * as its "last categorized" date. Entries or categories that cannot be resolved are skipped.
+     */
     private void populateCategories(CategorizerConfig categorizerConfig, PopulateCategoriesCommand populateCategoriesCommand) {
         String path = populateCategoriesCommand.getCategorizationsCsvPath();
         final List<Categorization> categorizations = readCsv(path, Categorization.class);
@@ -423,6 +449,10 @@ public class CategorizerClient {
         }
     }
 
+    /**
+     * Strips the {@code #workflow/} TRS prefix to produce the plain path expected by
+     * {@link WorkflowsApi#getPublishedEntryByPath}.
+     */
     private String trsIdToPath(String trsId) {
         final String workflowPrefix = "#workflow/";
         if (trsId.startsWith(workflowPrefix)) {
@@ -431,6 +461,11 @@ public class CategorizerClient {
         return trsId;
     }
 
+    /**
+     * Creates a Dockstore Collection in the AI organization for each recommended-for-annotation
+     * ontology node. Nodes whose name or display name exceed field-length limits are skipped.
+     * Prompts for confirmation before making any changes.
+     */
     private void createCategories(CategorizerConfig categorizerConfig, CreateCategoriesCommand createCategoriesCommand) {
         confirmStructuralCategoryChange(categorizerConfig);
         final Ontology ontology = readOntologies(createCategoriesCommand.getOntologyJsonPaths());
@@ -475,6 +510,10 @@ public class CategorizerClient {
         }
     }
 
+    /**
+     * Prints a warning to stderr and reads a line from stdin; aborts unless the user types "yes".
+     * Used to guard commands that alter the number or structure of categories on the server.
+     */
     private void confirmStructuralCategoryChange(CategorizerConfig categorizerConfig) {
         System.err.println("WARNING: This command changes the number or structure of the Categories on %s.".formatted(categorizerConfig.dockstoreServerUrl()));
         System.err.print("Do you want to continue? yes/no [enter]: ");
@@ -485,6 +524,7 @@ public class CategorizerClient {
         }
     }
 
+    /** Retrieves the {@value #AI_ORGANIZATION_NAME} organization from Dockstore, aborting on failure. */
     private Organization getAiOrganization(OrganizationsApi organizationsApi) {
         try {
             return organizationsApi.getOrganizationByName(AI_ORGANIZATION_NAME);
@@ -494,6 +534,10 @@ public class CategorizerClient {
         }
     }
 
+    /**
+     * Lists category IDs in the AI organization as CSV to stdout, optionally filtered to those
+     * present in the given ontologies.
+     */
     private void listCategories(CategorizerConfig categorizerConfig, ListCategoriesCommand listCategoriesCommand) {
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final OrganizationsApi organizationsApi = new OrganizationsApi(apiClient);
@@ -518,6 +562,10 @@ public class CategorizerClient {
         writeCsvToStdout(categoryIds, CategoryId.class);
     }
 
+    /**
+     * Deletes the categories listed in the input CSV from the AI organization.
+     * Prompts for confirmation before making any changes.
+     */
     private void deleteCategories(CategorizerConfig categorizerConfig, DeleteCategoriesCommand deleteCategoriesCommand) {
         confirmStructuralCategoryChange(categorizerConfig);
         final String path = deleteCategoriesCommand.getCategoriesCsvPath();
@@ -537,6 +585,7 @@ public class CategorizerClient {
         }
     }
 
+    /** Triggers a full reindex of all entries in the Dockstore search index. */
     private void reindexEntries(CategorizerConfig categorizerConfig, ReindexEntriesCommand reindexEntriesCommand) {
         final ApiClient apiClient = setupApiClient(categorizerConfig.dockstoreServerUrl(), categorizerConfig.dockstoreToken());
         final ExtendedGa4GhApi extendedGa4GhApi = new ExtendedGa4GhApi(apiClient);
@@ -549,14 +598,17 @@ public class CategorizerClient {
         }
     }
 
+    /** A Dockstore entry identified by its TRS ID and a specific version name. */
     @JsonPropertyOrder({"trsId", "version"})
     public record TrsIdAndVersion(String trsId, String version) {
     }
 
+    /** The result of categorizing an entry: the ontology node it was assigned to and whether it is a member of that category. */
     @JsonPropertyOrder({"trsId", "version", "categoryId", "isMember"})
     public record Categorization(String trsId, String version, String categoryId, boolean isMember) {
     }
 
+    /** A single ontology node ID used as a Dockstore category name. */
     @JsonPropertyOrder({"categoryId"})
     public record CategoryId(String categoryId) {
     }
