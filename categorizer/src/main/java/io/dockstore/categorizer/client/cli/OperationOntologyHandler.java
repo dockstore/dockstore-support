@@ -40,7 +40,7 @@ public class OperationOntologyHandler extends ThreeStageOntologyHandler {
 
     private boolean isGenericNode(Ontology.Node node) {
         String id = node.id();
-        return node.ontology().getAncestors(id).stream().anyMatch(ancestor -> "operation-data-handling".equals(ancestor.id()))
+        return node.ontology().getNodeAndAncestors(id).stream().anyMatch(ancestor -> "operation-data-handling".equals(ancestor.id()))
             || "operation-read-mapping".equals(id)
             || "operation-read-pre-processing".equals(id);
     }
