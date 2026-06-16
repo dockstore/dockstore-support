@@ -230,8 +230,8 @@ public class CategorizerClient {
             new OperationOntologyHandler(),
             new TopicOntologyHandler(),
             new InputFormatOntologyHandler(),
-            new OutputFormatOntologyHandler(),
             new InputDataOntologyHandler(),
+            new OutputFormatOntologyHandler(),
             new OutputDataOntologyHandler()
         );
         checkOverlappingHandlers(ontologyHandlers, ontology);
