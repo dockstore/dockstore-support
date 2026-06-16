@@ -41,6 +41,9 @@ public class CategorizerCommandLineArgs {
         @Parameter(names = {"--threadCount"}, description = "The number of threads to use for categorization")
         private int threadCount = 16;
 
+        @Parameter(names = {"--cost"}, description = "Maximum total AI cost in dollars; the command stops after this limit is exceeded")
+        private double costLimit = Double.POSITIVE_INFINITY;
+
         public String getEntriesCsvFilePath() {
             return entriesCsvFilePath;
         }
@@ -55,6 +58,10 @@ public class CategorizerCommandLineArgs {
 
         public int getThreadCount() {
             return threadCount;
+        }
+
+        public double getCostLimit() {
+            return costLimit;
         }
 
     }

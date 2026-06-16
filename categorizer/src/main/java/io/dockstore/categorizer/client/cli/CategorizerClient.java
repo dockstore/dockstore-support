@@ -219,8 +219,12 @@ public class CategorizerClient {
         LOG.info("Read {} entries from input file {}", entries.size(), entriesPath);
 
         AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
-        TotalCostAIModel aiModel = new TotalCostAIModel(new LoggingAIModel(AIModelFactory.createModel(aiModelType)));
+        double costLimit = categorizeEntriesCommand.getCostLimit();
+        TotalCostAIModel aiModel = new TotalCostAIModel(new LoggingAIModel(AIModelFactory.createModel(aiModelType)), costLimit);
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
+        if (Double.isFinite(costLimit)) {
+            LOG.info("Cost limit: ${}", costLimit);
+        }
 
         final List<OntologyHandler> ontologyHandlers = List.of(
             new OperationOntologyHandler(),
