@@ -277,7 +277,7 @@ public class CategorizerClient {
         } catch (IOException e) {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
-        LOG.info("Total cost: {}", aiModel.getTotalCost());
+        LOG.info("Total cost: ${}", aiModel.getTotalCost());
     }
 
     private void runAndWaitUntilDone(List<Runnable> runnables, int threadCount) {
@@ -421,8 +421,6 @@ public class CategorizerClient {
                 LOG.error("Unable to update time of last categorization for entry {}", trsId, e);
             }
         }
-
-        // TODO: after the categories are populated, we need to reindex the involved entries in ES
     }
 
     private String trsIdToPath(String trsId) {
@@ -537,8 +535,6 @@ public class CategorizerClient {
                 LOG.error("Unable to delete category '{}', skipping", categoryId, e);
             }
         }
-
-        // TODO: after the categories are deleted, we need to do a bulk ES reindex
     }
 
     private void reindexEntries(CategorizerConfig categorizerConfig, ReindexEntriesCommand reindexEntriesCommand) {
