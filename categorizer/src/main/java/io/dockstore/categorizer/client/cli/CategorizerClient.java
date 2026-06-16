@@ -243,6 +243,9 @@ public class CategorizerClient {
                 final String trsId = entry.trsId();
                 final String version = entry.version();
                 try {
+                    LOG.info("Categorizing entry {} version {}", trsId, version);
+                    // Check if we've exceeded the cost limit, so we can avoid needlessly retrieving the entry data.
+                    aiModel.checkLimit();
                     // Retrieve data about the entry.
                     final ApiClient apiClient = setupApiClient(dockstoreServerUrl, dockstoreToken);
                     final EntryData entryData = retrieveEntryData(apiClient, trsId, version);
@@ -254,7 +257,6 @@ public class CategorizerClient {
                         if (candidateNodes.isEmpty()) {
                             continue;
                         }
-                        LOG.info("{} handles {} nodes", handler, candidateNodes.size());
                         // Determine which nodes (categories) match the entry, and write the matching node information to the CSV.
                         List<Ontology.Node> matchingNodes = handler.categorize(candidateNodes, entryData, aiModel);
                         synchronized (categorizationsWriter) {
