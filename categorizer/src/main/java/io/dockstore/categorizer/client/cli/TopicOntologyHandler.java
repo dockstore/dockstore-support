@@ -26,17 +26,22 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
             "Include topics that describe the %s's research field, application area, or scientific context.".formatted(entryType),
             "Include topics that describe the %s's overall role.".formatted(entryType),
             "Prefer topics that differentiate this %s from other %ss.".formatted(entryType, entryType),
-            "Prefer topics that are more specific.",
-            "List up to seven topics."
+            "Prefer topics that are more specific."
         );
     }
 
     @Override
     protected List<String> sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
         String entryType = entryData.entryType();
-        return List.of(
-            "Does the following topic accurately describe the %s's field of study, area of application, scientific context, or similar?".formatted(entryType)
+        return List.of(isGenericNode(node)
+            ? "Does the following topic accurately describe the %s's field of study, area of application, scientific context, or similar?".formatted(entryType)
+            : "Does the following topic accurately describe the %s's field of study, area of application, scientific context, or similar?  Answer 'no' if the topic does not strongly relate to the %s's primary purpose.".formatted(entryType, entryType)
         );
+    }
+
+    private boolean isGenericNode(Ontology.Node node) {
+        String id = node.id();
+        return node.ontology().getAncestors(id).stream().anyMatch(ancestor -> "topic-data-management".equals(ancestor.id()));
     }
 
     @Override
