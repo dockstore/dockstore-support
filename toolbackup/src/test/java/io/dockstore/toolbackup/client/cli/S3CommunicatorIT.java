@@ -8,15 +8,16 @@ import static io.dockstore.toolbackup.client.cli.constants.TestConstants.PREFIX;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import com.amazonaws.services.s3.model.AmazonS3Exception;
 import io.dockstore.toolbackup.client.cli.common.AWSConfig;
 import io.dockstore.toolbackup.client.cli.common.DirCleaner;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 /**
  * Created by kcao on 24/01/17.
@@ -26,7 +27,7 @@ public class S3CommunicatorIT {
     private static S3Communicator s3Communicator;
 
     @BeforeClass
-    public static void setUp() {
+    public static void setUp() throws ExecutionException, InterruptedException {
         AWSConfig.generateCredentials();
 
         DirectoryGenerator.createDir(DIR);
@@ -48,7 +49,7 @@ public class S3CommunicatorIT {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void uploadDirectoryNonexistentDirectory() {
+    public void uploadDirectoryNonexistentDirectory() throws ExecutionException, InterruptedException {
         s3Communicator.uploadDirectory(BUCKET, PREFIX, NON_EXISTING_DIR, null, false);
     }
 
@@ -57,8 +58,8 @@ public class S3CommunicatorIT {
         s3Communicator.downloadDirectory(BUCKET, PREFIX, NON_EXISTING_DIR);
     }
 
-    @Test(expected = AmazonS3Exception.class)
-    public void downloadDirectoryNoBucket() {
+    @Test(expected = S3Exception.class)
+    public void downloadDirectoryNoBucket() throws ExecutionException, InterruptedException {
         assumeFalse(s3Communicator.doesBucketExist(NON_EXISTING_BUCKET));
         s3Communicator.downloadDirectory(NON_EXISTING_BUCKET, "", DIR);
     }
