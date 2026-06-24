@@ -85,6 +85,9 @@ class S3Communicator {
         createBucket(bucketName);
 
         try {
+            if (files == null) {
+                throw new IllegalArgumentException();
+            }
             transferManager.uploadDirectory(UploadDirectoryRequest.builder().source(Paths.get(dirPath)).bucket(bucketName).s3Prefix(keyPrefix).build());
             out.println("Uploaded necessary files in: " + dirPath);
         } catch (S3Exception e) {
@@ -103,7 +106,7 @@ class S3Communicator {
                 throw new IllegalArgumentException();
             }
             DownloadFilter filter = s3Object -> s3Object.key().startsWith(keyPrefix);
-            transferManager.downloadDirectory(DownloadDirectoryRequest.builder().bucket(bucketName).filter(filter).build());
+            transferManager.downloadDirectory(DownloadDirectoryRequest.builder().bucket(bucketName).destination(Paths.get(dirPath)).filter(filter).build());
             out.println("Downloaded the bucket(" + bucketName + ") with the prefix(" + keyPrefix + ") to the local directory: " + dirPath);
         }
     }
