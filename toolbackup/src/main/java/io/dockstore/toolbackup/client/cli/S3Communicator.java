@@ -5,6 +5,7 @@ import static java.lang.System.out;
 
 import java.io.File;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -84,7 +85,7 @@ class S3Communicator {
         createBucket(bucketName);
 
         try {
-            transferManager.uploadDirectory(UploadDirectoryRequest.builder().bucket(bucketName).s3Prefix(keyPrefix).build());
+            transferManager.uploadDirectory(UploadDirectoryRequest.builder().source(Paths.get(dirPath)).bucket(bucketName).s3Prefix(keyPrefix).build());
             out.println("Uploaded necessary files in: " + dirPath);
         } catch (S3Exception e) {
             ErrorExit.exceptionMessage(e, "MultiplePartUpload cannot finish. Check your keys and sign methods.", COMMAND_ERROR);
@@ -98,7 +99,11 @@ class S3Communicator {
         if (!dir.isDirectory()) {
             throw new RuntimeException("Not a local directory thus nothing will be saved");
         } else {
-            transferManager.downloadDirectory(DownloadDirectoryRequest.builder().bucket(bucketName).filter(DownloadFilter.allObjects()).build());
+            if (keyPrefix == null) {
+                throw new IllegalArgumentException();
+            }
+            DownloadFilter filter = s3Object -> s3Object.key().startsWith(keyPrefix);
+            transferManager.downloadDirectory(DownloadDirectoryRequest.builder().bucket(bucketName).filter(filter).build());
             out.println("Downloaded the bucket(" + bucketName + ") with the prefix(" + keyPrefix + ") to the local directory: " + dirPath);
         }
     }
