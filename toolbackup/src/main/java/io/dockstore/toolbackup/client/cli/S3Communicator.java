@@ -81,7 +81,7 @@ class S3Communicator {
         return keysToSizes;
     }
 
-    void uploadDirectory(String bucketName, String keyPrefix, String dirPath, List<File> files, boolean encrypt) throws ExecutionException, InterruptedException {
+    void uploadDirectory(String bucketName, String keyPrefix, String dirPath, List<File> files) throws ExecutionException, InterruptedException {
         createBucket(bucketName);
 
         try {

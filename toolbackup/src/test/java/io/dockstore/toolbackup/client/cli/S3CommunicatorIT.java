@@ -45,12 +45,12 @@ public class S3CommunicatorIT {
         file.createNewFile();
         files.add(file);
 
-        s3Communicator.uploadDirectory(BUCKET, PREFIX, DIR, files, false);
+        s3Communicator.uploadDirectory(BUCKET, PREFIX, DIR, files);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void uploadDirectoryNonexistentDirectory() throws ExecutionException, InterruptedException {
-        s3Communicator.uploadDirectory(BUCKET, PREFIX, NON_EXISTING_DIR, null, false);
+        s3Communicator.uploadDirectory(BUCKET, PREFIX, NON_EXISTING_DIR, null);
     }
 
     @Test(expected = RuntimeException.class)
