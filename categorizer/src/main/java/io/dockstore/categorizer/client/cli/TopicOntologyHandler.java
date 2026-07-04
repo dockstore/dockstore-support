@@ -27,7 +27,8 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
             "Include topics that describe the %s's research field, application area, or scientific context.".formatted(entryType),
             "Include topics that describe the %s's overall role.".formatted(entryType),
             "Prefer topics that differentiate this %s from other %ss.".formatted(entryType, entryType),
-            "Prefer topics that are more specific."
+            "Prefer topics that are more specific.",
+            "List up to seven topics."
         );
     }
 
