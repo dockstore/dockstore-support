@@ -28,7 +28,7 @@ public class CategorizerCommandLineArgs {
     @Parameters(commandNames = { "categorize-entries" }, commandDescription = "Categorize public Dockstore entries into ontology categories using AI. Use the populate-categories command to upload these categories to Dockstore.")
     public static class CategorizeEntriesCommand {
 
-        @Parameter(names = {"-e", "--entries"}, description = "Optional file path to the CSV file containing the TRS ID and version name of the entries to categorize. The first line of the file should contain the CSV fields: trsId,version")
+        @Parameter(names = {"-e", "--entries"}, required = true, description = "File path to the CSV file containing the TRS ID and version name of the entries to categorize. The first line of the file should contain the CSV fields: trsId,version")
         private String entriesCsvFilePath;
 
         @Parameter(names = {"-o", "--ontology"}, required = true, description = "List of paths to ontology JSON files")
@@ -36,6 +36,13 @@ public class CategorizerCommandLineArgs {
 
         @Parameter(names = {"-a", "--ai"}, description = "The AI model to use", converter = AIModelTypeConverter.class)
         private AIModelType aiModel = ClaudeModelType.CLAUDE_4_5_HAIKU;
+
+        @SuppressWarnings("checkstyle:MagicNumber")
+        @Parameter(names = {"--threadCount"}, description = "The number of threads to use for categorization")
+        private int threadCount = 16;
+
+        @Parameter(names = {"--cost"}, description = "Maximum total AI cost in dollars; the command stops after this limit is exceeded")
+        private double costLimit = Double.POSITIVE_INFINITY;
 
         public String getEntriesCsvFilePath() {
             return entriesCsvFilePath;
@@ -47,6 +54,14 @@ public class CategorizerCommandLineArgs {
 
         public AIModelType getAiModel() {
             return aiModel;
+        }
+
+        public int getThreadCount() {
+            return threadCount;
+        }
+
+        public double getCostLimit() {
+            return costLimit;
         }
 
     }
@@ -67,7 +82,7 @@ public class CategorizerCommandLineArgs {
 
         @SuppressWarnings("checkstyle:MagicNumber")
         @Parameter(names = {"-i", "--intervalSeconds"}, description = "Interval in seconds; entries last categorized at least this many seconds ago are eligible for re-categorization if changed")
-        private long intervalSeconds = 3600 * 24 * 30; // seconds/hour * hours/day * 30 days
+        private long intervalSeconds = 3600L * 24L * 30L; // seconds/hour * hours/day * 30 days
 
         @Parameter(names = {"-m", "--max"}, description = "The maximum number of entries to retrieve.")
         private int max = Integer.MAX_VALUE;
@@ -105,7 +120,7 @@ public class CategorizerCommandLineArgs {
     @Parameters(commandNames = { "list-categories" }, commandDescription = "List the IDs of AI-managed categories on Dockstore.  If ontologies are specified, only list the IDs of the categories that correspond to the ontologies.")
     public static class ListCategoriesCommand {
 
-        @Parameter(names = {"-o", "--ontology"}, description = "Optional list of paths to ontology JSON files; if specified, only category IDs present in the ontologies are listed")
+        @Parameter(names = {"-o", "--ontology"}, description = "Optional list of paths to ontology JSON files; if specified, only list category IDs that match the nodes present in the ontologies")
         private List<String> ontologyJsonPaths;
 
         public List<String> getOntologyJsonPaths() {
@@ -123,5 +138,9 @@ public class CategorizerCommandLineArgs {
         public String getCategoriesCsvPath() {
             return categoriesCsvPath;
         }
+    }
+
+    @Parameters(commandNames = { "reindex-entries" }, commandDescription = "Trigger a reindex of all published entries on Dockstore.")
+    public static class ReindexEntriesCommand {
     }
 }

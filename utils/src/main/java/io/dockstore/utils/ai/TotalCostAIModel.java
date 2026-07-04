@@ -20,28 +20,34 @@ public class TotalCostAIModel extends DelegatingAIModel {
         this.costLimit = costLimit;
     }
 
-    @Override
-    public Response submitPrompt(Prompt prompt) {
-        Response response = super.submitPrompt(prompt);
-        totalCost += response.cost();
-        totalInputTokens += response.inputTokens();
-        totalOutputTokens += response.outputTokens();
+    public synchronized void checkLimit() {
         if (totalCost > costLimit) {
             throw new LimitExceededException(
                 String.format("Cost limit of $%.6f exceeded: total cost is $%.6f", costLimit, totalCost));
         }
+    }
+
+    @Override
+    public Response submitPrompt(Prompt prompt) {
+        checkLimit();
+        Response response = super.submitPrompt(prompt);
+        synchronized (this) {
+            totalCost += response.cost();
+            totalInputTokens += response.inputTokens();
+            totalOutputTokens += response.outputTokens();
+        }
         return response;
     }
 
-    public double getTotalCost() {
+    public synchronized double getTotalCost() {
         return totalCost;
     }
 
-    public long getTotalInputTokens() {
+    public synchronized long getTotalInputTokens() {
         return totalInputTokens;
     }
 
-    public long getTotalOutputTokens() {
+    public synchronized long getTotalOutputTokens() {
         return totalOutputTokens;
     }
 }
