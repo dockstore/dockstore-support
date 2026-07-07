@@ -55,6 +55,13 @@ public class Ontology {
         return new ArrayList<>(ancestors);
     }
 
+    public List<Node> getNodeAndAncestors(String id) {
+        List<Node> nodeAndAncestors = new ArrayList<>();
+        nodeAndAncestors.add(getNodeById(id));
+        nodeAndAncestors.addAll(getAncestors(id));
+        return nodeAndAncestors;
+    }
+
     public List<Node> getNodes() {
         return nodes;
     }

@@ -2,6 +2,7 @@ package io.dockstore.categorizer.client.cli;
 
 import io.dockstore.categorizer.Ontology;
 import java.util.List;
+import java.util.Set;
 
 public class TopicOntologyHandler extends ThreeStageOntologyHandler {
 
@@ -34,9 +35,16 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
     @Override
     protected List<String> sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
         String entryType = entryData.entryType();
-        return List.of(
-            "Does the following topic accurately describe the %s's field of study, area of application, scientific context, or similar?".formatted(entryType)
+        return List.of(isGenericNode(node)
+            ? "Does the following topic accurately describe the %s's field of study, area of application, scientific context, or similar?  Only answer 'yes' if the topic strongly relates to the %s's primary purpose.".formatted(entryType, entryType)
+            : "Does the following topic accurately describe the %s's field of study, area of application, scientific context, or similar?".formatted(entryType)
         );
+    }
+
+    private boolean isGenericNode(Ontology.Node node) {
+        Set<String> genericIds = Set.of("topic-data-management", "topic-database-management");
+        String id = node.id();
+        return node.ontology().getNodeAndAncestors(id).stream().anyMatch(ancestor -> genericIds.contains(ancestor.id()));
     }
 
     @Override
