@@ -39,8 +39,10 @@ import io.dockstore.utils.CsvWriter;
 import io.dockstore.utils.EntryUtils;
 import io.dockstore.utils.IOUtils;
 import io.dockstore.utils.RetrievalUtils;
+import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModelFactory;
 import io.dockstore.utils.ai.AIModelType;
+import io.dockstore.utils.ai.LimitExceededException;
 import io.dockstore.utils.ai.LoggingAIModel;
 import io.dockstore.utils.ai.TotalCostAIModel;
 import java.io.IOException;
@@ -211,6 +213,20 @@ public class CategorizerClient {
     }
 
     /**
+     * Creates the AI model to use for categorization, optionally wrapping it to log prompts and responses,
+     * and wrapping the result to track total cost and token usage.
+     * @param aiModelType the AI model to create
+     * @param logPrompts whether to log prompts and responses
+     */
+    private TotalCostAIModel createAiModel(AIModelType aiModelType, boolean logPrompts) {
+        AIModel aiModel = AIModelFactory.createModel(aiModelType);
+        if (logPrompts) {
+            aiModel = new LoggingAIModel(aiModel);
+        }
+        return new TotalCostAIModel(aiModel);
+    }
+
+    /**
      * AI-categorizes the entries listed in the input CSV and writes matching ontology node assignments to stdout as CSV.
      * Each entry is processed in a worker thread; per-entry failures are counted and logged but do not abort the run.
      * @param categorizerConfig server URL and API token
@@ -228,9 +244,10 @@ public class CategorizerClient {
         LOG.info("Read {} entries from input file {}", entries.size(), entriesPath);
 
         AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
-        double costLimit = categorizeEntriesCommand.getCostLimit();
-        TotalCostAIModel aiModel = new TotalCostAIModel(new LoggingAIModel(AIModelFactory.createModel(aiModelType)), costLimit);
+        TotalCostAIModel aiModel = createAiModel(aiModelType, categorizeEntriesCommand.isLogPrompts());
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
+
+        double costLimit = categorizeEntriesCommand.getCostLimit();
         if (Double.isFinite(costLimit)) {
             LOG.info("Cost limit: ${}", costLimit);
         }
@@ -253,11 +270,16 @@ public class CategorizerClient {
                 final String version = entry.version();
                 try {
                     LOG.info("Categorizing entry {} version {}", trsId, version);
-                    // Check if we've exceeded the cost limit, so we can avoid needlessly retrieving the entry data.
-                    aiModel.checkLimit();
+                    // Check if we've exceeded the cost limit.
+                    // We check the limit at this point in the code to avoid needlessly retrieving the entry data.
+                    if (aiModel.getTotalCost() > costLimit) {
+                        throw new LimitExceededException(
+                            String.format("Cost limit of $%.6f exceeded: total cost is $%.6f", costLimit, aiModel.getTotalCost()));
+                    }
                     // Retrieve data about the entry.
                     final ApiClient apiClient = setupApiClient(dockstoreServerUrl, dockstoreToken);
-                    final EntryData entryData = retrieveEntryData(apiClient, trsId, version);
+                    final int maxFieldLength = 200_000;
+                    final EntryData entryData = retrieveEntryData(apiClient, trsId, version).limit(maxFieldLength);
                     // For each ontology handler, categorize the entry into the appropriate nodes (categories).
                     for (OntologyHandler handler: ontologyHandlers) {
                         // Determine the "recommended for annotation" nodes that the handler covers.
