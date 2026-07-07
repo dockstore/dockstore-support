@@ -257,7 +257,8 @@ public class CategorizerClient {
                     aiModel.checkLimit();
                     // Retrieve data about the entry.
                     final ApiClient apiClient = setupApiClient(dockstoreServerUrl, dockstoreToken);
-                    final EntryData entryData = retrieveEntryData(apiClient, trsId, version);
+                    final int maxFieldLength = 200_000;
+                    final EntryData entryData = retrieveEntryData(apiClient, trsId, version).limit(maxFieldLength);
                     // For each ontology handler, categorize the entry into the appropriate nodes (categories).
                     for (OntologyHandler handler: ontologyHandlers) {
                         // Determine the "recommended for annotation" nodes that the handler covers.
