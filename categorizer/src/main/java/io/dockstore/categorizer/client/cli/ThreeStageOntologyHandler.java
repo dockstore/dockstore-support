@@ -67,6 +67,9 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
 
     @Override
     public List<Ontology.Node> categorize(List<Ontology.Node> nodes, EntryData entryData, AIModel aiModel) {
+        if (nodes.isEmpty()) {
+            return List.of();
+        }
         String summary = summarize(entryData, aiModel);
         List<Ontology.Node> matches = classify(nodes, summary, entryData, aiModel);
         return verify(matches, summary, entryData, aiModel);

@@ -262,6 +262,8 @@ public class CategorizerClient {
         );
         checkOverlappingHandlers(ontologyHandlers, ontology);
 
+        primeCache(ontologyHandlers, ontology, aiModel);
+
         final int threadCount = categorizeEntriesCommand.getThreadCount();
         final AtomicInteger numberOfFailures = new AtomicInteger(0);
         try (Writer writer = stdoutWriter(); CsvWriter<Categorization> categorizationsWriter = new CsvWriter<>(writer, Categorization.class)) {
@@ -285,11 +287,9 @@ public class CategorizerClient {
                         // Determine the "recommended for annotation" nodes that the handler covers.
                         List<Ontology.Node> coveredNodes = handler.coverage(ontology);
                         List<Ontology.Node> candidateNodes = coveredNodes.stream().filter(Ontology.Node::recommendedForAnnotation).toList();
-                        if (candidateNodes.isEmpty()) {
-                            continue;
-                        }
-                        // Determine which nodes (categories) match the entry, and write the matching node information to the CSV.
+                        // Determine which nodes (categories) match the entry.
                         List<Ontology.Node> matchingNodes = handler.categorize(candidateNodes, entryData, aiModel);
+                        // Write the entry and matching node information to the CSV.
                         synchronized (categorizationsWriter) {
                             for (Ontology.Node matchingNode: matchingNodes) {
                                 categorizationsWriter.write(new Categorization(entry.trsId(), entry.version(), matchingNode.id(), true));
@@ -309,6 +309,27 @@ public class CategorizerClient {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
         LOG.info("Total cost: ${}", aiModel.getTotalCost());
+    }
+
+    /**
+     * Runs a categorization on dummy data, sequentially and before the real, parallel categorization work begins,
+     * so that the AI model's prompt cache (for content such as the per-handler ontology node lists, which is
+     * identical across all entries) is already warm once the worker threads start. Without this, several worker
+     * threads could race to populate the same cache entry on their first request, each paying the "cache miss" cost.
+     * Failures are logged but do not abort the run.
+     */
+    private void primeCache(List<OntologyHandler> ontologyHandlers, Ontology ontology, AIModel aiModel) {
+        LOG.info("Priming the AI model prompt cache");
+        final EntryData dummyEntryData = new EntryData("workflow", "dummy/dummy-entry", "A dummy entry used to prime the AI model's prompt cache.",
+            "This is placeholder descriptor file content used to prime the AI model's prompt cache.");
+        for (OntologyHandler handler: ontologyHandlers) {
+            List<Ontology.Node> candidateNodes = handler.coverage(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).toList();
+            try {
+                handler.categorize(candidateNodes, dummyEntryData, aiModel);
+            } catch (Exception ex) {
+                LOG.error("Unable to prime the AI model prompt cache for handler {}", handler.getName(), ex);
+            }
+        }
     }
 
     /** Submits all runnables to a fixed thread pool and blocks until every task has finished. */
