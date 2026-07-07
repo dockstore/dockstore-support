@@ -254,7 +254,8 @@ public class CategorizerClient {
                 final String version = entry.version();
                 try {
                     LOG.info("Categorizing entry {} version {}", trsId, version);
-                    // Check if we've exceeded the cost limit, so we can avoid needlessly retrieving the entry data.
+                    // Check if we've exceeded the cost limit.
+                    // We check the limit at this point in the code to avoid needlessly retrieving the entry data.
                     if (aiModel.getTotalCost() > costLimit) {
                         throw new LimitExceededException(
                             String.format("Cost limit of $%.6f exceeded: total cost is $%.6f", costLimit, aiModel.getTotalCost()));
