@@ -44,6 +44,9 @@ public class CategorizerCommandLineArgs {
         @Parameter(names = {"--cost"}, description = "Maximum total AI cost in dollars; the command stops after this limit is exceeded")
         private double costLimit = Double.POSITIVE_INFINITY;
 
+        @Parameter(names = {"--logPrompts"}, description = "Log the AI prompts and responses")
+        private boolean logPrompts = false;
+
         public String getEntriesCsvFilePath() {
             return entriesCsvFilePath;
         }
@@ -62,6 +65,10 @@ public class CategorizerCommandLineArgs {
 
         public double getCostLimit() {
             return costLimit;
+        }
+
+        public boolean isLogPrompts() {
+            return logPrompts;
         }
 
     }

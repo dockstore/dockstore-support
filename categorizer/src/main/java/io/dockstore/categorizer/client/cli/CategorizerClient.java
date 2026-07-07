@@ -39,6 +39,7 @@ import io.dockstore.utils.CsvWriter;
 import io.dockstore.utils.EntryUtils;
 import io.dockstore.utils.IOUtils;
 import io.dockstore.utils.RetrievalUtils;
+import io.dockstore.utils.ai.AIModel;
 import io.dockstore.utils.ai.AIModelFactory;
 import io.dockstore.utils.ai.AIModelType;
 import io.dockstore.utils.ai.LimitExceededException;
@@ -212,6 +213,20 @@ public class CategorizerClient {
     }
 
     /**
+     * Creates the AI model to use for categorization, optionally wrapping it to log prompts and responses,
+     * and wrapping the result to track total cost and token usage.
+     * @param aiModelType the AI model to create
+     * @param logPrompts whether to log prompts and responses
+     */
+    private TotalCostAIModel createAiModel(AIModelType aiModelType, boolean logPrompts) {
+        AIModel aiModel = AIModelFactory.createModel(aiModelType);
+        if (logPrompts) {
+            aiModel = new LoggingAIModel(aiModel);
+        }
+        return new TotalCostAIModel(aiModel);
+    }
+
+    /**
      * AI-categorizes the entries listed in the input CSV and writes matching ontology node assignments to stdout as CSV.
      * Each entry is processed in a worker thread; per-entry failures are counted and logged but do not abort the run.
      * @param categorizerConfig server URL and API token
@@ -229,9 +244,10 @@ public class CategorizerClient {
         LOG.info("Read {} entries from input file {}", entries.size(), entriesPath);
 
         AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
-        double costLimit = categorizeEntriesCommand.getCostLimit();
-        TotalCostAIModel aiModel = new TotalCostAIModel(new LoggingAIModel(AIModelFactory.createModel(aiModelType)));
+        TotalCostAIModel aiModel = createAiModel(aiModelType, categorizeEntriesCommand.isLogPrompts());
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
+
+        double costLimit = categorizeEntriesCommand.getCostLimit();
         if (Double.isFinite(costLimit)) {
             LOG.info("Cost limit: ${}", costLimit);
         }
