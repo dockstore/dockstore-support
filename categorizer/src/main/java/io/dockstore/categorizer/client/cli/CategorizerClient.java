@@ -41,6 +41,7 @@ import io.dockstore.utils.IOUtils;
 import io.dockstore.utils.RetrievalUtils;
 import io.dockstore.utils.ai.AIModelFactory;
 import io.dockstore.utils.ai.AIModelType;
+import io.dockstore.utils.ai.LimitExceededException;
 import io.dockstore.utils.ai.LoggingAIModel;
 import io.dockstore.utils.ai.TotalCostAIModel;
 import java.io.IOException;
@@ -229,7 +230,7 @@ public class CategorizerClient {
 
         AIModelType aiModelType = categorizeEntriesCommand.getAiModel();
         double costLimit = categorizeEntriesCommand.getCostLimit();
-        TotalCostAIModel aiModel = new TotalCostAIModel(new LoggingAIModel(AIModelFactory.createModel(aiModelType)), costLimit);
+        TotalCostAIModel aiModel = new TotalCostAIModel(new LoggingAIModel(AIModelFactory.createModel(aiModelType)));
         LOG.info("Categorizing entries using AI model {}", aiModelType.getModelId());
         if (Double.isFinite(costLimit)) {
             LOG.info("Cost limit: ${}", costLimit);
@@ -254,7 +255,10 @@ public class CategorizerClient {
                 try {
                     LOG.info("Categorizing entry {} version {}", trsId, version);
                     // Check if we've exceeded the cost limit, so we can avoid needlessly retrieving the entry data.
-                    aiModel.checkLimit();
+                    if (aiModel.getTotalCost() > costLimit) {
+                        throw new LimitExceededException(
+                            String.format("Cost limit of $%.6f exceeded: total cost is $%.6f", costLimit, aiModel.getTotalCost()));
+                    }
                     // Retrieve data about the entry.
                     final ApiClient apiClient = setupApiClient(dockstoreServerUrl, dockstoreToken);
                     final int maxFieldLength = 200_000;
