@@ -17,3 +17,12 @@ RUN rm -fr /tmp/aws
 COPY topicgenerator/target/topicgenerator*[^s].jar /home/topic-generator.jar
 
 COPY metricsaggregator/target/metricsaggregator*[^s].jar /home/metrics-aggregator.jar
+
+COPY categorizer/target/categorizer*[^s].jar /home/categorizer.jar
+
+# Download the generated ontology JSON files from the dockstore/ontology repo
+ARG ONTOLOGY_REF=develop
+RUN mkdir -p /home/ontology
+RUN for f in operation.json topic.json input-format.json input-data.json output-format.json output-data.json; do \
+        curl -sf "https://raw.githubusercontent.com/dockstore/ontology/${ONTOLOGY_REF}/generated/${f}" -o "/home/ontology/${f}"; \
+    done
