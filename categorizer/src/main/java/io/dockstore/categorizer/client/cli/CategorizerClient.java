@@ -285,8 +285,7 @@ public class CategorizerClient {
                     // For each ontology handler, categorize the entry into the appropriate nodes (categories).
                     for (OntologyHandler handler: ontologyHandlers) {
                         // Determine the "recommended for annotation" nodes that the handler covers.
-                        List<Ontology.Node> coveredNodes = handler.coverage(ontology);
-                        List<Ontology.Node> candidateNodes = coveredNodes.stream().filter(Ontology.Node::recommendedForAnnotation).toList();
+                        List<Ontology.Node> candidateNodes = determineCandidateNodes(handler, ontology);
                         // Determine which nodes (categories) match the entry.
                         List<Ontology.Node> matchingNodes = handler.categorize(candidateNodes, entryData, aiModel);
                         // Write the entry and matching node information to the CSV.
@@ -312,6 +311,18 @@ public class CategorizerClient {
     }
 
     /**
+     * Determines the nodes (categories) that a given handler should consider when categorizing an entry.
+     * A node is a candidate if it falls within the handler's coverage of the ontology and is marked as
+     * recommended for annotation.
+     * @param handler the ontology handler whose coverage determines which nodes are considered
+     * @param ontology the full ontology to filter nodes from
+     * @return the list of candidate nodes for the handler to categorize against
+     */
+    private List<Ontology.Node> determineCandidateNodes(OntologyHandler handler, Ontology ontology) {
+        return handler.coverage(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).toList();
+    }
+
+    /**
      * Runs a categorization on dummy data, sequentially and before the real, parallel categorization work begins,
      * so that the AI model's prompt cache (for content such as the per-handler ontology node lists, which is
      * identical across all entries) is already warm once the worker threads start. Without this, several worker
@@ -323,7 +334,7 @@ public class CategorizerClient {
         final EntryData dummyEntryData = new EntryData("workflow", "dummy/dummy-entry", "A dummy entry used to prime the AI model's prompt cache.",
             "This is placeholder descriptor file content used to prime the AI model's prompt cache.");
         for (OntologyHandler handler: ontologyHandlers) {
-            List<Ontology.Node> candidateNodes = handler.coverage(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).toList();
+            List<Ontology.Node> candidateNodes = determineCandidateNodes(handler, ontology);
             try {
                 handler.categorize(candidateNodes, dummyEntryData, aiModel);
             } catch (Exception ex) {
