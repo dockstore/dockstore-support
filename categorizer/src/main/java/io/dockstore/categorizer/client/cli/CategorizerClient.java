@@ -262,6 +262,8 @@ public class CategorizerClient {
         );
         checkOverlappingHandlers(ontologyHandlers, ontology);
 
+        primeCache(ontologyHandlers, ontology, aiModel);
+
         final int threadCount = categorizeEntriesCommand.getThreadCount();
         final AtomicInteger numberOfFailures = new AtomicInteger(0);
         try (Writer writer = stdoutWriter(); CsvWriter<Categorization> categorizationsWriter = new CsvWriter<>(writer, Categorization.class)) {
@@ -283,13 +285,10 @@ public class CategorizerClient {
                     // For each ontology handler, categorize the entry into the appropriate nodes (categories).
                     for (OntologyHandler handler: ontologyHandlers) {
                         // Determine the "recommended for annotation" nodes that the handler covers.
-                        List<Ontology.Node> coveredNodes = handler.coverage(ontology);
-                        List<Ontology.Node> candidateNodes = coveredNodes.stream().filter(Ontology.Node::recommendedForAnnotation).toList();
-                        if (candidateNodes.isEmpty()) {
-                            continue;
-                        }
-                        // Determine which nodes (categories) match the entry, and write the matching node information to the CSV.
+                        List<Ontology.Node> candidateNodes = determineCandidateNodes(handler, ontology);
+                        // Determine which nodes (categories) match the entry.
                         List<Ontology.Node> matchingNodes = handler.categorize(candidateNodes, entryData, aiModel);
+                        // Write the entry and matching node information to the CSV.
                         synchronized (categorizationsWriter) {
                             for (Ontology.Node matchingNode: matchingNodes) {
                                 categorizationsWriter.write(new Categorization(entry.trsId(), entry.version(), matchingNode.id(), true));
@@ -309,6 +308,39 @@ public class CategorizerClient {
             exceptionMessage(e, "Unable to create new CSV output file", IO_ERROR);
         }
         LOG.info("Total cost: ${}", aiModel.getTotalCost());
+    }
+
+    /**
+     * Determines the nodes (categories) that a given handler should consider when categorizing an entry.
+     * A node is a candidate if it falls within the handler's coverage of the ontology and is marked as
+     * recommended for annotation.
+     * @param handler the ontology handler whose coverage determines which nodes are considered
+     * @param ontology the full ontology to filter nodes from
+     * @return the list of candidate nodes for the handler to categorize against
+     */
+    private List<Ontology.Node> determineCandidateNodes(OntologyHandler handler, Ontology ontology) {
+        return handler.coverage(ontology).stream().filter(Ontology.Node::recommendedForAnnotation).toList();
+    }
+
+    /**
+     * Runs a categorization on dummy data, sequentially and before the real, parallel categorization work begins,
+     * so that the AI model's prompt cache (for content such as the per-handler ontology node lists, which is
+     * identical across all entries) is already warm once the worker threads start. Without this, several worker
+     * threads could race to populate the same cache entry on their first request, each paying the "cache miss" cost.
+     * Failures are logged but do not abort the run.
+     */
+    private void primeCache(List<OntologyHandler> ontologyHandlers, Ontology ontology, AIModel aiModel) {
+        LOG.info("Priming the AI model prompt cache");
+        final EntryData dummyEntryData = new EntryData("workflow", "dummy/dummy-entry", "A dummy entry used to prime the AI model's prompt cache.",
+            "This is placeholder descriptor file content used to prime the AI model's prompt cache.");
+        for (OntologyHandler handler: ontologyHandlers) {
+            List<Ontology.Node> candidateNodes = determineCandidateNodes(handler, ontology);
+            try {
+                handler.categorize(candidateNodes, dummyEntryData, aiModel);
+            } catch (Exception ex) {
+                LOG.error("Unable to prime the AI model prompt cache for handler {}", handler.getName(), ex);
+            }
+        }
     }
 
     /** Submits all runnables to a fixed thread pool and blocks until every task has finished. */
