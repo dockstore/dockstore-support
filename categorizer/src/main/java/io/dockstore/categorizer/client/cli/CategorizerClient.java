@@ -283,6 +283,7 @@ public class CategorizerClient {
                     final int maxFieldLength = 200_000;
                     final EntryData entryData = retrieveEntryData(apiClient, trsId, version).limit(maxFieldLength);
                     // For each ontology handler, categorize the entry into the appropriate nodes (categories).
+                    boolean matchedAnyCategory = false;
                     for (OntologyHandler handler: ontologyHandlers) {
                         // Determine the "recommended for annotation" nodes that the handler covers.
                         List<Ontology.Node> candidateNodes = determineCandidateNodes(handler, ontology);
@@ -292,7 +293,14 @@ public class CategorizerClient {
                         synchronized (categorizationsWriter) {
                             for (Ontology.Node matchingNode: matchingNodes) {
                                 categorizationsWriter.write(new Categorization(entry.trsId(), entry.version(), matchingNode.id(), true));
+                                matchedAnyCategory = true;
                             }
+                        }
+                    }
+                    // If the entry didn't match any category, indicate as much with a sentinel row.
+                    if (!matchedAnyCategory) {
+                        synchronized (categorizationsWriter) {
+                            categorizationsWriter.write(new Categorization(entry.trsId(), entry.version(), "-", true));
                         }
                     }
                 } catch (Exception ex) {
