@@ -295,6 +295,7 @@ public class CategorizerClient {
                             }
                         }
                     }
+                    LOG.info("Total cost so far: ${}", aiModel.getTotalCost());
                 } catch (Exception ex) {
                     LOG.error("Unable to categorize entry with TRS ID {} and version {}, skipping", trsId, version, ex);
                     numberOfFailures.incrementAndGet();

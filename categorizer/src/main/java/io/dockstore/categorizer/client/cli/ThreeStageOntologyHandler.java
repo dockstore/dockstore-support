@@ -182,7 +182,7 @@ public abstract class ThreeStageOntologyHandler implements OntologyHandler {
     }
 
     protected String saySelectIdsFromTheList() {
-        return "Select %s IDs from the above CSV.  Do not use other IDs.".formatted(rootId.replace("-", " "));
+        return "Only include %s IDs from the above CSV.".formatted(rootId.replace("-", " "));
     }
 
     protected String sayOneIdPerLine() {

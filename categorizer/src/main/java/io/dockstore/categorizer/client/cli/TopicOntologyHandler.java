@@ -36,7 +36,7 @@ public class TopicOntologyHandler extends ThreeStageOntologyHandler {
     protected List<String> sayVerifyInstructions(EntryData entryData, Ontology.Node node) {
         String entryType = entryData.entryType();
         return List.of(isGenericNode(node)
-            ? "Does the following topic accurately describe the %s's field of study, area of application, scientific context, or similar?  Only answer 'yes' if the topic strongly relates to the %s's primary purpose.".formatted(entryType, entryType)
+            ? "Does the following topic accurately describe the %s's field of study, area of application, scientific context, or similar?  Only answer 'yes' if it is the %s's primary purpose.".formatted(entryType, entryType)
             : "Does the following topic accurately describe the %s's field of study, area of application, scientific context, or similar?".formatted(entryType)
         );
     }
