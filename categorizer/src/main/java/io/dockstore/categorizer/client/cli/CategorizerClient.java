@@ -34,6 +34,8 @@ import io.dockstore.openapi.client.model.EntryLiteAndVersionName;
 import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.Organization;
 import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.Workflow;
+import io.dockstore.openapi.client.model.WorkflowSubClass;
 import io.dockstore.utils.CsvReader;
 import io.dockstore.utils.CsvWriter;
 import io.dockstore.utils.EntryUtils;
@@ -78,6 +80,9 @@ import org.slf4j.LoggerFactory;
 public class CategorizerClient {
     private static final Logger LOG = LoggerFactory.getLogger(CategorizerClient.class);
     private static final String AI_ORGANIZATION_NAME = "dockstoreai";
+    private static final String WORKFLOW_TRS_PREFIX = "#workflow/";
+    private static final String SERVICE_TRS_PREFIX = "#service/";
+    private static final String NOTEBOOK_TRS_PREFIX = "#notebook/";
 
     CategorizerClient() {
     }
@@ -437,7 +442,7 @@ public class CategorizerClient {
             try {
                 categoryIdToCollection.put(categoryId, organizationsApi.getCollectionByName(AI_ORGANIZATION_NAME, categoryId));
                 LOG.info("Retrieved category '{}'", categoryId);
-            } catch (ApiException e) {
+            } catch (Exception e) {
                 LOG.error("Unable to retrieve category '{}'", categoryId, e);
             }
         }
@@ -448,9 +453,9 @@ public class CategorizerClient {
         final Map<String, Entry> trsIdToEntry = new HashMap<>();
         for (String trsId: trsIds) {
             try {
-                trsIdToEntry.put(trsId, workflowsApi.getPublishedEntryByPath(trsIdToPath(trsId)));
+                trsIdToEntry.put(trsId, getEntryByTrsID(workflowsApi, trsId));
                 LOG.info("Retrieved entry '{}'", trsId);
-            } catch (ApiException e) {
+            } catch (Exception e) {
                 LOG.error("Unable to retrieve entry '{}'", trsId, e);
             }
         }
@@ -481,7 +486,7 @@ public class CategorizerClient {
             try {
                 organizationsApi.addEntryToCollection(organization.getId(), collection.getId(), entry.getId(), null, "AI", false);
                 LOG.info("Added entry {} to category {}", trsId, categoryId);
-            } catch (ApiException e) {
+            } catch (Exception e) {
                 LOG.error("Unable to add entry {} to category {}", trsId, categoryId, e);
             }
         }
@@ -505,15 +510,52 @@ public class CategorizerClient {
     }
 
     /**
-     * Strips the {@code #workflow/} TRS prefix to produce the plain path expected by
-     * {@link WorkflowsApi#getPublishedEntryByPath}.
+     * Retrieves a published Dockstore entry by its TRS ID. Supports every entry type: workflows, services,
+     * notebooks, apptools, and tools. Workflows, services, notebooks, and apptools are looked up via
+     * {@link WorkflowsApi#getPublishedWorkflowByPath}, which requires (and thus lets us pin down) the specific
+     * subclass of the entry, since these entries can share a path with other subclasses defined in the same
+     * source repository. Tools don't have this ambiguity, so they're looked up via the generic
+     * {@link WorkflowsApi#getPublishedEntryByPath}. In all cases, the retrieved entry's TRS ID is confirmed to
+     * match {@code trsId} before it's returned.
      */
-    private String trsIdToPath(String trsId) {
-        final String workflowPrefix = "#workflow/";
-        if (trsId.startsWith(workflowPrefix)) {
-            return trsId.substring(workflowPrefix.length());
+    private Entry getEntryByTrsID(WorkflowsApi workflowsApi, String trsId) throws ApiException {
+        final Entry entry;
+        if (trsId.startsWith(WORKFLOW_TRS_PREFIX)) {
+            entry = workflowToEntry(workflowsApi.getPublishedWorkflowByPath(
+                trsId.substring(WORKFLOW_TRS_PREFIX.length()), WorkflowSubClass.BIOWORKFLOW, null, null));
+        } else if (trsId.startsWith(SERVICE_TRS_PREFIX)) {
+            entry = workflowToEntry(workflowsApi.getPublishedWorkflowByPath(
+                trsId.substring(SERVICE_TRS_PREFIX.length()), WorkflowSubClass.SERVICE, null, null));
+        } else if (trsId.startsWith(NOTEBOOK_TRS_PREFIX)) {
+            entry = workflowToEntry(workflowsApi.getPublishedWorkflowByPath(
+                trsId.substring(NOTEBOOK_TRS_PREFIX.length()), WorkflowSubClass.NOTEBOOK, null, null));
+        } else {
+            // No TRS prefix: the entry is either a Tool or an AppTool, which share the same (empty) TRS prefix
+            // and so can't be distinguished from the TRS ID alone. Try AppTool first, since (unlike a Tool's
+            // path) an AppTool's path can collide with a workflow/service/notebook defined in the same source
+            // repository; fall back to the generic, unambiguous Tool lookup if it isn't an AppTool.
+            Entry appToolOrTool;
+            try {
+                appToolOrTool = workflowToEntry(workflowsApi.getPublishedWorkflowByPath(trsId, WorkflowSubClass.APPTOOL, null, null));
+            } catch (ApiException e) {
+                appToolOrTool = workflowsApi.getPublishedEntryByPath(trsId);
+            }
+            entry = appToolOrTool;
         }
-        return trsId;
+
+        if (!trsId.equals(entry.getTrsId())) {
+            throw new RuntimeException("Retrieved entry has TRS ID '%s', expected '%s'".formatted(entry.getTrsId(), trsId));
+        }
+        return entry;
+    }
+
+    /**
+     * Converts a {@link Workflow} (or one of its subclasses: BioWorkflow, Service, Notebook, AppTool) to an
+     * {@link Entry}. The two types don't share a common supertype in the generated API client, so only the
+     * fields needed by callers of {@link #getEntryByTrsID}, namely the ID and TRS ID, are copied over.
+     */
+    private Entry workflowToEntry(Workflow workflow) {
+        return new Entry().id(workflow.getId()).trsId(workflow.getTrsId());
     }
 
     /**
