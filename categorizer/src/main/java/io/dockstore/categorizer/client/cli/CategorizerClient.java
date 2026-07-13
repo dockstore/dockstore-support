@@ -65,6 +65,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.lang3.StringUtils;
@@ -434,21 +435,16 @@ public class CategorizerClient {
 
         final Organization organization = getAiOrganization(organizationsApi);
 
-        // Map category IDs to the corresponding Dockstore Collections.
-        // We'll use this later to avoid some redundant requests.
-        final List<String> categoryIds = categorizations.stream().map(Categorization::categoryId).distinct().toList();
-        final Map<String, Collection> categoryIdToCollection = new HashMap<>();
-        for (String categoryId: categoryIds) {
-            try {
-                categoryIdToCollection.put(categoryId, organizationsApi.getCollectionByName(AI_ORGANIZATION_NAME, categoryId));
-                LOG.info("Retrieved category '{}'", categoryId);
-            } catch (Exception e) {
-                LOG.error("Unable to retrieve category '{}'", categoryId, e);
-            }
-        }
+        // Retrieve AI-curated categories and map category IDs to the corresponding Dockstore Collections.
+        // We'll use the resulting Map later to avoid some redundant requests.
+        LOG.info("Retrieving AI-curated categories");
+        final List<Collection> collections = getCollectionsFromOrganization(organizationsApi, organization);
+        final Map<String, Collection> categoryIdToCollection = collections.stream()
+            .collect(Collectors.toMap(Collection::getName, Function.identity()));
 
-        // Map entry paths to the corresponding Dockstore Entries.
-        // We'll use this later to avoid some redundant requests.
+        // Map TRS Ids to the corresponding Dockstore Entries.
+        // We'll use the resulting Map later to avoid some redundant requests.
+        LOG.info("Mapping TRS IDs to Entries");
         final List<String> trsIds = categorizations.stream().map(Categorization::trsId).distinct().toList();
         final Map<String, Entry> trsIdToEntry = new HashMap<>();
         for (String trsId: trsIds) {
@@ -627,6 +623,16 @@ public class CategorizerClient {
             return organizationsApi.getOrganizationByName(AI_ORGANIZATION_NAME);
         } catch (ApiException e) {
             exceptionMessage(e, "Unable to retrieve organization '%s'".formatted(AI_ORGANIZATION_NAME), API_ERROR);
+            return null;
+        }
+    }
+
+    /** Retrieves all of the Collections from the specified Organization, aborting on failure. */
+    private List<Collection> getCollectionsFromOrganization(OrganizationsApi organizationsApi, Organization organization) {
+        try {
+            return organizationsApi.getCollectionsFromOrganization(organization.getId(), "");
+        } catch (ApiException e) {
+            exceptionMessage(e, "Unable to retrieve collections from organization '%s'".formatted(organization.getName()), API_ERROR);
             return null;
         }
     }
