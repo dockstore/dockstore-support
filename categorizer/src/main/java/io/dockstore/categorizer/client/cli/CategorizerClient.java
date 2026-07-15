@@ -34,6 +34,8 @@ import io.dockstore.openapi.client.model.EntryLiteAndVersionName;
 import io.dockstore.openapi.client.model.FileWrapper;
 import io.dockstore.openapi.client.model.Organization;
 import io.dockstore.openapi.client.model.Tool;
+import io.dockstore.openapi.client.model.Workflow;
+import io.dockstore.openapi.client.model.WorkflowSubClass;
 import io.dockstore.utils.CsvReader;
 import io.dockstore.utils.CsvWriter;
 import io.dockstore.utils.EntryUtils;
@@ -63,6 +65,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.lang3.StringUtils;
@@ -78,6 +81,9 @@ import org.slf4j.LoggerFactory;
 public class CategorizerClient {
     private static final Logger LOG = LoggerFactory.getLogger(CategorizerClient.class);
     private static final String AI_ORGANIZATION_NAME = "dockstoreai";
+    private static final String WORKFLOW_TRS_PREFIX = "#workflow/";
+    private static final String SERVICE_TRS_PREFIX = "#service/";
+    private static final String NOTEBOOK_TRS_PREFIX = "#notebook/";
 
     CategorizerClient() {
     }
@@ -429,29 +435,26 @@ public class CategorizerClient {
 
         final Organization organization = getAiOrganization(organizationsApi);
 
-        // Map category IDs to the corresponding Dockstore Collections.
-        // We'll use this later to avoid some redundant requests.
-        final List<String> categoryIds = categorizations.stream().map(Categorization::categoryId).distinct().toList();
-        final Map<String, Collection> categoryIdToCollection = new HashMap<>();
-        for (String categoryId: categoryIds) {
-            try {
-                categoryIdToCollection.put(categoryId, organizationsApi.getCollectionByName(AI_ORGANIZATION_NAME, categoryId));
-                LOG.info("Retrieved category '{}'", categoryId);
-            } catch (ApiException e) {
-                LOG.error("Unable to retrieve category '{}'", categoryId, e);
-            }
-        }
+        // Retrieve AI-curated categories and map category IDs to the corresponding Dockstore Collections.
+        // We'll use the resulting Map later to avoid some redundant requests.
+        LOG.info("Retrieving AI-curated categories");
+        final List<Collection> collections = getCollectionsFromOrganization(organizationsApi, organization);
+        final Map<String, Collection> categoryIdToCollection = collections.stream()
+            .collect(Collectors.toMap(Collection::getName, Function.identity()));
 
-        // Map entry paths to the corresponding Dockstore Entries.
-        // We'll use this later to avoid some redundant requests.
+        // Map TRS Ids to the corresponding Dockstore Entries.
+        // We'll use the resulting Map later to avoid some redundant requests.
+        LOG.info("Mapping TRS IDs to Entries");
         final List<String> trsIds = categorizations.stream().map(Categorization::trsId).distinct().toList();
         final Map<String, Entry> trsIdToEntry = new HashMap<>();
         for (String trsId: trsIds) {
             try {
-                trsIdToEntry.put(trsId, workflowsApi.getPublishedEntryByPath(trsIdToPath(trsId)));
+                trsIdToEntry.put(trsId, getEntryByTrsID(workflowsApi, trsId));
                 LOG.info("Retrieved entry '{}'", trsId);
             } catch (ApiException e) {
-                LOG.error("Unable to retrieve entry '{}'", trsId, e);
+                LOG.error("ApiException while retrieving entry '{}'", trsId, e);
+            } catch (RuntimeException e) {
+                LOG.error("Unexpected exception while retrieving entry '{}'", trsId, e);
             }
         }
 
@@ -481,7 +484,7 @@ public class CategorizerClient {
             try {
                 organizationsApi.addEntryToCollection(organization.getId(), collection.getId(), entry.getId(), null, "AI", false);
                 LOG.info("Added entry {} to category {}", trsId, categoryId);
-            } catch (ApiException e) {
+            } catch (Exception e) {
                 LOG.error("Unable to add entry {} to category {}", trsId, categoryId, e);
             }
         }
@@ -505,15 +508,54 @@ public class CategorizerClient {
     }
 
     /**
-     * Strips the {@code #workflow/} TRS prefix to produce the plain path expected by
-     * {@link WorkflowsApi#getPublishedEntryByPath}.
+     * Retrieves a published Dockstore entry by its TRS ID. Supports every entry type: workflows, services,
+     * notebooks, apptools, and tools. Workflows, services, notebooks, and apptools are looked up via
+     * {@link WorkflowsApi#getPublishedWorkflowByPath}, which requires (and thus lets us pin down) the specific
+     * subclass of the entry, since these entries can share a path with other subclasses defined in the same
+     * source repository. Tools don't have this ambiguity, so they're looked up via the generic
+     * {@link WorkflowsApi#getPublishedEntryByPath}. In all cases, the retrieved entry's TRS ID is confirmed to
+     * match {@code trsId} before it's returned.
      */
-    private String trsIdToPath(String trsId) {
-        final String workflowPrefix = "#workflow/";
-        if (trsId.startsWith(workflowPrefix)) {
-            return trsId.substring(workflowPrefix.length());
+    private Entry getEntryByTrsID(WorkflowsApi workflowsApi, String trsId) throws ApiException {
+        final Entry entry;
+        if (trsId.startsWith(WORKFLOW_TRS_PREFIX)) {
+            entry = workflowToEntry(workflowsApi.getPublishedWorkflowByPath(
+                trsId.substring(WORKFLOW_TRS_PREFIX.length()), WorkflowSubClass.BIOWORKFLOW, null, null));
+        } else if (trsId.startsWith(SERVICE_TRS_PREFIX)) {
+            entry = workflowToEntry(workflowsApi.getPublishedWorkflowByPath(
+                trsId.substring(SERVICE_TRS_PREFIX.length()), WorkflowSubClass.SERVICE, null, null));
+        } else if (trsId.startsWith(NOTEBOOK_TRS_PREFIX)) {
+            entry = workflowToEntry(workflowsApi.getPublishedWorkflowByPath(
+                trsId.substring(NOTEBOOK_TRS_PREFIX.length()), WorkflowSubClass.NOTEBOOK, null, null));
+        } else {
+            // No TRS prefix: the entry is either a Tool or an AppTool, which share the same (empty) TRS prefix
+            // and so can't be distinguished from the TRS ID alone. Try AppTool first, since (unlike a Tool's
+            // path) an AppTool's path can collide with a workflow/service/notebook defined in the same source
+            // repository; fall back to the generic, unambiguous Tool lookup if it isn't an AppTool.
+            Entry appToolOrTool;
+            try {
+                appToolOrTool = workflowToEntry(workflowsApi.getPublishedWorkflowByPath(trsId, WorkflowSubClass.APPTOOL, null, null));
+            } catch (ApiException e) {
+                appToolOrTool = workflowsApi.getPublishedEntryByPath(trsId);
+            }
+            entry = appToolOrTool;
         }
-        return trsId;
+
+        // Confirm that the retrieved entry's TRS ID matches the original TRS ID,
+        // to prevent a programming error from triggering an update using information from the wrong entry.
+        if (!trsId.equals(entry.getTrsId())) {
+            throw new TrsIdMismatchException("Retrieved entry has TRS ID '%s', expected '%s'".formatted(entry.getTrsId(), trsId));
+        }
+        return entry;
+    }
+
+    /**
+     * Converts a {@link Workflow} (or one of its subclasses: BioWorkflow, Service, Notebook, AppTool) to an
+     * {@link Entry}. The two types don't share a common supertype in the generated API client, so only the
+     * fields needed by callers of {@link #getEntryByTrsID}, namely the ID and TRS ID, are copied over.
+     */
+    private Entry workflowToEntry(Workflow workflow) {
+        return new Entry().id(workflow.getId()).trsId(workflow.getTrsId());
     }
 
     /**
@@ -589,6 +631,16 @@ public class CategorizerClient {
         }
     }
 
+    /** Retrieves all of the Collections from the specified Organization, aborting on failure. */
+    private List<Collection> getCollectionsFromOrganization(OrganizationsApi organizationsApi, Organization organization) {
+        try {
+            return organizationsApi.getCollectionsFromOrganization(organization.getId(), "");
+        } catch (ApiException e) {
+            exceptionMessage(e, "Unable to retrieve collections from organization '%s'".formatted(organization.getName()), API_ERROR);
+            return null;
+        }
+    }
+
     /**
      * Lists category IDs in the AI organization as CSV to stdout, optionally filtered to those
      * present in the given ontologies.
@@ -650,6 +702,15 @@ public class CategorizerClient {
             LOG.info("Reindexed {} entries", count);
         } catch (ApiException e) {
             exceptionMessage(e, "Unable to reindex entries", API_ERROR);
+        }
+    }
+
+    /**
+     * Thrown by {@link #getEntryByTrsID} when the retrieved entry's TRS ID does not match the requested TRS ID.
+     */
+    private static class TrsIdMismatchException extends RuntimeException {
+        TrsIdMismatchException(String message) {
+            super(message);
         }
     }
 
