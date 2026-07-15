@@ -451,8 +451,10 @@ public class CategorizerClient {
             try {
                 trsIdToEntry.put(trsId, getEntryByTrsID(workflowsApi, trsId));
                 LOG.info("Retrieved entry '{}'", trsId);
-            } catch (Exception e) {
-                LOG.error("Unable to retrieve entry '{}'", trsId, e);
+            } catch (ApiException e) {
+                LOG.error("ApiException while retrieving entry '{}'", trsId, e);
+            } catch (RuntimeException e) {
+                LOG.error("Unexpected exception while retrieving entry '{}'", trsId, e);
             }
         }
 
@@ -539,8 +541,10 @@ public class CategorizerClient {
             entry = appToolOrTool;
         }
 
+        // Confirm that the retrieved entry's TRS ID matches the original TRS ID,
+        // to prevent a programming error from triggering an update using information from the wrong entry.
         if (!trsId.equals(entry.getTrsId())) {
-            throw new RuntimeException("Retrieved entry has TRS ID '%s', expected '%s'".formatted(entry.getTrsId(), trsId));
+            throw new TrsIdMismatchException("Retrieved entry has TRS ID '%s', expected '%s'".formatted(entry.getTrsId(), trsId));
         }
         return entry;
     }
@@ -698,6 +702,15 @@ public class CategorizerClient {
             LOG.info("Reindexed {} entries", count);
         } catch (ApiException e) {
             exceptionMessage(e, "Unable to reindex entries", API_ERROR);
+        }
+    }
+
+    /**
+     * Thrown by {@link #getEntryByTrsID} when the retrieved entry's TRS ID does not match the requested TRS ID.
+     */
+    private static class TrsIdMismatchException extends RuntimeException {
+        TrsIdMismatchException(String message) {
+            super(message);
         }
     }
 
