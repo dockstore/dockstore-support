@@ -1,4 +1,4 @@
-package io.dockstore.topicgenerator.helper;
+package io.dockstore.utils.ai;
 
 import com.google.gson.Gson;
 import java.io.IOException;

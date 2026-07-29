@@ -34,7 +34,7 @@ public class DownloaderIT {
         file.createNewFile();
         files.add(file);
 
-        s3Communicator.uploadDirectory(BUCKET, PREFIX, DIR, files, false);
+        s3Communicator.uploadDirectory(BUCKET, PREFIX, DIR, files);
 
         new Downloader(null).download(BUCKET, PREFIX, DIR, s3Communicator);
         DirCleaner.deleteDir(DIR);

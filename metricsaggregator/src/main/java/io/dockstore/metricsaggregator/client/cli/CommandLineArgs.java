@@ -25,6 +25,8 @@ import java.io.File;
 import java.util.List;
 
 public class CommandLineArgs {
+
+    public static final int TESTED_DEFAULT_THREADS = 16;
     @Parameter(names = "--help", description = "Prints help for metricsaggregator", help = true)
     private boolean help = false;
 
@@ -47,7 +49,7 @@ public class CommandLineArgs {
         private boolean dryRun = false;
 
         @Parameter(names = { "--threadCount" }, description = "Aggregate metrics using the specified number of threads in parallel")
-        private int threadCount = Math.max(Runtime.getRuntime().availableProcessors() - 1, 1);
+        private int threadCount = TESTED_DEFAULT_THREADS;
 
         public File getConfig() {
             return config;

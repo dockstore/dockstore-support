@@ -98,9 +98,6 @@
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <release>17</release>
-        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-checkstyle-plugin</artifactId>
@@ -179,7 +176,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>5.13.4</version>
+      <version>5.14.4</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -195,7 +192,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>5.13.4</version>
+      <version>5.14.4</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -215,7 +212,7 @@
     <dependency>
       <groupId>io.dropwizard</groupId>
       <artifactId>dropwizard-testing</artifactId>
-      <version>5.0.0</version>
+      <version>5.0.2</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>

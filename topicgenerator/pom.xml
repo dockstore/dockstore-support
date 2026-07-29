@@ -20,7 +20,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <openai-java.version>0.18.2</openai-java.version>
     </properties>
 
     <organization>
@@ -80,16 +79,6 @@
             <version>${revision}${changelist}</version>
         </dependency>
         <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>openapi-java-client</artifactId>
-            <version>${dockstore-core.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.dockstore</groupId>
-            <artifactId>dockstore-common</artifactId>
-            <version>${dockstore-core.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.glassfish.jersey.inject</groupId>
             <artifactId>jersey-hk2</artifactId>
         </dependency>
@@ -110,11 +99,6 @@
             <artifactId>commons-configuration2</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.knuddels</groupId>
-            <artifactId>jtokkit</artifactId>
-            <version>1.1.0</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
         </dependency>
@@ -127,34 +111,8 @@
             <artifactId>commons-io</artifactId>
         </dependency>
         <dependency>
-            <!-- https://github.com/TheoKanning/openai-java -->
-            <groupId>com.theokanning.openai-gpt3-java</groupId>
-            <artifactId>service</artifactId>
-            <version>${openai-java.version}</version>
-        </dependency>
-        <dependency>
-            <!-- https://github.com/TheoKanning/openai-java -->
-            <groupId>com.theokanning.openai-gpt3-java</groupId>
-            <artifactId>api</artifactId>
-            <version>${openai-java.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.knuddels</groupId>
-                    <artifactId>jtokkit</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>bedrockruntime</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>auth</artifactId>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
@@ -164,7 +122,16 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>openapi-java-client</artifactId>
+            <version>${dockstore-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.dockstore</groupId>
+            <artifactId>dockstore-common</artifactId>
+            <version>${dockstore-core.version}</version>
+        </dependency>
         <dependency>
             <groupId>io.dockstore</groupId>
             <artifactId>dockstore-webservice</artifactId>
@@ -277,9 +244,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <release>17</release>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

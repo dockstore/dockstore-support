@@ -3,6 +3,7 @@ package io.dockstore.utils;
 import io.dockstore.openapi.client.ApiClient;
 import io.dockstore.openapi.client.Configuration;
 
+/** Utilities for constructing authenticated Dockstore API clients. */
 public final class DockstoreApiClientUtils {
     private DockstoreApiClientUtils() {
     }

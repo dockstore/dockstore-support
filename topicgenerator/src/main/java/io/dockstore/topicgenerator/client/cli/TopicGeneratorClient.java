@@ -29,14 +29,12 @@ import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.Gene
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.InputCsvHeaders;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.GenerateTopicsCommand.OutputCsvHeaders;
 import io.dockstore.topicgenerator.client.cli.TopicGeneratorCommandLineArgs.UploadTopicsCommand;
-import io.dockstore.topicgenerator.helper.AIModelType;
-import io.dockstore.topicgenerator.helper.AnthropicClaudeModel;
-import io.dockstore.topicgenerator.helper.BaseAIModel;
-import io.dockstore.topicgenerator.helper.BaseAIModel.AIResponseInfo;
 import io.dockstore.topicgenerator.helper.CSVHelper;
-import io.dockstore.topicgenerator.helper.ChuckNorrisFilter;
-import io.dockstore.topicgenerator.helper.OpenAIModel;
-import io.dockstore.topicgenerator.helper.StringFilter;
+import io.dockstore.utils.ai.AIModel;
+import io.dockstore.utils.ai.AIModelFactory;
+import io.dockstore.utils.ai.AIModelType;
+import io.dockstore.utils.ai.ChuckNorrisFilter;
+import io.dockstore.utils.ai.StringFilter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -45,6 +43,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import org.apache.commons.configuration2.INIConfiguration;
@@ -54,6 +53,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,10 +141,7 @@ public class TopicGeneratorClient {
             return;
         }
 
-        Optional<BaseAIModel> aiModel = getAiModel(aiModelType, topicGeneratorConfig);
-        if (aiModel.isEmpty()) {
-            errorMessage("Invalid AI model type", CLIENT_ERROR);
-        }
+        AIModel aiModel = AIModelFactory.createModel(aiModelType);
         LOG.info("Generating topics for AI topic candidates using AI model {}", aiModelType.getModelId());
         final String outputFileNameSuffix = "_" + aiModelType + "_" + Instant.now().truncatedTo(ChronoUnit.SECONDS).toString().replace("-", "").replace(":", "") + ".csv";
         final String unfilteredTopicsFileName = "generated-topics" + outputFileNameSuffix;
@@ -197,14 +194,18 @@ public class TopicGeneratorClient {
                     String prompt = "Summarize the " + entryType
                             + " in one sentence that starts with a present tense verb in the <summary> tags. Use a maximum of 150 characters.\n<content>"
                             + descriptorFile.getContent() + "</content>";
-                    AIResponseInfo aiResponseInfo = aiModel.get().submitPrompt(prompt);
-                    boolean isCensoredTopic = isSuspiciousTopic(aiResponseInfo.aiResponse());
+                    final double temperature = 0.5; // The amount of randomness injected into the response. Ranges from 0 to 1. Pick 0.5 as the middle ground between predictability and creativity.
+                    final int outputTokens = 100; // One token is roughly 4 characters. Using 100 tokens because setting it too low might truncate the response.
+                    AIModel.Response response = aiModel.submitPrompt(AIModel.Prompt.builder().text(prompt).temperature(temperature).outputTokens(outputTokens).build());
+                    String cleanedResponse = removeSummaryTagsFromTopic(response.text());
+                    response = new AIModel.Response(cleanedResponse, response.isTruncated(), response.inputTokens(), response.outputTokens(), response.cost(), response.stopReason());
+                    boolean isCensoredTopic = isSuspiciousTopic(response.text());
                     if (isCensoredTopic) {
                         // Write censored topics to a different file
-                        CSVHelper.writeRecord(filteredTopicsCsvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
+                        CSVHelper.writeRecord(filteredTopicsCsvPrinter, trsId, versionId, descriptorFile, response);
                         numberOfCensoredTopics += 1;
                     } else {
-                        CSVHelper.writeRecord(unfilteredTopicsCsvPrinter, trsId, versionId, descriptorFile, aiResponseInfo);
+                        CSVHelper.writeRecord(unfilteredTopicsCsvPrinter, trsId, versionId, descriptorFile, response);
                     }
                     LOG.info("Generated topic for entry with TRS ID {} and version {}.{}", trsId, versionId, isCensoredTopic ? "The topic was filtered because it is potentially offensive" : "");
                     numberOfTopicsGenerated += 1;
@@ -265,8 +266,9 @@ public class TopicGeneratorClient {
 
             if (totalAiTopicCandidatesCount == null) {
                 try {
-                    totalAiTopicCandidatesCount = Integer.parseInt(
-                            extendedGa4GhApi.getApiClient().getResponseHeaders().get("X-total-count").get(0));
+                    Map<String, List<String>> responseHeaders = extendedGa4GhApi.getApiClient().getResponseHeaders();
+                    List<String> strings = ObjectUtils.firstNonNull(responseHeaders.get("X-total-count"), responseHeaders.get("x-total-count"));
+                    totalAiTopicCandidatesCount = Integer.parseInt(strings.get(0));
                 } catch (Exception exception) {
                     exceptionMessage(exception, "Could not get X-total-count header value for AI topic candidates", API_ERROR);
                 }
@@ -280,19 +282,6 @@ public class TopicGeneratorClient {
 
         LOG.info("Retrieved {} out of {} AI topic candidates from {}", aiTopicCandidates.size(), totalAiTopicCandidatesCount, dockstoreServerUrl);
         return aiTopicCandidates;
-    }
-
-    private Optional<BaseAIModel> getAiModel(AIModelType aiModelType, TopicGeneratorConfig topicGeneratorConfig) {
-        if (aiModelType == AIModelType.CLAUDE_3_HAIKU || aiModelType == AIModelType.CLAUDE_3_5_SONNET) {
-            return Optional.of(new AnthropicClaudeModel(aiModelType));
-        } else if (aiModelType == AIModelType.GPT_4O_MINI) {
-            if (StringUtils.isEmpty(topicGeneratorConfig.openaiApiKey())) {
-                errorMessage("OpenAI API key is required in the config file to use an OpenAI model", CLIENT_ERROR);
-            }
-            return Optional.of(new OpenAIModel(topicGeneratorConfig.openaiApiKey(), aiModelType));
-        } else {
-            return Optional.empty();
-        }
     }
 
     private void writeAITopicCandidates(List<TrsIdAndVersionId> aiTopicCandidates) {
@@ -428,8 +417,8 @@ public class TopicGeneratorClient {
     }
 
     public static String removeSummaryTagsFromTopic(String aiTopic) {
-        String cleanedTopic = StringUtils.removeStart(aiTopic, "<summary>");
-        return StringUtils.removeEnd(cleanedTopic, "</summary>");
+        String cleanedTopic = Strings.CI.removeStart(aiTopic, "<summary>");
+        return Strings.CI.removeEnd(cleanedTopic, "</summary>").trim();
     }
 
     public record TrsIdAndVersionId(String trsId, String versionId) {

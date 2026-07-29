@@ -3,54 +3,54 @@ package io.dockstore.toolbackup.client.cli;
 import static io.dockstore.toolbackup.client.cli.Client.COMMAND_ERROR;
 import static java.lang.System.out;
 
-import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.S3ClientOptions;
-import com.amazonaws.services.s3.model.AmazonS3Exception;
-import com.amazonaws.services.s3.model.CreateBucketRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.amazonaws.services.s3.transfer.ObjectMetadataProvider;
-import com.amazonaws.services.s3.transfer.TransferManager;
 import java.io.File;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.ListBucketsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.transfer.s3.S3TransferManager;
+import software.amazon.awssdk.transfer.s3.config.DownloadFilter;
+import software.amazon.awssdk.transfer.s3.model.DownloadDirectoryRequest;
+import software.amazon.awssdk.transfer.s3.model.UploadDirectoryRequest;
 
 /**
  * Created by kcao on 12/01/17.
  */
 class S3Communicator {
 
-    private TransferManager transferManager;
-    private AmazonS3Client s3Client;
+    private S3TransferManager transferManager;
+    private S3AsyncClient s3Client;
 
     S3Communicator() {
-        s3Client = new AmazonS3Client(new ProfileCredentialsProvider().getCredentials());
-        s3Client.setEndpoint("http://localhost:8080");
-        s3Client.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).disableChunkedEncoding().build());
+        s3Client = S3AsyncClient.builder().endpointOverride(URI.create("http://localhost:8080")).credentialsProvider(ProfileCredentialsProvider.builder().build())
+            .forcePathStyle(true).build();
 
-        transferManager = new TransferManager(s3Client);
+        transferManager = S3TransferManager.builder().s3Client(s3Client).build();
     }
 
     S3Communicator(String section, String endpoint) {
-        ClientConfiguration opts = new ClientConfiguration();
-        opts.setSignerOverride("S3SignerType");
-        s3Client = new AmazonS3Client(new ProfileCredentialsProvider(section).getCredentials(), opts);
+        s3Client = S3AsyncClient.builder().credentialsProvider(ProfileCredentialsProvider.builder().build()).endpointOverride(URI.create(endpoint)).credentialsProvider(ProfileCredentialsProvider.builder().build())
+           .forcePathStyle(true).build();
 
-        s3Client.setEndpoint(endpoint);
-        s3Client.setS3ClientOptions(S3ClientOptions.builder().build());
-
-        transferManager = new TransferManager(s3Client);
+        transferManager = S3TransferManager.builder().s3Client(s3Client).build();
     }
 
     //-----------------------Report-----------------------
-    long getCloudTotalInB(String bucketName, String prefix) {
+    long getCloudTotalInB(String bucketName, String prefix) throws ExecutionException, InterruptedException {
         long total = 0;
 
-        List<S3ObjectSummary> objectSummaries = s3Client.listObjects(bucketName, prefix).getObjectSummaries();
-        List<Long> sizes = objectSummaries.stream().map(S3ObjectSummary::getSize).collect(Collectors.toList());
+        List<S3Object> objectSummaries = s3Client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix)
+                .build()).get().contents();
+        List<Long> sizes = objectSummaries.stream().map(S3Object::size).toList();
 
         for (long size : sizes) {
             total += size;
@@ -60,48 +60,37 @@ class S3Communicator {
     }
 
     //-----------------------Upload-----------------------
-    boolean doesBucketExist(String bucketName) {
-        return s3Client.doesBucketExist(bucketName);
+    boolean doesBucketExist(String bucketName) throws ExecutionException, InterruptedException {
+        return s3Client.listBuckets(ListBucketsRequest.builder().prefix(bucketName).build()).get().hasBuckets();
     }
 
-    void createBucket(String bucketName) {
+    void createBucket(String bucketName) throws ExecutionException, InterruptedException {
         if (!doesBucketExist(bucketName)) {
-            s3Client.createBucket(new CreateBucketRequest(bucketName));
+            s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName)
+                    .build());
         }
     }
 
-    Map<String, Long> getKeysToSizes(String bucketName, String prefix) {
+    Map<String, Long> getKeysToSizes(String bucketName, String prefix) throws ExecutionException, InterruptedException {
         createBucket(bucketName);
 
-        List<S3ObjectSummary> objectSummaries = s3Client.listObjects(bucketName, prefix).getObjectSummaries();
-        Map<String, Long> keysToSizes = objectSummaries.stream().collect(Collectors.toMap(S3ObjectSummary::getKey, S3ObjectSummary::getSize));
+        List<S3Object> objectSummaries = s3Client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix)
+                .build()).get().contents();
+        Map<String, Long> keysToSizes = objectSummaries.stream().collect(Collectors.toMap(S3Object::key, S3Object::size));
 
         return keysToSizes;
     }
 
-    private static ObjectMetadataProvider encrypt() {
-        ObjectMetadataProvider objectMetadataProvider = new ObjectMetadataProvider() {
-            @Override
-            public void provideObjectMetadata(File file, ObjectMetadata objectMetadata) {
-                objectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
-            }
-        };
-        return objectMetadataProvider;
-    }
-
-    void uploadDirectory(String bucketName, String keyPrefix, String dirPath, List<File> files, boolean encrypt) {
+    void uploadDirectory(String bucketName, String keyPrefix, String dirPath, List<File> files) throws ExecutionException, InterruptedException {
         createBucket(bucketName);
 
         try {
-            if (encrypt) {
-                transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files, encrypt()).waitForCompletion();
-            } else {
-                transferManager.uploadFileList(bucketName, keyPrefix, new File(dirPath), files).waitForCompletion();
+            if (files == null) {
+                throw new IllegalArgumentException();
             }
+            transferManager.uploadDirectory(UploadDirectoryRequest.builder().source(Paths.get(dirPath)).bucket(bucketName).s3Prefix(keyPrefix).build());
             out.println("Uploaded necessary files in: " + dirPath);
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Could not upload the directory: " + dirPath + " in its entirety");
-        } catch (AmazonS3Exception e) {
+        } catch (S3Exception e) {
             ErrorExit.exceptionMessage(e, "MultiplePartUpload cannot finish. Check your keys and sign methods.", COMMAND_ERROR);
         }
     }
@@ -113,17 +102,17 @@ class S3Communicator {
         if (!dir.isDirectory()) {
             throw new RuntimeException("Not a local directory thus nothing will be saved");
         } else {
-            try {
-                transferManager.downloadDirectory(bucketName, keyPrefix, new File(dirPath), true).waitForCompletion();
-                out.println("Downloaded the bucket(" + bucketName + ") with the prefix(" + keyPrefix + ") to the local directory: " + dirPath);
-            } catch (InterruptedException e) {
-                throw new RuntimeException("Could not download the bucket: " + bucketName + " in its entirety");
+            if (keyPrefix == null) {
+                throw new IllegalArgumentException();
             }
+            DownloadFilter filter = s3Object -> s3Object.key().startsWith(keyPrefix);
+            transferManager.downloadDirectory(DownloadDirectoryRequest.builder().bucket(bucketName).destination(Paths.get(dirPath)).filter(filter).build());
+            out.println("Downloaded the bucket(" + bucketName + ") with the prefix(" + keyPrefix + ") to the local directory: " + dirPath);
         }
     }
 
     //-----------------------Shutdown-----------------------
     void shutDown() {
-        transferManager.shutdownNow();
+        transferManager.close();
     }
 }

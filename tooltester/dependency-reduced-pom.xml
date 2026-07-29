@@ -109,9 +109,6 @@
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <release>17</release>
-        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
@@ -214,7 +211,7 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>5.13.4</version>
+      <version>5.14.4</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>

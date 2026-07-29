@@ -1,4 +1,4 @@
-package io.dockstore.topicgenerator.helper;
+package io.dockstore.utils.ai;
 
 /**
  * Simple interface for checking if a topic sentence is suspicious.
