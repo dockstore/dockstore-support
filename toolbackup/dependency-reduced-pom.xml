@@ -137,7 +137,6 @@
               <ignoreNonCompile>true</ignoreNonCompile>
               <usedDependencies>
                 <usedDependency>org.glassfish.hk2:hk2-api</usedDependency>
-                <usedDependency>javax.xml.bind:jaxb-api</usedDependency>
               </usedDependencies>
             </configuration>
           </execution>
