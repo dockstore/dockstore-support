@@ -52,6 +52,10 @@ abstraction layer.
 - Imports are auto-sorted by `impsort-maven-plugin` during the build (`process-sources` phase) — don't hand-fight
   import order.
 - SpotBugs is wired in but `<skip>true</skip>` by default; it does not gate local builds.
+- A full build regenerates some tracked build-artifact files — `THIRD-PARTY-LICENSES.txt` at the repo root and
+  each shaded module's `<module>/dependency-reduced-pom.xml` — as an intentional side effect of the
+  license-maven-plugin and maven-shade-plugin. If a build run changes these as a side effect of an unrelated
+  source edit, keep the change rather than reverting it.
 
 ### Integration tests
 

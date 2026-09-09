@@ -34,16 +34,10 @@
 
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <slf4j.version>1.7.22</slf4j.version>
         <aws.version>1.11.83</aws.version>
     </properties>
-
-    <organization>
-        <name>Dockstore</name>
-        <url>https://www.dockstore.org/</url>
-    </organization>
 
     <scm>
         <connection>${github.url}</connection>
@@ -71,13 +65,6 @@
             <url>https://jcenter.bintray.com</url>
         </repository>
     </repositories>
-
-    <licenses>
-        <license>
-            <name>GNU General Public License (GPLv3)</name>
-            <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
-        </license>
-    </licenses>
 
     <dependencyManagement>
         <dependencies>

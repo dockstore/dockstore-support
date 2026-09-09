@@ -12,10 +12,6 @@
   <version>${revision}${changelist}</version>
   <description>JIRA automation parent POM</description>
   <url>https://github.com/dockstore/dockstore-support</url>
-  <organization>
-    <name>Dockstore</name>
-    <url>https://www.dockstore.org/</url>
-  </organization>
   <build>
     <plugins>
       <plugin>
@@ -61,8 +57,6 @@
     </plugins>
   </build>
   <properties>
-    <github.url>scm:git:git@github.com:dockstore/dockstore-support.git</github.url>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 </project>
