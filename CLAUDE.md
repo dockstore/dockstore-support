@@ -30,6 +30,8 @@ abstraction layer.
 - The PR template's **Issue** field needs a link to a GitHub issue or a SEAB- ticket (e.g.
   `https://ucsc-cgl.atlassian.net/browse/SEAB-nnnn`). If one hasn't been given when drafting a PR description,
   ask the user for it rather than leaving the field blank or guessing.
+- The PR template's checklist items must be copied verbatim, not paraphrased or shortened — only check a box
+  off once you've actually verified that item, don't rewrite its wording to describe what you did.
 
 ## Build, lint, test
 
