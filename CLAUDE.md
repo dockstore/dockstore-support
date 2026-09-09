@@ -14,6 +14,20 @@ is no shared runtime or shared entry point. `utils` is the one module that is pu
 shared by the AI-driven modules for Dockstore API client setup, config parsing, and an AWS Bedrock/Claude
 abstraction layer.
 
+## Contribution workflow
+
+- Branching follows **hubflow** (`feature/`, `hotfix/`, `release/` branches off `develop`/`main`), not plain
+  GitHub flow.
+- Never hand-edit a `pom.xml` under a `generated/` directory (e.g.
+  `dockstore-support-reports/generated/src/main/resources/pom.xml`) — those are produced by the
+  `flatten-maven-plugin` at build time. Make dependency/plugin changes in the root `pom.xml` or in the `pom.xml`
+  at the root of the relevant submodule instead.
+- For new code, prefer dependencies in this order: (1) built-in Java 21 features, (2) a third-party library
+  already pulled in via Maven (check the module's and root `pom.xml`/BOM first), (3) only reach for a new
+  library if neither of the above covers the need.
+- When opening a PR, create it in **draft** mode — a human must explicitly mark it ready for review before it
+  can be taken out of draft.
+
 ## Build, lint, test
 
 ```bash
