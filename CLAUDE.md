@@ -27,6 +27,9 @@ abstraction layer.
   library if neither of the above covers the need.
 - When opening a PR, create it in **draft** mode — a human must explicitly mark it ready for review before it
   can be taken out of draft.
+- The PR template's **Issue** field needs a link to a GitHub issue or a SEAB- ticket (e.g.
+  `https://ucsc-cgl.atlassian.net/browse/SEAB-nnnn`). If one hasn't been given when drafting a PR description,
+  ask the user for it rather than leaving the field blank or guessing.
 
 ## Build, lint, test
 
