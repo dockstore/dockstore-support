@@ -11,21 +11,11 @@
   <version>${revision}${changelist}</version>
   <description>A program back-up of all resources on Dockstore or any GA4GH tool-registry-api to S3</description>
   <url>https://github.com/dockstore/dockstore-support</url>
-  <licenses>
-    <license>
-      <name>GNU General Public License (GPLv3)</name>
-      <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
-    </license>
-  </licenses>
   <scm>
     <connection>${github.url}</connection>
     <developerConnection>${github.url}</developerConnection>
     <url>${github.url}</url>
   </scm>
-  <organization>
-    <name>Dockstore</name>
-    <url>https://www.dockstore.org/</url>
-  </organization>
   <build>
     <pluginManagement>
       <plugins>
@@ -337,7 +327,6 @@
   <properties>
     <aws.version>1.11.83</aws.version>
     <slf4j.version>1.7.22</slf4j.version>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 </project>

@@ -11,21 +11,11 @@
   <version>${revision}${changelist}</version>
   <description>A service for testing verified tools on Dockstore</description>
   <url>https://github.com/dockstore/dockstore-support</url>
-  <licenses>
-    <license>
-      <name>GNU General Public License (GPLv3)</name>
-      <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
-    </license>
-  </licenses>
   <scm>
     <connection>${github.url}</connection>
     <developerConnection>${github.url}</developerConnection>
     <url>${github.url}</url>
   </scm>
-  <organization>
-    <name>Dockstore</name>
-    <url>https://www.dockstore.org/</url>
-  </organization>
   <build>
     <plugins>
       <plugin>
@@ -267,7 +257,6 @@
     </dependencies>
   </dependencyManagement>
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 </project>

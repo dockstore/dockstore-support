@@ -34,14 +34,8 @@
 
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
-
-    <organization>
-        <name>Dockstore</name>
-        <url>https://www.dockstore.org/</url>
-    </organization>
 
     <scm>
         <connection>${github.url}</connection>
@@ -66,13 +60,6 @@
             <url>https://repo.eclipse.org/content/repositories/egit-releases</url>
         </repository>
     </repositories>
-
-    <licenses>
-        <license>
-            <name>GNU General Public License (GPLv3)</name>
-            <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
-        </license>
-    </licenses>
 
     <dependencyManagement>
         <dependencies>

@@ -27,6 +27,11 @@ abstraction layer.
   library if neither of the above covers the need.
 - When opening a PR, create it in **draft** mode — a human must explicitly mark it ready for review before it
   can be taken out of draft.
+- The PR template's **Issue** field needs a link to a GitHub issue or a SEAB- ticket (e.g.
+  `https://ucsc-cgl.atlassian.net/browse/SEAB-nnnn`). If one hasn't been given when drafting a PR description,
+  ask the user for it rather than leaving the field blank or guessing.
+- The PR template's checklist items must be copied verbatim, not paraphrased or shortened — only check a box
+  off once you've actually verified that item, don't rewrite its wording to describe what you did.
 
 ## Build, lint, test
 
@@ -52,6 +57,10 @@ abstraction layer.
 - Imports are auto-sorted by `impsort-maven-plugin` during the build (`process-sources` phase) — don't hand-fight
   import order.
 - SpotBugs is wired in but `<skip>true</skip>` by default; it does not gate local builds.
+- A full build regenerates some tracked build-artifact files — `THIRD-PARTY-LICENSES.txt` at the repo root and
+  each shaded module's `<module>/dependency-reduced-pom.xml` — as an intentional side effect of the
+  license-maven-plugin and maven-shade-plugin. If a build run changes these as a side effect of an unrelated
+  source edit, keep the change rather than reverting it.
 
 ### Integration tests
 
