@@ -66,6 +66,48 @@
         </repository>
     </repositories>
 
+    <!-- cloud.localstack:localstack-utils' own transitive dependencies are internally inconsistent, and its
+         version is no longer pinned by bom-internal as of dockstore-core 1.21.0-alpha.5 (see the version pin
+         on the localstack-utils dependency below); force convergence on the upper version of each conflict. -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.amazon.ion</groupId>
+                <artifactId>ion-java</artifactId>
+                <version>1.8.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-kinesis</artifactId>
+                <version>1.12.264</version>
+            </dependency>
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-simpleworkflow</artifactId>
+                <version>1.12.264</version>
+            </dependency>
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-dynamodb</artifactId>
+                <version>1.12.264</version>
+            </dependency>
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-s3</artifactId>
+                <version>1.12.264</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.18.38</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>2.17.1</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -147,6 +189,12 @@
             <artifactId>gson</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- used directly in test code via CommonTestUtilities.getApplication's return type -->
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-core</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -158,9 +206,11 @@
             <scope>test</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/cloud.localstack/localstack-utils -->
+        <!-- version no longer provided by bom-internal as of dockstore-core 1.21.0-alpha.5, pinned explicitly -->
         <dependency>
             <groupId>cloud.localstack</groupId>
             <artifactId>localstack-utils</artifactId>
+            <version>0.2.23</version>
             <scope>test</scope>
         </dependency>
         <dependency>

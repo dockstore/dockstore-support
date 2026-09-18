@@ -87,7 +87,10 @@ class MetricsAggregatorS3ClientIT {
 
     @BeforeEach
     public void dropAndRecreateDB() {
-        CommonTestUtilities.dropAndCreateWithTestDataAndAdditionalToolsAndWorkflows(SUPPORT, false, CommonTestUtilities.PUBLIC_CONFIG_PATH);
+        // dropAndCreateWithTestDataAndAdditionalToolsAndWorkflows was removed from dockstore-core in 1.21.0-alpha.x;
+        // replicate its migration set directly via the still-public building blocks.
+        CommonTestUtilities.dropAllAndRunMigration(CommonTestUtilities.listMigrations("test", "add_test_tools", "testworkflow", "test_1.5.0"),
+            CommonTestUtilities.getApplication(SUPPORT, false), CommonTestUtilities.PUBLIC_CONFIG_PATH);
     }
 
     @AfterEach
