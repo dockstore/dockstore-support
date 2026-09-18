@@ -18,6 +18,8 @@ abstraction layer.
 
 - Branching follows **hubflow** (`feature/`, `hotfix/`, `release/` branches off `develop`/`main`), not plain
   GitHub flow.
+- Before pushing any commit, show the diff being pushed and wait for explicit confirmation — never push
+  without it.
 - Never hand-edit a `pom.xml` under a `generated/` directory (e.g.
   `dockstore-support-reports/generated/src/main/resources/pom.xml`) — those are produced by the
   `flatten-maven-plugin` at build time. Make dependency/plugin changes in the root `pom.xml` or in the `pom.xml`
