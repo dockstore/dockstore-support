@@ -26,10 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import cloud.localstack.ServiceName;
-import cloud.localstack.awssdkv2.TestUtils;
-import cloud.localstack.docker.LocalstackDockerExtension;
-import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import io.dockstore.common.CommonTestUtilities;
 import io.dockstore.common.LocalStackTestUtilities;
 import io.dockstore.common.Partner;
@@ -59,12 +55,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.localstack.LocalStackContainer;
 import software.amazon.awssdk.services.s3.S3Client;
 
-@ExtendWith(LocalstackDockerExtension.class)
-@LocalstackDockerProperties(imageTag = LocalStackTestUtilities.IMAGE_TAG, services = { ServiceName.S3 })
+@Testcontainers
 class MetricsAggregatorS3ClientIT {
+    @Container
+    private static final LocalStackContainer LOCALSTACK = LocalStackTestUtilities.createS3Container();
+
     private static MetricsAggregatorS3Client metricsAggregatorS3Client;
     private static S3Client s3Client;
     private static TestingPostgres testingPostgres;
@@ -79,7 +79,7 @@ class MetricsAggregatorS3ClientIT {
         testingPostgres = new TestingPostgres(SUPPORT);
 
         metricsAggregatorS3Client = new MetricsAggregatorS3Client(BUCKET_NAME, ENDPOINT_OVERRIDE);
-        s3Client = TestUtils.getClientS3V2(); // Use localstack S3Client
+        s3Client = S3ClientHelper.createS3Client(LocalStackTestUtilities.ENDPOINT_OVERRIDE); // Use localstack S3Client
         // Create a bucket to be used for tests
         LocalStackTestUtilities.createBucket(s3Client, BUCKET_NAME);
         LocalStackTestUtilities.deleteBucketContents(s3Client, BUCKET_NAME); // This is here just in case a test was stopped before tearDown could clean up the bucket
@@ -87,7 +87,10 @@ class MetricsAggregatorS3ClientIT {
 
     @BeforeEach
     public void dropAndRecreateDB() {
-        CommonTestUtilities.dropAndCreateWithTestDataAndAdditionalToolsAndWorkflows(SUPPORT, false, CommonTestUtilities.PUBLIC_CONFIG_PATH);
+        // dropAndCreateWithTestDataAndAdditionalToolsAndWorkflows was removed from dockstore-core in 1.21.0-alpha.x;
+        // replicate its migration set directly via the still-public building blocks.
+        CommonTestUtilities.dropAllAndRunMigration(CommonTestUtilities.listMigrations("test", "add_test_tools", "testworkflow", "test_1.5.0"),
+            CommonTestUtilities.getApplication(SUPPORT, false), CommonTestUtilities.PUBLIC_CONFIG_PATH);
     }
 
     @AfterEach

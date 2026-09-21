@@ -266,10 +266,6 @@
           <groupId>org.glassfish.jersey.connectors</groupId>
         </exclusion>
         <exclusion>
-          <artifactId>httpclient5</artifactId>
-          <groupId>org.apache.httpcomponents.client5</groupId>
-        </exclusion>
-        <exclusion>
           <artifactId>jersey-server</artifactId>
           <groupId>org.glassfish.jersey.core</groupId>
         </exclusion>
