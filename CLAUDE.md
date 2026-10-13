@@ -70,6 +70,10 @@ project's pinned Maven version.
   each shaded module's `<module>/dependency-reduced-pom.xml` — as an intentional side effect of the
   license-maven-plugin and maven-shade-plugin. If a build run changes these as a side effect of an unrelated
   source edit, keep the change rather than reverting it.
+- **When changing dependencies, run a full build (`./mvnw clean install`), not a scoped `-pl <module>` build.**
+  `THIRD-PARTY-LICENSES.txt` is generated at the root from whichever modules are in the reactor, so a scoped build
+  overwrites it with only that module's dependencies (e.g. 95 entries instead of 402). Only a full build produces
+  the correct file. If you ran a scoped build and the file shrank, rerun the full build to restore it.
 
 ### Integration tests
 
