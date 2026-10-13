@@ -200,6 +200,13 @@
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
             <version>1.23.2</version>
+            <exclusions>
+                <!-- provided-scope annotations only; 1.0.1 conflicts with the BOM-managed 1.0.0 in requireUpperBoundDeps -->
+                <exclusion>
+                    <groupId>org.jspecify</groupId>
+                    <artifactId>jspecify</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.hamcrest/hamcrest-all

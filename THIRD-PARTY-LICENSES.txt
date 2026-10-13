@@ -273,7 +273,7 @@ Lists of 402 third-party dependencies.
      (Apache License, Version 2.0) jOOQ (org.jooq:jooq:3.19.7 - http://www.jooq.org/jooq)
      (The MIT License) JOpt Simple (net.sf.jopt-simple:jopt-simple:5.0.3 - http://pholser.github.io/jopt-simple)
      (Public Domain) JSON in Java (org.json:json:20231013 - https://github.com/douglascrockford/JSON-java)
-     (The MIT License) jsoup Java HTML Parser (org.jsoup:jsoup:1.10.2 - https://jsoup.org/)
+     (The MIT License) jsoup Java HTML Parser (org.jsoup:jsoup:1.23.1 - https://jsoup.org/)
      (The Apache License, Version 2.0) JSpecify annotations (org.jspecify:jspecify:1.0.0 - http://jspecify.org/)
      (Apache License, Version 2.0) JSR 354 (Money and Currency API) (javax.money:money-api:1.1 - https://javamoney.github.io/)
      (MIT) JUL to SLF4J bridge (org.slf4j:jul-to-slf4j:2.0.18 - http://www.slf4j.org)
