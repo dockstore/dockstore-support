@@ -167,7 +167,7 @@ public class TopicGeneratorClient {
                 final String entryType;
                 final FileWrapper descriptorFile;
                 try {
-                    final Tool tool = ga4Ghv20Api.toolsIdGet(trsId);
+                    final Tool tool = ga4Ghv20Api.toolsIdGet(trsId, true);
                     entryType = tool.getToolclass().getName().toLowerCase();
                     final List<ToolVersion> filteredVersion = tool.getVersions().stream()
                             .filter(v -> v.getName().equals(aiTopicCandidate.versionId())).toList();

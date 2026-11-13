@@ -410,7 +410,7 @@ public class CategorizerClient {
      * Throws if the requested version cannot be retrieved.
      */
     private EntryData retrieveEntryData(ApiClient apiClient, String trsId, String versionId) throws ApiException {
-        final Tool tool = new Ga4Ghv20Api(apiClient).toolsIdGet(trsId);
+        final Tool tool = new Ga4Ghv20Api(apiClient).toolsIdGet(trsId, true);
         final String entryType = tool.getToolclass().getName().toLowerCase();
         final String description = tool.getDescription();
         final Optional<FileWrapper> primaryDescriptor = EntryUtils.retrievePrimaryDescriptor(apiClient, trsId, versionId);

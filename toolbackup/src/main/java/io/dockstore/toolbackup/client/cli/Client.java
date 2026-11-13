@@ -119,7 +119,7 @@ public class Client {
             /// need to iterate until there are no more tools
             List<Tool> evenMoreTools;
             for (int i = 0; ; i = i + 1) {
-                evenMoreTools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null, null, null, String.valueOf(i), LIMIT);
+                evenMoreTools = ga4ghApi.toolsGet(null, null, null, null, null, null, null, null, null, null, null, null, true, String.valueOf(i), LIMIT);
                 if (evenMoreTools.isEmpty()) {
                     break;
                 }
@@ -134,7 +134,7 @@ public class Client {
     private List<Tool> getTestTool() {
         List<Tool> tools = new ArrayList<>();
         try {
-            tools.add(ga4ghApi.toolsIdGet(Client.TEST_WORKFLOW));
+            tools.add(ga4ghApi.toolsIdGet(Client.TEST_WORKFLOW, true));
         } catch (ApiException e) {
             ErrorExit.exceptionMessage(e, "Could not retrieve dockstore tool: " + Client.TEST_WORKFLOW, API_ERROR);
         }
