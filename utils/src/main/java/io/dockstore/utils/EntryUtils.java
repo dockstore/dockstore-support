@@ -23,7 +23,7 @@ public final class EntryUtils {
 
     public static Optional<FileWrapper> retrievePrimaryDescriptor(ApiClient apiClient, String trsId, String versionName) throws ApiException {
         final Ga4Ghv20Api ga4Ghv20Api = new Ga4Ghv20Api(apiClient);
-        final Tool tool = ga4Ghv20Api.toolsIdGet(trsId);
+        final Tool tool = ga4Ghv20Api.toolsIdGet(trsId, true);
         final List<ToolVersion> filteredVersion = tool.getVersions().stream()
                 .filter(v -> v.getName().equals(versionName)).toList();
         if (filteredVersion.isEmpty()) {
