@@ -17,6 +17,17 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libgnutls30)" ge 3.7.3-4ubuntu1.9
 
+# Explicitly upgrade curl/libcurl4 and verify they are at least the version fixing
+# CVE-2026-18924, CVE-2026-82209, CVE-2026-80230 and CVE-2026-8927 (SEAB-7778).
+# CVE-2026-9080 is not affecting jammy. As above, this fails the build loudly
+# instead of silently shipping a vulnerable curl from a cached/older archive.
+RUN apt-get update \
+    && apt-get install -y --only-upgrade curl libcurl4 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' curl)" ge 7.81.0-1ubuntu1.29 \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libcurl4)" ge 7.81.0-1ubuntu1.29
+
 # Install aws cli so dockstore-deploy can use the aws cli to upload files to S3
 RUN curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
 RUN unzip -q /tmp/awscliv2.zip -d /tmp
